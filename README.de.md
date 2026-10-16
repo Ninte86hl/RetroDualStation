@@ -20,6 +20,25 @@ Gedacht für das Theme **dii-ess-aye-rgds-plus**, basierend auf [dii-ess-aye](ht
 - Umschalten zwischen dieser Version und dem Original-ES über **Ports**, inklusive Theme-Wechsel
 - Übersteht Neustarts des Geräts
 
+## Behobene Probleme mit dii-ess-aye auf dem RG DS Plus
+
+Das sind keine Fehler im Theme selbst. Sie entstehen dadurch, wie das
+Original-ES und die Sway-Regeln von ROCKNIX mit einem Fenster von
+2048 × 768 umgehen. Dieser Mod behebt sie in EmulationStation und in der
+Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
+
+| Problem mit Original-ES / ROCKNIX | Behoben durch |
+|---|---|
+| Unterer Screen nach der Rückkehr aus einem Spiel aus, alles landet oben | Sway-Regeln (`rgds-sway-fix.sh`) |
+| Navigation zwischen den Systemen in der Hauptansicht funktionierte nicht | Sway: globales Vollbild über beide Ausgänge |
+| ES-Fenster schrumpfte nach einem Spiel oder Neustart auf einen Screen (1024 × 768) | Sway: globales Vollbild über beide Ausgänge |
+| Korrekturen gingen bei jedem Neustart verloren (ROCKNIX schreibt die Sway-Config neu) | `rgds-sway-fix.sh` läuft vor jedem Start |
+| Scraper-, Updates-, Downloads- und Theme-Menüs über beide Screens gezogen | ES-Patch (`RGDS_MENU_W`) |
+| Info-Meldungen (z. B. „Scraping finished“) über beide Screens verteilt | ES-Patch (`GuiInfoPopup`) |
+| Ladeanzeigen („Bitte warten“) über beide Screens | ES-Patch (`setLoadingArea`) |
+| Position von Hauptmenü, Einstellungen, Save State Manager, Tastatur und Bezel Project | ES-Patch (frühere Dual-Screen-Arbeit) |
+| Original-ES zeigt beide Theme-Hälften gequetscht auf dem oberen Screen | Ports-Umschalter setzt für das Original-ES ein Einzelbildschirm-Theme |
+
 ## Einschränkungen
 
 - **Kein ScreenScraper und keine RetroAchievements** in der selbst gebauten

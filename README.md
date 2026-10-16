@@ -20,6 +20,24 @@ Designed for the **dii-ess-aye-rgds-plus** theme, based on [dii-ess-aye](https:/
 - Switching between this build and stock ROCKNIX ES via **Ports**, including a theme switch
 - Survives device reboots
 
+## Issues fixed for dii-ess-aye on the RG DS Plus
+
+These problems are not bugs in the theme itself. They come from how stock
+ES and ROCKNIX's Sway rules handle a 2048 × 768 window. This mod fixes them
+in EmulationStation and the Sway setup, so the theme can work as intended:
+
+| Problem with stock ES / ROCKNIX | Fixed by |
+|---|---|
+| Bottom screen switched off and everything moved to the top screen after returning from a game | Sway rules (`rgds-sway-fix.sh`) |
+| Navigation between systems in the main view stopped working | Sway: global fullscreen across both outputs |
+| ES window shrank to one screen (1024 × 768) after a game or a restart | Sway: global fullscreen across both outputs |
+| Fixes were lost after every reboot (ROCKNIX rewrites the Sway config) | `rgds-sway-fix.sh` runs before every start |
+| Scraper, updates, downloads and theme menus drawn across both screens | ES patch (`RGDS_MENU_W`) |
+| Info popups (e.g. "Scraping finished") split across both screens | ES patch (`GuiInfoPopup`) |
+| Loading screens ("Please wait") spanning both screens | ES patch (`setLoadingArea`) |
+| Main menu, settings, Save State Manager, keyboard and Bezel Project placement | ES patch (earlier dual-screen work) |
+| Stock ES showing both theme halves squeezed onto the top screen | Ports switch sets a single-screen theme for stock ES |
+
 ## Limitations
 
 - **No ScreenScraper and no RetroAchievements** in a self-built ES. The

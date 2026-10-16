@@ -20,6 +20,7 @@ Thank you to everyone who made it possible.
 - **[beebono](https://github.com/beebono)** – the
   [dii-ess-aye](https://github.com/beebono/dii-ess-aye) dual-screen theme
   this mod is designed for. The `dii-ess-aye-rgds-plus` variant is based on it.
+  beebono kindly agreed to its use with this mod (ROCKNIX Discord).
 - Credited in the theme itself: **Ant ([anthonycaccese](https://github.com/anthonycaccese))**
   for the status and slot icons, **Jeod ([JeodC](https://github.com/JeodC))**
   for testing, **Zoidburg13** for the system icons.
