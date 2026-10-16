@@ -1,71 +1,66 @@
 # dii-ess-aye-rocknix-dual mod
 
-Dual-Screen-EmulationStation für das **Anbernic RG DS Plus** unter
-**ROCKNIX** (RK3566). EmulationStation läuft über beide Bildschirme
-(2048 × 768): oben das ROCKNIX-Logo, unten die Systemansicht. Menüs und
-Meldungen erscheinen sauber auf dem oberen Screen.
+🇩🇪 [Deutsche Anleitung](README.de.md)
 
-> **English summary:** A dual-screen EmulationStation mod for the Anbernic
-> RG DS Plus running ROCKNIX. It spans ES across both displays (2048×768),
-> keeps menus on the top screen, fixes the Sway rules that switched off the
-> bottom screen after returning from a game, and adds Ports entries to
-> switch between this build and stock ROCKNIX ES.
+Dual-screen EmulationStation for the **Anbernic RG DS Plus** running
+**ROCKNIX** (RK3566). EmulationStation spans both displays (2048 × 768):
+the ROCKNIX logo on the top screen, the system view on the bottom screen.
+Menus and notifications stay cleanly on the top screen.
 
-Gedacht für das Theme **dii-ess-aye-rgds-plus**.
+Designed for the **dii-ess-aye-rgds-plus** theme.
 
 ---
 
-## Was funktioniert
+## What works
 
-- Hauptansicht über beide Screens, Navigation zwischen den Systemen
-- Rückkehr aus RetroArch und anderen Emulatoren, ohne dass der untere Screen ausgeht
-- Scraper, Updates, Downloads, Themes und Info-Meldungen auf dem oberen Screen
-- Save State Manager, Advanced Game Settings, Bildschirmtastatur, The Bezel Project
-- Umschalten zwischen dieser Version und dem Original-ES über **Ports**, inklusive Theme-Wechsel
-- Übersteht Neustarts des Geräts
+- Main view across both screens, navigation between systems
+- Returning from RetroArch and other emulators without the bottom screen switching off
+- Scraper, updates, downloads, themes and info popups on the top screen
+- Save State Manager, Advanced Game Settings, on-screen keyboard, The Bezel Project
+- Switching between this build and stock ROCKNIX ES via **Ports**, including a theme switch
+- Survives device reboots
 
-## Einschränkungen
+## Limitations
 
-- **Kein ScreenScraper und keine RetroAchievements** in der selbst gebauten
-  Version. Die nötigen Entwicklerzugangsdaten bekommt nur der offizielle
-  ROCKNIX-Build. Zum Scrapen per Port auf **Single** wechseln, danach
-  zurück auf **Dual**. Medien und Gamelists werden geteilt.
-- DS-Spiele über RetroArch-Cores (melonDS/DeSmuME) sind ungetestet.
-  Eigenständige Emulatoren wie DraStic oder dsperate funktionieren.
-- Getestet auf ROCKNIX mit EmulationStation-Commit `cada856d86e3`.
+- **No ScreenScraper and no RetroAchievements** in a self-built ES. The
+  required developer credentials are only available to the official
+  ROCKNIX build. To scrape with ScreenScraper, switch to **Single** via
+  Ports, then back to **Dual**. Media and gamelists are shared.
+- DS games through RetroArch cores (melonDS/DeSmuME) are untested.
+  Standalone emulators such as DraStic or dsperate work.
+- Tested on ROCKNIX with EmulationStation commit `cada856d86e3`.
 
 ---
 
-## Aufbau
+## Repository layout
 
 ```
-patches/                     ES-Patch für das ROCKNIX-Buildsystem
-device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
-  start-es-v2-diag.sh        Startskript der Dual-Version
-  rgds-sway-fix.sh           passt die Sway-Config vor jedem Start an
-  es-switch-helper.sh        Umschalten single/dual (Theme, Dienst, Sway)
-device/ports/                Einträge für /storage/roms/ports/
-device/system.d/             Drop-in für essway.service
-docs/BUILD.md                Bauen des ES-Pakets
-docs/zwischenstand-*.md      technische Analyse und Projektstand
+patches/                     ES patch for the ROCKNIX build system
+device/rgds-test/            scripts for /storage/rgds-test/ on the device
+  start-es-v2-diag.sh        start script of the dual-screen build
+  rgds-sway-fix.sh           adjusts the Sway config before every start
+  es-switch-helper.sh        switches single/dual (theme, service, Sway)
+device/ports/                entries for /storage/roms/ports/
+device/system.d/             drop-in for essway.service
+docs/BUILD.md                building the ES package
+docs/zwischenstand-*.md      technical analysis and project log (German)
 ```
 
 ---
 
 ## Installation
 
-Voraussetzung: eine gebaute ES-Binärdatei (siehe [`docs/BUILD.md`](docs/BUILD.md)),
-benannt als `emulationstation-rgds-v5`. Der Name muss mit
-`emulationstation-rgds` beginnen.
+Requirement: a built ES binary (see [`docs/BUILD.md`](docs/BUILD.md)) named
+`emulationstation-rgds-v5`. The name must start with `emulationstation-rgds`.
 
-`<IP>` durch die IP-Adresse des Geräts ersetzen.
+Replace `<IP>` with the IP address of your device.
 
-**1. Ordner auf dem Gerät anlegen:**
+**1. Create the folders on the device:**
 ```bash
 ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.service.d
 ```
 
-**2. Dateien übertragen (vom Repo-Ordner aus):**
+**2. Copy the files (from the repository folder):**
 ```bash
 scp emulationstation-rgds-v5 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```
@@ -76,7 +71,7 @@ scp device/ports/*.sh root@<IP>:/storage/roms/ports/
 scp device/system.d/essway.service.d/rgds.conf root@<IP>:/storage/.config/system.d/essway.service.d/
 ```
 
-**3. Auf dem Gerät ausführbar machen und aktivieren:**
+**3. On the device, make them executable and activate:**
 ```bash
 chmod +x /storage/rgds-test/* /storage/roms/ports/RGDS*.sh
 ```
@@ -87,28 +82,27 @@ systemctl daemon-reload
 /storage/rgds-test/es-switch-helper.sh dual
 ```
 
-Danach in ES unter **Ports** die Einträge *RGDS Dual-Screen ES* und
-*RGDS Single-Screen ES* nutzen. Falls sie fehlen: Spielelisten aktualisieren.
+Afterwards use the **Ports** entries *RGDS Dual-Screen ES* and
+*RGDS Single-Screen ES*. If they don't show up, update the gamelists.
 
-## Deinstallation
+## Uninstall
 
-Per Port auf **Single** wechseln. Das entfernt den Drop-in und stellt das
-Original-ES wieder her. Danach können `/storage/rgds-test/` und die beiden
-Port-Skripte gelöscht werden.
+Switch to **Single** via Ports. This removes the drop-in and restores stock
+ES. Then `/storage/rgds-test/` and the two port scripts can be deleted.
 
 ---
 
-## Wie es funktioniert
+## How it works
 
 ### Sway
 
-ROCKNIX schreibt `/storage/.config/sway/config` bei jedem Boot neu
-(`/usr/lib/autostart/common/111-sway-init`). Die Original-Regeln laden bei
-jedem neuen ES-Fenster die Config neu und schalten dabei den unteren Screen
-aus. Sway-Kriterien sind unverankerte reguläre Ausdrücke,
-`[app_id="emulationstation"]` trifft also auch diese Version.
+ROCKNIX rewrites `/storage/.config/sway/config` on every boot
+(`/usr/lib/autostart/common/111-sway-init`). The stock rules reload the
+config for every new ES window and switch off the bottom screen in the
+process. Sway criteria are unanchored regular expressions, so
+`[app_id="emulationstation"]` also matches this build.
 
-`rgds-sway-fix.sh` ergänzt deshalb vor jedem Start:
+`rgds-sway-fix.sh` therefore adds before every start:
 
 ```text
 for_window [app_id="^emulationstation-rgds"] fullscreen enable global
@@ -117,27 +111,27 @@ exec_always swaymsg '[app_id="emulationstation"]' focus output DSI-2, output DSI
 
 ### EmulationStation
 
-Bei 2048 × 768 werden Menüs auf 1024 Pixel Breite zentriert und liegen
-damit auf dem oberen Screen:
+At 2048 × 768, menus are centered within a width of 1024 pixels, which
+places them on the top screen:
 
 ```cpp
 #define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
 ```
 
-Ladeanzeigen werden mit `setLoadingArea()` auf einen Screen begrenzt.
+Loading screens are limited to one screen with `setLoadingArea()`.
 
-### Umschalten
+### Switching
 
-Port-Skripte laufen innerhalb von `essway`. Ein direkter Neustart des
-Dienstes würde sie mit beenden. Sie starten deshalb `es-switch-helper.sh`
-über `systemd-run`. Das Hilfsskript stoppt ES, setzt `ThemeSet` in
-`es_settings.cfg`, setzt oder entfernt den Drop-in und startet ES neu.
-Protokoll: `/storage/rgds-test/es-switch.log`.
+Port scripts run inside `essway`. Restarting the service directly would
+kill them as well, so they launch `es-switch-helper.sh` through
+`systemd-run`. The helper stops ES, sets `ThemeSet` in `es_settings.cfg`,
+adds or removes the drop-in and starts ES again.
+Log: `/storage/rgds-test/es-switch.log`.
 
 ---
 
-## Lizenz
+## License
 
-Skripte und Dokumentation: MIT (siehe [`LICENSE`](LICENSE)).
-Der Patch ändert [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next),
-das unter seiner eigenen Lizenz steht.
+Scripts and documentation: MIT (see [`LICENSE`](LICENSE)).
+The patch modifies [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next),
+which is distributed under its own license.

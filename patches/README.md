@@ -1,31 +1,29 @@
 # Patches
 
-Hier liegt der EmulationStation-Patch für das ROCKNIX-Buildsystem:
-
-- `001-rgds-menu-dualscreen-v2.patch` – gegen
+- `001-rgds-menu-dualscreen-v2.patch` – against
   [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next)
-  Commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`
+  commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`
 
-## Verwenden
+## Usage
 
-Den Patch nach
+Copy the patch to
 
 ```
 distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 ```
 
-kopieren und das Paket bauen (siehe [`../docs/BUILD.md`](../docs/BUILD.md)).
+and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-In diesem Ordner darf **nur eine** Patch-Datei liegen. Eine zweite Datei
-würde beim Build zusätzlich angewendet und dabei fehlschlagen.
+That folder must contain **only one** patch file. A second file would be
+applied as well and fail.
 
-## Aktualisieren
+## Updating
 
-Nach Änderungen am Quellcode in `emulationstation-next`:
+After changing the source in `emulationstation-next`:
 
 ```bash
-git diff > /pfad/zu/diesem/repo/patches/001-rgds-menu-dualscreen-v2.patch
+git diff > /path/to/this/repo/patches/001-rgds-menu-dualscreen-v2.patch
 ```
 
-Unversionierte Hilfsdateien (z. B. `Renderer.cpp.rgds-backup`) erfasst
-`git diff` nicht. Das ist gewollt.
+Untracked helper files (e.g. `Renderer.cpp.rgds-backup`) are not included
+by `git diff`. This is intended.
