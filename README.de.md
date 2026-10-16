@@ -7,11 +7,14 @@ Dual-Screen-EmulationStation für das **Anbernic RG DS Plus** unter
 (2048 × 768): oben das ROCKNIX-Logo, unten die Systemansicht. Menüs und
 Meldungen erscheinen sauber auf dem oberen Screen.
 
-Gedacht für das Theme **dii-ess-aye-rgds-plus**, basierend auf [dii-ess-aye](https://github.com/beebono/dii-ess-aye) von beebono.
+Gedacht für **dii-ess-aye-rgds-plus**, meine Anpassung von
+[dii-ess-aye](https://github.com/beebono/dii-ess-aye) für das RG DS Plus.
+Das Original-Theme für das RG DS stammt von beebono.
 
-> **Zum Theme:** Das Theme ist **nicht enthalten**. Es hat bisher keine
-> Lizenz, und die Erlaubnis zur Weitergabe der RG-DS-Plus-Variante wurde
-> beim Autor angefragt; eine Antwort steht noch aus. Bitte das Theme vom
+> **Zum Theme:** Das Theme ist **nicht enthalten**. Das Original hat
+> bisher keine Lizenz. Da die RG-DS-Plus-Variante darauf aufbaut, wurde die
+> Erlaubnis zu ihrer Weitergabe bei beebono angefragt; eine Antwort steht
+> noch aus. Bitte das Theme vom
 > [Originalprojekt](https://github.com/beebono/dii-ess-aye) beziehen.
 
 ---
