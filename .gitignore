@@ -1,0 +1,9 @@
+# Build-Logs und Binaerdateien
+*.log
+emulationstation-rgds-*
+*.rgds-backup
+
+# Sicherungen
+*.bak*
+*.orig
+*.rej
