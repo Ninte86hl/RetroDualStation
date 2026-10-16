@@ -22,7 +22,33 @@ SOFTWARE.
 
 ---
 
-Note: The patch in patches/ modifies EmulationStation
-(https://github.com/ROCKNIX/emulationstation-next), which is distributed
-under its own license. The MIT license above applies to the scripts and
-documentation in this repository.
+THIRD-PARTY NOTICES
+
+1. EmulationStation patch (patches/)
+
+   The patch modifies ROCKNIX emulationstation-next
+   (https://github.com/ROCKNIX/emulationstation-next), which is licensed
+   under the MIT License and derives from batocera-emulationstation
+   (https://github.com/batocera-linux/batocera-emulationstation) and the
+   original EmulationStation by Alec "Aloshi" Lofquist.
+   All copyright notices of the original source remain with their
+   respective authors. The changes contained in the patch are provided
+   under the same MIT License.
+
+2. Theme
+
+   The dii-ess-aye theme (https://github.com/beebono/dii-ess-aye) by
+   beebono and its RG DS Plus variant are NOT included in this repository
+   and are not covered by this license. Please obtain the theme from the
+   original project.
+
+3. Screenshots and trademarks
+
+   Screenshots in this repository may show theme artwork, icons and logos
+   (e.g. ROCKNIX, system and console logos). These remain the property of
+   their respective owners and are shown for documentation purposes only.
+   "Anbernic" and "RG DS" are trademarks of their respective owner. This
+   project is not affiliated with ROCKNIX, Batocera or Anbernic.
+
+The MIT License above applies to the scripts and documentation in this
+repository. See CREDITS.md for acknowledgements.

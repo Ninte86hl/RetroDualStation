@@ -7,7 +7,7 @@ Dual-Screen-EmulationStation für das **Anbernic RG DS Plus** unter
 (2048 × 768): oben das ROCKNIX-Logo, unten die Systemansicht. Menüs und
 Meldungen erscheinen sauber auf dem oberen Screen.
 
-Gedacht für das Theme **dii-ess-aye-rgds-plus**.
+Gedacht für das Theme **dii-ess-aye-rgds-plus**, basierend auf [dii-ess-aye](https://github.com/beebono/dii-ess-aye) von beebono (nicht enthalten, bitte vom Originalprojekt beziehen).
 
 ---
 
@@ -132,8 +132,16 @@ Protokoll: `/storage/rgds-test/es-switch.log`.
 
 ---
 
+## Danksagung
+
+Dieses Projekt baut auf der Arbeit der ROCKNIX- und Batocera-Teams, dem
+ursprünglichen EmulationStation und dem Theme dii-ess-aye von beebono auf.
+Die vollständige Liste steht in [`CREDITS.md`](CREDITS.md). Vielen Dank! 🙏
+
 ## Lizenz
 
 Skripte und Dokumentation: MIT (siehe [`LICENSE`](LICENSE)).
 Der Patch ändert [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next),
-das unter seiner eigenen Lizenz steht.
+das ebenfalls unter der MIT-Lizenz steht; die Urheberrechtsvermerke bleiben
+bei den ursprünglichen Autoren. Das Theme ist nicht Teil dieses Repositorys.
+Auf Screenshots sichtbare Logos und Grafiken gehören ihren jeweiligen Eigentümern.
