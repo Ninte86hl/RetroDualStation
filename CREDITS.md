@@ -26,11 +26,10 @@ Thank you to everyone who made it possible.
   for the status and slot icons, **Jeod ([JeodC](https://github.com/JeodC))**
   for testing, **Zoidburg13** for the system icons.
 
-The theme is **not** included in this repository. Please get it from the
-original project. The theme has no license yet. Because the RG DS Plus
-variant is derived from it, permission to redistribute that variant has
-been requested from beebono and is pending.
-Until then, nothing from the theme is distributed here.
+dii-ess-aye is licensed under the **MIT License**
+(Copyright (c) 2026 Noxwell / beebono). Thank you, beebono, for adding the
+license and allowing the RG DS Plus variant to be shared! The variant keeps
+the original license and copyright notice.
 
 ## Libraries and tools
 

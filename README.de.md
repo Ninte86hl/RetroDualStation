@@ -11,11 +11,10 @@ Gedacht für **dii-ess-aye-rgds-plus**, meine Anpassung von
 [dii-ess-aye](https://github.com/beebono/dii-ess-aye) für das RG DS Plus.
 Das Original-Theme für das RG DS stammt von beebono.
 
-> **Zum Theme:** Das Theme ist **nicht enthalten**. Das Original hat
-> bisher keine Lizenz. Da die RG-DS-Plus-Variante darauf aufbaut, wurde die
-> Erlaubnis zu ihrer Weitergabe bei beebono angefragt; eine Antwort steht
-> noch aus. Bitte das Theme vom
-> [Originalprojekt](https://github.com/beebono/dii-ess-aye) beziehen.
+> **Zum Theme:** dii-ess-aye steht unter der MIT-Lizenz von beebono, der
+> die Weitergabe der RG-DS-Plus-Variante freundlicherweise erlaubt hat. Die
+> Variante wird diesem Repository unter `theme/` hinzugefügt, zusammen mit
+> der Original-Lizenz und dem Copyright-Vermerk.
 
 ---
 
@@ -170,5 +169,5 @@ Die vollständige Liste steht in [`CREDITS.md`](CREDITS.md). Vielen Dank! 🙏
 Skripte und Dokumentation: MIT (siehe [`LICENSE`](LICENSE)).
 Der Patch ändert [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next),
 das ebenfalls unter der MIT-Lizenz steht; die Urheberrechtsvermerke bleiben
-bei den ursprünglichen Autoren. Das Theme ist nicht Teil dieses Repositorys.
+bei den ursprünglichen Autoren. Das Theme steht unter der MIT-Lizenz von beebono (siehe `CREDITS.md`).
 Auf Screenshots sichtbare Logos und Grafiken gehören ihren jeweiligen Eigentümern.

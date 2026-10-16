@@ -11,11 +11,10 @@ Designed for **dii-ess-aye-rgds-plus**, my RG DS Plus adaptation of
 [dii-ess-aye](https://github.com/beebono/dii-ess-aye) by beebono, who made
 the original theme for the RG DS.
 
-> **About the theme:** The theme is **not included** in this repository.
-> The original has no license yet. Since the RG DS Plus variant is derived
-> from it, permission to redistribute the variant has been requested from
-> beebono and is still pending. Please get the theme from the
-> [original project](https://github.com/beebono/dii-ess-aye).
+> **About the theme:** dii-ess-aye is licensed under the MIT License by
+> beebono, who kindly allowed the RG DS Plus variant to be shared. The
+> variant will be added to this repository under `theme/`, together with
+> the original license and copyright notice.
 
 ---
 
@@ -167,5 +166,5 @@ EmulationStation, and beebono's dii-ess-aye theme. See
 Scripts and documentation: MIT (see [`LICENSE`](LICENSE)).
 The patch modifies [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next),
 which is also MIT licensed; its copyright notices remain with the original
-authors. The theme is not part of this repository. Logos and artwork visible
+authors. The theme is MIT licensed by beebono (see `CREDITS.md`). Logos and artwork visible
 in screenshots belong to their respective owners.
