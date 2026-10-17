@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Game list artwork: Icon 1:1
+    Square icons from the gamelist "thumbnail" tag
+    (RocknixDS Artwork Manager: Icon -> thumbnail).
+    Bottom screen: X 0.5-1.0. Carousel 1024 x 276 px, centre Y 491 px.
+-->
+<theme>
+    <formatVersion>7</formatVersion>
+    <view name="gamecarousel">
+        <!-- Smaller speech bubble so the larger artwork fits below it -->
+        <image name="text_bubble">
+            <pos>0.75 0.255</pos>
+            <size>0.4 0.38</size>
+        </image>
+        <text name="md_name">
+            <pos>0.75 0.13</pos>
+        </text>
+        <text name="md_description">
+            <pos>0.75 0.28</pos>
+            <size>0.35 0.17</size>
+        </text>
+
+        <gamecarousel name="gamecarousel">
+            <pos>0.75 0.64</pos>
+            <size>0.5 0.36</size>
+            <imageSource>thumbnail</imageSource>
+            <logoSize>0.127 0.471</logoSize><!-- 130 x 130 px -->
+            <logoScale>1.35</logoScale><!-- selected: 175 x 175 px -->
+            <maxLogoCount>5</maxLogoCount>
+        </gamecarousel>
+
+        <image name="gamecarouselLogo">
+            <origin>0.5 0.5</origin>
+            <linearSmooth>true</linearSmooth>
+        </image>
+
+        <!-- START window around the selected icon (280 px high) -->
+        <image name="start_window">
+            <pos>0.75 0.67</pos>
+            <maxSize>0.12 0.3646</maxSize>
+        </image>
+    </view>
+</theme>
