@@ -47,6 +47,13 @@ Theme du in welchem Modus nutzt.
 | ![Spieloptionen](docs/screenshots/gameoptions.png) | |
 | **Spieloptionen** oben, die Spieleliste bleibt unten sichtbar | |
 
+### canvas-ds
+
+| | |
+|---|---|
+| ![canvas-ds Systemansicht](docs/screenshots/canvas-system.png) | ![canvas-ds Spieleliste](docs/screenshots/canvas-detailed.png) |
+| **Systemansicht** mit dem [canvas-ds](https://github.com/toniremi/canvas-ds)-Overlay | **Spieleliste „Detailed“** mit canvas-ds |
+
 ## Behobene Probleme mit dii-ess-aye auf dem RG DS Plus
 
 Das sind keine Fehler im Theme selbst. Sie entstehen dadurch, wie das

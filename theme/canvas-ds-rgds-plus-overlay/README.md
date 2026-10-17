@@ -11,6 +11,8 @@ original theme.
 
 ![canvas-ds on the RG DS Plus: system artwork on the top screen, system carousel on the bottom screen](../../docs/screenshots/canvas-system.png)
 
+![canvas-ds detailed game list: video on the top screen, list, cover and metadata on the bottom screen](../../docs/screenshots/canvas-detailed.png)
+
 ## Changes from the original
 
 | | Original (RG DS) | This overlay (RG DS Plus) |

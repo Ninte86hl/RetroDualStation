@@ -47,6 +47,13 @@ theme you use in each mode.
 | ![Game options](docs/screenshots/gameoptions.png) | |
 | **Game options** on the top screen, game list stays visible below | |
 
+### canvas-ds
+
+| | |
+|---|---|
+| ![canvas-ds system view](docs/screenshots/canvas-system.png) | ![canvas-ds game list](docs/screenshots/canvas-detailed.png) |
+| **System view** with the [canvas-ds](https://github.com/toniremi/canvas-ds) overlay | **Detailed game list** with canvas-ds |
+
 ## Issues fixed for dii-ess-aye on the RG DS Plus
 
 These problems are not bugs in the theme itself. They come from how stock
