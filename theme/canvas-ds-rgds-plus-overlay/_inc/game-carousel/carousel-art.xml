@@ -78,6 +78,9 @@
 			<pos>0.25 0.5</pos>
 			<origin>0.5 0.5</origin>
 			<maxSize>0.44 0.6</maxSize>
+			<!-- same corner radius as the icons below (values >= 1 are pixels) -->
+			<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
+			<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
 		</video>
 
 		<!-- Hide marquees and game details -->
