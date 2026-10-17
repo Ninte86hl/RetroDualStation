@@ -17,7 +17,7 @@ Hero-Artwork (`image`), nach 5 Sekunden blendet das Video ein
 |---|---|---|---|
 | I | Simple 3 | horizontales Karussell, 3 Icons (wie Systemkarussell) | Icon → `thumbnail` |
 | II | Simple 5 | horizontales Karussell, 5 Icons in einer Reihe | Icon → `thumbnail` |
-| III | Details | links Cover-Karussell (ein Cover nach dem anderen), rechts Spielbeschreibung als scrollender Text, darunter Spieleranzahl, Veröffentlichung, Entwickler | Grid → `boxart` |
+| III | Details | links senkrechtes Cover-Karussell (ein Cover groß, vorheriges/nächstes oben und unten angedeutet), rechts Spielbeschreibung als scrollender Text, darunter Spieleranzahl, Veröffentlichung, Entwickler | Grid → `boxart` |
 | IV | Logos | senkrechtes Karussell (oben ↔ unten wie Original-canvas), aber gerade und mittig; ausgewähltes Logo groß | Logo → `marquee` |
 | V | Raster | Cover im Raster (Grid 2:3) | Grid → `boxart` |
 | VI | Liste | Textliste, Namen mittig zentriert, kleines Icon beim ausgewählten Spiel | optional |
@@ -25,6 +25,8 @@ Hero-Artwork (`image`), nach 5 Sekunden blendet das Video ein
 Vorbild für I: Test-Zweig `artwork-ansicht`
 (`theme/canvas-ds-rgds-plus-overlay/_inc/game-carousel/carousel-art.xml`):
 oberes Bild 0.44 breit, runde Ecken wie die Icons.
+
+Schematische Vorschau: `docs/vorschau-varianten.png` (17.10.2026, vom Nutzer für gut befunden).
 
 ## Artwork Manager anpassen
 
