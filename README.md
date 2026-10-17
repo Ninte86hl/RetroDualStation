@@ -89,6 +89,10 @@ in EmulationStation and the Sway setup, so the theme can work as intended:
   Standalone emulators such as DraStic or dsperate work.
 - Tested on ROCKNIX with EmulationStation commit `cada856d86e3`.
 
+> **DraStic tip:** If the touchscreen does not respond in DraStic, set
+> **Follow 3D Renderer** to *Auto* in the advanced system settings. This
+> also happens with stock ROCKNIX ES (Single) and is not caused by this mod.
+
 ---
 
 ## Repository layout

@@ -90,6 +90,11 @@ Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
   Eigenständige Emulatoren wie DraStic oder dsperate funktionieren.
 - Getestet auf ROCKNIX mit EmulationStation-Commit `cada856d86e3`.
 
+> **Tipp DraStic:** Wenn der Touchscreen in DraStic nicht reagiert, in der
+> erweiterten Systemkonfiguration **Follow 3D Renderer** auf *Auto* stellen.
+> Das betrifft auch die originale ROCKNIX-ES (Single) und hat nichts mit
+> diesem Mod zu tun.
+
 ---
 
 ## Aufbau
