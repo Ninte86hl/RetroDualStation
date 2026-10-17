@@ -255,10 +255,17 @@ index f75c32fa2..55a1f6736 100644
  
  		float xx = mMenu.getSize().x() - (mMenu.getSize().x() * iw);
 diff --git a/es-app/src/guis/GuiGameOptions.cpp b/es-app/src/guis/GuiGameOptions.cpp
-index d1e9857a4..614056029 100644
+index d1e9857a4..97733a8bd 100644
 --- a/es-app/src/guis/GuiGameOptions.cpp
 +++ b/es-app/src/guis/GuiGameOptions.cpp
-@@ -473,12 +473,12 @@ GuiGameOptions::GuiGameOptions(Window* window, FileData* game) : GuiComponent(wi
+@@ -467,18 +467,18 @@ GuiGameOptions::GuiGameOptions(Window* window, FileData* game) : GuiComponent(wi
+ 		});
+ 	}
+ 
+-	if (Renderer::ScreenSettings::fullScreenMenus())
++	if (Renderer::ScreenSettings::fullScreenMenus() || (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768))
+ 	{	
+ 		mMenu.addButton(_("BACK"), _("go back"), [this] { close(); });
  
  		mMenu.setMaxHeight(Renderer::getScreenHeight() * 0.85f);
  		setSize((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
@@ -280,8 +287,8 @@ index d1e9857a4..614056029 100644
  		mMenu.animateTo(
 -			Vector2f(Renderer::getScreenWidth(), -1),
 -			Vector2f(Renderer::getScreenWidth() - w -1, -1), AnimateFlags::OPACITY | AnimateFlags::POSITION);
-+			Vector2f((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()), -1),
-+			Vector2f((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) - w -1, -1), AnimateFlags::OPACITY | AnimateFlags::POSITION);
++			Vector2f((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? (1024.0f - w) / 2.0f : (float)Renderer::getScreenWidth(), -1),
++			Vector2f((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? (1024.0f - w) / 2.0f : Renderer::getScreenWidth() - w - 1, -1), AnimateFlags::OPACITY | AnimateFlags::POSITION);
  	}
  }
  
@@ -349,6 +356,65 @@ index 62f60689f..7e17c1264 100644
  }
  
  void GuiHashStart::start()
+diff --git a/es-app/src/guis/GuiImageViewer.cpp b/es-app/src/guis/GuiImageViewer.cpp
+index b8b098270..cd2e3db2d 100644
+--- a/es-app/src/guis/GuiImageViewer.cpp
++++ b/es-app/src/guis/GuiImageViewer.cpp
+@@ -1,3 +1,4 @@
++#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
+ #include "GuiImageViewer.h"
+ #include "ThemeData.h"
+ 
+@@ -30,9 +31,9 @@ public:
+ 		setIsLinear(true);
+ 		setImage(image, false, MaxSizeInfo(8192, 8192));
+ 
+-		setPosition(Renderer::getScreenWidth() * 0.5, Renderer::getScreenHeight() * 0.5);
++		setPosition(RGDS_MENU_W * 0.5, Renderer::getScreenHeight() * 0.5);
+ 		setOrigin(0.5, 0.5);
+-		setMaxSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());	
++		setMaxSize(RGDS_MENU_W, Renderer::getScreenHeight());	
+ 	}
+ 
+ 	void runAnimation()
+@@ -42,7 +43,7 @@ public:
+ 		{
+ 			auto fromOrigin = getOrigin();
+ 			auto fromScale = getScale();
+-			auto toScale = Renderer::getScreenWidth() / sz.x();
++			auto toScale = RGDS_MENU_W / sz.x();
+ 			auto toOrigin = fromOrigin;
+ 
+ 			auto imgHeight = sz.y() * toScale;
+@@ -276,7 +277,7 @@ GuiImageViewer::GuiImageViewer(Window* window, bool linearSmooth) :
+ 	g_isGuiImageViewerRunning = true;
+ 
+ 	setPosition(0, 0);
+-	setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++	setSize(RGDS_MENU_W, Renderer::getScreenHeight());
+ 		
+ 	mGrid.setPosition(0, 0);
+ 	mGrid.setSize(mSize);
+@@ -714,7 +715,7 @@ void GuiVideoViewer::playVideo(Window* window, const std::string videoPath)
+ GuiVideoViewer::GuiVideoViewer(Window* window, const std::string& path) : GuiComponent(window)
+ {
+ 	setPosition(0, 0);
+-	setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++	setSize(RGDS_MENU_W, Renderer::getScreenHeight());
+ 
+ #ifdef _RPI_
+ 	if (Settings::getInstance()->getBool("VideoOmxPlayer"))
+@@ -729,8 +730,8 @@ GuiVideoViewer::GuiVideoViewer(Window* window, const std::string& path) : GuiCom
+ 	}
+ 	
+ 	mVideo->setOrigin(0.5f, 0.5f);
+-	mVideo->setPosition(Renderer::getScreenWidth() / 2.0f, Renderer::getScreenHeight() / 2.0f);
+-	mVideo->setMaxSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++	mVideo->setPosition(RGDS_MENU_W / 2.0f, Renderer::getScreenHeight() / 2.0f);
++	mVideo->setMaxSize(RGDS_MENU_W, Renderer::getScreenHeight());
+ 
+ 	mVideo->setOnVideoEnded([&]()
+ 	{		
 diff --git a/es-app/src/guis/GuiInstallStart.cpp b/es-app/src/guis/GuiInstallStart.cpp
 index 384525f94..d661f0bf2 100644
 --- a/es-app/src/guis/GuiInstallStart.cpp
@@ -488,6 +554,33 @@ index 8781dfd12..39d3a7dee 100644
  
  	window->pushGui(s);
  }
+diff --git a/es-app/src/guis/GuiMetaDataEd.cpp b/es-app/src/guis/GuiMetaDataEd.cpp
+index bf0bb5119..c1f510b7d 100644
+--- a/es-app/src/guis/GuiMetaDataEd.cpp
++++ b/es-app/src/guis/GuiMetaDataEd.cpp
+@@ -1,3 +1,4 @@
++#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
+ #include "guis/GuiMetaDataEd.h"
+ 
+ #include "components/ButtonComponent.h"
+@@ -388,14 +389,14 @@ GuiMetaDataEd::GuiMetaDataEd(Window* window, MetaDataList* md, const std::vector
+ 	// resize + center	
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++		setSize(RGDS_MENU_W, Renderer::getScreenHeight());
+ 	else
+ 	{
+-		float width = (float)Math::min((int)Renderer::getScreenHeight(), (int)(Renderer::getScreenWidth() * 0.90f));
++		float width = (float)Math::min((int)Renderer::getScreenHeight(), (int)(RGDS_MENU_W * 0.90f));
+ 		setSize(width, Renderer::getScreenHeight() * 0.82f);
+ 	}
+ 
+-	setPosition((Renderer::getScreenWidth() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++	setPosition((RGDS_MENU_W - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ }
+ 
+ void GuiMetaDataEd::onSizeChanged()
 diff --git a/es-app/src/guis/GuiSaveState.cpp b/es-app/src/guis/GuiSaveState.cpp
 index 9a21a260f..43404a9ee 100644
 --- a/es-app/src/guis/GuiSaveState.cpp
