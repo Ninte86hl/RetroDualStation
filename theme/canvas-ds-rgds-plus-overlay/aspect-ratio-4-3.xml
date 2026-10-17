@@ -90,7 +90,7 @@ based on 640x480
 		    <maxSize>0.375 .08</maxSize>
 		</image>
 	</view>
-	<view name="basic, video, detailed, grid" ifSubset="metadata:on">
+	<view name="basic, detailed, grid" ifSubset="metadata:on">
 	    <image name="md_image">
             <pos>0.25 0.5</pos>
             <origin>0.5 0.5</origin>
@@ -116,7 +116,7 @@ based on 640x480
 		</image>
 	</view>
 
-	<view name="basic, video, detailed, grid" ifSubset="metadata:off">
+	<view name="basic, detailed, grid" ifSubset="metadata:off">
 	    <image name="md_image">
             <pos>0.25 0.5</pos>
             <origin>0.5 0.5</origin>
@@ -145,7 +145,7 @@ based on 640x480
 
 	<!-- Small Grid View Detailed-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, video, detailed, grid" ifSubset="font-size:small,metadata:on">
+	<view name="basic, detailed, grid" ifSubset="font-size:small,metadata:on">
 	<!-- Metadata Toggle-->
 		<image name="md_marquee,md_thumbnail">
 			<visible>false</visible>
@@ -220,7 +220,7 @@ based on 640x480
 
 	<!-- Medium/Large Grid View-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, video, detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+	<view name="basic, detailed, grid" ifSubset="font-size:medium|large,metadata:on">
 
 		<!-- Metadata Toggle-->
 			<image name="md_marquee,md_thumbnail">
@@ -272,14 +272,14 @@ based on 640x480
 		</image>
 	</view>
 
-	<view name="basic, video, detailed, grid" ifSubset="metadata:off">
+	<view name="basic, detailed, grid" ifSubset="metadata:off">
 			<image name="md_marquee,md_thumbnail">
 				<visible>false</visible>
 			</image>
 	</view>
 
 	<!-- Show also thumbnail and other data when metadata is on -->
-	<view name="basic, video, detailed" ifSubset="metadata:on">
+	<view name="basic, detailed" ifSubset="metadata:on">
     	<image name="game-list-background-shadow" extra="true">
     		<origin>0.5 0</origin>
     		<pos>0.63615 0.05</pos>
@@ -347,7 +347,7 @@ based on 640x480
     </view>
 
     <!-- simple game list taking all available space when metadata is off -->
-	<view name="basic, video, detailed" ifSubset="metadata:off">
+	<view name="basic, detailed" ifSubset="metadata:off">
 		<image name="game-list-background-shadow" extra="true">
 			<origin>0.5 0.5</origin>
 			<pos>${gamelistShadowPos}</pos>

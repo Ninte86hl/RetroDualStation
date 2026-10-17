@@ -10,7 +10,7 @@ Only the first (x) component of these tags is scaled:
 minSize is scaled too (background images use it to cover the canvas).
 Tags with attributes (e.g. ifSubset) and storyboard animations of the x
 position are handled as well.
-Views styled for "detailed" are also applied to "basic" and "video", so
+Views styled for "detailed" are also applied to "basic", so
 the "Automatic" gamelist style works for systems without scraped media.
 Carousel item sizes (itemsize, itemSizeCarousel) are NOT scaled: ES
 multiplies them by the carousel size, which is already scaled.
@@ -79,13 +79,14 @@ def process(text, log, fname):
             line = re.sub(r'\b(from|to)="(-?[0-9.]+)"', arepl, line)
         if anim_x[0] and "/>" in line:
             anim_x[0] = False
-        # "Automatic" gamelist style: ES picks the basic/video view for systems
-        # without (or with only video) media. canvas-ds only styles "detailed",
-        # so let basic and video use the detailed layout as well.
+        # "Automatic" gamelist style: ES picks the basic view for systems
+        # without media. canvas-ds only styles "detailed", so let basic use the
+        # detailed layout ("video" is left alone: styling it makes ES use the
+        # video view for systems with videos, which places metadata differently).
         vm = re.search(r'<view name="([^"]*)"', line)
         if vm and "detailed" in [v.strip() for v in vm.group(1).split(",")]:
             names = [v.strip() for v in vm.group(1).split(",")]
-            add = [v for v in ("basic", "video") if v not in names]
+            add = [v for v in ("basic",) if v not in names]
             if add:
                 new = ", ".join(names[:names.index("detailed")] + add + names[names.index("detailed"):])
                 line = line.replace(f'<view name="{vm.group(1)}"', f'<view name="{new}"', 1)
