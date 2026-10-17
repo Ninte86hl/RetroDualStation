@@ -28,8 +28,10 @@ Thank you to everyone who made it possible.
 
 dii-ess-aye is licensed under the **MIT License**
 (Copyright (c) 2026 Noxwell / beebono). Thank you, beebono, for adding the
-license and allowing the RG DS Plus variant to be shared! The variant keeps
-the original license and copyright notice.
+license and allowing the RG DS Plus variant to be shared! The variant is
+included in [`theme/dii-ess-aye-rgds-plus/`](theme/dii-ess-aye-rgds-plus/)
+with the original license and copyright notice. The original also credits
+**Valve** for the Steam logo (Wikimedia Commons).
 
 ## Libraries and tools
 

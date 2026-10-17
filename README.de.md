@@ -13,8 +13,8 @@ Das Original-Theme für das RG DS stammt von beebono.
 
 > **Zum Theme:** dii-ess-aye steht unter der MIT-Lizenz von beebono, der
 > die Weitergabe der RG-DS-Plus-Variante freundlicherweise erlaubt hat. Die
-> Variante wird diesem Repository unter `theme/` hinzugefügt, zusammen mit
-> der Original-Lizenz und dem Copyright-Vermerk.
+> Variante liegt in [`theme/dii-ess-aye-rgds-plus/`](theme/dii-ess-aye-rgds-plus/),
+> zusammen mit der Original-Lizenz und dem Copyright-Vermerk.
 
 ---
 
@@ -68,7 +68,8 @@ device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
   es-switch-helper.sh        Umschalten single/dual (Theme, Dienst, Sway)
 device/ports/                Einträge für /storage/roms/ports/
 device/system.d/             Drop-in für essway.service
-docs/BUILD.de.md                Bauen des ES-Pakets
+theme/dii-ess-aye-rgds-plus/ RG-DS-Plus-Variante des Themes dii-ess-aye (MIT)
+docs/BUILD.de.md             Bauen des ES-Pakets
 docs/zwischenstand-*.md      technische Analyse und Projektstand
 ```
 
@@ -97,6 +98,9 @@ scp device/ports/*.sh root@<IP>:/storage/roms/ports/
 ```bash
 scp device/system.d/essway.service.d/rgds.conf root@<IP>:/storage/.config/system.d/essway.service.d/
 ```
+```bash
+scp -r theme/dii-ess-aye-rgds-plus root@<IP>:/storage/.config/emulationstation/themes/
+```
 
 **3. Auf dem Gerät ausführbar machen und aktivieren:**
 ```bash
@@ -109,6 +113,7 @@ systemctl daemon-reload
 /storage/rgds-test/es-switch-helper.sh dual
 ```
 
+Der Wechsel auf **dual** setzt dabei auch das Theme *dii-ess-aye-rgds-plus*.
 Danach in ES unter **Ports** die Einträge *RGDS Dual-Screen ES* und
 *RGDS Single-Screen ES* nutzen. Falls sie fehlen: Spielelisten aktualisieren.
 
