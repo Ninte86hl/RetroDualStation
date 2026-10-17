@@ -39,6 +39,8 @@ the original theme for the RG DS.
 | **Game list** – preview on top, game carousel and description on the bottom | **Main menu** on the top screen |
 | ![Scraper](docs/screenshots/scraper.png) | ![Keyboard](docs/screenshots/keyboard.png) |
 | **Scraper** menu on the top screen | **On-screen keyboard** on the bottom screen, settings on top |
+| ![Game options](docs/screenshots/gameoptions.png) | |
+| **Game options** on the top screen, game list stays visible below | |
 
 ## Issues fixed for dii-ess-aye on the RG DS Plus
 

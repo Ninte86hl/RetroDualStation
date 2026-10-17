@@ -39,6 +39,8 @@ Das Original-Theme für das RG DS stammt von beebono.
 | **Spieleliste** – Vorschau oben, Spiele-Karussell und Beschreibung unten | **Hauptmenü** auf dem oberen Screen |
 | ![Scraper](docs/screenshots/scraper.png) | ![Tastatur](docs/screenshots/keyboard.png) |
 | **Scraper-Menü** auf dem oberen Screen | **Bildschirmtastatur** unten, Einstellungen oben |
+| ![Spieloptionen](docs/screenshots/gameoptions.png) | |
+| **Spieloptionen** oben, die Spieleliste bleibt unten sichtbar | |
 
 ## Behobene Probleme mit dii-ess-aye auf dem RG DS Plus
 
