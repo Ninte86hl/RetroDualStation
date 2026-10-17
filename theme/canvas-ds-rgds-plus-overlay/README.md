@@ -9,6 +9,8 @@ original theme.
 > Erlaubnis veröffentlicht. Hier liegen nur die 7 geänderten Layout-Dateien;
 > Grafiken und alles andere kommen aus dem Original-Theme.
 
+![canvas-ds on the RG DS Plus: system artwork on the top screen, system carousel on the bottom screen](../../docs/screenshots/canvas-system.png)
+
 ## Changes from the original
 
 | | Original (RG DS) | This overlay (RG DS Plus) |
