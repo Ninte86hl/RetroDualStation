@@ -57,6 +57,9 @@ Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
 | Info-Meldungen (z. B. „Scraping finished“) über beide Screens verteilt | ES-Patch (`GuiInfoPopup`) |
 | Ladeanzeigen („Bitte warten“, WLAN-Suche, Verbinden) über beide Screens | ES-Patch (`GuiLoading` startet standardmäßig oben) |
 | BIOS-Prüfung („Fehlende BIOS-Dateien“) über beide Screens verteilt | ES-Patch (`GuiBios`) |
+| Spieloptionen als schmale Seitenleiste über die volle Höhe an der Bildschirmgrenze | ES-Patch (`GuiGameOptions`: zentriertes Menü oben wie die übrigen Menüs) |
+| „Metadaten dieses Spiels bearbeiten“ über beide Screens verteilt | ES-Patch (`GuiMetaDataEd`) |
+| „Spielemedien ansehen“ zog Bilder und Videos über beide Screens | ES-Patch (`GuiImageViewer`: nur oberer Screen) |
 | Position von Hauptmenü, Einstellungen, Save State Manager, Tastatur und Bezel Project | ES-Patch (frühere Dual-Screen-Arbeit) |
 | Original-ES zeigt beide Theme-Hälften gequetscht auf dem oberen Screen | Ports-Umschalter setzt für das Original-ES ein Einzelbildschirm-Theme |
 
@@ -92,18 +95,18 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 
 ## Installation
 
-**`dii-ess-aye-rocknix-dual-mod-v6.tar.gz`** aus dem
+**`dii-ess-aye-rocknix-dual-mod-v7.tar.gz`** aus dem
 [aktuellen Release](https://github.com/Ninte86hl/dii-ess-aye-rocknix-dual-mod/releases/latest)
 herunterladen und auf dem Rechner entpacken:
 
 ```bash
-tar xzf dii-ess-aye-rocknix-dual-mod-v6.tar.gz
+tar xzf dii-ess-aye-rocknix-dual-mod-v7.tar.gz
 ```
 ```bash
-cd dii-ess-aye-rocknix-dual-mod-v6
+cd dii-ess-aye-rocknix-dual-mod-v7
 ```
 
-Das Paket enthält die fertige ES-Binärdatei `emulationstation-rgds-v6`.
+Das Paket enthält die fertige ES-Binärdatei `emulationstation-rgds-v7`.
 Selbst bauen ist optional (siehe [`docs/BUILD.de.md`](docs/BUILD.de.md)); eine
 selbst gebaute Datei muss ebenfalls mit `emulationstation-rgds` beginnen.
 
@@ -116,7 +119,7 @@ ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.servi
 
 **2. Dateien übertragen (aus dem entpackten Ordner):**
 ```bash
-scp emulationstation-rgds-v6 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds-v7 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```
 ```bash
 scp device/ports/*.sh root@<IP>:/storage/roms/ports/

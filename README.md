@@ -56,6 +56,9 @@ in EmulationStation and the Sway setup, so the theme can work as intended:
 | Info popups (e.g. "Scraping finished") split across both screens | ES patch (`GuiInfoPopup`) |
 | Loading screens ("Please wait", Wi-Fi search, connecting) spanning both screens | ES patch (`GuiLoading` defaults to the top screen) |
 | "Missing BIOS files" check spread across both screens | ES patch (`GuiBios`) |
+| Game options opened as a narrow full-height side panel at the screen border | ES patch (`GuiGameOptions`: centered menu on the top screen, like the other menus) |
+| "Edit this game's metadata" spread across both screens | ES patch (`GuiMetaDataEd`) |
+| "View game media" stretched images and videos across both screens | ES patch (`GuiImageViewer`: top screen only) |
 | Main menu, settings, Save State Manager, keyboard and Bezel Project placement | ES patch (earlier dual-screen work) |
 | Stock ES showing both theme halves squeezed onto the top screen | Ports switch sets a single-screen theme for stock ES |
 
@@ -91,18 +94,18 @@ docs/zwischenstand-*.md      technical analysis and project log (German)
 
 ## Installation
 
-Download **`dii-ess-aye-rocknix-dual-mod-v6.tar.gz`** from the
+Download **`dii-ess-aye-rocknix-dual-mod-v7.tar.gz`** from the
 [latest release](https://github.com/Ninte86hl/dii-ess-aye-rocknix-dual-mod/releases/latest)
 and unpack it on your computer:
 
 ```bash
-tar xzf dii-ess-aye-rocknix-dual-mod-v6.tar.gz
+tar xzf dii-ess-aye-rocknix-dual-mod-v7.tar.gz
 ```
 ```bash
-cd dii-ess-aye-rocknix-dual-mod-v6
+cd dii-ess-aye-rocknix-dual-mod-v7
 ```
 
-The package contains the ready-built ES binary `emulationstation-rgds-v6`.
+The package contains the ready-built ES binary `emulationstation-rgds-v7`.
 Building it yourself is optional (see [`docs/BUILD.md`](docs/BUILD.md)); a
 self-built binary must also be named starting with `emulationstation-rgds`.
 
@@ -115,7 +118,7 @@ ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.servi
 
 **2. Copy the files (from the unpacked folder):**
 ```bash
-scp emulationstation-rgds-v6 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds-v7 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```
 ```bash
 scp device/ports/*.sh root@<IP>:/storage/roms/ports/

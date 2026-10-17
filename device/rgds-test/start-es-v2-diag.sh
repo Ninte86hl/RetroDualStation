@@ -16,7 +16,7 @@ export DISPLAY=:0.0
 
 # Der Dateiname muss mit "emulationstation-rgds" beginnen,
 # sonst greift die Sway-Regel fuer das globale Vollbild nicht.
-exec /storage/rgds-test/emulationstation-rgds-v6 \
+exec /storage/rgds-test/emulationstation-rgds-v7 \
   --log-path /var/log \
   --no-splash \
   --windowed \

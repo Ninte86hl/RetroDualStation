@@ -45,7 +45,7 @@ build.ROCKNIX-RK3566.aarch64/install_pkg/emulationstation-<commit>/usr/bin/emula
 ```
 
 Die Datei unter einem Namen kopieren, der mit `emulationstation-rgds`
-beginnt (z. B. `emulationstation-rgds-v6`). Sonst greift die Sway-Regel
+beginnt (z. B. `emulationstation-rgds-v7`). Sonst greift die Sway-Regel
 für das globale Vollbild nicht.
 
 ## Hinweis: ScreenScraper und RetroAchievements
