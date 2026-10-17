@@ -1,6 +1,6 @@
 # Credits
 
-This mod is only a small layer on top of the work of many people.
+ROCKNIX DualStation is only a small layer on top of the work of many people.
 Thank you to everyone who made it possible.
 
 ## Operating system and EmulationStation

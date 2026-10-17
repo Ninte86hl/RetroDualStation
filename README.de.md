@@ -1,4 +1,7 @@
-# dii-ess-aye-rocknix-dual mod – Anleitung (Deutsch)
+# ROCKNIX DualStation – Anleitung (Deutsch)
+
+**Dual-Screen-EmulationStation für ROCKNIX** – Anbernic RG DS Plus (Unterstützung für das RG DS ist in Arbeit).
+*Früher „dii-ess-aye-rocknix-dual mod“.*
 
 🇬🇧 [English version](README.md)
 
@@ -111,7 +114,7 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 ## Installation
 
 **`dii-ess-aye-rocknix-dual-mod-v7.tar.gz`** aus dem
-[aktuellen Release](https://github.com/Ninte86hl/dii-ess-aye-rocknix-dual-mod/releases/latest)
+[aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
 herunterladen und auf dem Rechner entpacken:
 
 ```bash
