@@ -135,6 +135,19 @@ Licnese: Creative Commons CC-BY-NC-SA
       <include name="rating" displayName="Rating" />
       <include name="playtime" displayName="Playtime" />
    </subset>
+
+   <!--
+   ///
+   Subset: Game Carousel Artwork (RG DS Plus overlay)
+   Only affects the gamelist style "Carousel".
+   ///
+   -->
+
+   <subset name="game-carousel-art" displayName="Game Carousel Artwork">
+      <include name="marquee" displayName="Marquee (original)" />
+      <include name="icon" displayName="Icon 1:1" />
+      <include name="grid" displayName="Grid 2:3" />
+   </subset>
 	<!--
    ///
    Aspect Ratios Variables
@@ -642,5 +655,8 @@ Licnese: Creative Commons CC-BY-NC-SA
    <include
         ifSubset="aspect-ratio:4-3|4-3-auto"
     >./aspect-ratio-4-3.xml</include>
+
+	<!-- Game Carousel Artwork (RG DS Plus overlay): 3 games side by side like the system carousel -->
+	<include ifSubset="game-carousel-art:icon|grid">./_inc/game-carousel/carousel-art.xml</include>
 
 </theme>

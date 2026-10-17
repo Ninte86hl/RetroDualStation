@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    RG DS Plus overlay: "Game Carousel Artwork" = Icon 1:1 or Grid 2:3
+    Gamelist style "Carousel" shows three games side by side on the bottom
+    screen, built like the system carousel (_inc/system-view/carousel.xml).
+    Icon 1:1 = gamelist tag "thumbnail", Grid 2:3 = gamelist tag "boxart"
+    (RocknixDS Artwork Manager: Icon -> thumbnail, Grid -> boxart).
+    Marquees and game details are hidden; the top screen keeps the video.
+-->
+<theme>
+	<formatVersion>7</formatVersion>
+
+	<view name="gamecarousel">
+		<gamecarousel name="gamecarousel">
+			<type>horizontal</type>
+			<origin>0 0.5</origin>
+			<pos>0.5 0.48</pos>
+			<size>0.5 1</size>
+			<logoSize>${itemsize}</logoSize>
+			<maxLogoCount>${itemcount}</maxLogoCount>
+			<logoScale>1.3</logoScale>
+			<scaledLogoSpacing>${logospacing}</scaledLogoSpacing>
+			<logoRotation>0</logoRotation>
+			<logoAlignment>center</logoAlignment>
+			<minLogoOpacity>0.9</minLogoOpacity>
+			<color>ffffff00</color>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>50</zIndex>
+			<itemTemplate>
+				<storyboard event="activate">
+					<animation property="scale" to="1.05" duration="150" mode="easeOut" />
+				</storyboard>
+				<storyboard event="deactivate">
+					<animation property="scale" to="1" duration="250" mode="easeOut" />
+				</storyboard>
+				<image name="shade" extra="true" ifSubset="game-carousel-art:icon">
+					<path>${themePath}/_inc/system-view/square-bg.png</path>
+					<pos>0.5 0.82</pos>
+					<origin>0.5 1</origin>
+					<maxSize>0.84 0.84</maxSize>
+					<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
+					<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
+					<zIndex>2</zIndex>
+				</image>
+				<image name="gameArt" extra="true">
+					<path ifSubset="game-carousel-art:icon">{game:thumbnail}</path>
+					<path ifSubset="game-carousel-art:grid">{game:boxart}</path>
+					<pos>0.5 0.78</pos>
+					<origin>0.5 1</origin>
+					<maxSize>0.75 0.75</maxSize>
+					<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
+					<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
+					<linearSmooth>true</linearSmooth>
+					<zIndex>3</zIndex>
+				</image>
+				<text name="gameName" extra="true">
+					<text>{game:name}</text>
+					<origin>0.5 0</origin>
+					<pos>0.5 0.81</pos>
+					<size>1 0.12</size>
+					<alignment>center</alignment>
+					<fontPath>${fontBold}</fontPath>
+					<fontSize>${systemYearFontSize}</fontSize>
+					<color>${systemInfoColor}</color>
+					<zIndex>5</zIndex>
+					<opacity>0.25</opacity>
+					<storyboard event="activate">
+						<animation property="opacity" to="1.00" duration="150" mode="easeOut" />
+					</storyboard>
+					<storyboard event="deactivate">
+						<animation property="opacity" to="0.25" duration="150" mode="easeOut" />
+					</storyboard>
+				</text>
+			</itemTemplate>
+		</gamecarousel>
+
+		<!-- Hide marquees and game details -->
+		<image name="md_marquee,md_thumbnail,md_image">
+			<visible>false</visible>
+		</image>
+		<image name="playtime-logo,game-metadata-background-shadow-base,game-metadata-background-image-base,game-metadata-background-shadow-extended,game-metadata-background-image-extended" extra="true">
+			<visible>false</visible>
+		</image>
+		<datetime name="md_releasedate,md_lastplayed">
+			<visible>false</visible>
+		</datetime>
+		<text name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom,md_description">
+			<visible>false</visible>
+		</text>
+		<rating name="md_rating">
+			<visible>false</visible>
+		</rating>
+	</view>
+</theme>
