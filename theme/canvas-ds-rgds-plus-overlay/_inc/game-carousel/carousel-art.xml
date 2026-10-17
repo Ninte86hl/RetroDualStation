@@ -72,6 +72,14 @@
 			</itemTemplate>
 		</gamecarousel>
 
+		<!-- Top screen: keep the video/image away from the screen edges
+		     (0.44 x 2048 = 901 px wide, about 60 px margin left and right) -->
+		<video name="md_video">
+			<pos>0.25 0.5</pos>
+			<origin>0.5 0.5</origin>
+			<maxSize>0.44 0.6</maxSize>
+		</video>
+
 		<!-- Hide marquees and game details -->
 		<image name="md_marquee,md_thumbnail,md_image">
 			<visible>false</visible>
