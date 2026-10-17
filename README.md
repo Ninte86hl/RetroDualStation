@@ -7,6 +7,10 @@ Dual-screen EmulationStation for the **Anbernic RG DS Plus** running
 the ROCKNIX logo on the top screen, the system view on the bottom screen.
 Menus and notifications stay cleanly on the top screen.
 
+![Main view: ROCKNIX logo on the top screen, system carousel on the bottom screen](docs/screenshots/main.png)
+
+*Left half: top screen · right half: bottom screen (2048 × 768).*
+
 Designed for **dii-ess-aye-rgds-plus**, my RG DS Plus adaptation of
 [dii-ess-aye](https://github.com/beebono/dii-ess-aye) by beebono, who made
 the original theme for the RG DS.
@@ -26,6 +30,15 @@ the original theme for the RG DS.
 - Save State Manager, Advanced Game Settings, on-screen keyboard, The Bezel Project
 - Switching between this build and stock ROCKNIX ES via **Ports**, including a theme switch
 - Survives device reboots
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Game list](docs/screenshots/gamelist.png) | ![Main menu](docs/screenshots/menu.png) |
+| **Game list** – preview on top, game carousel and description on the bottom | **Main menu** on the top screen |
+| ![Scraper](docs/screenshots/scraper.png) | ![Keyboard](docs/screenshots/keyboard.png) |
+| **Scraper** menu on the top screen | **On-screen keyboard** on the bottom screen, settings on top |
 
 ## Issues fixed for dii-ess-aye on the RG DS Plus
 
@@ -69,6 +82,7 @@ device/ports/                entries for /storage/roms/ports/
 device/system.d/             drop-in for essway.service
 theme/dii-ess-aye-rgds-plus/ RG DS Plus variant of the dii-ess-aye theme (MIT)
 docs/BUILD.md                building the ES package
+docs/screenshots/            screenshots used in this README
 docs/zwischenstand-*.md      technical analysis and project log (German)
 ```
 

@@ -7,6 +7,10 @@ Dual-Screen-EmulationStation für das **Anbernic RG DS Plus** unter
 (2048 × 768): oben das ROCKNIX-Logo, unten die Systemansicht. Menüs und
 Meldungen erscheinen sauber auf dem oberen Screen.
 
+![Hauptansicht: ROCKNIX-Logo oben, System-Karussell unten](docs/screenshots/main.png)
+
+*Linke Hälfte: oberer Screen · rechte Hälfte: unterer Screen (2048 × 768).*
+
 Gedacht für **dii-ess-aye-rgds-plus**, meine Anpassung von
 [dii-ess-aye](https://github.com/beebono/dii-ess-aye) für das RG DS Plus.
 Das Original-Theme für das RG DS stammt von beebono.
@@ -26,6 +30,15 @@ Das Original-Theme für das RG DS stammt von beebono.
 - Save State Manager, Advanced Game Settings, Bildschirmtastatur, The Bezel Project
 - Umschalten zwischen dieser Version und dem Original-ES über **Ports**, inklusive Theme-Wechsel
 - Übersteht Neustarts des Geräts
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Spieleliste](docs/screenshots/gamelist.png) | ![Hauptmenü](docs/screenshots/menu.png) |
+| **Spieleliste** – Vorschau oben, Spiele-Karussell und Beschreibung unten | **Hauptmenü** auf dem oberen Screen |
+| ![Scraper](docs/screenshots/scraper.png) | ![Tastatur](docs/screenshots/keyboard.png) |
+| **Scraper-Menü** auf dem oberen Screen | **Bildschirmtastatur** unten, Einstellungen oben |
 
 ## Behobene Probleme mit dii-ess-aye auf dem RG DS Plus
 
@@ -70,6 +83,7 @@ device/ports/                Einträge für /storage/roms/ports/
 device/system.d/             Drop-in für essway.service
 theme/dii-ess-aye-rgds-plus/ RG-DS-Plus-Variante des Themes dii-ess-aye (MIT)
 docs/BUILD.de.md             Bauen des ES-Pakets
+docs/screenshots/            Screenshots für diese README
 docs/zwischenstand-*.md      technische Analyse und Projektstand
 ```
 
