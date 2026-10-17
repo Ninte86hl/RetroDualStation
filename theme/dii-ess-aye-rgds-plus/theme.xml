@@ -7,6 +7,5 @@
     <subset name="gamecovers" displayName="Game list artwork">
         <include name="cartridge" displayName="Cartridge (original)">./gamelist-cartridge.xml</include>
         <include name="icon" displayName="Icon 1:1">./gamelist-icon.xml</include>
-        <include name="grid" displayName="Grid 2:3">./gamelist-grid.xml</include>
     </subset>
 </theme>

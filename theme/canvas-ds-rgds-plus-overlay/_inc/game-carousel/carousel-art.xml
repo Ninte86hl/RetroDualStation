@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    RG DS Plus overlay: "Game Carousel Artwork" = Icon 1:1 or Grid 2:3
+    RG DS Plus overlay: "Game Carousel Artwork" = Icon 1:1
     Gamelist style "Carousel" shows three games side by side on the bottom
     screen, built like the system carousel (_inc/system-view/carousel.xml).
-    Icon 1:1 = gamelist tag "thumbnail", Grid 2:3 = gamelist tag "boxart"
-    (RocknixDS Artwork Manager: Icon -> thumbnail, Grid -> boxart).
+    Icon 1:1 = gamelist tag "thumbnail" (RocknixDS Artwork Manager: Icon).
     Marquees and game details are hidden; the top screen keeps the video.
 -->
 <theme>
@@ -33,7 +32,7 @@
 				<storyboard event="deactivate">
 					<animation property="scale" to="1" duration="250" mode="easeOut" />
 				</storyboard>
-				<image name="shade" extra="true" ifSubset="game-carousel-art:icon">
+				<image name="shade" extra="true">
 					<path>${themePath}/_inc/system-view/square-bg.png</path>
 					<pos>0.5 0.82</pos>
 					<origin>0.5 1</origin>
@@ -43,8 +42,7 @@
 					<zIndex>2</zIndex>
 				</image>
 				<image name="gameArt" extra="true">
-					<path ifSubset="game-carousel-art:icon">{game:thumbnail}</path>
-					<path ifSubset="game-carousel-art:grid">{game:boxart}</path>
+					<path>{game:thumbnail}</path>
 					<pos>0.5 0.78</pos>
 					<origin>0.5 1</origin>
 					<maxSize>0.75 0.75</maxSize>

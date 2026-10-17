@@ -146,7 +146,6 @@ Licnese: Creative Commons CC-BY-NC-SA
    <subset name="game-carousel-art" displayName="Game Carousel Artwork">
       <include name="marquee" displayName="Marquee (original)" />
       <include name="icon" displayName="Icon 1:1" />
-      <include name="grid" displayName="Grid 2:3" />
    </subset>
 	<!--
    ///
@@ -657,6 +656,6 @@ Licnese: Creative Commons CC-BY-NC-SA
     >./aspect-ratio-4-3.xml</include>
 
 	<!-- Game Carousel Artwork (RG DS Plus overlay): 3 games side by side like the system carousel -->
-	<include ifSubset="game-carousel-art:icon|grid">./_inc/game-carousel/carousel-art.xml</include>
+	<include ifSubset="game-carousel-art:icon">./_inc/game-carousel/carousel-art.xml</include>
 
 </theme>
