@@ -55,7 +55,8 @@ Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
 | Korrekturen gingen bei jedem Neustart verloren (ROCKNIX schreibt die Sway-Config neu) | `rgds-sway-fix.sh` läuft vor jedem Start |
 | Scraper-, Updates-, Downloads- und Theme-Menüs über beide Screens gezogen | ES-Patch (`RGDS_MENU_W`) |
 | Info-Meldungen (z. B. „Scraping finished“) über beide Screens verteilt | ES-Patch (`GuiInfoPopup`) |
-| Ladeanzeigen („Bitte warten“) über beide Screens | ES-Patch (`setLoadingArea`) |
+| Ladeanzeigen („Bitte warten“, WLAN-Suche, Verbinden) über beide Screens | ES-Patch (`GuiLoading` startet standardmäßig oben) |
+| BIOS-Prüfung („Fehlende BIOS-Dateien“) über beide Screens verteilt | ES-Patch (`GuiBios`) |
 | Position von Hauptmenü, Einstellungen, Save State Manager, Tastatur und Bezel Project | ES-Patch (frühere Dual-Screen-Arbeit) |
 | Original-ES zeigt beide Theme-Hälften gequetscht auf dem oberen Screen | Ports-Umschalter setzt für das Original-ES ein Einzelbildschirm-Theme |
 
@@ -92,7 +93,7 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 ## Installation
 
 Voraussetzung: eine gebaute ES-Binärdatei (siehe [`docs/BUILD.de.md`](docs/BUILD.de.md)),
-benannt als `emulationstation-rgds-v5`. Der Name muss mit
+benannt als `emulationstation-rgds-v6`. Der Name muss mit
 `emulationstation-rgds` beginnen.
 
 `<IP>` durch die IP-Adresse des Geräts ersetzen.
@@ -104,7 +105,7 @@ ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.servi
 
 **2. Dateien übertragen (vom Repo-Ordner aus):**
 ```bash
-scp emulationstation-rgds-v5 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds-v6 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```
 ```bash
 scp device/ports/*.sh root@<IP>:/storage/roms/ports/
@@ -165,7 +166,8 @@ damit auf dem oberen Screen:
 #define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
 ```
 
-Ladeanzeigen werden mit `setLoadingArea()` auf einen Screen begrenzt.
+Ladeanzeigen (`GuiLoading`) erscheinen standardmäßig auf dem oberen Screen;
+The Bezel Project legt seine Ladeanzeige mit `setLoadingArea()` nach unten.
 
 ### Umschalten
 

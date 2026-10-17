@@ -54,7 +54,8 @@ in EmulationStation and the Sway setup, so the theme can work as intended:
 | Fixes were lost after every reboot (ROCKNIX rewrites the Sway config) | `rgds-sway-fix.sh` runs before every start |
 | Scraper, updates, downloads and theme menus drawn across both screens | ES patch (`RGDS_MENU_W`) |
 | Info popups (e.g. "Scraping finished") split across both screens | ES patch (`GuiInfoPopup`) |
-| Loading screens ("Please wait") spanning both screens | ES patch (`setLoadingArea`) |
+| Loading screens ("Please wait", Wi-Fi search, connecting) spanning both screens | ES patch (`GuiLoading` defaults to the top screen) |
+| "Missing BIOS files" check spread across both screens | ES patch (`GuiBios`) |
 | Main menu, settings, Save State Manager, keyboard and Bezel Project placement | ES patch (earlier dual-screen work) |
 | Stock ES showing both theme halves squeezed onto the top screen | Ports switch sets a single-screen theme for stock ES |
 
@@ -91,7 +92,7 @@ docs/zwischenstand-*.md      technical analysis and project log (German)
 ## Installation
 
 Requirement: a built ES binary (see [`docs/BUILD.md`](docs/BUILD.md)) named
-`emulationstation-rgds-v5`. The name must start with `emulationstation-rgds`.
+`emulationstation-rgds-v6`. The name must start with `emulationstation-rgds`.
 
 Replace `<IP>` with the IP address of your device.
 
@@ -102,7 +103,7 @@ ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.servi
 
 **2. Copy the files (from the repository folder):**
 ```bash
-scp emulationstation-rgds-v5 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds-v6 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```
 ```bash
 scp device/ports/*.sh root@<IP>:/storage/roms/ports/
@@ -162,7 +163,8 @@ places them on the top screen:
 #define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
 ```
 
-Loading screens are limited to one screen with `setLoadingArea()`.
+Loading screens (`GuiLoading`) default to the top screen; The Bezel Project
+moves its loading screen to the bottom screen with `setLoadingArea()`.
 
 ### Switching
 
