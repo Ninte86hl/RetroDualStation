@@ -20,6 +20,11 @@ the original theme for the RG DS.
 > variant is included in [`theme/dii-ess-aye-rgds-plus/`](theme/dii-ess-aye-rgds-plus/),
 > together with the original license and copyright notice.
 
+**Also supported:** [canvas-ds](https://github.com/toniremi/canvas-ds) by toniremi,
+via a small overlay in [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/)
+(shared with his permission, CC BY-NC-SA). The Ports switch remembers which
+theme you use in each mode.
+
 ---
 
 ## What works
@@ -87,6 +92,7 @@ device/rgds-test/            scripts for /storage/rgds-test/ on the device
 device/ports/                entries for /storage/roms/ports/
 device/system.d/             drop-in for essway.service
 theme/dii-ess-aye-rgds-plus/ RG DS Plus variant of the dii-ess-aye theme (MIT)
+theme/canvas-ds-rgds-plus-overlay/ layout overlay for canvas-ds (CC BY-NC-SA)
 docs/BUILD.md                building the ES package
 docs/screenshots/            screenshots used in this README
 docs/zwischenstand-*.md      technical analysis and project log (German)
@@ -196,7 +202,7 @@ Log: `/storage/rgds-test/es-switch.log`.
 ## Credits
 
 Built on the work of the ROCKNIX and Batocera teams, the original
-EmulationStation, and beebono's dii-ess-aye theme. See
+EmulationStation, beebono's dii-ess-aye theme and toniremi's canvas-ds theme. See
 [`CREDITS.md`](CREDITS.md) for the full list. Thank you! 🙏
 
 ## License

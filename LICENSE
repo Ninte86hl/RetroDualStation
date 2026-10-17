@@ -43,6 +43,14 @@ THIRD-PARTY NOTICES
    and is distributed under the same license; the original license and
    copyright notice are included with the theme files.
 
+   The canvas-ds overlay (theme/canvas-ds-rgds-plus-overlay) modifies
+   canvas-ds by toniremi (https://github.com/toniremi/canvas-ds), based on
+   Canvas by Siddy212, and is shared with permission under the same
+   Creative Commons BY-NC-SA license
+   (https://creativecommons.org/licenses/by-nc-sa/2.0/): attribution,
+   non-commercial use only, adaptations under the same terms. The MIT
+   License above does not apply to the overlay.
+
 3. Screenshots and trademarks
 
    Screenshots in this repository may show theme artwork, icons and logos

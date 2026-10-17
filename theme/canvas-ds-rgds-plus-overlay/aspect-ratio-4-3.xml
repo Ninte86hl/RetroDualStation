@@ -1,0 +1,612 @@
+<theme>
+	<formatVersion>7</formatVersion>
+
+<!--
+4:3 aspect ratio
+based on 640x480
+-->
+
+	<!-- Metadata Image variations -->
+	<!-- ~~~~~~~~~~~ -->
+   	<variables ifSubset="media-type:image">
+		<visiblemix>false</visiblemix>
+	</variables>
+	<variables ifSubset="media-type:boxart">
+		<visiblemix>false</visiblemix>
+	</variables>
+   	<variables ifSubset="media-type:miximage">
+		<visiblemix>true</visiblemix>
+	</variables>
+
+	<!-- System View Grid -->
+	<!-- ~~~~~~~~~~~ -->
+
+	<view name="system" ifSubset="system-view:grid">
+		<imagegrid name="imagegrid">
+			<h>0.85</h>
+			<w>0.5</w>
+		</imagegrid>
+		<image name="gamesicon" extra="true">
+            <pos>0.03 0.05</pos>
+            <size>0 ${systemInfoFontSize}</size>
+		</image>
+		<text name="systemInfoGrid">
+            <pos>0.0375 0.05</pos>
+			<size>0 ${systemInfoFontSize}</size>
+            <fontSize>${systemInfoFontSize}</fontSize>
+		</text>
+	</view>
+
+	<!-- System View Carousel -->
+	<!-- ~~~~~~~~~~~ -->
+
+	<view name="system" ifSubset="system-view:carousel">
+            <image name="gamesicon" extra="true">
+                <pos>0.03 0.05</pos>
+                <size>0 ${systemInfoFontSize}</size>
+            </image>
+            <text name="systemInfo">
+                <pos>0.0375 0.05</pos>
+                <size>0 ${systemInfoFontSize}</size>
+                <fontSize>${systemInfoFontSize}</fontSize>
+		</text>
+	</view>
+
+
+	<!-- System View -->
+	<!-- ~~~~~~~~~~~ -->
+
+	<view name="screen">
+		<stackpanel name="system-indicators" extra="true">
+		<w>0.5</w><!-- 620 -->
+		<separator>10</separator>
+		</stackpanel>
+    </view>
+
+
+	<!-- Logo Variations -->
+	<!-- ~~~~~~~~~~~~~ -->
+	<view name="gamecarousel">
+		<gamecarousel name="gamecarousel">
+			<logoSize>${itemSizeCarousel}</logoSize>
+			<logoScale>1.4</logoScale>
+			<pos>0.6735 0</pos>
+			<size>0.5 1</size>
+			<maxLogoCount>7</maxLogoCount>
+			<zIndex>50</zIndex>
+		</gamecarousel>
+        <video name="md_video">
+            <pos>0.25 0.5</pos>
+            <origin>0.5 0.5</origin>
+            <maxSize>0.525 0.6</maxSize>
+            <effect>none</effect>
+            <delay>1.5</delay>
+            <showSnapshotNoVideo>true</showSnapshotNoVideo>
+            <showSnapshotDelay>true</showSnapshotDelay>
+            <snapshotSource>image</snapshotSource>
+        </video>
+        <image name="logo">
+		    <pos>0.25 0.9</pos>
+		    <maxSize>0.375 .08</maxSize>
+		</image>
+	</view>
+	<view name="basic, video, detailed, grid" ifSubset="metadata:on">
+	    <image name="md_image">
+            <pos>0.25 0.5</pos>
+            <origin>0.5 0.5</origin>
+            <maxSize>0.525 0.6</maxSize>
+            <path>{game:image}</path>
+            <default>{game:thumbnail}</default>
+            <visible>false</visible>
+        </image>
+
+        <video name="md_video">
+            <pos>0.25 0.5</pos>
+            <origin>0.5 0.5</origin>
+            <maxSize>0.525 0.6</maxSize>
+            <effect>none</effect>
+            <delay>1.5</delay>
+            <showSnapshotNoVideo>true</showSnapshotNoVideo>
+            <showSnapshotDelay>true</showSnapshotDelay>
+            <snapshotSource>image</snapshotSource>
+        </video>
+		<image name="logo">
+		    <pos>0.25 0.9</pos>
+			<maxSize>0.375 .08</maxSize>
+		</image>
+	</view>
+
+	<view name="basic, video, detailed, grid" ifSubset="metadata:off">
+	    <image name="md_image">
+            <pos>0.25 0.5</pos>
+            <origin>0.5 0.5</origin>
+            <maxSize>0.525 0.6</maxSize>
+            <path>{game:image}</path>
+            <default>{game:thumbnail}</default>
+            <visible>false</visible>
+        </image>
+
+        <video name="md_video">
+            <pos>0.25 0.5</pos>
+            <origin>0.5 0.5</origin>
+            <maxSize>0.525 0.6</maxSize>
+            <effect>none</effect>
+            <delay>1.5</delay>
+            <showSnapshotNoVideo>true</showSnapshotNoVideo>
+            <showSnapshotDelay>true</showSnapshotDelay>
+            <snapshotSource>image</snapshotSource>
+        </video>
+		<image name="logo">
+		    <pos>0.25 0.9</pos>
+			<maxSize>0.345 .07</maxSize>
+		</image>
+	</view>
+
+
+	<!-- Small Grid View Detailed-->
+	<!-- ~~~~~~~~~~~~~ -->
+	<view name="basic, video, detailed, grid" ifSubset="font-size:small,metadata:on">
+	<!-- Metadata Toggle-->
+		<image name="md_marquee,md_thumbnail">
+			<visible>false</visible>
+		</image>
+		<text name="md_description">
+			<visible>false</visible>
+		</text>
+
+	<!-- Metadata-->
+		<image name="game-metadata-background-shadow-extended" extra="true">
+             <pos>0.75 0.87</pos>
+            <size>0.375 0.13</size>
+            <path
+            >./_inc/images/simple/gamelist-metadata-background-shadow-extended.webp</path>
+		</image>
+		<image name="game-metadata-background-image-extended" extra="true">
+			<pos>0.75 0.87</pos>
+            <size>0.375 0.13</size>
+			<path
+            >./_inc/images/simple/${gamelistMetadataBackgroundImage}-extended.webp</path>
+		</image>
+		<rating name="md_rating">
+			 <pos>0.66 0.907</pos>
+            <size>0 0.025</size>
+		</rating>
+		<datetime name="md_releasedate">
+			<pos>0.585 0.907</pos>
+            <size>0.075 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</datetime>
+		<text name="md_name">
+			 <pos>0.585 0.83</pos>
+            <size>0.546 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_players">
+			<visible>false</visible>
+		</text>
+		<text name="md_genre">
+            <pos>0.72 0.907</pos>
+            <size>0.261 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_developer">
+			<visible>false</visible>
+		</text>
+		<text name="md_publisher" extra="true">
+			<visible>false</visible>
+		</text>
+		<datetime name="md_lastplayed">
+			<value>Never</value>
+            <pos>0.87 0.83</pos>
+            <size>0.1485 ${metaDatafontSize}</size>
+			<size>0.15 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</datetime>
+		<text name="md_playcount" extra="true">
+            <pos>0.87 0.907</pos>
+            <size>0.1485 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_gametime_custom" extra="true">
+			 <pos>0.642 0.907</pos>
+            <size>0.0975 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<image name="playtime-logo">
+			<pos>0.6345 0.907</pos>
+	        <size>0 0.025</size>
+		</image>
+	</view>
+
+	<!-- Medium/Large Grid View-->
+	<!-- ~~~~~~~~~~~~~ -->
+	<view name="basic, video, detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+
+		<!-- Metadata Toggle-->
+			<image name="md_marquee,md_thumbnail">
+				<visible>false</visible>
+			</image>
+			<text name="md_description">
+				<visible>false</visible>
+			</text>
+		<!-- Metadata-->
+		<image name="game-metadata-background-shadow-base" extra="true">
+            <pos>0.75 0.885</pos>
+            <size>0.45 0.1559172633</size>
+            <path
+            >./_inc/images/simple/gamelist-metadata-background-shadow-base.webp</path>
+		</image>
+		<image name="game-metadata-background-image-base" extra="true">
+            <pos>0.75 0.885</pos>
+            <size>0.45 0.11278434754</size>
+            <path
+            >./_inc/images/simple/${gamelistMetadataBackgroundImage}-base.webp</path>
+		</image>
+		<rating name="md_rating">
+            <pos>0.675 0.918</pos>
+            <size>0 0.027</size>
+		</rating>
+            <datetime name="md_releasedate">
+            <pos>0.5625 0.918</pos>
+            <size>0.105 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</datetime>
+		<text name="md_name">
+            <pos>0.5625 0.8525</pos>
+            <size>0.7425 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_genre">
+            <pos>0.7725 0.9185</pos>
+            <size>0.378 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_gametime_custom" extra="true">
+			 <pos>0.8745 0.9185</pos>
+            <size>0.135 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<image name="playtime-logo">
+			<pos>0.855 0.9185</pos>
+	        <size>0 0.030</size>
+		</image>
+	</view>
+
+	<view name="basic, video, detailed, grid" ifSubset="metadata:off">
+			<image name="md_marquee,md_thumbnail">
+				<visible>false</visible>
+			</image>
+	</view>
+
+	<!-- Show also thumbnail and other data when metadata is on -->
+	<view name="basic, video, detailed" ifSubset="metadata:on">
+    	<image name="game-list-background-shadow" extra="true">
+    		<origin>0.5 0</origin>
+    		<pos>0.63615 0.05</pos>
+    		<size>0.24 0.74</size>
+    		<zIndex>10</zIndex>
+    		<path>./_inc/images/gamelist/gamelist-background-shadow.webp</path>
+    		<visible>true</visible>
+    	</image>
+
+    	<image name="game-list-background" extra="true">
+    		<origin>0.5 0</origin>
+    		<pos>0.63615 0.07</pos>
+    		<size>0.2235 0.70</size>
+    		<zIndex>11</zIndex>
+    		<path>${gamelistBackgroundImageCalculated}</path>
+    		<visible>true</visible>
+    	</image>
+
+    	<textlist name="gamelist">
+    		<origin>0.5 0</origin>
+    		<pos>0.63615 0.10</pos>
+    		<size>0.207 0.64</size>
+    		<fontPath>${fontBold}</fontPath>
+    		<selectorColor>${gamelistSelectorColor}</selectorColor>
+    		<selectedColor>${gamelistSelectedColor}</selectedColor>
+    		<primaryColor>${gamelistPrimaryColor}</primaryColor>
+    		<secondaryColor>${gamelistSecondaryColor}</secondaryColor>
+    		<horizontalMargin>0.005</horizontalMargin>
+    		<fontSize>${gamelistFontSize}</fontSize>
+    		<selectorHeight>${gamelistSelectorHeight}</selectorHeight>
+    		<lines>${linecount}</lines>
+    		<alignment>left</alignment>
+    		<zIndex>12</zIndex>
+    	</textlist>
+
+    	<image name="md_thumbnail">
+    		<origin>0.5 0</origin>
+    		<pos>0.87495 0.07</pos>
+    		<maxSize>0.2025 0.43</maxSize>
+    		<zIndex>12</zIndex>
+    		<visible>true</visible>
+    	</image>
+
+        <image name="game-list-background-desc" extra="true">
+    		<origin>0.5 0</origin>
+    		<pos>0.87495 0.5500</pos>
+    		<size>0.2175 0.23</size>
+    		<zIndex>11</zIndex>
+            <path>${gamelistBackgroundImageCalculated}</path>
+    		<visible>true</visible>
+    	</image>
+    	<text name="md_description">
+    		<origin>0.5 0</origin>
+    		<pos>0.87495 0.5500</pos>
+    		<size>0.2025 0.22</size>
+    		<fontPath>${fontBold}</fontPath>
+    		<fontSize>0.028</fontSize>
+    		<alignment>center</alignment>
+    		<autoScroll>vertical</autoScroll>
+    		<autoScrollSpeed>50</autoScrollSpeed>
+    		<autoScrollDelay>5000</autoScrollDelay>
+    		<zIndex>57</zIndex>
+    		<visible>true</visible>
+    	</text>
+    </view>
+
+    <!-- simple game list taking all available space when metadata is off -->
+	<view name="basic, video, detailed" ifSubset="metadata:off">
+		<image name="game-list-background-shadow" extra="true">
+			<origin>0.5 0.5</origin>
+			<pos>${gamelistShadowPos}</pos>
+        <zIndex>2</zIndex>
+			<linearSmooth>true</linearSmooth>
+        <path>./_inc/images/gamelist/gamelist-background-shadow.webp</path>
+			<size>${gamelistShadowSize}</size>
+			<visible>true</visible>
+		</image>
+		<image name="game-list-background" extra="true">
+			<origin>0.5 0.5</origin>
+			<pos>${gamelistBackgroundPos}</pos>
+            <zIndex>3</zIndex>
+			<linearSmooth>true</linearSmooth>
+			<path>${gamelistBackgroundImageCalculated}</path>
+			<size>${gamelistBackgroundSize}</size>
+			<visible>true</visible>
+		</image>
+		<textlist name="gamelist">
+			<fontPath>${fontBold}</fontPath>
+			<selectorColor>${gamelistSelectorColor}</selectorColor>
+			<selectedColor>${gamelistSelectedColor}</selectedColor>
+			<primaryColor>${gamelistPrimaryColor}</primaryColor>
+			<secondaryColor>${gamelistSecondaryColor}</secondaryColor>
+			<horizontalMargin>0.008333333333333</horizontalMargin>
+			<zIndex>4</zIndex>
+			<origin>0.5 0.5</origin>
+			<pos>${gamelistPos}</pos>
+			<size>${gamelistSize}</size>
+			<fontSize>${gamelistFontSize}</fontSize>
+			<selectorHeight>${gamelistSelectorHeight}</selectorHeight>
+			<lines>${linecount}</lines>
+			<alignment>center</alignment>
+		</textlist>
+	</view>
+
+	<!-- Game Carousel - Small Metadata -->
+		<view name="gamecarousel" ifSubset="font-size:small,metadata:on">
+			<image name="md_marquee">
+				<visible>false</visible>
+			</image>
+			<image name="md_image">
+				<pos>0.25 0.5</pos>
+                <origin>0.5 0.5</origin>
+				<maxSize ifSubset="media-type:image">0.63 0.42</maxSize>
+				<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
+				<maxSize ifSubset="media-type:miximage">0.579 0.35</maxSize>
+				<visible>true</visible>
+				<visible ifSubset="media-type:boxart">false</visible>
+			</image>
+			<image name="md_thumbnail">
+				<pos>0.666 0.275</pos>
+                <origin>0.5 0.5</origin>
+				<pos ifSubset="media-type:boxart">0.666 0.275</pos>
+				<maxSize>0.24 0.18</maxSize>
+				<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
+				<visible>${visiblemix}</visible>
+				<visible ifSubset="media-type:boxart">true</visible>
+			</image>
+			<image name="game-metadata-background-shadow-extended" extra="true">
+                  <pos>0.69 0.7658187797</pos>
+                  <size>0.36 0.45497526246</size>
+            <path
+            >./_inc/images/detailed/gamelist-metadata-background-shadow-extended.webp</path>
+			</image>
+			<image name="game-metadata-background-image-extended" extra="true">
+				<pos>0.69 0.7658187797</pos>
+                  <size>0.36 0.41118466204</size>
+				<path
+            >./_inc/images/detailed/${gamelistMetadataBackgroundImage}-extended.webp</path>
+			</image>
+			<rating name="md_rating">
+				<pos>0.555 0.635</pos>
+				<size>0 0.025</size>
+			</rating>
+			<datetime name="md_releasedate">
+				<pos>0.5325 0.695</pos>
+				<size>0 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</datetime>
+			<text name="md_name">
+				<pos>0.5325 0.58</pos>
+				<size>0.6525 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<text name="md_players">
+				<pos>0.5325 0.755</pos>
+				<size>0 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<text name="md_genre">
+				<pos>0.6375 0.635</pos>
+				<size>0.465 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<text name="md_developer">
+				<pos>0.6375 0.695</pos>
+				<size>0.2625 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<text name="md_publisher" extra="true">
+				<pos>0.6375 0.755</pos>
+				<size>0.2625 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<datetime name="md_lastplayed">
+				<value>Never</value>
+				<pos>0.795 0.695</pos>
+				<size>0.15 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</datetime>
+			<text name="md_playcount" extra="true">
+				<pos>0.795 0.755</pos>
+				<size>0.15 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<text name="md_description">
+				<pos>0.684 ${descriptionPos}</pos>
+				<size>0.33 ${descriptionHeight}</size>
+				<fontSize>${descriptionFontSize}</fontSize>
+				<lineSpacing>${descriptionLineSpacing}</lineSpacing>
+				<visible>true</visible>
+			</text>
+			<text name="md_gametime_custom" extra="true">
+				 <pos>0.075 0.5745</pos>
+            <size>0.129 ${metaDatafontSize}</size>
+				<fontSize>${metaDatafontSize}</fontSize>
+			</text>
+			<image name="playtime-logo">
+				<pos>0.054 0.5745</pos>
+		        <size>0 0.021</size>
+			</image>
+		</view>
+
+
+
+		<!-- Game Carousel - Medium/Large Metadata -->
+		<!-- ~~~~~~~~~~~~~ -->
+		<view name="gamecarousel" ifSubset="font-size:medium|large,metadata:on">
+		<image name="md_marquee">
+			<visible>false</visible>
+		</image>
+		<image name="md_image">
+			<pos>0.25 0.5</pos>
+                <origin>0.5 0.5</origin>
+			<maxSize ifSubset="media-type:image">0.63 0.42</maxSize>
+			<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
+			<maxSize ifSubset="media-type:miximage">0.579 0.35</maxSize>
+			<visible>true</visible>
+			<visible ifSubset="media-type:boxart">false</visible>
+		</image>
+		<image name="md_thumbnail">
+			<pos>0.666 0.275</pos>
+                <origin>0.5 0.5</origin>
+			<pos ifSubset="media-type:boxart">0.666 0.275</pos>
+			<maxSize>0.24 0.18</maxSize>
+			<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
+			<visible>${visiblemix}</visible>
+			<visible ifSubset="media-type:boxart">true</visible>
+		</image>
+		<image name="game-metadata-background-shadow-base" extra="true">
+                  <pos>0.69 0.7658187797</pos>
+                  <size>0.36 0.45497526246</size>
+            <path
+            >./_inc/images/detailed/gamelist-metadata-background-shadow-extended.webp</path>
+		</image>
+		<image name="game-metadata-background-image-base" extra="true">
+			<pos>0.69 0.7658187797</pos>
+                  <size>0.36 0.41118466204</size>
+			<path
+            >./_inc/images/detailed/${gamelistMetadataBackgroundImage}-extended.webp</path>
+		</image>
+		<rating name="md_rating">
+			<pos>0.555 0.635</pos>
+			<size>0 0.025</size>
+		</rating>
+		<datetime name="md_releasedate">
+			<pos>0.5325 0.695</pos>
+			<size>0 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</datetime>
+		<text name="md_name">
+			<pos>0.5325 0.58</pos>
+			<size>0.6525 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_players">
+		    <pos>0.5325 0.755</pos>
+			<size>0 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_genre">
+			<pos>0.6375 0.635</pos>
+			<size>0.465 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_developer">
+			<pos>0.6375 0.695</pos>
+			<size>0.2625 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_publisher" extra="true">
+			<pos>0.6375 0.755</pos>
+			<size>0.2625 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<datetime name="md_lastplayed">
+			<value>Never</value>
+			<pos>0.795 0.695</pos>
+			<size>0.15 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</datetime>
+		<text name="md_playcount" extra="true">
+			<pos>0.795 0.755</pos>
+			<size>0.15 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<text name="md_description">
+			<pos>0.684 ${descriptionPos}</pos>
+			<size>0.33 ${descriptionHeight}</size>
+			<fontSize>${descriptionFontSize}</fontSize>
+			<lineSpacing>${descriptionLineSpacing}</lineSpacing>
+			<visible>true</visible>
+		</text>
+		<text name="md_gametime_custom" extra="true">
+			 <pos>0.075 0.5745</pos>
+            <size>0.129 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+		</text>
+		<image name="playtime-logo">
+			<pos>0.054 0.5745</pos>
+	        <size>0 0.021</size>
+		</image>
+		</view>
+
+		<!-- Game Carousel - Metadata Off -->
+
+		<view name="gamecarousel" ifSubset="metadata:off">
+        <image name="md_marquee">
+			<visible>false</visible>
+		</image>
+		<image name="md_image">
+			<pos>0.25 0.5</pos>
+                <origin>0.5 0.5</origin>
+			<maxSize ifSubset="media-type:image">0.63 0.42</maxSize>
+			<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
+			<maxSize ifSubset="media-type:miximage">0.579 0.35</maxSize>
+			<visible>true</visible>
+			<visible ifSubset="media-type:boxart">false</visible>
+		</image>
+		<image name="md_thumbnail">
+			<pos>0.666 0.5</pos>
+                <origin>0.5 0.5</origin>
+			<pos ifSubset="media-type:boxart">0.666 0.5</pos>
+			<maxSize>0.24 0.18</maxSize>
+			<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
+			<visible>${visiblemix}</visible>
+			<visible ifSubset="media-type:boxart">true</visible>
+		</image>
+		</view>
+
+</theme>

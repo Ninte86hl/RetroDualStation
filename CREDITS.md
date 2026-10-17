@@ -33,6 +33,21 @@ included in [`theme/dii-ess-aye-rgds-plus/`](theme/dii-ess-aye-rgds-plus/)
 with the original license and copyright notice. The original also credits
 **Valve** for the Steam logo (Wikimedia Commons).
 
+## Theme: canvas-ds (optional overlay)
+
+- **[toniremi](https://github.com/toniremi)** – [canvas-ds](https://github.com/toniremi/canvas-ds),
+  the dual-screen theme the overlay in
+  [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/) adapts.
+  Thank you for allowing the RG DS Plus overlay to be shared!
+- **[Siddy212](https://github.com/Siddy212)** – [Canvas (ES version)](https://github.com/Siddy212/canvas-es),
+  the original theme canvas-ds is built on.
+- **[fagnerpc](https://github.com/fagnerpc)** – original artwork and layouts.
+- **Zoidburg13** – system icons.
+
+canvas-ds is licensed under **CC BY-NC-SA**; the overlay is shared under the
+same terms. Only the 7 changed layout files are included – the theme itself
+comes from the original project.
+
 ## Libraries and tools
 
 - **[Sway](https://swaywm.org) / wlroots** – the Wayland compositor that

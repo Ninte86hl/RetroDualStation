@@ -20,6 +20,11 @@ Das Original-Theme für das RG DS stammt von beebono.
 > Variante liegt in [`theme/dii-ess-aye-rgds-plus/`](theme/dii-ess-aye-rgds-plus/),
 > zusammen mit der Original-Lizenz und dem Copyright-Vermerk.
 
+**Ebenfalls unterstützt:** [canvas-ds](https://github.com/toniremi/canvas-ds) von toniremi,
+über ein kleines Overlay in [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/)
+(mit seiner Erlaubnis, CC BY-NC-SA). Der Ports-Umschalter merkt sich, welches
+Theme du in welchem Modus nutzt.
+
 ---
 
 ## Was funktioniert
@@ -88,6 +93,7 @@ device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
 device/ports/                Einträge für /storage/roms/ports/
 device/system.d/             Drop-in für essway.service
 theme/dii-ess-aye-rgds-plus/ RG-DS-Plus-Variante des Themes dii-ess-aye (MIT)
+theme/canvas-ds-rgds-plus-overlay/ Layout-Overlay für canvas-ds (CC BY-NC-SA)
 docs/BUILD.de.md             Bauen des ES-Pakets
 docs/screenshots/            Screenshots für diese README
 docs/zwischenstand-*.md      technische Analyse und Projektstand
@@ -198,7 +204,7 @@ Protokoll: `/storage/rgds-test/es-switch.log`.
 ## Danksagung
 
 Dieses Projekt baut auf der Arbeit der ROCKNIX- und Batocera-Teams, dem
-ursprünglichen EmulationStation und dem Theme dii-ess-aye von beebono auf.
+ursprünglichen EmulationStation sowie den Themes dii-ess-aye von beebono und canvas-ds von toniremi auf.
 Die vollständige Liste steht in [`CREDITS.md`](CREDITS.md). Vielen Dank! 🙏
 
 ## Lizenz
