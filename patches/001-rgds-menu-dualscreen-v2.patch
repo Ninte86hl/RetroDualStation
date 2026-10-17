@@ -104,6 +104,38 @@ index 540986d51..c4346cb04 100644
  }
  
  void GuiBezelInstaller::processBezel(BatoceraBezel bezel)
+diff --git a/es-app/src/guis/GuiBios.cpp b/es-app/src/guis/GuiBios.cpp
+index dbd8c6f1f..36e9d688f 100644
+--- a/es-app/src/guis/GuiBios.cpp
++++ b/es-app/src/guis/GuiBios.cpp
+@@ -1,3 +1,4 @@
++#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
+ #include "guis/GuiBios.h"
+ 
+ #include "ApiSystem.h"
+@@ -16,7 +17,7 @@
+ 
+ #include <cstring>
+ 
+-#define WINDOW_WIDTH (float)Math::max((int)Renderer::getScreenHeight(), (int)(Renderer::getScreenWidth() * 0.65f))
++#define WINDOW_WIDTH (float)Math::max((int)Renderer::getScreenHeight(), (int)(RGDS_MENU_W * 0.65f))
+ 
+ void GuiBios::show(Window* window)
+ {
+@@ -201,11 +202,11 @@ void GuiBios::loadList()
+ void GuiBios::centerWindow()
+ {
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++		setSize(RGDS_MENU_W, Renderer::getScreenHeight());
+ 	else
+ 		setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.875f);
+ 
+-	setPosition((Renderer::getScreenWidth() - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
++	setPosition((RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ }
+ 
+ bool GuiBios::input(InputConfig* config, Input input)
 diff --git a/es-app/src/guis/GuiBluetoothDeviceOptions.cpp b/es-app/src/guis/GuiBluetoothDeviceOptions.cpp
 index 146a39f3f..2e364ec3c 100644
 --- a/es-app/src/guis/GuiBluetoothDeviceOptions.cpp
@@ -393,9 +425,18 @@ index 32d38fc76..84034658d 100644
  
  	auto path = ResourceManager::getInstance()->getResourcePath(":/kblayout.svg");
 diff --git a/es-app/src/guis/GuiLoading.h b/es-app/src/guis/GuiLoading.h
-index d9e24315a..a9a885b25 100644
+index d9e24315a..a73c3f5cd 100644
 --- a/es-app/src/guis/GuiLoading.h
 +++ b/es-app/src/guis/GuiLoading.h
+@@ -29,7 +29,7 @@ public:
+ 	GuiLoading(Window *window, const std::string title, const std::function<T(IGuiLoadingHandler*)> &func, const std::function<void(T)> &func2 = nullptr)
+ 		: GuiComponent(window), mBusyAnim(window), mFunc(func), mFunc2(func2)
+ 	{
+-		setSize((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
++		setSize((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
+ 		setTag("GuiLoading");
+ 	
+ 		mText = title;
 @@ -51,6 +51,13 @@ public:
  		mHandle->join();
  	}
@@ -610,18 +651,6 @@ index 9dab9535a..7bb530e33 100644
  
  	mWaitingLoad = false;
  }
-diff --git a/es-app/src/main.cpp b/es-app/src/main.cpp
-index edd28e10b..e0ca4419d 100644
---- a/es-app/src/main.cpp
-+++ b/es-app/src/main.cpp
-@@ -783,6 +783,7 @@ int main(int argc, char* argv[])
- 
- 				if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED && Settings::getInstance()->getBool("Windowed"))
- 				{
-+					LOG(LogInfo) << "RGDS-V2 SDL RESIZE: " << event.window.data1 << "x" << event.window.data2 << " renderer-before=" << Renderer::getScreenWidth() << "x" << Renderer::getScreenHeight();
- 					if (Renderer::onScreenSizeChanged(event.window.data1, event.window.data2))
- 					{
- 						Renderer::setWindowResizable(false);
 diff --git a/es-core/src/Window.cpp b/es-core/src/Window.cpp
 index 6b10fc8ed..36f6ac8c1 100644
 --- a/es-core/src/Window.cpp
@@ -811,31 +840,3 @@ index 5f7555d29..c44eb62f9 100644
  	}
  }
  
-diff --git a/es-core/src/renderers/Renderer.cpp b/es-core/src/renderers/Renderer.cpp
-index c5d5f8788..bf3e3d4ad 100644
---- a/es-core/src/renderers/Renderer.cpp
-+++ b/es-core/src/renderers/Renderer.cpp
-@@ -1093,12 +1093,23 @@ namespace Renderer
- 
- 	bool onScreenSizeChanged(int width, int height)
- 	{
-+		LOG(LogInfo) << "RGDS SIZE CHANGE: requested="
-+			<< width << "x" << height
-+			<< " current-window=" << windowWidth << "x" << windowHeight
-+			<< " current-screen=" << screenWidth << "x" << screenHeight;
-+
- 		if (screenWidth == width && screenHeight == height)
-+		{
-+			LOG(LogInfo) << "RGDS SIZE CHANGE: unchanged";
- 			return false;
-+		}
- 
- 		windowWidth = screenWidth = width;
- 		windowHeight = screenHeight = height;
- 
-+		LOG(LogInfo) << "RGDS SIZE CHANGE: applied screen="
-+			<< screenWidth << "x" << screenHeight;
-+
- 		resetCache();
- 		updateProjection();
- 		swapBuffers();
