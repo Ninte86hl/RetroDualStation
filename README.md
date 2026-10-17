@@ -61,7 +61,7 @@ in EmulationStation and the Sway setup, so the theme can work as intended:
 
 ## Limitations
 
-- **No ScreenScraper and no RetroAchievements** in a self-built ES. The
+- **No ScreenScraper and no RetroAchievements** in this build (release or self-built). The
   required developer credentials are only available to the official
   ROCKNIX build. To scrape with ScreenScraper, switch to **Single** via
   Ports, then back to **Dual**. Media and gamelists are shared.
@@ -91,8 +91,20 @@ docs/zwischenstand-*.md      technical analysis and project log (German)
 
 ## Installation
 
-Requirement: a built ES binary (see [`docs/BUILD.md`](docs/BUILD.md)) named
-`emulationstation-rgds-v6`. The name must start with `emulationstation-rgds`.
+Download **`dii-ess-aye-rocknix-dual-mod-v6.tar.gz`** from the
+[latest release](https://github.com/Ninte86hl/dii-ess-aye-rocknix-dual-mod/releases/latest)
+and unpack it on your computer:
+
+```bash
+tar xzf dii-ess-aye-rocknix-dual-mod-v6.tar.gz
+```
+```bash
+cd dii-ess-aye-rocknix-dual-mod-v6
+```
+
+The package contains the ready-built ES binary `emulationstation-rgds-v6`.
+Building it yourself is optional (see [`docs/BUILD.md`](docs/BUILD.md)); a
+self-built binary must also be named starting with `emulationstation-rgds`.
 
 Replace `<IP>` with the IP address of your device.
 
@@ -101,7 +113,7 @@ Replace `<IP>` with the IP address of your device.
 ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.service.d
 ```
 
-**2. Copy the files (from the repository folder):**
+**2. Copy the files (from the unpacked folder):**
 ```bash
 scp emulationstation-rgds-v6 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```

@@ -62,8 +62,8 @@ Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
 
 ## Einschränkungen
 
-- **Kein ScreenScraper und keine RetroAchievements** in der selbst gebauten
-  Version. Die nötigen Entwicklerzugangsdaten bekommt nur der offizielle
+- **Kein ScreenScraper und keine RetroAchievements** in dieser Version (Release
+  oder selbst gebaut). Die nötigen Entwicklerzugangsdaten bekommt nur der offizielle
   ROCKNIX-Build. Zum Scrapen per Port auf **Single** wechseln, danach
   zurück auf **Dual**. Medien und Gamelists werden geteilt.
 - DS-Spiele über RetroArch-Cores (melonDS/DeSmuME) sind ungetestet.
@@ -92,9 +92,20 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 
 ## Installation
 
-Voraussetzung: eine gebaute ES-Binärdatei (siehe [`docs/BUILD.de.md`](docs/BUILD.de.md)),
-benannt als `emulationstation-rgds-v6`. Der Name muss mit
-`emulationstation-rgds` beginnen.
+**`dii-ess-aye-rocknix-dual-mod-v6.tar.gz`** aus dem
+[aktuellen Release](https://github.com/Ninte86hl/dii-ess-aye-rocknix-dual-mod/releases/latest)
+herunterladen und auf dem Rechner entpacken:
+
+```bash
+tar xzf dii-ess-aye-rocknix-dual-mod-v6.tar.gz
+```
+```bash
+cd dii-ess-aye-rocknix-dual-mod-v6
+```
+
+Das Paket enthält die fertige ES-Binärdatei `emulationstation-rgds-v6`.
+Selbst bauen ist optional (siehe [`docs/BUILD.de.md`](docs/BUILD.de.md)); eine
+selbst gebaute Datei muss ebenfalls mit `emulationstation-rgds` beginnen.
 
 `<IP>` durch die IP-Adresse des Geräts ersetzen.
 
@@ -103,7 +114,7 @@ benannt als `emulationstation-rgds-v6`. Der Name muss mit
 ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.service.d
 ```
 
-**2. Dateien übertragen (vom Repo-Ordner aus):**
+**2. Dateien übertragen (aus dem entpackten Ordner):**
 ```bash
 scp emulationstation-rgds-v6 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
 ```
