@@ -5,7 +5,8 @@
     Replaces the original game list layouts of canvas-ds:
 
       Gamelist view style      Variant
-      Automatic / Detailed     original canvas-ds list with game info
+      Automatic / List         VI  game list only, centred names (no other artwork)
+      Detailed                 original canvas-ds list with game info
                                (marquee hidden, larger description)
       Grid                     V   Grid   : 2:3 covers (boxart), 5 x 2
       Carousel                 IV  Logos  : vertical logo carousel (marquee)
@@ -399,5 +400,34 @@
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</text>
+	</customView>
+
+	<!-- ===================================================== VI List (default for "Automatic") -->
+	<!-- Only the game names, centred on the bottom screen; hero on the top screen.
+	     Theme root: defaultView="list". -->
+	<customView name="list" displayName="List" inherits="detailed">
+		<image name="md_marquee,md_thumbnail,md_image">
+			<visible>false</visible>
+		</image>
+		<image name="playtime-logo,game-metadata-background-shadow-base,game-metadata-background-image-base,game-metadata-background-shadow-extended,game-metadata-background-image-extended,game-list-background-shadow,game-list-background,game-list-background-desc" extra="true">
+			<visible>false</visible>
+		</image>
+		<datetime name="md_releasedate,md_lastplayed">
+			<visible>false</visible>
+		</datetime>
+		<text name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom,md_description">
+			<visible>false</visible>
+		</text>
+		<rating name="md_rating">
+			<visible>false</visible>
+		</rating>
+		<textlist name="gamelist">
+			<origin>0.5 0.5</origin>
+			<pos>0.75 0.48</pos>
+			<size>0.42 0.84</size>
+			<alignment>center</alignment>
+			<horizontalMargin>0.01</horizontalMargin>
+			<zIndex>12</zIndex>
+		</textlist>
 	</customView>
 </theme>
