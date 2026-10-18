@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!--
 Theme Name: Canvas-ds-Batocera
 Version: 1.0
 Author: Siddy212
 Licnese: Creative Commons CC-BY-NC-SA
--->
-<theme defaultTransition="instant">
+--><theme defaultTransition="instant" defaultView="gamecarousel">
 	<formatVersion>7</formatVersion>
 
 	<!-- Includes -->
@@ -19,19 +18,13 @@ Licnese: Creative Commons CC-BY-NC-SA
    ///
    -->
 
-	<subset name="aspect-ratio" displayName="Aspect Ratio">
-		<include if="{screen.ratio} == '4/3'" name="4-3-auto" displayName="Automatic" />
-		<include name="4-3" displayName="4:3" />
-	</subset>
-
-   <!--
+	<!--
    ///
    Variables
    ///
    -->
    <variables>
-        <themeCustomizationsPath
-        >./theme-customizations</themeCustomizationsPath>
+        <themeCustomizationsPath>./theme-customizations</themeCustomizationsPath>
    </variables>
 
    <!--
@@ -40,45 +33,23 @@ Licnese: Creative Commons CC-BY-NC-SA
    ///
    -->
 
-	<subset name="system-view" displayName="System View">
-      <include name="grid" displayName="Grid" />
-      <include name="carousel" displayName="Carousel" />
-	</subset>
-
-   <!--
+	<!--
    ///
    Subset: System Grid Sizes
    ///
    -->
 
-	<subset
-        name="sysgridsize"
-        ifSubset="system-view:grid"
-        displayName="System Grid Size"
-    >
-		<include name="automatic" displayName="Automatic" />
-		<include name="3x1" displayName="3X1" />
-		<include name="3x2" displayName="3X2" />
-		<include name="3x3" displayName="3X3" />
-		<include name="4x2" displayName="4X2" />
-		<include name="4x3" displayName="4X3" />
-		<include name="4x4" displayName="4X4" />
-		<include name="5x2" displayName="5X2" />
-		<include name="5x3" displayName="5X3" />
-		<include name="5x4" displayName="5X4" />
-	</subset>
-
-   <!--
+	<!--
    ///
    Subset: Icon Scheme
    ///
    -->
 
    <subset name="icon-scheme" displayName="System Icon Style">
-      <include name="art" displayName="Art" />
-      <include name="icon" displayName="Icons" />
-      <include name="custom-art" displayName="Custom (Art)" />
-      <include name="custom-icon" displayName="Custom (Icons)" />
+      <include name="art" displayName="Art"/>
+      <include name="icon" displayName="Icons"/>
+      <include name="custom-art" displayName="Custom (Art)"/>
+      <include name="custom-icon" displayName="Custom (Icons)"/>
    </subset>
 
    <!--
@@ -88,20 +59,18 @@ Licnese: Creative Commons CC-BY-NC-SA
    -->
 
    <subset name="color-scheme" displayName="Color Scheme">
-      <include name="dark" displayName="Dark" />
-      <include name="light" displayName="Light" />
-      <include name="retro" displayName="Retro" />
-      <include name="neon" displayName="Neon" />
-      <include name="pastel" displayName="Pastel" />
-      <include name="sony" displayName="Sony" />
-      <include name="snes" displayName="Snes" />
-      <include name="famicom" displayName="Famicom" />
-      <include name="custom" displayName="Custom" />
+      <include name="dark" displayName="Dark"/>
+      <include name="light" displayName="Light"/>
+      <include name="retro" displayName="Retro"/>
+      <include name="neon" displayName="Neon"/>
+      <include name="pastel" displayName="Pastel"/>
+      <include name="sony" displayName="Sony"/>
+      <include name="snes" displayName="Snes"/>
+      <include name="famicom" displayName="Famicom"/>
+      <include name="custom" displayName="Custom"/>
    </subset>
    <include>./colors.xml</include>
-   <include
-        ifSubset="color-scheme:custom"
-    >${themeCustomizationsPath}/colors.xml</include>
+   <include ifSubset="color-scheme:custom">${themeCustomizationsPath}/colors.xml</include>
    <!--
    ///
    Subset: Font Size
@@ -109,9 +78,9 @@ Licnese: Creative Commons CC-BY-NC-SA
    -->
 
    <subset name="font-size" displayName="Font Size">
-      <include name="medium" displayName="Default" />
-      <include name="small" displayName="Small" />
-      <include name="large" displayName="Large" />
+      <include name="medium" displayName="Default"/>
+      <include name="small" displayName="Small"/>
+      <include name="large" displayName="Large"/>
    </subset>
 
    <!--
@@ -120,38 +89,24 @@ Licnese: Creative Commons CC-BY-NC-SA
    ///
    -->
 
-   <subset name="metadata" displayName="Metadata">
-      <include name="on" displayName="On" />
-      <include name="off" displayName="Off" />
-   </subset>
-
    <!--
    ///
    Subset: Game Metadata Option
    ///
    -->
 
-   <subset name="metadata-option" displayName="Metadata Rating/Playtime">
-      <include name="rating" displayName="Rating" />
-      <include name="playtime" displayName="Playtime" />
-   </subset>
-	<!--
+   <!--
    ///
    Aspect Ratios Variables
    ///
    -->
-   <include
-        ifSubset="aspect-ratio:4-3|4-3-auto"
-    >./_inc/variables/aspect-ratio-4-3-variables.xml</include>
+   <include>./_inc/variables/aspect-ratio-4-3-variables.xml</include>
 
 
 	<!-- SystemView Include -->
 	<!-- ~~~~~~~~~~~~~ -->
 
-	<include ifSubset="system-view:grid">./_inc/system-view/grid.xml</include>
-	<include
-        ifSubset="system-view:carousel"
-    >./_inc/system-view/carousel.xml</include>
+	<include>./_inc/system-view/carousel.xml</include>
 
 	<!-- Screen View -->
 	<!-- ~~~~~~~~~~~ -->
@@ -254,8 +209,7 @@ Licnese: Creative Commons CC-BY-NC-SA
       <menuIcons name="menuicons">
          <iconSystem>./_inc/images/menu-icon-system.svg</iconSystem>
          <iconUpdates>./_inc/images/menu-icon-update.svg</iconUpdates>
-         <iconControllers
-            >./_inc/images/menu-icon-controller.svg</iconControllers>
+         <iconControllers>./_inc/images/menu-icon-controller.svg</iconControllers>
          <iconGames>./_inc/images/menu-icon-games.svg</iconGames>
          <iconUI>./_inc/images/menu-icon-ui.svg</iconUI>
          <iconSound>./_inc/images/menu-icon-sound.svg</iconSound>
@@ -263,13 +217,11 @@ Licnese: Creative Commons CC-BY-NC-SA
          <iconScraper>./_inc/images/menu-icon-scraper.svg</iconScraper>
          <iconAdvanced>./_inc/images/menu-icon-advanced.svg</iconAdvanced>
          <iconQuit>./_inc/images/menu-icon-quit.svg</iconQuit>
-         <iconRetroachievements
-            >./_inc/images/menu-icon-achievements.svg</iconRetroachievements>
+         <iconRetroachievements>./_inc/images/menu-icon-achievements.svg</iconRetroachievements>
          <iconKodi>./_inc/images/menu-icon-kodi.svg</iconKodi>
          <iconRestart>./_inc/images/menu-icon-restart.svg</iconRestart>
          <iconShutdown>./_inc/images/menu-icon-shutdown.svg</iconShutdown>
-         <iconFastShutdown
-            >./_inc/images/menu-icon-shutdown.svg</iconFastShutdown>
+         <iconFastShutdown>./_inc/images/menu-icon-shutdown.svg</iconFastShutdown>
       </menuIcons>
    </view>
 
@@ -277,7 +229,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 	<!-- All Views -->
 	<!-- ~~~~~~~~~~ -->
 
-	<view name="system, basic, detailed, gamecarousel, grid">
+	<view name="system, detailed, gamecarousel, grid">
         <helpsystem name="help">
             <pos>1.5 1</pos>
             <visible>false</visible>
@@ -297,11 +249,7 @@ Licnese: Creative Commons CC-BY-NC-SA
             <zIndex>0</zIndex>
         </image>
         <!-- Included Color Backgrounds -->
-        <image
-            name="background-art"
-            extra="true"
-            ifSubset="color-scheme:light|dark|retro|neon|sony|snes|famicom|pastel"
-        >
+        <image name="background-art" extra="true" ifSubset="color-scheme:light|dark|retro|neon|sony|snes|famicom|pastel">
             <path>${backgroundArtPath}.jpg</path>
             <path>${backgroundArtPath}.webp</path>
 
@@ -340,42 +288,19 @@ Licnese: Creative Commons CC-BY-NC-SA
             <maxSize>0.48 0.7</maxSize>
             <zIndex>10</zIndex>
             <storyboard>
-                <animation
-                    event="activate"
-                    property="opacity"
-                    from="0"
-                    to="1"
-                    duration="400"
-                    mode="easeOut"
-                />
-                <animation
-                    event="activate"
-                    property="x"
-                    from="0.25"
-                    to="0.25"
-                    duration="0"
-                    mode="instant"
-                />
-                <animation
-                    event="activate"
-                    property="y"
-                    from="0.5"
-                    to="0.44"
-                    duration="500"
-                    mode="easeOut"
-                />
+                <animation event="activate" property="opacity" from="0" to="1" duration="400" mode="easeOut"/>
+                <animation event="activate" property="x" from="0.25" to="0.25" duration="0" mode="instant"/>
+                <animation event="activate" property="y" from="0.5" to="0.44" duration="500" mode="easeOut"/>
             </storyboard>
         </image>
 		<image name="gamesicon" extra="true">
-			<origin ifSubset="system-view:grid">1 0.5</origin>
-			<origin ifSubset="system-view:carousel">1 0.5</origin>
+			<origin>1 0.5</origin>
 			<path>./_inc/images/gamescount.svg</path>
 			<opacity>1</opacity>
 			<color>${systemInfoColor}</color>
 			<linearSmooth>true</linearSmooth>
 			<zIndex>3</zIndex>
-			<visible ifSubset="system-view:grid">true</visible>
-			<visible ifSubset="system-view:carousel">true</visible>
+			<visible>true</visible>
 		</image>
 		<text name="systemInfo">
 			<fontPath>${fontBold}</fontPath>
@@ -385,11 +310,7 @@ Licnese: Creative Commons CC-BY-NC-SA
             <size>0 ${systemDescriptionFontSize}</size>
             <fontSize>${systemDescriptionFontSize}</fontSize>
 		</text>
-		<text name="systemInfo" ifSubset="system-view:grid">
-			<origin>0 0.5</origin>
-			<alignment>left</alignment>
-		</text>
-		<text name="systemInfo" ifSubset="system-view:carousel">
+		<text name="systemInfo">
 			<origin>0 0.5</origin>
 			<alignment>left</alignment>
 		</text>
@@ -408,7 +329,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Gamelist: System Logo -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, gamecarousel, grid">
+	<view name="detailed, gamecarousel, grid">
 		<image name="logo" origin="0.5 0.5" linearSmooth="true">
 		    <pos>0.25 0.44</pos>
 			<path>./_inc/systems/logos/${system.theme}.svg</path>
@@ -424,14 +345,13 @@ Licnese: Creative Commons CC-BY-NC-SA
 	</view>
 	<!-- Gamelist: Full Metadata Call-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, gamecarousel, grid">
+	<view name="detailed, gamecarousel, grid">
 		<image name="playtime-logo" origin="0.5 0.5" linearSmooth="true" extra="true">
 			<path>./_inc/images/playtime-icon.svg</path>
 			<zIndex>4</zIndex>
 			<color>${gameMetadataColor}</color>
 			<opacity>0.7</opacity>
-			<visible ifSubset="metadata-option:rating">false</visible>
-			<visible ifSubset="metadata-option:playtime">true</visible>
+			<visible>true</visible>
 		</image>
 		<image name="md_marquee">
 			<origin>0.5 0.5</origin>
@@ -460,9 +380,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 			<color>${gameMetadataColor}</color>
 			<lineSpacing>1</lineSpacing>
 		</datetime>
-		<text
-            name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom"
-        >
+		<text name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom">
 			<origin>0 0.5</origin>
 			<fontPath>${fontBold}</fontPath>
 			<color>${gameMetadataColor}</color>
@@ -481,13 +399,11 @@ Licnese: Creative Commons CC-BY-NC-SA
 			<filledPath>./_inc/images/icon-star-filled.svg</filledPath>
 			<unfilledPath>./_inc/images/icon-star-unfilled.svg</unfilledPath>
 			<color>${gameMetadataColor}</color>
-			<visible ifSubset="metadata-option:rating">true</visible>
-			<visible ifSubset="metadata-option:playtime">false</visible>
+			<visible>false</visible>
 		</rating>
 		<text name="md_gametime_custom" extra="true">
-			<visible ifSubset="metadata-option:rating">false</visible>
-			<visible ifSubset="metadata-option:playtime">true</visible>
-			<text>{game:gametime} > 0 ? formatseconds({game:gametime}) : "Never"</text>
+			<visible>true</visible>
+			<text>{game:gametime} &gt; 0 ? formatseconds({game:gametime}) : "Never"</text>
 			<color>${gameMetadataColor}</color>
 			<autoScroll>horizontal</autoScroll>
 			<autoScrollSpeed>50</autoScrollSpeed>
@@ -527,10 +443,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Small Detailed Metadata Backgrounds -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view
-        name="detailed, gamecarousel, grid"
-        ifSubset="font-size:small,metadata:on"
-    >
+	<view name="detailed, gamecarousel, grid" ifSubset="font-size:small">
 		<!-- Start: Extended Metadata -->
 		<image name="game-metadata-background-shadow-extended" extra="true">
 			<origin>0.5 0.5</origin>
@@ -547,10 +460,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Medium/Large Metadata Backgrounds -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view
-        name="detailed, gamecarousel, grid"
-        ifSubset="font-size:medium|large,metadata:on"
-    >
+	<view name="detailed, gamecarousel, grid" ifSubset="font-size:medium|large">
 		<image name="game-metadata-background-shadow-base" extra="true">
 			<origin>0.5 0.5</origin>
 			<zIndex>2</zIndex>
@@ -565,7 +475,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Medium/Large Metadata Toggle -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+	<view name="detailed, grid" ifSubset="font-size:medium|large">
 		<text name="md_players">
 			<visible>false</visible>
 		</text>
@@ -591,32 +501,6 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Off Metadata Toggle -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, gamecarousel, grid" ifSubset="metadata:off">
-		<image name="game-metadata-background-shadow-base" extra="true">
-			<visible>false</visible>
-		</image>
-		<image name="game-metadata-background-image-base" extra="true">
-			<visible>false</visible>
-		</image>
-		<datetime name="md_releasedate,md_lastplayed">
-			<visible>false</visible>
-		</datetime>
-		<text
-            name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom"
-        >
-			<visible>false</visible>
-		</text>
-		<text name="md_description">
-			<visible>false</visible>
-		</text>
-		<rating name="md_rating">
-			<visible>false</visible>
-		</rating>
-		<image name="playtime-logo">
-			<visible>false</visible>
-		</image>
-	</view>
-
 	<!-- Carousel Detailed View -->
 	<!-- ~~~~~~~~~~~ -->
 	<view name="gamecarousel">
@@ -639,8 +523,9 @@ Licnese: Creative Commons CC-BY-NC-SA
    Aspect Ratios
    ///
    -->
-   <include
-        ifSubset="aspect-ratio:4-3|4-3-auto"
-    >./aspect-ratio-4-3.xml</include>
+   <include>./aspect-ratio-4-3.xml</include>
+
+	<!-- ROCKNIX DualStation: game list variants (replace the original layouts) -->
+	<include>./_inc/variants/variants.xml</include>
 
 </theme>

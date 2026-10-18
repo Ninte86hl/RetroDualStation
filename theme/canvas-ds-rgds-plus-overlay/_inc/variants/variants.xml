@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    ROCKNIX DualStation – canvas-ds game list views (RG DS Plus, 2048 x 768).
+    Top screen X 0 - 0.5, bottom screen X 0.5 - 1.0.
+    Replaces the original game list layouts of canvas-ds:
+
+      Gamelist view style      View
+      Detailed                 Detailed: large cover (boxart), title, description, info (no carousel)
+      Grid                     Grid    : canvas-ds game grid without metadata (boxart)
+      Automatic / Carousel     Icons   : 3 square icons like the system view (thumbnail)
+      Spotlight                Spotlight: one large card, 2:3 cover (boxart) + logo (marquee), slides sideways
+      Showcase                 Showcase: large icon + play time on the left, name carousel on the right
+
+    "Automatic" = "Carousel" (theme root: defaultView="gamecarousel").
+    Top screen in all views: hero artwork (image), video fades in after 5 s.
+    Media tags as written by RocknixDS Artwork Manager:
+      Hero -> image   (romname-hero.png)
+      Icon -> cartridge (romname-icon.png)
+      Grid -> boxart  (romname-box.png)
+      Logo -> marquee (romname-logo.png)
+    The migration script and the Artwork Manager point <thumbnail> to the
+    icon as well, so the carousel (thumbnail) shows the icons; scraped games
+    show their box. Detailed and Spotlight use boxart, then cartridge, thumbnail, image.
+-->
+<theme>
+	<formatVersion>7</formatVersion>
+
+	<!-- ===================================================== All game list views -->
+	<view name="detailed, gamecarousel, grid">
+		<!-- Hide the original canvas-ds game details and panels -->
+		<image name="md_marquee,md_thumbnail,md_image">
+			<visible>false</visible>
+		</image>
+		<image name="playtime-logo,game-metadata-background-shadow-base,game-metadata-background-image-base,game-metadata-background-shadow-extended,game-metadata-background-image-extended,game-list-background-shadow,game-list-background,game-list-background-desc" extra="true">
+			<visible>false</visible>
+		</image>
+		<datetime name="md_releasedate,md_lastplayed">
+			<visible>false</visible>
+		</datetime>
+		<text name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom,md_description">
+			<visible>false</visible>
+		</text>
+		<rating name="md_rating">
+			<visible>false</visible>
+		</rating>
+
+		<!-- Top screen: hero artwork, video after 5 seconds -->
+		<video name="md_video">
+			<pos>0.25 0.44</pos><!-- centred at the height of the icon row -->
+			<origin>0.5 0.5</origin>
+			<maxSize>0.44 0.6</maxSize>
+			<delay>5</delay>
+			<showSnapshotNoVideo>true</showSnapshotNoVideo>
+			<showSnapshotDelay>true</showSnapshotDelay>
+			<snapshotSource>image</snapshotSource>
+			<effect>fade</effect>
+			<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
+			<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
+			<visible>true</visible>
+			<zIndex>8</zIndex>
+		</video>
+	</view>
+
+	<!-- ===================================================== Detailed -->
+	<!-- Large cover on the left (fixed, it changes in place), title,
+	     description and info on the right. ES needs the game list to browse,
+	     so it is kept but fully transparent. -->
+	<view name="detailed">
+		<textlist name="gamelist">
+			<origin>0.5 0.5</origin>
+			<pos>0.75 0.5</pos>
+			<size>0.4 0.8</size>
+			<primaryColor>00000000</primaryColor>
+			<secondaryColor>00000000</secondaryColor>
+			<selectedColor>00000000</selectedColor>
+			<selectorColor>00000000</selectorColor>
+			<zIndex>1</zIndex>
+		</textlist>
+		<image name="detailCover" extra="true">
+			<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
+			<origin>0.5 0.5</origin>
+			<pos>0.6 0.4</pos>
+			<maxSize>0.165 0.62</maxSize><!-- 2:3 cover: about 317 x 476 px -->
+			<roundCorners>${CornersMedium}</roundCorners>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>20</zIndex>
+		</image>
+
+		<!-- Right side: title, description, info -->
+		<text name="md_name">
+			<origin>0 0.5</origin>
+			<pos>0.70 0.08</pos>
+			<size>0.28 0.07</size>
+			<alignment>left</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.04</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_description">
+			<origin>0 0</origin>
+			<pos>0.70 0.14</pos>
+			<size>0.28 0.46</size>
+			<alignment>left</alignment>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.03</fontSize>
+			<lineSpacing>1.3</lineSpacing>
+			<color>${gameMetadataColor}</color>
+			<autoScroll>vertical</autoScroll>
+			<autoScrollDelay>4000</autoScrollDelay>
+			<autoScrollSpeed>60</autoScrollSpeed>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+
+		<text name="label_players" extra="true">
+			<text>Players</text>
+			<origin>0 0.5</origin>
+			<pos>0.70 0.70</pos>
+			<size>0.13 0.06</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_players">
+			<origin>1 0.5</origin>
+			<pos>0.98 0.70</pos>
+			<size>0.15 0.06</size>
+			<alignment>right</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<value>-</value>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+
+		<text name="label_released" extra="true">
+			<text>Released</text>
+			<origin>0 0.5</origin>
+			<pos>0.70 0.77</pos>
+			<size>0.13 0.06</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<datetime name="md_releasedate">
+			<origin>1 0.5</origin>
+			<pos>0.98 0.77</pos>
+			<size>0.15 0.06</size>
+			<alignment>right</alignment>
+			<format>%Y</format>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<value>-</value>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</datetime>
+
+		<text name="label_developer" extra="true">
+			<text>Developer</text>
+			<origin>0 0.5</origin>
+			<pos>0.70 0.84</pos>
+			<size>0.13 0.06</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_developer">
+			<origin>1 0.5</origin>
+			<pos>0.98 0.84</pos>
+			<size>0.16 0.06</size>
+			<alignment>right</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<value>-</value>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+	</view>
+
+	<!-- ===================================================== Grid -->
+	<!-- canvas-ds "Game Grid" layout without the metadata bars: the grid uses
+	     the space of the bars. Covers from boxart (falls back to the icon/box). -->
+	<view name="grid">
+		<imagegrid name="gamegrid">
+			<pos>0.5 0.06</pos>
+			<size>0.5 0.88</size>
+			<imageSource>boxart</imageSource>
+		</imagegrid>
+	</view>
+
+	<!-- ===================================================== Carousel: 3 icons (also "Automatic") -->
+	<!-- Built without itemTemplate, so the custom views Spotlight and Showcase can
+	     inherit from it without taking over the icon styling.
+	     imageSource thumbnail: the migration/Artwork Manager points thumbnail
+	     to the icon (romname-icon.png), scraped games show their box instead. -->
+	<view name="gamecarousel">
+		<gamecarousel name="gamecarousel">
+			<type>horizontal</type>
+			<origin>0 0.5</origin>
+			<pos>0.5 0.44</pos>
+			<size>0.5 1</size>
+			<logoSize>0.255 0.345</logoSize><!-- relative to the carousel: 261 x 265 px -->
+			<logoScale>1.3</logoScale><!-- selected: 339 x 344 px -->
+			<maxLogoCount>3</maxLogoCount>
+			<scaledLogoSpacing>${logospacing}</scaledLogoSpacing>
+			<logoRotation>0</logoRotation>
+			<logoAlignment>center</logoAlignment>
+			<minLogoOpacity>0.9</minLogoOpacity>
+			<imageSource>thumbnail</imageSource>
+			<color>00000000</color>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>50</zIndex>
+		</gamecarousel>
+		<image name="gamecarouselLogo">
+			<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
+			<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
+		</image>
+		<text name="gamecarouselLogoText">
+			<color>${systemInfoColor}</color>
+		</text>
+		<!-- Name of the selected game below the icons -->
+		<text name="md_name">
+			<origin>0.5 0.5</origin>
+			<pos>0.75 0.72</pos>
+			<size>0.46 0.06</size>
+			<alignment>center</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>${systemYearFontSize}</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+	</view>
+
+	<!-- ===================================================== Spotlight (grid + logo) -->
+	<!-- Horizontal carousel like the system view, but only ONE large card is
+	     visible: the 2:3 cover on the left, the logo on the right. When
+	     scrolling, the card slides out and the next one slides in from the side. -->
+	<customView name="spotlight" displayName="Spotlight" inherits="gamecarousel">
+		<gamecarousel name="gamecarousel">
+			<type>horizontal</type>
+			<origin>0 0.5</origin>
+			<pos>0.5 0.44</pos>
+			<size>0.5 1</size>
+			<!-- In custom views ES takes logoSize relative to the whole screen
+			     (2048 x 768): 0.44 x 0.56 = 901 x 430 px card -->
+			<logoSize>0.44 0.56</logoSize>
+			<logoScale>1</logoScale>
+			<maxLogoCount>1</maxLogoCount><!-- only the selected card -->
+			<scaledLogoSpacing>0</scaledLogoSpacing>
+			<logoRotation>0</logoRotation>
+			<logoAlignment>center</logoAlignment>
+			<minLogoOpacity>1</minLogoOpacity>
+			<imageSource>boxart</imageSource>
+			<color>00000000</color>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>50</zIndex>
+			<itemTemplate>
+				<!-- Cover (2:3) on the left: 430 px high, about 287 px wide -->
+				<image name="spotCover" extra="true">
+					<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
+					<origin>0 0.5</origin>
+					<pos>0.04 0.5</pos>
+					<maxSize>0.34 1</maxSize>
+					<roundCorners>${CornersMedium}</roundCorners>
+					<linearSmooth>true</linearSmooth>
+					<zIndex>3</zIndex>
+				</image>
+				<!-- Logo on the right -->
+				<image name="spotLogo" extra="true">
+					<path>{game:marquee}</path>
+					<origin>0.5 0.5</origin>
+					<pos>0.69 0.5</pos>
+					<maxSize>0.56 0.7</maxSize>
+					<linearSmooth>true</linearSmooth>
+					<zIndex>4</zIndex>
+				</image>
+				<!-- Name instead of the logo when there is none -->
+				<text name="spotName" extra="true">
+					<text>{game:name}</text>
+					<origin>0.5 0.5</origin>
+					<pos>0.69 0.5</pos>
+					<size>0.56 0.5</size>
+					<alignment>center</alignment>
+					<fontPath>${fontBold}</fontPath>
+					<fontSize>0.045</fontSize>
+					<color>${systemInfoColor}</color>
+					<visible>!exists({game:marquee})</visible>
+					<zIndex>4</zIndex>
+				</text>
+			</itemTemplate>
+		</gamecarousel>
+		<image name="gamecarouselLogo">
+			<roundCorners>0</roundCorners>
+		</image>
+		<text name="md_name">
+			<visible>false</visible>
+		</text>
+	</customView>
+
+	<!-- ===================================================== Showcase -->
+	<!-- Left: large icon of the selected game, play time below.
+	     Right: game names as a vertical carousel with a fixed selection bar. -->
+	<customView name="showcase" displayName="Showcase" inherits="gamecarousel">
+		<image name="sc_icon" extra="true">
+			<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
+			<origin>0.5 0</origin>
+			<pos>0.62 0.125</pos><!-- top and bottom aligned with the list panel (0.125 - 0.875), vertically centred -->
+			<maxSize>0.19 0.75</maxSize><!-- grid 2:3, about 384 x 576 px -->
+			<roundCorners>${CornersLarge}</roundCorners>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>20</zIndex>
+		</image>
+
+		<image name="sc_panel" extra="true">
+			<path>${themePath}/_inc/variants/panel.svg</path>
+			<pos>0.735 0.125</pos>
+			<size>0.24 0.75</size><!-- 0.125 - 0.875, same height as the grid -->
+			<zIndex>10</zIndex>
+		</image>
+		<image name="sc_selector" extra="true">
+			<path>${themePath}/_inc/variants/bar.svg</path>
+			<origin>0.5 0.5</origin>
+			<pos>0.855 0.5</pos><!-- centre of the list panel -->
+			<size>0.228 0.065</size>
+			<color>${gamelistSelectorColor}</color>
+			<zIndex>40</zIndex>
+		</image>
+		<gamecarousel name="gamecarousel">
+			<type>vertical</type>
+			<origin>0 0.5</origin>
+			<pos>0.741 0.5</pos>
+			<!-- 9 rows of 59 px = 531 px (0.69): 4 above and 4 below the
+			     selection, rows outside the carousel are clipped completely -->
+			<size>0.228 0.67</size>
+			<!-- screen-relative (custom view): 467 x 50 px per name -->
+			<logoSize>0.228 0.065</logoSize>
+			<logoScale>1</logoScale>
+			<maxLogoCount>9</maxLogoCount>
+			<scaledLogoSpacing>0</scaledLogoSpacing>
+			<logoRotation>0</logoRotation>
+			<logoAlignment>left</logoAlignment>
+			<minLogoOpacity>1</minLogoOpacity>
+			<color>00000000</color>
+			<zIndex>50</zIndex>
+			<itemTemplate>
+				<text name="scName" extra="true">
+					<text>{game:name}</text>
+					<origin>0 0.5</origin>
+					<pos>0.035 0.5</pos>
+					<size>0.93 1</size>
+					<alignment>left</alignment>
+					<fontPath>${fontBold}</fontPath>
+					<fontSize>0.03</fontSize>
+					<color>${systemInfoColor}</color>
+					<opacity>0.6</opacity>
+					<!-- The selected name is drawn by md_name on the selection bar
+					     (with marquee scrolling), so it is hidden here. -->
+					<storyboard event="activate">
+						<animation property="opacity" to="0" duration="60" mode="easeOut" />
+					</storyboard>
+					<storyboard event="deactivate">
+						<animation property="opacity" to="0.6" duration="120" mode="easeOut" />
+					</storyboard>
+				</text>
+			</itemTemplate>
+		</gamecarousel>
+		<image name="gamecarouselLogo">
+			<roundCorners>0</roundCorners>
+		</image>
+		<!-- Name of the selected game on the selection bar; long names scroll
+		     like a news ticker -->
+		<text name="md_name">
+			<origin>0 0.5</origin>
+			<pos>0.772 0.5</pos>
+			<size>0.198 0.065</size>
+			<alignment>left</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<autoScrollDelay>1500</autoScrollDelay>
+			<autoScrollSpeed>40</autoScrollSpeed>
+			<visible>true</visible>
+			<zIndex>60</zIndex>
+		</text>
+	</customView>
+</theme>

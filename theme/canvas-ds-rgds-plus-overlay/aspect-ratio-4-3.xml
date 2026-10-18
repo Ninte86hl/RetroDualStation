@@ -21,26 +21,10 @@ based on 640x480
 	<!-- System View Grid -->
 	<!-- ~~~~~~~~~~~ -->
 
-	<view name="system" ifSubset="system-view:grid">
-		<imagegrid name="imagegrid">
-			<h>0.85</h>
-			<w>0.5</w>
-		</imagegrid>
-		<image name="gamesicon" extra="true">
-            <pos>0.03 0.05</pos>
-            <size>0 ${systemInfoFontSize}</size>
-		</image>
-		<text name="systemInfoGrid">
-            <pos>0.0375 0.05</pos>
-			<size>0 ${systemInfoFontSize}</size>
-            <fontSize>${systemInfoFontSize}</fontSize>
-		</text>
-	</view>
-
 	<!-- System View Carousel -->
 	<!-- ~~~~~~~~~~~ -->
 
-	<view name="system" ifSubset="system-view:carousel">
+	<view name="system">
             <image name="gamesicon" extra="true">
                 <pos>0.03 0.05</pos>
                 <size>0 ${systemInfoFontSize}</size>
@@ -90,7 +74,7 @@ based on 640x480
 		    <maxSize>0.375 .08</maxSize>
 		</image>
 	</view>
-	<view name="basic, detailed, grid" ifSubset="metadata:on">
+	<view name="detailed, grid">
 	    <image name="md_image">
             <pos>0.25 0.5</pos>
             <origin>0.5 0.5</origin>
@@ -116,36 +100,9 @@ based on 640x480
 		</image>
 	</view>
 
-	<view name="basic, detailed, grid" ifSubset="metadata:off">
-	    <image name="md_image">
-            <pos>0.25 0.5</pos>
-            <origin>0.5 0.5</origin>
-            <maxSize>0.525 0.6</maxSize>
-            <path>{game:image}</path>
-            <default>{game:thumbnail}</default>
-            <visible>false</visible>
-        </image>
-
-        <video name="md_video">
-            <pos>0.25 0.5</pos>
-            <origin>0.5 0.5</origin>
-            <maxSize>0.525 0.6</maxSize>
-            <effect>none</effect>
-            <delay>1.5</delay>
-            <showSnapshotNoVideo>true</showSnapshotNoVideo>
-            <showSnapshotDelay>true</showSnapshotDelay>
-            <snapshotSource>image</snapshotSource>
-        </video>
-		<image name="logo">
-		    <pos>0.25 0.9</pos>
-			<maxSize>0.345 .07</maxSize>
-		</image>
-	</view>
-
-
 	<!-- Small Grid View Detailed-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, grid" ifSubset="font-size:small,metadata:on">
+	<view name="detailed, grid" ifSubset="font-size:small">
 	<!-- Metadata Toggle-->
 		<image name="md_marquee,md_thumbnail">
 			<visible>false</visible>
@@ -158,14 +115,12 @@ based on 640x480
 		<image name="game-metadata-background-shadow-extended" extra="true">
              <pos>0.75 0.87</pos>
             <size>0.375 0.13</size>
-            <path
-            >./_inc/images/simple/gamelist-metadata-background-shadow-extended.webp</path>
+            <path>./_inc/images/simple/gamelist-metadata-background-shadow-extended.webp</path>
 		</image>
 		<image name="game-metadata-background-image-extended" extra="true">
 			<pos>0.75 0.87</pos>
             <size>0.375 0.13</size>
-			<path
-            >./_inc/images/simple/${gamelistMetadataBackgroundImage}-extended.webp</path>
+			<path>./_inc/images/simple/${gamelistMetadataBackgroundImage}-extended.webp</path>
 		</image>
 		<rating name="md_rating">
 			 <pos>0.66 0.907</pos>
@@ -220,7 +175,7 @@ based on 640x480
 
 	<!-- Medium/Large Grid View-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+	<view name="detailed, grid" ifSubset="font-size:medium|large">
 
 		<!-- Metadata Toggle-->
 			<image name="md_marquee,md_thumbnail">
@@ -233,14 +188,12 @@ based on 640x480
 		<image name="game-metadata-background-shadow-base" extra="true">
             <pos>0.75 0.885</pos>
             <size>0.45 0.1559172633</size>
-            <path
-            >./_inc/images/simple/gamelist-metadata-background-shadow-base.webp</path>
+            <path>./_inc/images/simple/gamelist-metadata-background-shadow-base.webp</path>
 		</image>
 		<image name="game-metadata-background-image-base" extra="true">
             <pos>0.75 0.885</pos>
             <size>0.45 0.11278434754</size>
-            <path
-            >./_inc/images/simple/${gamelistMetadataBackgroundImage}-base.webp</path>
+            <path>./_inc/images/simple/${gamelistMetadataBackgroundImage}-base.webp</path>
 		</image>
 		<rating name="md_rating">
             <pos>0.675 0.918</pos>
@@ -272,14 +225,8 @@ based on 640x480
 		</image>
 	</view>
 
-	<view name="basic, detailed, grid" ifSubset="metadata:off">
-			<image name="md_marquee,md_thumbnail">
-				<visible>false</visible>
-			</image>
-	</view>
-
 	<!-- Show also thumbnail and other data when metadata is on -->
-	<view name="basic, detailed" ifSubset="metadata:on">
+	<view name="detailed">
     	<image name="game-list-background-shadow" extra="true">
     		<origin>0.5 0</origin>
     		<pos>0.63615 0.05</pos>
@@ -347,45 +294,8 @@ based on 640x480
     </view>
 
     <!-- simple game list taking all available space when metadata is off -->
-	<view name="basic, detailed" ifSubset="metadata:off">
-		<image name="game-list-background-shadow" extra="true">
-			<origin>0.5 0.5</origin>
-			<pos>${gamelistShadowPos}</pos>
-        <zIndex>2</zIndex>
-			<linearSmooth>true</linearSmooth>
-        <path>./_inc/images/gamelist/gamelist-background-shadow.webp</path>
-			<size>${gamelistShadowSize}</size>
-			<visible>true</visible>
-		</image>
-		<image name="game-list-background" extra="true">
-			<origin>0.5 0.5</origin>
-			<pos>${gamelistBackgroundPos}</pos>
-            <zIndex>3</zIndex>
-			<linearSmooth>true</linearSmooth>
-			<path>${gamelistBackgroundImageCalculated}</path>
-			<size>${gamelistBackgroundSize}</size>
-			<visible>true</visible>
-		</image>
-		<textlist name="gamelist">
-			<fontPath>${fontBold}</fontPath>
-			<selectorColor>${gamelistSelectorColor}</selectorColor>
-			<selectedColor>${gamelistSelectedColor}</selectedColor>
-			<primaryColor>${gamelistPrimaryColor}</primaryColor>
-			<secondaryColor>${gamelistSecondaryColor}</secondaryColor>
-			<horizontalMargin>0.008333333333333</horizontalMargin>
-			<zIndex>4</zIndex>
-			<origin>0.5 0.5</origin>
-			<pos>${gamelistPos}</pos>
-			<size>${gamelistSize}</size>
-			<fontSize>${gamelistFontSize}</fontSize>
-			<selectorHeight>${gamelistSelectorHeight}</selectorHeight>
-			<lines>${linecount}</lines>
-			<alignment>center</alignment>
-		</textlist>
-	</view>
-
 	<!-- Game Carousel - Small Metadata -->
-		<view name="gamecarousel" ifSubset="font-size:small,metadata:on">
+		<view name="gamecarousel" ifSubset="font-size:small">
 			<image name="md_marquee">
 				<visible>false</visible>
 			</image>
@@ -410,14 +320,12 @@ based on 640x480
 			<image name="game-metadata-background-shadow-extended" extra="true">
                   <pos>0.69 0.7658187797</pos>
                   <size>0.36 0.45497526246</size>
-            <path
-            >./_inc/images/detailed/gamelist-metadata-background-shadow-extended.webp</path>
+            <path>./_inc/images/detailed/gamelist-metadata-background-shadow-extended.webp</path>
 			</image>
 			<image name="game-metadata-background-image-extended" extra="true">
 				<pos>0.69 0.7658187797</pos>
                   <size>0.36 0.41118466204</size>
-				<path
-            >./_inc/images/detailed/${gamelistMetadataBackgroundImage}-extended.webp</path>
+				<path>./_inc/images/detailed/${gamelistMetadataBackgroundImage}-extended.webp</path>
 			</image>
 			<rating name="md_rating">
 				<pos>0.555 0.635</pos>
@@ -486,7 +394,7 @@ based on 640x480
 
 		<!-- Game Carousel - Medium/Large Metadata -->
 		<!-- ~~~~~~~~~~~~~ -->
-		<view name="gamecarousel" ifSubset="font-size:medium|large,metadata:on">
+		<view name="gamecarousel" ifSubset="font-size:medium|large">
 		<image name="md_marquee">
 			<visible>false</visible>
 		</image>
@@ -511,14 +419,12 @@ based on 640x480
 		<image name="game-metadata-background-shadow-base" extra="true">
                   <pos>0.69 0.7658187797</pos>
                   <size>0.36 0.45497526246</size>
-            <path
-            >./_inc/images/detailed/gamelist-metadata-background-shadow-extended.webp</path>
+            <path>./_inc/images/detailed/gamelist-metadata-background-shadow-extended.webp</path>
 		</image>
 		<image name="game-metadata-background-image-base" extra="true">
 			<pos>0.69 0.7658187797</pos>
                   <size>0.36 0.41118466204</size>
-			<path
-            >./_inc/images/detailed/${gamelistMetadataBackgroundImage}-extended.webp</path>
+			<path>./_inc/images/detailed/${gamelistMetadataBackgroundImage}-extended.webp</path>
 		</image>
 		<rating name="md_rating">
 			<pos>0.555 0.635</pos>
@@ -585,28 +491,4 @@ based on 640x480
 
 		<!-- Game Carousel - Metadata Off -->
 
-		<view name="gamecarousel" ifSubset="metadata:off">
-        <image name="md_marquee">
-			<visible>false</visible>
-		</image>
-		<image name="md_image">
-			<pos>0.25 0.5</pos>
-                <origin>0.5 0.5</origin>
-			<maxSize ifSubset="media-type:image">0.63 0.42</maxSize>
-			<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
-			<maxSize ifSubset="media-type:miximage">0.579 0.35</maxSize>
-			<visible>true</visible>
-			<visible ifSubset="media-type:boxart">false</visible>
-		</image>
-		<image name="md_thumbnail">
-			<pos>0.666 0.5</pos>
-                <origin>0.5 0.5</origin>
-			<pos ifSubset="media-type:boxart">0.666 0.5</pos>
-			<maxSize>0.24 0.18</maxSize>
-			<maxSize ifSubset="media-type:boxart">0.63 0.42</maxSize>
-			<visible>${visiblemix}</visible>
-			<visible ifSubset="media-type:boxart">true</visible>
-		</image>
-		</view>
-
-</theme>
+		</theme>

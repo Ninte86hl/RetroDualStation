@@ -27,7 +27,8 @@ Das Original-Theme für das RG DS stammt von beebono.
 über ein kleines Overlay in [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/)
 (mit seiner Erlaubnis, CC BY-NC-SA). Der Ports-Umschalter merkt sich, welches
 Theme du in welchem Modus nutzt. Es hat eine eigene Installations-ZIP im Release
-(`canvas-ds-rgds-plus-v8.zip`, wie die Haupt-ZIP in `ports` entpacken).
+(`canvas-ds-rgds-plus-v9.zip`, wie die Haupt-ZIP in `ports` entpacken).
+Enthalten sind fünf Spielelisten-Ansichten: Gamecarousel, Detailliert, Raster, Showcase und Spotlight.
 
 ---
 
@@ -39,6 +40,7 @@ Theme du in welchem Modus nutzt. Es hat eine eigene Installations-ZIP im Release
 - Save State Manager, Advanced Game Settings, Bildschirmtastatur, The Bezel Project
 - Umschalten zwischen dieser Version und dem Original-ES über **Ports**, inklusive Theme-Wechsel
 - Übersteht Neustarts des Geräts
+- Links/Rechts in der Spieleliste springt im Dual-Modus nicht mehr ins nächste System (L2/R2 wechseln weiterhin); im Single-Modus bleibt deine Einstellung
 
 ## Screenshots
 
@@ -123,7 +125,7 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 
 ### Einfacher Weg: Installer über Ports (empfohlen)
 
-1. **`rocknix-dualstation-v8.zip`** aus dem
+1. **`rocknix-dualstation-v9.zip`** aus dem
    [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
    herunterladen.
 2. In den Ordner **`ports`** bei den ROMs entpacken
@@ -149,13 +151,13 @@ ext4-Partition (bei vielen RG-DS-Plus-Installationen der Fall), über das
 Netzwerk kopieren (`<IP>` durch die IP-Adresse des Geräts ersetzen):
 
 ```bash
-scp rocknix-dualstation-v8.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v9.zip root@<IP>:/storage/roms/ports/
 ```
 
 Dann auf dem Gerät (SSH):
 
 ```bash
-cd /storage/roms/ports && unzip rocknix-dualstation-v8.zip && rm rocknix-dualstation-v8.zip
+cd /storage/roms/ports && unzip rocknix-dualstation-v9.zip && rm rocknix-dualstation-v9.zip
 ```
 
 Ein Update von einer älteren Version funktioniert genauso: neue ZIP

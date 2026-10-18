@@ -2,7 +2,7 @@
 
 RG DS Plus adaptation of **[canvas-ds](https://github.com/toniremi/canvas-ds)**
 by **toniremi**, shared with his permission. This folder contains only the
-7 changed layout files – the artwork, fonts and everything else come from the
+changed layout files – the artwork, fonts and everything else come from the
 original theme.
 
 > 🇩🇪 Anpassung des Themes canvas-ds von toniremi an das RG DS Plus, mit seiner
@@ -20,7 +20,7 @@ original theme.
 | Canvas | 1920 × 480 (three 640 × 480 areas, the third unused) | 2048 × 768 (two 1024 × 768 screens) |
 | Horizontal positions and widths | as designed | × 1.5 (`pos`, `size`, `maxSize`, `minSize`, `w`, `logoSize`, layout variables, x animations) |
 | Vertical values, fonts | as designed | unchanged |
-| Gamelist style "Automatic" | systems without scraped media fall back to ES's unstyled basic view | the `basic` view uses the detailed layout |
+| Gamelist style "Automatic" | systems without scraped media fall back to ES's unstyled basic view | the icon carousel (`defaultView="gamecarousel"`); "Basic" is no longer offered |
 
 Not scaled on purpose: item templates and grid tiles (relative to the tile)
 and carousel logo sizes (ES multiplies them by the carousel size, which is
@@ -28,6 +28,35 @@ already scaled).
 
 `tools/scale_canvas.py` is the script that produced these files from the
 original; `tools/SCALED-VALUES.txt` lists every changed value.
+
+## Game list views
+
+The original game list layouts of canvas-ds are replaced by four views for
+the two screens (`_inc/variants/variants.xml`). On the top screen all of them
+show the hero artwork (`image`); a video fades in after 5 seconds.
+
+| Gamelist view style | Bottom screen | Media |
+|---|---|---|
+| Detailed | large 2:3 cover on the left, title, description, players, year, developer on the right | `boxart` |
+| Automatic / Carousel | 3 square icons, like the system view, name of the selected game below | `thumbnail` (the Artwork Manager points it to the icon) |
+| Grid | canvas-ds game grid, without the metadata bars | `boxart` |
+| Spotlight | one large card (2:3 cover left, logo right) that slides in from the side like the system view | `boxart` + `marquee` |
+| Showcase | large grid on the left, game names as a vertical carousel on the right (same height, centred) | `boxart` |
+
+### Fixed theme options
+
+These canvas-ds options are no longer offered in the theme configuration,
+because the views above depend on them (`tools/fix_subsets.py`):
+
+| Option | Fixed to |
+|---|---|
+| Aspect Ratio | 4:3 |
+| System View | Carousel |
+| System Grid Size, Automatic Grid Size | Automatic |
+| Metadata | On |
+| Metadata Rating/Playtime | Playtime |
+
+Still adjustable: Color Scheme, System Icon Style, Font Size.
 
 ## Requirements
 
@@ -40,7 +69,7 @@ screens).
 
 Requires ROCKNIX DualStation to be installed.
 
-1. Download **`canvas-ds-rgds-plus-v8.zip`** from the
+1. Download **`canvas-ds-rgds-plus-v9.zip`** from the
    [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
    (about 180 MB – the complete theme including toniremi's artwork).
 2. Unpack it into the **`ports`** folder of your ROMs.
