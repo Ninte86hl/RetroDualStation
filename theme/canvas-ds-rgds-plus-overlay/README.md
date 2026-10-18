@@ -43,6 +43,21 @@ show the hero artwork (`image`); a video fades in after 5 seconds.
 | Spotlight | one large card (2:3 cover left, logo right) that slides in from the side like the system view | `boxart` + `marquee` |
 | Showcase | large icon with play time on the left, game names as a vertical carousel on the right | `cartridge` / `thumbnail` |
 
+### Fixed theme options
+
+These canvas-ds options are no longer offered in the theme configuration,
+because the views above depend on them (`tools/fix_subsets.py`):
+
+| Option | Fixed to |
+|---|---|
+| Aspect Ratio | 4:3 |
+| System View | Carousel |
+| System Grid Size, Automatic Grid Size | Automatic |
+| Metadata | On |
+| Metadata Rating/Playtime | Playtime |
+
+Still adjustable: Color Scheme, System Icon Style, Font Size.
+
 ## Requirements
 
 The dual-screen ES from this repository (ES window 2048 × 768 across both

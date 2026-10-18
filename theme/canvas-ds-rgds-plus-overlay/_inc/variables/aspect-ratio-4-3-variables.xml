@@ -20,8 +20,7 @@ based on 640x480
             <helpFontSizeSmall>0.015</helpFontSizeSmall>
             <helpPos>0.97</helpPos>
             <helpPosSmall>0.03</helpPosSmall>
-            <gamelistBackgroundImageCalculated
-        >./_inc/images/gamelist/${gamelistBackgroundImage}-small.webp</gamelistBackgroundImageCalculated>
+            <gamelistBackgroundImageCalculated>./_inc/images/gamelist/${gamelistBackgroundImage}-small.webp</gamelistBackgroundImageCalculated>
             <gamelistFontSize>0.022</gamelistFontSize>
             <gamelistSelectorHeight>0.039814814814815</gamelistSelectorHeight>
             <itemSizeCarousel>0.20 0.25</itemSizeCarousel>
@@ -44,8 +43,7 @@ based on 640x480
             <helpFontSizeSmall>0.015</helpFontSizeSmall>
             <helpPos>0.97</helpPos>
             <helpPosSmall>0.03</helpPosSmall>
-            <gamelistBackgroundImageCalculated
-        >./_inc/images/gamelist/${gamelistBackgroundImage}-medium.webp</gamelistBackgroundImageCalculated>
+            <gamelistBackgroundImageCalculated>./_inc/images/gamelist/${gamelistBackgroundImage}-medium.webp</gamelistBackgroundImageCalculated>
             <gamelistFontSize>0.030333333333333</gamelistFontSize>
             <gamelistSelectorHeight>0.051388888888889</gamelistSelectorHeight>
             <itemSizeCarousel>0.20 0.25</itemSizeCarousel>
@@ -68,8 +66,7 @@ based on 640x480
             <helpFontSizeSmall>0.015</helpFontSizeSmall>
             <helpPos>0.97</helpPos>
             <helpPosSmall>0.03</helpPosSmall>
-            <gamelistBackgroundImageCalculated
-        >./_inc/images/gamelist/${gamelistBackgroundImage}-large.webp</gamelistBackgroundImageCalculated>
+            <gamelistBackgroundImageCalculated>./_inc/images/gamelist/${gamelistBackgroundImage}-large.webp</gamelistBackgroundImageCalculated>
             <gamelistFontSize>0.036333333333333</gamelistFontSize>
             <gamelistSelectorHeight>0.06388888888889</gamelistSelectorHeight>
             <itemSizeCarousel>0.20 0.25</itemSizeCarousel>
@@ -83,7 +80,7 @@ based on 640x480
 
    <!-- Detailed Gamelist size changes depending on metadata -->
    <!-- Detailed Gamelist metadata:on-->
-   <variables ifSubset="metadata:on">
+   <variables>
         <!-- Game List -->
         <gamelistPos>0.75 0.45</gamelistPos>
         <gamelistSize>0.42 0.67</gamelistSize>
@@ -95,19 +92,7 @@ based on 640x480
         <gamelistShadowSize>0.45 0.7972222528</gamelistShadowSize>
    </variables>
    <!-- Detailed Gamelist metadata:off-->
-   <variables ifSubset="metadata:off">
-        <!-- Game List -->
-        <gamelistPos>0.75 0.5</gamelistPos>
-        <gamelistSize>0.42 0.72</gamelistSize>
-        <!-- Game List Background -->
-        <gamelistBackgroundPos>0.75 0.50648148147</gamelistBackgroundPos>
-        <gamelistBackgroundSize>0.45 0.82</gamelistBackgroundSize>
-        <!-- Game List Background Shadow -->
-        <gamelistShadowPos>0.75 0.50648148147</gamelistShadowPos>
-        <gamelistShadowSize>0.45 0.8972222528</gamelistShadowSize>
-   </variables>
-
-	<variables>
+   <variables>
 		<CornersGrid>5</CornersGrid>
 		<CornersSmall>10</CornersSmall>
 		<CornersMedium>20</CornersMedium>

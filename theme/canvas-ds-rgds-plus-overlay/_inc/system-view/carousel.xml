@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
 <theme defaultTransition="instant">
 	<formatVersion>7</formatVersion>
 
 
     <!-- System View: Carousel-->
 	<!-- ~~~~~~~~~~~ -->
-	<view name="system" ifSubset="system-view:carousel">
+	<view name="system">
 		<carousel name="systemcarousel">
 			<type>horizontal</type>
 			<origin>0 0.5</origin>
@@ -25,10 +24,10 @@
 			<!-- ~~~~~~~~~~~ -->
 			<itemTemplate ifSubset="icon-scheme:art|custom-art">
 				<storyboard event="activate">
-					<animation property="scale" to="1.05" duration="150" mode="easeOut" />
+					<animation property="scale" to="1.05" duration="150" mode="easeOut"/>
 				</storyboard>
 				<storyboard event="deactivate">
-					<animation property="scale" to="1" duration="250" mode="easeOut" />
+					<animation property="scale" to="1" duration="250" mode="easeOut"/>
 				</storyboard>
 				<image name="shade" extra="true">
 					<path>./_inc/system-view/square-bg.png</path>
@@ -40,12 +39,8 @@
             		<zIndex>2</zIndex>
             	</image>
           		<image name="systemBack" extra="true">
-					<path
-                        ifSubset="icon-scheme:art"
-                    >firstfile("${themePath}/_inc/systems/carousel-icons-art/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-art/_default.webp")</path>
-					<path
-                        ifSubset="icon-scheme:custom-art"
-                    >firstfile("${themeCustomizationsPath}/artwork/" + {system:theme} + ".webp","${themeCustomizationsPath}/artwork/" + {system:theme} + ".png","${themePath}/_inc/systems/carousel-icons-art/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-art/_default.webp")</path>
+					<path ifSubset="icon-scheme:art">firstfile("${themePath}/_inc/systems/carousel-icons-art/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-art/_default.webp")</path>
+					<path ifSubset="icon-scheme:custom-art">firstfile("${themeCustomizationsPath}/artwork/" + {system:theme} + ".webp","${themeCustomizationsPath}/artwork/" + {system:theme} + ".png","${themePath}/_inc/systems/carousel-icons-art/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-art/_default.webp")</path>
             		<pos>0.5 0.78</pos>
 					<origin>0.5 1</origin>
 					<maxSize>0.75 0.75</maxSize>
@@ -69,48 +64,22 @@
 					<zIndex>5</zIndex>
 					<opacity>0.25</opacity>
                     <storyboard event="activate">
-                        <animation
-                            property="opacity"
-                            to="1.00"
-                            duration="150"
-                            mode="easeOut"
-                        />
+                        <animation property="opacity" to="1.00" duration="150" mode="easeOut"/>
                     </storyboard>
                     <storyboard event="deactivate">
-                        <animation
-                            property="opacity"
-                            to="0.25"
-                            duration="150"
-                            mode="easeOut"
-                        />
+                        <animation property="opacity" to="0.25" duration="150" mode="easeOut"/>
                     </storyboard>
 				</text>
-		        <image
-                    name="theLogoImage"
-                    pos="0.5 0.92"
-                    origin="0.5 0.75"
-                    maxSize="0.6 0.16"
-                    linearSmooth="true"
-                >
+		        <image name="theLogoImage" pos="0.5 0.92" origin="0.5 0.75" maxSize="0.6 0.16" linearSmooth="true">
               		<path>${themePath}/_inc/systems/logos/{system:theme}.svg</path>
 					<zIndex>4</zIndex>
 					<color>${systemInfoColor}</color>
 					<opacity>0.25</opacity>
                     <storyboard event="activate">
-                        <animation
-                            property="opacity"
-                            to="1.00"
-                            duration="150"
-                            mode="easeOut"
-                        />
+                        <animation property="opacity" to="1.00" duration="150" mode="easeOut"/>
                     </storyboard>
                     <storyboard event="deactivate">
-                        <animation
-                            property="opacity"
-                            to="0.25"
-                            duration="150"
-                            mode="easeOut"
-                        />
+                        <animation property="opacity" to="0.25" duration="150" mode="easeOut"/>
                     </storyboard>
             	</image>
 				<text name="fallbackText" alignment="center" multiLine="true">
@@ -119,8 +88,7 @@
 					<size>1 1</size>
 					<forceUppercase>true</forceUppercase>
 					<visible>false</visible>
-					<visible
-                    >!exists("${themePath}/_inc/systems/logos/" + {system:theme} + ".svg")</visible>
+					<visible>!exists("${themePath}/_inc/systems/logos/" + {system:theme} + ".svg")</visible>
 					<text>{system:fullName}</text>
 					<fontSize>${systemDescriptionFontSize}</fontSize>
 					<fontPath>${fontBold}</fontPath>
@@ -129,20 +97,10 @@
 					<zIndex>5</zIndex>
 					<opacity>0.25</opacity>
                     <storyboard event="activate">
-                        <animation
-                            property="opacity"
-                            to="1.00"
-                            duration="150"
-                            mode="easeOut"
-                        />
+                        <animation property="opacity" to="1.00" duration="150" mode="easeOut"/>
                     </storyboard>
                     <storyboard event="deactivate">
-                        <animation
-                            property="opacity"
-                            to="0.25"
-                            duration="150"
-                            mode="easeOut"
-                        />
+                        <animation property="opacity" to="0.25" duration="150" mode="easeOut"/>
                     </storyboard>
 				</text>
 			</itemTemplate>
@@ -151,10 +109,10 @@
 			<!-- ~~~~~~~~~~~ -->
 			<itemTemplate ifSubset="icon-scheme:icon|custom-icon">
 				<storyboard event="activate">
-					<animation property="scale" to="1.05" duration="150" mode="easeOut" />
+					<animation property="scale" to="1.05" duration="150" mode="easeOut"/>
 				</storyboard>
 				<storyboard event="deactivate">
-					<animation property="scale" to="1" duration="250" mode="easeOut" />
+					<animation property="scale" to="1" duration="250" mode="easeOut"/>
 				</storyboard>
 				<image name="backdrop" extra="true">
 					<path>./_inc/system-view/icon.webp</path>
@@ -174,12 +132,8 @@
 					<zIndex>2</zIndex>
 				</image>
 				<image name="systemBack" extra="true">
-					<path
-                        ifSubset="icon-scheme:icon"
-                    >firstfile("${themePath}/_inc/systems/carousel-icons-icons/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-icons/_default.webp")</path>
-					<path
-                        ifSubset="icon-scheme:custom-icon"
-                    >firstfile("${themeCustomizationsPath}/icons/" + {system:theme} + ".webp","${themeCustomizationsPath}/icons/" + {system:theme} + ".png","${themePath}/_inc/systems/carousel-icons-icons/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-icons/_default.webp")</path>
+					<path ifSubset="icon-scheme:icon">firstfile("${themePath}/_inc/systems/carousel-icons-icons/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-icons/_default.webp")</path>
+					<path ifSubset="icon-scheme:custom-icon">firstfile("${themeCustomizationsPath}/icons/" + {system:theme} + ".webp","${themeCustomizationsPath}/icons/" + {system:theme} + ".png","${themePath}/_inc/systems/carousel-icons-icons/" + {system:theme} + ".webp","${themePath}/_inc/systems/carousel-icons-icons/_default.webp")</path>
 					<pos>0.5 0.45</pos>
 					<origin>0.5</origin>
 					<maxSize>0.75 0.8</maxSize>
@@ -190,10 +144,10 @@
 				</image>
 				<image name="systemBack" extra="true">
 					<storyboard event="activate">
-					<animation property="opacity" to="1.00" duration="250" mode="easeOut" />
+					<animation property="opacity" to="1.00" duration="250" mode="easeOut"/>
 					</storyboard>
 					<storyboard event="deactivate">
-					<animation property="opacity" to=".90" duration="250" mode="easeOut" />
+					<animation property="opacity" to=".90" duration="250" mode="easeOut"/>
 					</storyboard>
 				</image>
 				<text name="systemyear" alignment="center" multiLine="true">
@@ -214,8 +168,7 @@
 					<size>1 1</size>
 					<forceUppercase>true</forceUppercase>
 					<visible>false</visible>
-					<visible
-                    >!exists("${themePath}/_inc/systems/logos/" + {system:theme} + ".svg")</visible>
+					<visible>!exists("${themePath}/_inc/systems/logos/" + {system:theme} + ".svg")</visible>
 					<text>{system:fullName}</text>
 					<fontSize>${systemDescriptionFontSize}</fontSize>
 					<fontPath>${fontBold}</fontPath>
@@ -223,13 +176,7 @@
 					<scale>1</scale>
 					<zIndex>6</zIndex>
 				</text>
-				<image
-                    name="theLogoImage"
-                    pos="0.5 0.8"
-                    origin="0.5 1"
-                    maxSize="0.24 0.12"
-                    linearSmooth="true"
-                >
+				<image name="theLogoImage" pos="0.5 0.8" origin="0.5 1" maxSize="0.24 0.12" linearSmooth="true">
               		<path>${themePath}/_inc/systems/logos/{system:theme}.svg</path>
 					<zIndex>6</zIndex>
 					<color>${systemInfoColor}</color>
