@@ -7,7 +7,7 @@
       Gamelist view style      View
       Detailed                 List    : only the game names, centred
       Automatic / Carousel     Icons   : 3 square icons like the system view (thumbnail)
-      Spotlight                Spotlight: horizontal carousel of cards, 2:3 cover (boxart) + logo (marquee)
+      Spotlight                Spotlight: one large card, 2:3 cover (boxart) + logo (marquee), slides sideways
       Showcase                 Showcase: vertical cover carousel (boxart), description, info
 
     "Automatic" = "Carousel" (theme root: defaultView="gamecarousel").
@@ -119,9 +119,9 @@
 	</view>
 
 	<!-- ===================================================== Spotlight (grid + logo) -->
-	<!-- Horizontal carousel like the system view: each game is one card with
-	     the 2:3 cover on the left and its logo on the right. The selected card
-	     is in the middle, the neighbours slide in from the sides. -->
+	<!-- Horizontal carousel like the system view, but only ONE large card is
+	     visible: the 2:3 cover on the left, the logo on the right. When
+	     scrolling, the card slides out and the next one slides in from the side. -->
 	<customView name="spotlight" displayName="Spotlight" inherits="gamecarousel">
 		<gamecarousel name="gamecarousel">
 			<type>horizontal</type>
@@ -129,31 +129,25 @@
 			<pos>0.5 0.44</pos>
 			<size>0.5 1</size>
 			<!-- In custom views ES takes logoSize relative to the whole screen
-			     (2048 x 768): 0.2246 x 0.365 = 460 x 280 px per card -->
-			<logoSize>0.2246 0.365</logoSize>
-			<logoScale>1.2</logoScale><!-- selected card: 552 x 336 px -->
-			<maxLogoCount>2</maxLogoCount><!-- one card in the middle, half of the neighbours at the sides -->
+			     (2048 x 768): 0.44 x 0.56 = 901 x 430 px card -->
+			<logoSize>0.44 0.56</logoSize>
+			<logoScale>1</logoScale>
+			<maxLogoCount>1</maxLogoCount><!-- only the selected card -->
 			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
 			<logoAlignment>center</logoAlignment>
-			<minLogoOpacity>0.5</minLogoOpacity>
+			<minLogoOpacity>1</minLogoOpacity>
 			<imageSource>boxart</imageSource>
 			<color>00000000</color>
 			<linearSmooth>true</linearSmooth>
 			<zIndex>50</zIndex>
 			<itemTemplate>
-				<storyboard event="activate">
-					<animation property="scale" to="1.03" duration="150" mode="easeOut" />
-				</storyboard>
-				<storyboard event="deactivate">
-					<animation property="scale" to="1" duration="250" mode="easeOut" />
-				</storyboard>
-				<!-- Cover (2:3) on the left -->
+				<!-- Cover (2:3) on the left: 430 px high, about 287 px wide -->
 				<image name="spotCover" extra="true">
 					<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
 					<origin>0 0.5</origin>
-					<pos>0.02 0.5</pos>
-					<maxSize>0.4 0.98</maxSize>
+					<pos>0.04 0.5</pos>
+					<maxSize>0.34 1</maxSize>
 					<roundCorners>${CornersMedium}</roundCorners>
 					<linearSmooth>true</linearSmooth>
 					<zIndex>3</zIndex>
@@ -162,8 +156,8 @@
 				<image name="spotLogo" extra="true">
 					<path>{game:marquee}</path>
 					<origin>0.5 0.5</origin>
-					<pos>0.72 0.5</pos>
-					<maxSize>0.54 0.62</maxSize>
+					<pos>0.69 0.5</pos>
+					<maxSize>0.56 0.7</maxSize>
 					<linearSmooth>true</linearSmooth>
 					<zIndex>4</zIndex>
 				</image>
@@ -171,11 +165,11 @@
 				<text name="spotName" extra="true">
 					<text>{game:name}</text>
 					<origin>0.5 0.5</origin>
-					<pos>0.72 0.5</pos>
-					<size>0.54 0.5</size>
+					<pos>0.69 0.5</pos>
+					<size>0.56 0.5</size>
 					<alignment>center</alignment>
 					<fontPath>${fontBold}</fontPath>
-					<fontSize>0.035</fontSize>
+					<fontSize>0.045</fontSize>
 					<color>${systemInfoColor}</color>
 					<visible>!exists({game:marquee})</visible>
 					<zIndex>4</zIndex>
