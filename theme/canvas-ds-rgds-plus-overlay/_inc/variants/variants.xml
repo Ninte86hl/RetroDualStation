@@ -319,7 +319,7 @@
 		<image name="sc_icon" extra="true">
 			<path>firstfile({game:cartridge}, {game:thumbnail}, {game:boxart}, {game:image})</path>
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.4</pos>
+			<pos>0.62 0.44</pos><!-- same height as the hero image -->
 			<maxSize>0.185 0.5</maxSize><!-- about 380 x 384 px -->
 			<roundCorners>${CornersLarge}</roundCorners>
 			<linearSmooth>true</linearSmooth>
@@ -328,7 +328,7 @@
 		<text name="sc_label_play_time" extra="true">
 			<text>PLAY TIME</text>
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.72</pos>
+			<pos>0.62 0.76</pos>
 			<size>0.2 0.04</size>
 			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
@@ -339,7 +339,7 @@
 		</text>
 		<text name="md_gametime_custom" extra="true">
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.77</pos>
+			<pos>0.62 0.81</pos>
 			<size>0.2 0.06</size>
 			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
@@ -382,8 +382,8 @@
 				<text name="scName" extra="true">
 					<text>{game:name}</text>
 					<origin>0 0.5</origin>
-					<pos>0.05 0.5</pos>
-					<size>0.9 1</size>
+					<pos>0.035 0.5</pos>
+					<size>0.93 1</size>
 					<alignment>left</alignment>
 					<fontPath>${fontBold}</fontPath>
 					<fontSize>0.03</fontSize>
