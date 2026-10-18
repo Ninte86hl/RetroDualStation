@@ -10,7 +10,7 @@
       Carousel                 IV  Logos  : vertical logo carousel (marquee)
       Icons (3)                I   3 square icons (thumbnail)
       Icons (5)                II  5 square icons (thumbnail)
-      Cover details            III vertical cover carousel (boxart), description, info
+      Details                  III vertical cover carousel (boxart), description, info
 
     Top screen in all variants: hero artwork (image), video fades in after 5 s.
     Media tags as written by RocknixDS Artwork Manager:
@@ -40,7 +40,7 @@
 
 		<!-- Top screen: hero artwork, video after 5 seconds -->
 		<video name="md_video">
-			<pos>0.25 0.5</pos>
+			<pos>0.25 0.44</pos><!-- centred at the height of the icon row -->
 			<origin>0.5 0.5</origin>
 			<maxSize>0.44 0.6</maxSize>
 			<delay>5</delay>
@@ -98,8 +98,8 @@
 			<origin>0.5 0.5</origin>
 			<pos>0.75 0.5</pos>
 			<size>0.5 1</size>
-			<logoSize>0.36 0.14</logoSize><!-- 369 x 108 px -->
-			<logoScale>1.35</logoScale><!-- selected: 498 x 145 px -->
+			<logoSize>0.425 0.165</logoSize><!-- 435 x 127 px -->
+			<logoScale>1.35</logoScale><!-- selected: 587 x 171 px -->
 			<maxLogoCount>5</maxLogoCount>
 			<logoRotation>0</logoRotation>
 			<logoAlignment>center</logoAlignment>
@@ -245,17 +245,19 @@
 		</gamecarousel>
 	</customView>
 
-	<!-- ===================================================== III Cover details -->
-	<customView name="coverdetails" displayName="Cover details" inherits="gamecarousel">
+	<!-- ===================================================== III Details -->
+	<customView name="coverdetails" displayName="Details" inherits="gamecarousel">
 		<!-- Vertical cover carousel on the left of the bottom screen;
 		     previous and next cover peek in at the top and bottom -->
 		<gamecarousel name="gamecarousel">
 			<type>vertical</type>
+			<!-- Centre at y 0.37 = middle of the description (0.14 - 0.60).
+			     Size 1.26 so the carousel still reaches the bottom edge. -->
 			<origin>0 0.5</origin>
-			<pos>0.51 0.5</pos>
-			<size>0.17 1</size><!-- 348 x 768 px -->
-			<logoSize>0.119 0.4</logoSize><!-- screen-relative: 244 x 307 px -->
-			<maxLogoCount>2</maxLogoCount><!-- ES rounds to whole numbers; neighbours peek in -->
+			<pos>0.51 0.37</pos>
+			<size>0.17 1.26</size>
+			<logoSize>0.08 0.32</logoSize><!-- screen-relative: 164 x 246 px, selected 213 x 320 px -->
+			<maxLogoCount>3</maxLogoCount><!-- previous cover peeks in at the top, next one below -->
 			<logoScale>1.3</logoScale>
 			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
