@@ -643,4 +643,7 @@ Licnese: Creative Commons CC-BY-NC-SA
         ifSubset="aspect-ratio:4-3|4-3-auto"
     >./aspect-ratio-4-3.xml</include>
 
+	<!-- ROCKNIX DualStation: game list variants (replace the original layouts) -->
+	<include>./_inc/variants/variants.xml</include>
+
 </theme>
