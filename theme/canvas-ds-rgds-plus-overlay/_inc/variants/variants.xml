@@ -7,14 +7,20 @@
       Gamelist view style      View
       Automatic / Detailed     List    : only the game names, centred
       Carousel                 Logos   : vertical logo carousel (marquee)
-      Icons                    Icons   : 3 square icons like the system view (thumbnail)
+      Icons                    Icons   : 3 square icons like the system view (cartridge)
       Details                  Details : vertical cover carousel (boxart), description, info
 
     "Automatic" = "Detailed" (theme root: defaultView="detailed").
     The Grid view of canvas-ds is not offered any more.
     Top screen in all views: hero artwork (image), video fades in after 5 s.
-    Media tags as written by RocknixDS Artwork Manager:
-      Hero -> image, Icon -> thumbnail, Grid -> boxart, Logo -> marquee
+    Media tags as written by RocknixDS Artwork Manager (own file names, so
+    a scraper never overwrites them):
+      Hero -> image   (romname-hero.png)
+      Icon -> cartridge (romname-icon.png)
+      Grid -> boxart  (romname-grid.png)
+      Logo -> marquee (romname-logo.png)
+    Fallbacks: Icons use cartridge, then thumbnail, boxart, image;
+    Details use boxart, then cartridge, thumbnail, image.
 -->
 <theme>
 	<formatVersion>7</formatVersion>
@@ -103,7 +109,7 @@
 			<logoRotation>0</logoRotation>
 			<logoAlignment>center</logoAlignment>
 			<minLogoOpacity>0.9</minLogoOpacity>
-			<imageSource>thumbnail</imageSource>
+			<imageSource>cartridge</imageSource>
 			<color>ffffff00</color>
 			<linearSmooth>true</linearSmooth>
 			<zIndex>50</zIndex>
@@ -124,7 +130,7 @@
 					<zIndex>2</zIndex>
 				</image>
 				<image name="gameArt" extra="true">
-					<path>firstfile({game:thumbnail}, {game:boxart}, {game:image})</path>
+					<path>firstfile({game:cartridge}, {game:thumbnail}, {game:boxart}, {game:image})</path>
 					<pos>0.5 0.78</pos>
 					<origin>0.5 1</origin>
 					<maxSize>0.75 0.75</maxSize>
@@ -179,7 +185,7 @@
 			<zIndex>50</zIndex>
 			<itemTemplate>
 				<image name="gameArt" extra="true">
-					<path>firstfile({game:boxart}, {game:thumbnail}, {game:image})</path>
+					<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
 					<pos>0.5 0.5</pos>
 					<origin>0.5 0.5</origin>
 					<maxSize>1 1</maxSize>
