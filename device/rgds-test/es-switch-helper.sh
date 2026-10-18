@@ -82,6 +82,33 @@ else
     log "es_settings.cfg nicht gefunden, Theme nicht gesetzt"
 fi
 
+# --- Schnelle Systemauswahl (links/rechts wechselt das System) ---
+# Im Dual-Modus aus, damit links/rechts in Listen-Ansichten nicht ins
+# naechste System springen. Der Wert des Single-Modus wird gemerkt und
+# beim Zurueckschalten wiederhergestellt. Fehlt der Eintrag, gilt der
+# ES-Standard (an).
+set_bool() {
+    if grep -q "name=\"$1\"" "$ESCFG"; then
+        sed -i "s|<bool name=\"$1\" value=\"[^\"]*\" />|<bool name=\"$1\" value=\"$2\" />|" "$ESCFG"
+    elif grep -q '</config>' "$ESCFG"; then
+        sed -i "s|</config>|\t<bool name=\"$1\" value=\"$2\" />\n</config>|" "$ESCFG"
+    fi
+}
+if [ -f "$ESCFG" ]; then
+    QSS="$(sed -n 's|.*<bool name="QuickSystemSelect" value="\([^"]*\)" />.*|\1|p' "$ESCFG" | head -n 1)"
+    [ -n "$QSS" ] || QSS=true
+    if [ "$MODE" = "dual" ]; then
+        [ "$CURRENT" = "single" ] && echo "$QSS" > "$STATEDIR/quicksystemselect.single"
+        set_bool QuickSystemSelect false
+        log "Schnelle Systemauswahl aus (Single-Wert gemerkt: $(cat "$STATEDIR/quicksystemselect.single" 2>/dev/null))"
+    else
+        RESTORE="$(cat "$STATEDIR/quicksystemselect.single" 2>/dev/null)"
+        [ -n "$RESTORE" ] || RESTORE=true
+        set_bool QuickSystemSelect "$RESTORE"
+        log "Schnelle Systemauswahl wiederhergestellt: $RESTORE"
+    fi
+fi
+
 # --- Drop-in und Sway-Config ---
 if [ "$MODE" = "dual" ]; then
     mkdir -p "$DROPIN"
