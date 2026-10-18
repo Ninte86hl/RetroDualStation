@@ -9,7 +9,7 @@ Stand: 18.10.2026 (Zweig `theme-varianten`)
 | **Automatisch / Gamecarousel** | 3 Icons nebeneinander, das mittlere größer, darunter der Name des ausgewählten Spiels | Icon | `romname-icon.png` | `cartridge` + `thumbnail` |
 | **Raster** | Raster von canvas-ds ohne Infoleisten, Cover füllen den unteren Screen | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Spotlight** | eine große Karte: links Grid (2:3), rechts Logo; beim Blättern gleitet sie seitlich hinaus und die nächste herein wie in der Systemansicht | Grid + Logo | `romname-box.png` + `romname-logo.png` | `boxart` + `marquee` |
-| **Showcase** | oben groß die Spielzeit; darunter links das Grid, rechts die Spielnamen (beide gleich hoch) als senkrechtes Karussell mit fester Auswahlleiste | Grid (2:3) | `romname-box.png` | `boxart` |
+| **Showcase** | links das Grid, rechts die Spielnamen (beide gleich hoch, mittig) als senkrechtes Karussell mit fester Auswahlleiste | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Oberer Screen, nach 5 s** | Video blendet über das Hero-Bild | Video | vom Scraper | `video` |
 
 **Ersatzbilder:** Fehlt das Icon, zeigt das Karussell die ScreenScraper-Hülle aus

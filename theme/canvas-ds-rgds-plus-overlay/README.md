@@ -41,7 +41,7 @@ show the hero artwork (`image`); a video fades in after 5 seconds.
 | Automatic / Carousel | 3 square icons, like the system view, name of the selected game below | `thumbnail` (the Artwork Manager points it to the icon) |
 | Grid | canvas-ds game grid, without the metadata bars | `boxart` |
 | Spotlight | one large card (2:3 cover left, logo right) that slides in from the side like the system view | `boxart` + `marquee` |
-| Showcase | play time as a header, below it a large grid and the game names as a vertical carousel (same height) | `boxart` |
+| Showcase | large grid on the left, game names as a vertical carousel on the right (same height, centred) | `boxart` |
 
 ### Fixed theme options
 
