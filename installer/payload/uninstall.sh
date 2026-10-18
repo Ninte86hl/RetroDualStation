@@ -32,6 +32,7 @@ fi
 
 rm -rf "$THEMEDIR/dii-ess-aye-rgds-plus" && log "entfernt: Theme dii-ess-aye-rgds-plus"
 rm -rf "$DEST" && log "entfernt: $DEST"
+rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
 
 log "=== Deinstallation fertig ==="
 exit 0
