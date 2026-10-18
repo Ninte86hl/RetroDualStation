@@ -389,8 +389,10 @@
 					<fontSize>0.03</fontSize>
 					<color>${systemInfoColor}</color>
 					<opacity>0.6</opacity>
+					<!-- The selected name is drawn by md_name on the selection bar
+					     (with marquee scrolling), so it is hidden here. -->
 					<storyboard event="activate">
-						<animation property="opacity" to="1" duration="120" mode="easeOut" />
+						<animation property="opacity" to="0" duration="60" mode="easeOut" />
 					</storyboard>
 					<storyboard event="deactivate">
 						<animation property="opacity" to="0.6" duration="120" mode="easeOut" />
@@ -401,8 +403,21 @@
 		<image name="gamecarouselLogo">
 			<roundCorners>0</roundCorners>
 		</image>
+		<!-- Name of the selected game on the selection bar; long names scroll
+		     like a news ticker -->
 		<text name="md_name">
-			<visible>false</visible>
+			<origin>0 0.5</origin>
+			<pos>0.749 0.5</pos>
+			<size>0.212 0.065</size>
+			<alignment>left</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<autoScrollDelay>1500</autoScrollDelay>
+			<autoScrollSpeed>40</autoScrollSpeed>
+			<visible>true</visible>
+			<zIndex>60</zIndex>
 		</text>
 	</customView>
 </theme>
