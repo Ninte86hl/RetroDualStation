@@ -7,7 +7,6 @@ Older versions of the Artwork Manager used the same file names as the
 EmulationStation scraper (ScreenScraper), so a new scrape overwrote them:
 
     Icon  -> <thumbnail> romname-thumb.png    (same name as scraper thumbnails)
-    Grid  -> <boxart>    romname-box.png      (same name as scraper box art)
     Hero  -> <image>     romname-image.png    (same name as scraper images)
 
 New scheme (own file names, the scraper never touches them):
@@ -15,16 +14,15 @@ New scheme (own file names, the scraper never touches them):
     Icon  -> <cartridge> romname-icon.png  (<thumbnail> points there too, so
                                             themes that only read thumbnail
                                             keep showing the icon)
-    Grid  -> <boxart>    romname-grid.png
     Hero  -> <image>     romname-hero.png
 
 The file name alone does not tell whether an image came from the scraper or
 from the Artwork Manager, so the image format decides:
 
     -thumb  exactly square            -> Icon
-    -box    exactly 2:3 (portrait)    -> Grid
     -image  at least 2.5 : 1 (wide)   -> Hero
 
+Grids keep their name (romname-box.png in <boxart>).
 Everything else is left alone.
 
 Usage (stop EmulationStation first, it rewrites the gamelists on exit):
@@ -88,7 +86,6 @@ def is_hero(w, h):
 # (old tag, old suffix, new tag, new suffix, format test, label)
 RULES = [
     ("thumbnail", "-thumb", "cartridge", "-icon", is_square, "Icon"),
-    ("boxart", "-box", "boxart", "-grid", is_grid, "Grid"),
     ("image", "-image", "image", "-hero", is_hero, "Hero"),
 ]
 

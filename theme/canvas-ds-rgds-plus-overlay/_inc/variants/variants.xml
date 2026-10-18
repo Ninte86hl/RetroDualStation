@@ -13,11 +13,10 @@
     "Automatic" = "Detailed" (theme root: defaultView="detailed").
     The Grid view of canvas-ds is not offered any more.
     Top screen in all views: hero artwork (image), video fades in after 5 s.
-    Media tags as written by RocknixDS Artwork Manager (own file names, so
-    a scraper never overwrites them):
+    Media tags as written by RocknixDS Artwork Manager:
       Hero -> image   (romname-hero.png)
       Icon -> cartridge (romname-icon.png)
-      Grid -> boxart  (romname-grid.png)
+      Grid -> boxart  (romname-box.png)
       Logo -> marquee (romname-logo.png)
     The migration script and the Artwork Manager point <thumbnail> to the
     icon as well, so the carousel (thumbnail) shows the icons; scraped games
