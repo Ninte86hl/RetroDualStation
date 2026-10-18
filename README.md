@@ -55,10 +55,29 @@ It comes with five game list views: Gamecarousel, Detailed, Grid, Showcase and S
 
 ### canvas-ds
 
-| | |
-|---|---|
-| ![canvas-ds system view](docs/screenshots/canvas-system.png) | ![canvas-ds game list](docs/screenshots/canvas-detailed.png) |
-| **System view** with the [canvas-ds](https://github.com/toniremi/canvas-ds) overlay | **Detailed game list** with canvas-ds |
+![canvas-ds system view](docs/screenshots/canvas-system.png)
+**System view** with the [canvas-ds](https://github.com/toniremi/canvas-ds) overlay.
+
+Game list views (top screen: hero image, the video fades in after 5 seconds):
+
+**Automatic / Gamecarousel** – three square icons side by side, the selected one larger, its name below.
+![canvas-ds Gamecarousel](docs/screenshots/canvas-gamecarousel.png)
+
+**Detailed** – large 2:3 cover with title, description, players, year and developer.
+![canvas-ds Detailed](docs/screenshots/canvas-detailed.png)
+
+**Grid** – the canvas-ds game grid without the info bars, covers fill the bottom screen.
+![canvas-ds Grid](docs/screenshots/canvas-grid.png)
+
+**Showcase** – large 2:3 cover on the left, game names as a vertical list on the right.
+![canvas-ds Showcase](docs/screenshots/canvas-showcase.png)
+
+**Spotlight** – one large card with cover and logo that slides in from the side, like the system view.
+![canvas-ds Spotlight](docs/screenshots/canvas-spotlight.png)
+
+Artwork names: icon `romname-icon.png`, cover `romname-box.png`, hero `romname-hero.png`, logo `marquee`
+from the scraper. The RocknixDS Artwork Manager
+creates the first three; missing images fall back to the ScreenScraper media.
 
 ## Issues fixed for dii-ess-aye on the RG DS Plus
 
