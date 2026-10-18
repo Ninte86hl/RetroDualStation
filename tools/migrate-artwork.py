@@ -12,7 +12,9 @@ EmulationStation scraper (ScreenScraper), so a new scrape overwrote them:
 
 New scheme (own file names, the scraper never touches them):
 
-    Icon  -> <cartridge> romname-icon.png
+    Icon  -> <cartridge> romname-icon.png  (<thumbnail> points there too, so
+                                            themes that only read thumbnail
+                                            keep showing the icon)
     Grid  -> <boxart>    romname-grid.png
     Hero  -> <image>     romname-hero.png
 
@@ -158,7 +160,7 @@ def main():
         print(f"\n{system}: {len(changes)} image(s)")
         for game, old_tag, new_tag, path, new_path, new_text, label, size in changes:
             print(f"  {label:4}  {os.path.basename(path)} ({size[0]}x{size[1]})"
-                  f"  ->  {os.path.basename(new_path)}  <{new_tag}>")
+                  f"  ->  {os.path.basename(new_path)}  <{new_tag}>" + (f" + <{old_tag}>" if new_tag != old_tag else ""))
             total[label] += 1
 
         if apply:
@@ -168,10 +170,11 @@ def main():
             for game, old_tag, new_tag, path, new_path, new_text, label, size in changes:
                 os.rename(path, new_path)
                 old_el = game.find(old_tag)
-                if new_tag == old_tag:
-                    old_el.text = new_text
-                else:
-                    game.remove(old_el)
+                # The old entry points to the renamed file as well, so themes
+                # that only read <thumbnail> (dii-ess-aye, ROCKNIX standard
+                # theme) keep showing the icon.
+                old_el.text = new_text
+                if new_tag != old_tag:
                     ET.SubElement(game, new_tag).text = new_text
             if hasattr(ET, "indent"):
                 ET.indent(tree, space="\t")
