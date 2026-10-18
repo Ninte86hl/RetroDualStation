@@ -7,12 +7,13 @@ Stand: 18.10.2026 (Zweig `theme-varianten`)
 | **Alle (oberer Screen)** | Hero mittig auf Höhe der Icons, runde Ecken, nach 5 s Video, darunter das Systemlogo | Hero | `romname-hero.png` | `image` |
 | **Detailliert** | Spielnamen als Liste mittig, ausgewähltes Spiel hervorgehoben | – | – | – |
 | **Automatisch / Gamecarousel** | 3 Icons nebeneinander, das mittlere größer, darunter der Name des ausgewählten Spiels | Icon | `romname-icon.png` | `cartridge` + `thumbnail` |
-| **Logo** | Logos senkrecht und mittig, das ausgewählte groß, die anderen kleiner und abgedunkelt | Logo | `romname-logo.png` | `marquee` |
+| **Spotlight** | Karussell wie die Systemansicht, seitlich einblendend: jede Karte links Grid (2:3), rechts Logo; ausgewählte Karte mittig und größer, Nachbarn halb am Rand | Grid + Logo | `romname-box.png` + `romname-logo.png` | `boxart` + `marquee` |
 | **Showcase** | links senkrechtes Cover-Karussell (Nachbarn ragen oben und unten ins Bild), rechts Name, Beschreibung, Spieler, Jahr, Entwickler | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Oberer Screen, nach 5 s** | Video blendet über das Hero-Bild | Video | vom Scraper | `video` |
 
 **Ersatzbilder:** Fehlt das Icon, zeigt das Karussell die ScreenScraper-Hülle aus
-`thumbnail`. Fehlt das Grid, zeigt Showcase das Icon oder die Hülle.
+`thumbnail`. Fehlt das Grid, zeigen Showcase und Spotlight das Icon oder die Hülle;
+fehlt das Logo, zeigt Spotlight den Spielnamen.
 
 ## Für den Artwork Manager
 
