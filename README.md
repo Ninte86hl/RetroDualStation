@@ -27,7 +27,8 @@ the original theme for the RG DS.
 via a small overlay in [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/)
 (shared with his permission, CC BY-NC-SA). The Ports switch remembers which
 theme you use in each mode. It has its own installer ZIP in the release
-(`canvas-ds-rgds-plus-v8.zip`, unpack into `ports` like the main ZIP).
+(`canvas-ds-rgds-plus-v9.zip`, unpack into `ports` like the main ZIP).
+It comes with five game list views: Gamecarousel, Detailed, Grid, Showcase and Spotlight.
 
 ---
 
@@ -39,6 +40,7 @@ theme you use in each mode. It has its own installer ZIP in the release
 - Save State Manager, Advanced Game Settings, on-screen keyboard, The Bezel Project
 - Switching between this build and stock ROCKNIX ES via **Ports**, including a theme switch
 - Survives device reboots
+- Left/right in the game list no longer jumps to another system in dual mode (L2/R2 still switch systems); single mode keeps your own setting
 
 ## Screenshots
 
@@ -121,7 +123,7 @@ docs/zwischenstand-*.md      technical analysis and project log (German)
 
 ### Easy way: installer via Ports (recommended)
 
-1. Download **`rocknix-dualstation-v8.zip`** from the
+1. Download **`rocknix-dualstation-v9.zip`** from the
    [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs
    (`/storage/roms/ports`). It contains `Install ROCKNIX DualStation.sh`
@@ -146,13 +148,13 @@ partition (as on many RG DS Plus setups), copy it over the network
 (replace `<IP>` with the IP address of your device):
 
 ```bash
-scp rocknix-dualstation-v8.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v9.zip root@<IP>:/storage/roms/ports/
 ```
 
 Then on the device (SSH):
 
 ```bash
-cd /storage/roms/ports && unzip rocknix-dualstation-v8.zip && rm rocknix-dualstation-v8.zip
+cd /storage/roms/ports && unzip rocknix-dualstation-v9.zip && rm rocknix-dualstation-v9.zip
 ```
 
 Updating from an earlier version works the same way: unpack the new ZIP
