@@ -61,19 +61,19 @@ Enthalten sind fünf Spielelisten-Ansichten: Gamecarousel, Detailliert, Raster, 
 Spielelisten-Ansichten (oberer Screen: Hero-Bild, nach 5 Sekunden blendet das Video ein):
 
 **Automatisch / Gamecarousel** – drei quadratische Icons nebeneinander, das ausgewählte größer, darunter der Name.
-![canvas-ds Gamecarousel](docs/screenshots/canvas-gamecarousel.png)
+![canvas-ds Gamecarousel](docs/screenshots/canvas-view-gamecarousel.png)
 
 **Detailliert** – großes 2:3-Cover mit Titel, Beschreibung, Spielern, Jahr und Entwickler.
-![canvas-ds Detailliert](docs/screenshots/canvas-detailed.png)
+![canvas-ds Detailliert](docs/screenshots/canvas-view-detailed.png)
 
 **Raster** – das Raster von canvas-ds ohne Infoleisten, die Cover füllen den unteren Screen.
-![canvas-ds Raster](docs/screenshots/canvas-grid.png)
+![canvas-ds Raster](docs/screenshots/canvas-view-grid.png)
 
 **Showcase** – links großes 2:3-Cover, rechts die Spielnamen als senkrechte Liste.
-![canvas-ds Showcase](docs/screenshots/canvas-showcase.png)
+![canvas-ds Showcase](docs/screenshots/canvas-view-showcase.png)
 
 **Spotlight** – eine große Karte mit Cover und Logo, die wie in der Systemansicht seitlich hereingleitet.
-![canvas-ds Spotlight](docs/screenshots/canvas-spotlight.png)
+![canvas-ds Spotlight](docs/screenshots/canvas-view-spotlight.png)
 
 Artwork-Namen: Icon `romname-icon.png`, Cover `romname-box.png`, Hero `romname-hero.png`, Logo `marquee`
 vom Scraper. Die ersten drei erstellt der RocknixDS Artwork Manager;

@@ -61,19 +61,19 @@ It comes with five game list views: Gamecarousel, Detailed, Grid, Showcase and S
 Game list views (top screen: hero image, the video fades in after 5 seconds):
 
 **Automatic / Gamecarousel** – three square icons side by side, the selected one larger, its name below.
-![canvas-ds Gamecarousel](docs/screenshots/canvas-gamecarousel.png)
+![canvas-ds Gamecarousel](docs/screenshots/canvas-view-gamecarousel.png)
 
 **Detailed** – large 2:3 cover with title, description, players, year and developer.
-![canvas-ds Detailed](docs/screenshots/canvas-detailed.png)
+![canvas-ds Detailed](docs/screenshots/canvas-view-detailed.png)
 
 **Grid** – the canvas-ds game grid without the info bars, covers fill the bottom screen.
-![canvas-ds Grid](docs/screenshots/canvas-grid.png)
+![canvas-ds Grid](docs/screenshots/canvas-view-grid.png)
 
 **Showcase** – large 2:3 cover on the left, game names as a vertical list on the right.
-![canvas-ds Showcase](docs/screenshots/canvas-showcase.png)
+![canvas-ds Showcase](docs/screenshots/canvas-view-showcase.png)
 
 **Spotlight** – one large card with cover and logo that slides in from the side, like the system view.
-![canvas-ds Spotlight](docs/screenshots/canvas-spotlight.png)
+![canvas-ds Spotlight](docs/screenshots/canvas-view-spotlight.png)
 
 Artwork names: icon `romname-icon.png`, cover `romname-box.png`, hero `romname-hero.png`, logo `marquee`
 from the scraper. The RocknixDS Artwork Manager
