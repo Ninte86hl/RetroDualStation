@@ -5,7 +5,8 @@
     Replaces the original game list layouts of canvas-ds:
 
       Gamelist view style      Variant
-      Basic / Detailed         VI  List   : centred names
+      Automatic / Detailed     original canvas-ds list with game info
+                               (marquee hidden, larger description)
       Grid                     V   Grid   : 2:3 covers (boxart), 5 x 2
       Carousel                 IV  Logos  : vertical logo carousel (marquee)
       Icons (3)                I   3 square icons (thumbnail)
@@ -19,8 +20,8 @@
 <theme>
 	<formatVersion>7</formatVersion>
 
-	<!-- ===================================================== All game list views -->
-	<view name="detailed, gamecarousel, grid">
+	<!-- ===================================================== Carousel and grid views -->
+	<view name="gamecarousel, grid">
 		<!-- Hide the original canvas-ds game details and panels -->
 		<image name="md_marquee,md_thumbnail,md_image">
 			<visible>false</visible>
@@ -38,6 +39,10 @@
 			<visible>false</visible>
 		</rating>
 
+	</view>
+
+	<!-- ===================================================== All game list views -->
+	<view name="detailed, gamecarousel, grid">
 		<!-- Top screen: hero artwork, video after 5 seconds -->
 		<video name="md_video">
 			<pos>0.25 0.44</pos><!-- centred at the height of the icon row -->
@@ -55,16 +60,28 @@
 		</video>
 	</view>
 
-	<!-- ===================================================== VI List (Basic / Detailed) -->
+	<!-- ===================================================== Detailed (original canvas-ds list) -->
+	<!-- Marquee hidden; cover smaller, description panel taller.
+	     Right edge 0.975 = same margin as the info bars below and the list on the left. -->
 	<view name="detailed">
-		<textlist name="gamelist">
-			<origin>0.5 0.5</origin>
-			<pos>0.75 0.48</pos>
-			<size>0.42 0.84</size>
-			<alignment>center</alignment>
-			<horizontalMargin>0.01</horizontalMargin>
-			<zIndex>12</zIndex>
-		</textlist>
+		<image name="md_marquee">
+			<visible>false</visible>
+		</image>
+		<image name="md_thumbnail">
+			<origin>0.5 0</origin>
+			<pos>0.8705 0.07</pos>
+			<maxSize>0.195 0.29</maxSize>
+		</image>
+		<image name="game-list-background-desc" extra="true">
+			<origin>0.5 0</origin>
+			<pos>0.8705 0.39</pos>
+			<size>0.209 0.38</size>
+		</image>
+		<text name="md_description">
+			<origin>0.5 0</origin>
+			<pos>0.8705 0.405</pos>
+			<size>0.193 0.35</size>
+		</text>
 	</view>
 
 	<!-- ===================================================== V Grid (2:3 covers) -->
