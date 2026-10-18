@@ -358,7 +358,7 @@
 		<image name="sc_selector" extra="true">
 			<path>${themePath}/_inc/variants/bar.svg</path>
 			<origin>0.5 0.5</origin>
-			<pos>0.855 0.5</pos>
+			<pos>0.855 0.44</pos><!-- same height as the icon centre -->
 			<size>0.228 0.065</size>
 			<color>${gamelistSelectorColor}</color>
 			<zIndex>40</zIndex>
@@ -366,12 +366,12 @@
 		<gamecarousel name="gamecarousel">
 			<type>vertical</type>
 			<origin>0 0.5</origin>
-			<pos>0.741 0.5</pos>
-			<size>0.228 0.86</size>
+			<pos>0.741 0.44</pos>
+			<size>0.228 0.78</size><!-- 0.05 - 0.83, inside the box -->
 			<!-- screen-relative (custom view): 467 x 50 px per name -->
 			<logoSize>0.228 0.065</logoSize>
 			<logoScale>1</logoScale>
-			<maxLogoCount>11</maxLogoCount>
+			<maxLogoCount>10</maxLogoCount>
 			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
 			<logoAlignment>left</logoAlignment>
@@ -407,8 +407,8 @@
 		     like a news ticker -->
 		<text name="md_name">
 			<origin>0 0.5</origin>
-			<pos>0.749 0.5</pos>
-			<size>0.212 0.065</size>
+			<pos>0.772 0.44</pos>
+			<size>0.198 0.065</size>
 			<alignment>left</alignment>
 			<fontPath>${fontBold}</fontPath>
 			<fontSize>0.03</fontSize>
