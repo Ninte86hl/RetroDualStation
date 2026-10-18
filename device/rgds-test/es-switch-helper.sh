@@ -4,7 +4,7 @@
 #   systemd-run --no-block /storage/rgds-test/es-switch-helper.sh single|dual
 #
 # single: Original-ROCKNIX-ES, unterer Screen aus
-# dual:   Dual-Screen-ES ueber start-es-v2-diag.sh
+# dual:   Dual-Screen-ES ueber start-es-dualstation.sh
 #
 # Theme pro Modus: Beim Umschalten wird das aktuell gewaehlte Theme fuer den
 # Modus gespeichert, den man verlaesst, und das zuletzt genutzte Theme des
@@ -29,8 +29,8 @@ case "$MODE" in
     *)      echo "$(date) Ungueltiger Modus: '$MODE'" >> "$LOG"; exit 1 ;;
 esac
 
-if [ "$MODE" = "dual" ] && [ ! -x $STATEDIR/start-es-v2-diag.sh ]; then
-    log "start-es-v2-diag.sh fehlt oder nicht ausfuehrbar, Abbruch"
+if [ "$MODE" = "dual" ] && [ ! -x $STATEDIR/start-es-dualstation.sh ]; then
+    log "start-es-dualstation.sh fehlt oder nicht ausfuehrbar, Abbruch"
     exit 1
 fi
 
@@ -85,7 +85,7 @@ fi
 # --- Drop-in und Sway-Config ---
 if [ "$MODE" = "dual" ]; then
     mkdir -p "$DROPIN"
-    printf '[Service]\nExecStart=\nExecStart=%s/start-es-v2-diag.sh\n' "$STATEDIR" > "$DROPIN/rgds.conf"
+    printf '[Service]\nExecStart=\nExecStart=%s/start-es-dualstation.sh\n' "$STATEDIR" > "$DROPIN/rgds.conf"
     # Sway-Anpassung erledigt rgds-sway-fix.sh beim Start
 else
     rm -f "$DROPIN/rgds.conf"

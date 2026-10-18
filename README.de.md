@@ -104,7 +104,7 @@ patches/                     ES-Patch für das ROCKNIX-Buildsystem
 installer/                   Installer und Deinstallation (Ports-Einträge)
 tools/make-installer.py      baut die Installations-ZIP
 device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
-  start-es-v2-diag.sh        Startskript der Dual-Version
+  start-es-dualstation.sh    Startskript der Dual-Version
   rgds-sway-fix.sh           passt die Sway-Config vor jedem Start an
   es-switch-helper.sh        Umschalten single/dual (Theme, Dienst, Sway)
 device/ports/                Einträge für /storage/roms/ports/
@@ -162,7 +162,7 @@ entpacken und den Installer erneut starten.
 
 ### Manuelle Installation (für Fortgeschrittene)
 
-Quellcode und **`emulationstation-rgds-v7`** aus dem
+Quellcode und **`emulationstation-rgds`** aus dem
 [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
 herunterladen, dann aus dem Quellcode-Ordner:
 
@@ -170,7 +170,7 @@ herunterladen, dann aus dem Quellcode-Ordner:
 ssh root@<IP> mkdir -p /storage/rgds-test
 ```
 ```bash
-scp emulationstation-rgds-v7 device/rgds-test/*.sh installer/payload/uninstall.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds device/rgds-test/*.sh installer/payload/uninstall.sh root@<IP>:/storage/rgds-test/
 ```
 ```bash
 scp device/ports/*.sh installer/payload/ports/*.sh root@<IP>:/storage/roms/ports/

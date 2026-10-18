@@ -2,9 +2,12 @@
 """Baut die Installations-ZIP von ROCKNIX DualStation.
 
 Aufruf (im Repo-Ordner):
-    python3 tools/make-installer.py <emulationstation-rgds-vN> <version>
+    python3 tools/make-installer.py <ES-Binary> <version>
 Beispiel:
-    python3 tools/make-installer.py emulationstation-rgds-v7 v8
+    python3 tools/make-installer.py emulationstation-rgds v9
+
+Das Binary wird im Paket immer als "emulationstation-rgds" abgelegt
+(ohne Versionsnummer); die Version steht nur in .dualstation/VERSION.
 
 Ergebnis: rocknix-dualstation-<version>.zip
 Inhalt (wird in den Ordner "ports" auf der SD-Karte entpackt):
@@ -17,9 +20,7 @@ repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if len(sys.argv) != 3:
     sys.exit(__doc__)
 binary, version = sys.argv[1], sys.argv[2]
-binname = os.path.basename(binary)
-if not binname.startswith("emulationstation-rgds"):
-    sys.exit("Der Binary-Name muss mit emulationstation-rgds beginnen.")
+binname = "emulationstation-rgds"
 
 out = os.path.join(repo, f"rocknix-dualstation-{version}.zip")
 EXEC, FILE = 0o100755 << 16, 0o100644 << 16
@@ -37,7 +38,7 @@ with zipfile.ZipFile(out, "w") as z:
     add(z, os.path.join(repo, "installer", "payload", "install.sh"), p + "install.sh", EXEC)
     z.writestr(zipfile.ZipInfo(p + "VERSION"), version + "\n")
     add(z, binary, p + binname, EXEC)
-    for f in ("start-es-v2-diag.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh"):
+    for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh"):
         add(z, os.path.join(repo, "device", "rgds-test", f), p + "rgds-test/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "uninstall.sh"), p + "rgds-test/uninstall.sh", EXEC)
     for f in ("RGDS Dual-Screen ES.sh", "RGDS Single-Screen ES.sh"):
