@@ -31,6 +31,11 @@ else
 fi
 
 rm -rf "$THEMEDIR/dii-ess-aye-rgds-plus" && log "entfernt: Theme dii-ess-aye-rgds-plus"
+if [ -d "$THEMEDIR/canvas-ds-rgds-plus" ]; then
+    rm -rf "$THEMEDIR/canvas-ds-rgds-plus" /storage/.config/emulationstation/themesettings/canvas-ds-rgds-plus.cfg
+    log "entfernt: Theme canvas-ds-rgds-plus"
+fi
+rm -f /storage/dualstation-canvas-install.log
 rm -rf "$DEST" && log "entfernt: $DEST"
 rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
 

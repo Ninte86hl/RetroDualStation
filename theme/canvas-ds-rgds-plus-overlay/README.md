@@ -36,6 +36,24 @@ screens).
 
 ## Installation
 
+### Easy way: installer via Ports
+
+Requires ROCKNIX DualStation to be installed.
+
+1. Download **`canvas-ds-rgds-plus-v8.zip`** from the
+   [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
+   (about 180 MB – the complete theme including toniremi's artwork).
+2. Unpack it into the **`ports`** folder of your ROMs.
+3. Start **Ports → Install canvas-ds theme**. ES restarts and shows a
+   message when it is done.
+4. Select **canvas-ds-rgds-plus** under *User Interface Settings → Theme*.
+
+The ZIP is built with `tools/make-canvas-installer.py`, which takes
+canvas-ds from toniremi's repository and applies this overlay.
+*Uninstall ROCKNIX DualStation* removes the theme as well.
+
+### Manual installation
+
 On your computer:
 
 ```bash

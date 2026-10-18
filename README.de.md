@@ -26,7 +26,8 @@ Das Original-Theme für das RG DS stammt von beebono.
 **Ebenfalls unterstützt:** [canvas-ds](https://github.com/toniremi/canvas-ds) von toniremi,
 über ein kleines Overlay in [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/)
 (mit seiner Erlaubnis, CC BY-NC-SA). Der Ports-Umschalter merkt sich, welches
-Theme du in welchem Modus nutzt.
+Theme du in welchem Modus nutzt. Es hat eine eigene Installations-ZIP im Release
+(`canvas-ds-rgds-plus-v8.zip`, wie die Haupt-ZIP in `ports` entpacken).
 
 ---
 

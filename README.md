@@ -26,7 +26,8 @@ the original theme for the RG DS.
 **Also supported:** [canvas-ds](https://github.com/toniremi/canvas-ds) by toniremi,
 via a small overlay in [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/)
 (shared with his permission, CC BY-NC-SA). The Ports switch remembers which
-theme you use in each mode.
+theme you use in each mode. It has its own installer ZIP in the release
+(`canvas-ds-rgds-plus-v8.zip`, unpack into `ports` like the main ZIP).
 
 ---
 
