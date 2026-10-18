@@ -6,12 +6,12 @@
 
       Gamelist view style      View
       Detailed                 Detailed: large cover (boxart), title, description, info (no carousel)
+      Grid                     Grid    : canvas-ds game grid without metadata (boxart)
       Automatic / Carousel     Icons   : 3 square icons like the system view (thumbnail)
       Spotlight                Spotlight: one large card, 2:3 cover (boxart) + logo (marquee), slides sideways
       Showcase                 Showcase: vertical name carousel + info card (icon, genre, statistics)
 
     "Automatic" = "Carousel" (theme root: defaultView="gamecarousel").
-    The Grid view of canvas-ds is not offered any more.
     Top screen in all views: hero artwork (image), video fades in after 5 s.
     Media tags as written by RocknixDS Artwork Manager:
       Hero -> image   (romname-hero.png)
@@ -26,7 +26,7 @@
 	<formatVersion>7</formatVersion>
 
 	<!-- ===================================================== All game list views -->
-	<view name="detailed, gamecarousel">
+	<view name="detailed, gamecarousel, grid">
 		<!-- Hide the original canvas-ds game details and panels -->
 		<image name="md_marquee,md_thumbnail,md_image">
 			<visible>false</visible>
@@ -188,6 +188,17 @@
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</text>
+	</view>
+
+	<!-- ===================================================== Grid -->
+	<!-- canvas-ds "Game Grid" layout without the metadata bars: the grid uses
+	     the space of the bars. Covers from boxart (falls back to the icon/box). -->
+	<view name="grid">
+		<imagegrid name="gamegrid">
+			<pos>0.5 0.06</pos>
+			<size>0.5 0.88</size>
+			<imageSource>boxart</imageSource>
+		</imagegrid>
 	</view>
 
 	<!-- ===================================================== Carousel: 3 icons (also "Automatic") -->
