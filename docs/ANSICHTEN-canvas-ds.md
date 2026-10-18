@@ -8,11 +8,11 @@ Stand: 18.10.2026 (Zweig `theme-varianten`)
 | **Automatisch / Detailliert** | Spielnamen als Liste mittig, ausgewähltes Spiel hervorgehoben | – | – | – |
 | **Karussell** | 3 Icons nebeneinander, das mittlere größer, darunter der Name des ausgewählten Spiels | Icon | `romname-icon.png` | `cartridge` + `thumbnail` |
 | **Logo** | Logos senkrecht und mittig, das ausgewählte groß, die anderen kleiner und abgedunkelt | Logo | `romname-logo.png` | `marquee` |
-| **Details** | links senkrechtes Cover-Karussell (Nachbarn ragen oben und unten ins Bild), rechts Name, Beschreibung, Spieler, Jahr, Entwickler | Grid (2:3) | `romname-box.png` | `boxart` |
+| **Showcase** | links senkrechtes Cover-Karussell (Nachbarn ragen oben und unten ins Bild), rechts Name, Beschreibung, Spieler, Jahr, Entwickler | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Oberer Screen, nach 5 s** | Video blendet über das Hero-Bild | Video | vom Scraper | `video` |
 
 **Ersatzbilder:** Fehlt das Icon, zeigt das Karussell die ScreenScraper-Hülle aus
-`thumbnail`. Fehlt das Grid, zeigt Details das Icon oder die Hülle.
+`thumbnail`. Fehlt das Grid, zeigt Showcase das Icon oder die Hülle.
 
 ## Für den Artwork Manager
 

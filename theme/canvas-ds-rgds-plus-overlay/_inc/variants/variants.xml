@@ -8,7 +8,7 @@
       Automatic / Detailed     List    : only the game names, centred
       Carousel                 Icons   : 3 square icons like the system view (thumbnail)
       Logos                    Logos   : vertical logo carousel (marquee)
-      Details                  Details : vertical cover carousel (boxart), description, info
+      Showcase                 Showcase: vertical cover carousel (boxart), description, info
 
     "Automatic" = "Detailed" (theme root: defaultView="detailed").
     The Grid view of canvas-ds is not offered any more.
@@ -20,7 +20,7 @@
       Logo -> marquee (romname-logo.png)
     The migration script and the Artwork Manager point <thumbnail> to the
     icon as well, so the carousel (thumbnail) shows the icons; scraped games
-    show their box. Details use boxart, then cartridge, thumbnail, image.
+    show their box. Showcase uses boxart, then cartridge, thumbnail, image.
 -->
 <theme>
 	<formatVersion>7</formatVersion>
@@ -147,8 +147,8 @@
 		</text>
 	</customView>
 
-	<!-- ===================================================== III Details -->
-	<customView name="coverdetails" displayName="Details" inherits="gamecarousel">
+	<!-- ===================================================== Showcase -->
+	<customView name="coverdetails" displayName="Showcase" inherits="gamecarousel">
 		<!-- Vertical cover carousel on the left of the bottom screen;
 		     previous and next cover peek in at the top and bottom -->
 		<gamecarousel name="gamecarousel">
