@@ -5,10 +5,10 @@
     Replaces the original game list layouts of canvas-ds:
 
       Gamelist view style      View
-      Detailed                 List    : only the game names, centred
+      Detailed                 Detailed: large cover (boxart), title, description, info (no carousel)
       Automatic / Carousel     Icons   : 3 square icons like the system view (thumbnail)
       Spotlight                Spotlight: one large card, 2:3 cover (boxart) + logo (marquee), slides sideways
-      Showcase                 Showcase: vertical cover carousel (boxart), description, info
+      Showcase                 Showcase: vertical name carousel + info card (icon, genre, statistics)
 
     "Automatic" = "Carousel" (theme root: defaultView="gamecarousel").
     The Grid view of canvas-ds is not offered any more.
@@ -20,7 +20,7 @@
       Logo -> marquee (romname-logo.png)
     The migration script and the Artwork Manager point <thumbnail> to the
     icon as well, so the carousel (thumbnail) shows the icons; scraped games
-    show their box. Showcase uses boxart, then cartridge, thumbnail, image.
+    show their box. Detailed and Spotlight use boxart, then cartridge, thumbnail, image.
 -->
 <theme>
 	<formatVersion>7</formatVersion>
@@ -61,16 +61,133 @@
 		</video>
 	</view>
 
-	<!-- ===================================================== List (Detailed) -->
+	<!-- ===================================================== Detailed -->
+	<!-- Large cover on the left (fixed, it changes in place), title,
+	     description and info on the right. ES needs the game list to browse,
+	     so it is kept but fully transparent. -->
 	<view name="detailed">
 		<textlist name="gamelist">
 			<origin>0.5 0.5</origin>
-			<pos>0.75 0.48</pos>
-			<size>0.42 0.84</size>
-			<alignment>center</alignment>
-			<horizontalMargin>0.01</horizontalMargin>
-			<zIndex>12</zIndex>
+			<pos>0.75 0.5</pos>
+			<size>0.4 0.8</size>
+			<primaryColor>00000000</primaryColor>
+			<secondaryColor>00000000</secondaryColor>
+			<selectedColor>00000000</selectedColor>
+			<selectorColor>00000000</selectorColor>
+			<zIndex>1</zIndex>
 		</textlist>
+		<image name="detailCover" extra="true">
+			<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
+			<origin>0.5 0.5</origin>
+			<pos>0.6 0.4</pos>
+			<maxSize>0.165 0.62</maxSize><!-- 2:3 cover: about 317 x 476 px -->
+			<roundCorners>${CornersMedium}</roundCorners>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>20</zIndex>
+		</image>
+
+		<!-- Right side: title, description, info -->
+		<text name="md_name">
+			<origin>0 0.5</origin>
+			<pos>0.70 0.08</pos>
+			<size>0.28 0.07</size>
+			<alignment>left</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.04</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_description">
+			<origin>0 0</origin>
+			<pos>0.70 0.14</pos>
+			<size>0.28 0.46</size>
+			<alignment>left</alignment>
+			<fontPath>${fontRegular}</fontPath>
+			<fontSize>0.03</fontSize>
+			<lineSpacing>1.3</lineSpacing>
+			<color>${gameMetadataColor}</color>
+			<autoScroll>vertical</autoScroll>
+			<autoScrollDelay>4000</autoScrollDelay>
+			<autoScrollSpeed>60</autoScrollSpeed>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+
+		<text name="label_players" extra="true">
+			<text>Players</text>
+			<origin>0 0.5</origin>
+			<pos>0.70 0.70</pos>
+			<size>0.13 0.06</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_players">
+			<origin>1 0.5</origin>
+			<pos>0.98 0.70</pos>
+			<size>0.15 0.06</size>
+			<alignment>right</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<value>-</value>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+
+		<text name="label_released" extra="true">
+			<text>Released</text>
+			<origin>0 0.5</origin>
+			<pos>0.70 0.77</pos>
+			<size>0.13 0.06</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<datetime name="md_releasedate">
+			<origin>1 0.5</origin>
+			<pos>0.98 0.77</pos>
+			<size>0.15 0.06</size>
+			<alignment>right</alignment>
+			<format>%Y</format>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<value>-</value>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</datetime>
+
+		<text name="label_developer" extra="true">
+			<text>Developer</text>
+			<origin>0 0.5</origin>
+			<pos>0.70 0.84</pos>
+			<size>0.13 0.06</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_developer">
+			<origin>1 0.5</origin>
+			<pos>0.98 0.84</pos>
+			<size>0.16 0.06</size>
+			<alignment>right</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.03</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<value>-</value>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
 	</view>
 
 	<!-- ===================================================== Carousel: 3 icons (also "Automatic") -->
@@ -185,141 +302,236 @@
 	</customView>
 
 	<!-- ===================================================== Showcase -->
-	<customView name="coverdetails" displayName="Showcase" inherits="gamecarousel">
-		<!-- Vertical cover carousel on the left of the bottom screen;
-		     previous and next cover peek in at the top and bottom -->
+	<!-- Left: game names as a vertical carousel with a fixed selection bar.
+	     Right: info card with icon, name, genre and statistics. -->
+	<customView name="showcase" displayName="Showcase" inherits="gamecarousel">
+		<image name="sc_list_panel" extra="true">
+			<path>${themePath}/_inc/variants/panel.svg</path>
+			<pos>0.5225 0.05</pos>
+			<size>0.2175 0.9</size>
+			<zIndex>10</zIndex>
+		</image>
+		<image name="sc_info_panel" extra="true">
+			<path>${themePath}/_inc/variants/panel.svg</path>
+			<pos>0.755 0.05</pos>
+			<size>0.22 0.9</size>
+			<zIndex>10</zIndex>
+		</image>
+		<image name="sc_selector" extra="true">
+			<path>${themePath}/_inc/variants/bar.svg</path>
+			<origin>0.5 0.5</origin>
+			<pos>0.63125 0.5</pos>
+			<size>0.205 0.065</size>
+			<color>${gamelistSelectorColor}</color>
+			<zIndex>40</zIndex>
+		</image>
 		<gamecarousel name="gamecarousel">
 			<type>vertical</type>
-			<!-- Centre at y 0.37 = middle of the description (0.14 - 0.60).
-			     Size 1.26 so the carousel still reaches the bottom edge. -->
 			<origin>0 0.5</origin>
-			<pos>0.51 0.37</pos>
-			<size>0.17 1.26</size>
-			<logoSize>0.08 0.32</logoSize><!-- screen-relative: 164 x 246 px, selected 213 x 320 px -->
-			<maxLogoCount>3</maxLogoCount><!-- previous cover peeks in at the top, next one below -->
-			<logoScale>1.3</logoScale>
+			<pos>0.531 0.5</pos>
+			<size>0.2 0.86</size>
+			<!-- screen-relative (custom view): 410 x 50 px per name -->
+			<logoSize>0.2 0.065</logoSize>
+			<logoScale>1</logoScale>
+			<maxLogoCount>11</maxLogoCount>
 			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
-			<logoAlignment>center</logoAlignment>
-			<minLogoOpacity>0.45</minLogoOpacity>
-			<imageSource>boxart</imageSource>
-			<color>ffffff00</color>
-			<linearSmooth>true</linearSmooth>
+			<logoAlignment>left</logoAlignment>
+			<minLogoOpacity>1</minLogoOpacity>
+			<color>00000000</color>
 			<zIndex>50</zIndex>
 			<itemTemplate>
-				<image name="gameArt" extra="true">
-					<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
-					<pos>0.5 0.5</pos>
-					<origin>0.5 0.5</origin>
-					<maxSize>1 1</maxSize>
-					<roundCorners>${CornersMedium}</roundCorners>
-					<linearSmooth>true</linearSmooth>
-					<zIndex>3</zIndex>
-				</image>
+				<text name="scName" extra="true">
+					<text>{game:name}</text>
+					<origin>0 0.5</origin>
+					<pos>0.04 0.5</pos>
+					<size>0.92 1</size>
+					<alignment>left</alignment>
+					<fontPath>${fontBold}</fontPath>
+					<fontSize>0.03</fontSize>
+					<color>${systemInfoColor}</color>
+					<opacity>0.6</opacity>
+					<storyboard event="activate">
+						<animation property="opacity" to="1" duration="120" mode="easeOut" />
+					</storyboard>
+					<storyboard event="deactivate">
+						<animation property="opacity" to="0.6" duration="120" mode="easeOut" />
+					</storyboard>
+				</text>
 			</itemTemplate>
 		</gamecarousel>
+		<image name="gamecarouselLogo">
+			<roundCorners>0</roundCorners>
+		</image>
 
-		<!-- Right side: title, description, info -->
+		<image name="sc_icon" extra="true">
+			<path>firstfile({game:cartridge}, {game:thumbnail}, {game:boxart})</path>
+			<origin>0.5 0</origin>
+			<pos>0.865 0.08</pos>
+			<maxSize>0.105 0.28</maxSize>
+			<roundCorners>${CornersLarge}</roundCorners>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>20</zIndex>
+		</image>
 		<text name="md_name">
-			<origin>0 0.5</origin>
-			<pos>0.70 0.08</pos>
-			<size>0.28 0.07</size>
-			<alignment>left</alignment>
+			<origin>0.5 0.5</origin>
+			<pos>0.865 0.42</pos>
+			<size>0.2 0.06</size>
+			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.04</fontSize>
+			<fontSize>0.038</fontSize>
 			<color>${systemInfoColor}</color>
 			<autoScroll>horizontal</autoScroll>
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</text>
-		<text name="md_description">
-			<origin>0 0</origin>
-			<pos>0.70 0.14</pos>
-			<size>0.28 0.46</size>
-			<alignment>left</alignment>
-			<fontPath>${fontRegular}</fontPath>
-			<fontSize>0.03</fontSize>
-			<lineSpacing>1.3</lineSpacing>
+		<text name="md_genre">
+			<origin>0.5 0.5</origin>
+			<pos>0.865 0.47</pos>
+			<size>0.2 0.05</size>
+			<alignment>center</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
 			<color>${gameMetadataColor}</color>
-			<autoScroll>vertical</autoScroll>
-			<autoScrollDelay>4000</autoScrollDelay>
-			<autoScrollSpeed>60</autoScrollSpeed>
+			<value> </value>
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</text>
-
-		<text name="label_players" extra="true">
+		<text name="sc_label_players" extra="true">
 			<text>Players</text>
 			<origin>0 0.5</origin>
-			<pos>0.70 0.70</pos>
-			<size>0.13 0.06</size>
+			<pos>0.77 0.56</pos>
+			<size>0.1 0.05</size>
 			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.03</fontSize>
+			<fontSize>0.028</fontSize>
 			<color>${gameMetadataColor}</color>
 			<opacity>0.6</opacity>
 			<zIndex>20</zIndex>
 		</text>
 		<text name="md_players">
 			<origin>1 0.5</origin>
-			<pos>0.98 0.70</pos>
-			<size>0.15 0.06</size>
+			<pos>0.96 0.56</pos>
+			<size>0.11 0.05</size>
 			<alignment>right</alignment>
-			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.03</fontSize>
-			<color>${systemInfoColor}</color>
 			<value>-</value>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${systemInfoColor}</color>
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</text>
-
-		<text name="label_released" extra="true">
+		<text name="sc_label_released" extra="true">
 			<text>Released</text>
 			<origin>0 0.5</origin>
-			<pos>0.70 0.77</pos>
-			<size>0.13 0.06</size>
+			<pos>0.77 0.62</pos>
+			<size>0.1 0.05</size>
 			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.03</fontSize>
+			<fontSize>0.028</fontSize>
 			<color>${gameMetadataColor}</color>
 			<opacity>0.6</opacity>
 			<zIndex>20</zIndex>
 		</text>
 		<datetime name="md_releasedate">
 			<origin>1 0.5</origin>
-			<pos>0.98 0.77</pos>
-			<size>0.15 0.06</size>
+			<pos>0.96 0.62</pos>
+			<size>0.11 0.05</size>
 			<alignment>right</alignment>
 			<format>%Y</format>
-			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.03</fontSize>
-			<color>${systemInfoColor}</color>
 			<value>-</value>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${systemInfoColor}</color>
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</datetime>
-
-		<text name="label_developer" extra="true">
+		<text name="sc_label_developer" extra="true">
 			<text>Developer</text>
 			<origin>0 0.5</origin>
-			<pos>0.70 0.84</pos>
-			<size>0.13 0.06</size>
+			<pos>0.77 0.68</pos>
+			<size>0.1 0.05</size>
 			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.03</fontSize>
+			<fontSize>0.028</fontSize>
 			<color>${gameMetadataColor}</color>
 			<opacity>0.6</opacity>
 			<zIndex>20</zIndex>
 		</text>
 		<text name="md_developer">
 			<origin>1 0.5</origin>
-			<pos>0.98 0.84</pos>
-			<size>0.16 0.06</size>
+			<pos>0.96 0.68</pos>
+			<size>0.11 0.05</size>
 			<alignment>right</alignment>
-			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.03</fontSize>
-			<color>${systemInfoColor}</color>
 			<autoScroll>horizontal</autoScroll>
 			<value>-</value>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${systemInfoColor}</color>
 			<visible>true</visible>
 			<zIndex>20</zIndex>
 		</text>
+		<text name="sc_label_rating" extra="true">
+			<text>Rating</text>
+			<origin>0 0.5</origin>
+			<pos>0.77 0.74</pos>
+			<size>0.1 0.05</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<rating name="md_rating">
+			<origin>1 0.5</origin>
+			<pos>0.96 0.74</pos>
+			<size>0 0.03</size>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</rating>
+		<text name="sc_label_play_time" extra="true">
+			<text>Play time</text>
+			<origin>0 0.5</origin>
+			<pos>0.77 0.8</pos>
+			<size>0.1 0.05</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="md_gametime_custom" extra="true">
+			<origin>1 0.5</origin>
+			<pos>0.96 0.8</pos>
+			<size>0.11 0.05</size>
+			<alignment>right</alignment>
+			<value>-</value>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${systemInfoColor}</color>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+		<text name="sc_label_last_played" extra="true">
+			<text>Last played</text>
+			<origin>0 0.5</origin>
+			<pos>0.77 0.86</pos>
+			<size>0.1 0.05</size>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${gameMetadataColor}</color>
+			<opacity>0.6</opacity>
+			<zIndex>20</zIndex>
+		</text>
+		<datetime name="md_lastplayed">
+			<origin>1 0.5</origin>
+			<pos>0.96 0.86</pos>
+			<size>0.11 0.05</size>
+			<alignment>right</alignment>
+			<format>%d.%m.%Y</format>
+			<value>-</value>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>0.028</fontSize>
+			<color>${systemInfoColor}</color>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</datetime>
 	</customView>
 </theme>
