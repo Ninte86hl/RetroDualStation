@@ -317,10 +317,10 @@
 	     Right: game names as a vertical carousel with a fixed selection bar. -->
 	<customView name="showcase" displayName="Showcase" inherits="gamecarousel">
 		<image name="sc_icon" extra="true">
-			<path>firstfile({game:cartridge}, {game:thumbnail}, {game:boxart}, {game:image})</path>
-			<origin>0.5 0.5</origin>
-			<pos>0.62 0.44</pos><!-- same height as the hero image -->
-			<maxSize>0.185 0.5</maxSize><!-- about 380 x 384 px -->
+			<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
+			<origin>0.5 0</origin>
+			<pos>0.62 0.05</pos><!-- top aligned with the list panel -->
+			<maxSize>0.17 0.66</maxSize><!-- grid 2:3, about 338 x 507 px -->
 			<roundCorners>${CornersLarge}</roundCorners>
 			<linearSmooth>true</linearSmooth>
 			<zIndex>20</zIndex>
@@ -328,7 +328,7 @@
 		<text name="sc_label_play_time" extra="true">
 			<text>PLAY TIME</text>
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.76</pos>
+			<pos>0.62 0.75</pos>
 			<size>0.2 0.04</size>
 			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
@@ -339,7 +339,7 @@
 		</text>
 		<text name="md_gametime_custom" extra="true">
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.81</pos>
+			<pos>0.62 0.80</pos><!-- bottom aligned with the list panel (0.83) -->
 			<size>0.2 0.06</size>
 			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
