@@ -2,7 +2,7 @@
 # RGDS Plus Dual-Screen: Sway-Config vor dem ES-Start anpassen.
 # Hintergrund: /usr/lib/autostart/common/111-sway-init schreibt
 # /storage/.config/sway/config bei jedem Boot neu.
-# Aufruf aus /storage/rgds-test/start-es-v2-diag.sh vor dem exec.
+# Aufruf aus /storage/rgds-test/start-es-dualstation.sh vor dem exec.
 
 CFG=/storage/.config/sway/config
 export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock

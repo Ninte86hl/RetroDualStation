@@ -16,7 +16,7 @@ LOG=/storage/dualstation-install.log
 export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null)"
-BIN="$(cd "$SRC" && ls emulationstation-rgds-* 2>/dev/null | head -n 1)"
+BIN=emulationstation-rgds
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -72,18 +72,15 @@ fi
 # Binary ueber Zwischennamen, damit ein laufendes ES nicht stoert
 cp "$SRC/$BIN" "$DEST/.$BIN.new" && chmod +x "$DEST/.$BIN.new" && mv -f "$DEST/.$BIN.new" "$DEST/$BIN" \
     || fail "Could not copy $BIN."
-# Aeltere Versionen entfernen
-for old in "$DEST"/emulationstation-rgds-*; do
-    [ "$(basename "$old")" = "$BIN" ] && continue
+# Dateien aelterer Versionen (mit Versionsnummer im Namen) entfernen
+for old in "$DEST"/emulationstation-rgds-* "$DEST"/start-es-v2-diag.sh; do
     [ -f "$old" ] && rm -f "$old" && log "entfernt: $old"
 done
 
-for f in start-es-v2-diag.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh; do
+for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh; do
     cp "$SRC/rgds-test/$f" "$DEST/$f" || fail "Could not copy $f."
     chmod +x "$DEST/$f"
 done
-# Startskript auf das mitgelieferte Binary zeigen lassen
-sed -i "s|/storage/rgds-test/emulationstation-rgds-[^ ]*|/storage/rgds-test/$BIN|" "$DEST/start-es-v2-diag.sh"
 echo "$VERSION" > "$DEST/VERSION"
 log "Skripte kopiert nach $DEST"
 

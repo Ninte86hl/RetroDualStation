@@ -16,7 +16,7 @@ not a full system image.
 ## Steps
 
 ```bash
-cp patches/001-rgds-menu-dualscreen-v2.patch \
+cp patches/001-rgds-menu-dualscreen.patch \
    /path/to/distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 ```
 
@@ -38,7 +38,8 @@ Expected: no output. The many `LC_CTYPE`/locale lines at the end of the log
 come from the glibc locale build and are harmless.
 
 Only **one** patch file may be in the `patches/aarch64/` folder. A second
-file would be applied as well and fail.
+file would be applied as well and fail. The patch was called
+`001-rgds-menu-dualscreen-v2.patch` up to v8 – delete that old file first.
 
 ## Result
 
@@ -47,7 +48,7 @@ build.ROCKNIX-RK3566.aarch64/install_pkg/emulationstation-<commit>/usr/bin/emula
 ```
 
 Copy the file under a name starting with `emulationstation-rgds`
-(e.g. `emulationstation-rgds-v7`). Otherwise the Sway rule for global
+(the installer uses `emulationstation-rgds`). Otherwise the Sway rule for global
 fullscreen does not apply.
 
 ## Note: ScreenScraper and RetroAchievements

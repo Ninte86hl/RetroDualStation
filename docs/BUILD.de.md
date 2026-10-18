@@ -17,7 +17,7 @@ vollständiges System-Image.
 ## Ablauf
 
 ```bash
-cp patches/001-rgds-menu-dualscreen-v2.patch \
+cp patches/001-rgds-menu-dualscreen.patch \
    /pfad/zu/distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 ```
 
@@ -38,6 +38,10 @@ grep -n "Hunk\|FAILED\| error:" build.log | head
 Erwartet wird: keine Ausgabe. Die vielen `LC_CTYPE`-/Locale-Zeilen am Ende
 des Logs stammen aus dem Glibc-Locale-Build und sind harmlos.
 
+Im Ordner `patches/aarch64/` darf nur **eine** Patch-Datei liegen. Bis v8
+hieß der Patch `001-rgds-menu-dualscreen-v2.patch` – diese alte Datei
+vorher löschen, sonst wird sie zusätzlich angewendet und der Build schlägt fehl.
+
 ## Ergebnis
 
 ```
@@ -45,7 +49,7 @@ build.ROCKNIX-RK3566.aarch64/install_pkg/emulationstation-<commit>/usr/bin/emula
 ```
 
 Die Datei unter einem Namen kopieren, der mit `emulationstation-rgds`
-beginnt (z. B. `emulationstation-rgds-v7`). Sonst greift die Sway-Regel
+beginnt (der Installer nutzt `emulationstation-rgds`). Sonst greift die Sway-Regel
 für das globale Vollbild nicht.
 
 ## Hinweis: ScreenScraper und RetroAchievements

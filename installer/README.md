@@ -5,7 +5,7 @@ auf dem Gerät über **Ports → Install ROCKNIX DualStation** startet.
 Kein SSH und kein PC-Terminal nötig.
 
 ```bash
-python3 tools/make-installer.py emulationstation-rgds-v7 v8
+python3 tools/make-installer.py emulationstation-rgds v9
 ```
 
 | Datei | Zweck |
