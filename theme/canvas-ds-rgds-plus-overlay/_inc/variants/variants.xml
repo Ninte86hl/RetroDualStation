@@ -367,11 +367,13 @@
 			<type>vertical</type>
 			<origin>0 0.5</origin>
 			<pos>0.741 0.44</pos>
-			<size>0.228 0.78</size><!-- 0.05 - 0.83, inside the box -->
+			<!-- 9 rows of 59 px = 531 px (0.69): 4 above and 4 below the
+			     selection, rows outside the carousel are clipped completely -->
+			<size>0.228 0.69</size>
 			<!-- screen-relative (custom view): 467 x 50 px per name -->
 			<logoSize>0.228 0.065</logoSize>
 			<logoScale>1</logoScale>
-			<maxLogoCount>10</maxLogoCount>
+			<maxLogoCount>9</maxLogoCount>
 			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
 			<logoAlignment>left</logoAlignment>
