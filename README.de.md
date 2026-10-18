@@ -101,6 +101,8 @@ Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
 
 ```
 patches/                     ES-Patch für das ROCKNIX-Buildsystem
+installer/                   Installer und Deinstallation (Ports-Einträge)
+tools/make-installer.py      baut die Installations-ZIP
 device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
   start-es-v2-diag.sh        Startskript der Dual-Version
   rgds-sway-fix.sh           passt die Sway-Config vor jedem Start an
@@ -118,62 +120,87 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 
 ## Installation
 
-**`dii-ess-aye-rocknix-dual-mod-v7.tar.gz`** aus dem
+### Einfacher Weg: Installer über Ports (empfohlen)
+
+1. **`rocknix-dualstation-v8.zip`** aus dem
+   [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
+   herunterladen.
+2. In den Ordner **`ports`** bei den ROMs entpacken
+   (`/storage/roms/ports`). Enthalten sind `Install ROCKNIX DualStation.sh`
+   und ein versteckter Ordner `.dualstation`.
+3. In EmulationStation unter **Ports** den Eintrag
+   **Install ROCKNIX DualStation** starten. Fehlt er, vorher die
+   Spielelisten aktualisieren.
+
+Der Bildschirm wird kurz schwarz, der untere Screen schaltet sich ein und
+ES kommt über beide Screens mit dem Theme *dii-ess-aye-rgds-plus* zurück.
+Unter **Ports** stehen danach *RGDS Dual-Screen ES*, *RGDS Single-Screen ES*
+und *Uninstall ROCKNIX DualStation*.
+
+Bevor etwas verändert wird, prüft der Installer, ob es ein RG DS Plus ist
+und ob das mitgelieferte EmulationStation zur ROCKNIX-Version passt. Wenn
+nicht, erscheint eine Meldung in ES und es wird nichts verändert.
+Protokoll: `/storage/dualstation-install.log`.
+
+**So kommt die ZIP in `ports`:** Liegen die ROMs auf einer Karte, die der
+Rechner lesen kann, einfach dorthin kopieren. Ist `/storage/roms` eine
+ext4-Partition (bei vielen RG-DS-Plus-Installationen der Fall), über das
+Netzwerk kopieren (`<IP>` durch die IP-Adresse des Geräts ersetzen):
+
+```bash
+scp rocknix-dualstation-v8.zip root@<IP>:/storage/roms/ports/
+```
+
+Dann auf dem Gerät (SSH):
+
+```bash
+cd /storage/roms/ports && unzip rocknix-dualstation-v8.zip && rm rocknix-dualstation-v8.zip
+```
+
+Ein Update von einer älteren Version funktioniert genauso: neue ZIP
+entpacken und den Installer erneut starten.
+
+### Manuelle Installation (für Fortgeschrittene)
+
+Quellcode und **`emulationstation-rgds-v7`** aus dem
 [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
-herunterladen und auf dem Rechner entpacken:
+herunterladen, dann aus dem Quellcode-Ordner:
 
 ```bash
-tar xzf dii-ess-aye-rocknix-dual-mod-v7.tar.gz
+ssh root@<IP> mkdir -p /storage/rgds-test
 ```
 ```bash
-cd dii-ess-aye-rocknix-dual-mod-v7
-```
-
-Das Paket enthält die fertige ES-Binärdatei `emulationstation-rgds-v7`.
-Selbst bauen ist optional (siehe [`docs/BUILD.de.md`](docs/BUILD.de.md)); eine
-selbst gebaute Datei muss ebenfalls mit `emulationstation-rgds` beginnen.
-
-`<IP>` durch die IP-Adresse des Geräts ersetzen.
-
-**1. Ordner auf dem Gerät anlegen:**
-```bash
-ssh root@<IP> mkdir -p /storage/rgds-test /storage/.config/system.d/essway.service.d
-```
-
-**2. Dateien übertragen (aus dem entpackten Ordner):**
-```bash
-scp emulationstation-rgds-v7 device/rgds-test/*.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds-v7 device/rgds-test/*.sh installer/payload/uninstall.sh root@<IP>:/storage/rgds-test/
 ```
 ```bash
-scp device/ports/*.sh root@<IP>:/storage/roms/ports/
-```
-```bash
-scp device/system.d/essway.service.d/rgds.conf root@<IP>:/storage/.config/system.d/essway.service.d/
+scp device/ports/*.sh installer/payload/ports/*.sh root@<IP>:/storage/roms/ports/
 ```
 ```bash
 scp -r theme/dii-ess-aye-rgds-plus root@<IP>:/storage/.config/emulationstation/themes/
 ```
 
-**3. Auf dem Gerät ausführbar machen und aktivieren:**
+Auf dem Gerät:
+
 ```bash
-chmod +x /storage/rgds-test/* /storage/roms/ports/RGDS*.sh
-```
-```bash
-systemctl daemon-reload
+chmod +x /storage/rgds-test/* /storage/roms/ports/*.sh
 ```
 ```bash
 /storage/rgds-test/es-switch-helper.sh dual
 ```
 
-Der Wechsel auf **dual** setzt dabei auch das Theme *dii-ess-aye-rgds-plus*.
-Danach in ES unter **Ports** die Einträge *RGDS Dual-Screen ES* und
-*RGDS Single-Screen ES* nutzen. Falls sie fehlen: Spielelisten aktualisieren.
+Selbst bauen ist optional (siehe [`docs/BUILD.de.md`](docs/BUILD.de.md)); eine
+selbst gebaute Datei muss ebenfalls mit `emulationstation-rgds` beginnen.
 
 ## Deinstallation
 
-Per Port auf **Single** wechseln. Das entfernt den Drop-in und stellt das
-Original-ES wieder her. Danach können `/storage/rgds-test/` und die beiden
-Port-Skripte gelöscht werden.
+**Ports → Uninstall ROCKNIX DualStation** starten. Das schaltet zurück auf
+das Original-ROCKNIX-ES samt Theme und entfernt alle Dateien von ROCKNIX
+DualStation (Skripte, Theme, Ports-Einträge). Spiele, Medien, Spielelisten
+und Spielstände bleiben unberührt.
+Protokoll: `/storage/dualstation-uninstall.log`.
+
+Nur vorübergehend zurück, z. B. zum Scrapen? Dann **RGDS Single-Screen ES**
+nutzen und mit **RGDS Dual-Screen ES** wieder zurückwechseln.
 
 ---
 
