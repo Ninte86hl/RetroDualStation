@@ -90,7 +90,7 @@ based on 640x480
 		    <maxSize>0.375 .08</maxSize>
 		</image>
 	</view>
-	<view name="detailed, grid" ifSubset="metadata:on">
+	<view name="detailed" ifSubset="metadata:on">
 	    <image name="md_image">
             <pos>0.25 0.5</pos>
             <origin>0.5 0.5</origin>
@@ -116,7 +116,7 @@ based on 640x480
 		</image>
 	</view>
 
-	<view name="detailed, grid" ifSubset="metadata:off">
+	<view name="detailed" ifSubset="metadata:off">
 	    <image name="md_image">
             <pos>0.25 0.5</pos>
             <origin>0.5 0.5</origin>
@@ -145,7 +145,7 @@ based on 640x480
 
 	<!-- Small Grid View Detailed-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="detailed, grid" ifSubset="font-size:small,metadata:on">
+	<view name="detailed" ifSubset="font-size:small,metadata:on">
 	<!-- Metadata Toggle-->
 		<image name="md_marquee,md_thumbnail">
 			<visible>false</visible>
@@ -220,7 +220,7 @@ based on 640x480
 
 	<!-- Medium/Large Grid View-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+	<view name="detailed" ifSubset="font-size:medium|large,metadata:on">
 
 		<!-- Metadata Toggle-->
 			<image name="md_marquee,md_thumbnail">
@@ -272,7 +272,7 @@ based on 640x480
 		</image>
 	</view>
 
-	<view name="detailed, grid" ifSubset="metadata:off">
+	<view name="detailed" ifSubset="metadata:off">
 			<image name="md_marquee,md_thumbnail">
 				<visible>false</visible>
 			</image>

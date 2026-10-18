@@ -2,7 +2,7 @@
 
 RG DS Plus adaptation of **[canvas-ds](https://github.com/toniremi/canvas-ds)**
 by **toniremi**, shared with his permission. This folder contains only the
-7 changed layout files – the artwork, fonts and everything else come from the
+changed layout files – the artwork, fonts and everything else come from the
 original theme.
 
 > 🇩🇪 Anpassung des Themes canvas-ds von toniremi an das RG DS Plus, mit seiner
@@ -28,6 +28,21 @@ already scaled).
 
 `tools/scale_canvas.py` is the script that produced these files from the
 original; `tools/SCALED-VALUES.txt` lists every changed value.
+
+## Game list views
+
+The original game list layouts of canvas-ds are replaced by four views for
+the two screens (`_inc/variants/variants.xml`). On the top screen all of them
+show the hero artwork (`image`); a video fades in after 5 seconds.
+
+| Gamelist view style | Bottom screen | Media |
+|---|---|---|
+| Automatic / Detailed | only the game names, centred | – |
+| Carousel | vertical logo carousel | `marquee` |
+| Icons | 3 square icons, like the system view | `thumbnail` |
+| Details | vertical cover carousel, description, players, year, developer | `boxart` |
+
+The Grid view of canvas-ds is not offered any more.
 
 ## Requirements
 

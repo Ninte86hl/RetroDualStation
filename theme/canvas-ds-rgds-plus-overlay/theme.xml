@@ -5,7 +5,7 @@ Version: 1.0
 Author: Siddy212
 Licnese: Creative Commons CC-BY-NC-SA
 -->
-<theme defaultTransition="instant" defaultView="list">
+<theme defaultTransition="instant" defaultView="detailed">
 	<formatVersion>7</formatVersion>
 
 	<!-- Includes -->
@@ -277,7 +277,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 	<!-- All Views -->
 	<!-- ~~~~~~~~~~ -->
 
-	<view name="system, detailed, gamecarousel, grid">
+	<view name="system, detailed, gamecarousel">
         <helpsystem name="help">
             <pos>1.5 1</pos>
             <visible>false</visible>
@@ -408,7 +408,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Gamelist: System Logo -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="detailed, gamecarousel, grid">
+	<view name="detailed, gamecarousel">
 		<image name="logo" origin="0.5 0.5" linearSmooth="true">
 		    <pos>0.25 0.44</pos>
 			<path>./_inc/systems/logos/${system.theme}.svg</path>
@@ -424,7 +424,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 	</view>
 	<!-- Gamelist: Full Metadata Call-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="detailed, gamecarousel, grid">
+	<view name="detailed, gamecarousel">
 		<image name="playtime-logo" origin="0.5 0.5" linearSmooth="true" extra="true">
 			<path>./_inc/images/playtime-icon.svg</path>
 			<zIndex>4</zIndex>
@@ -515,11 +515,6 @@ Licnese: Creative Commons CC-BY-NC-SA
 			<color>${gameMetadataColor}</color>
 		</text>
 	</view>
-	<view name="grid">
-		<image name="md_marquee">
-			<visible>false</visible>
-		</image>
-	</view>
 
 
 
@@ -565,7 +560,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Medium/Large Metadata Toggle -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+	<view name="detailed" ifSubset="font-size:medium|large,metadata:on">
 		<text name="md_players">
 			<visible>false</visible>
 		</text>
@@ -587,11 +582,10 @@ Licnese: Creative Commons CC-BY-NC-SA
 	<!-- Game Grid View -->
 	<!-- ~~~~~~~~~~~ -->
 
-	<include name="grid">./grid.xml</include>
 
 	<!-- Off Metadata Toggle -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="detailed, gamecarousel, grid" ifSubset="metadata:off">
+	<view name="detailed, gamecarousel" ifSubset="metadata:off">
 		<image name="game-metadata-background-shadow-base" extra="true">
 			<visible>false</visible>
 		</image>
