@@ -112,6 +112,7 @@ def main():
 
     print("ROCKNIX DualStation – artwork migration", "(APPLY)" if apply else "(dry run, nothing is changed)")
     total = {label: 0 for *_, label in RULES}
+    total["Fix"] = 0
     skipped = 0
 
     for system in sorted(os.listdir(ROMS)):
@@ -151,10 +152,23 @@ def main():
                     continue
                 changes.append((game, old_tag, new_tag, path, new_path, new_text, label, size))
 
-        if not changes:
+        # Repair: an earlier version of this script removed <thumbnail> for
+        # icons. The carousel reads <thumbnail>, so point it to the icon again.
+        repairs = []
+        for game in tree.getroot().iter("game"):
+            cart = game.find("cartridge")
+            if cart is None or not cart.text or game.find("thumbnail") is not None:
+                continue
+            if os.path.splitext(cart.text.strip())[0].endswith("-icon"):
+                repairs.append(game)
+
+        if not changes and not repairs:
             continue
 
-        print(f"\n{system}: {len(changes)} image(s)")
+        print(f"\n{system}: {len(changes)} image(s), {len(repairs)} repair(s)")
+        for game in repairs:
+            print(f"  Fix   <thumbnail> -> {os.path.basename(game.find('cartridge').text.strip())}")
+        total["Fix"] += len(repairs)
         for game, old_tag, new_tag, path, new_path, new_text, label, size in changes:
             print(f"  {label:4}  {os.path.basename(path)} ({size[0]}x{size[1]})"
                   f"  ->  {os.path.basename(new_path)}  <{new_tag}>" + (f" + <{old_tag}>" if new_tag != old_tag else ""))
@@ -173,6 +187,8 @@ def main():
                 old_el.text = new_text
                 if new_tag != old_tag:
                     ET.SubElement(game, new_tag).text = new_text
+            for game in repairs:
+                ET.SubElement(game, "thumbnail").text = game.find("cartridge").text.strip()
             if hasattr(ET, "indent"):
                 ET.indent(tree, space="\t")
             tree.write(gamelist, encoding="utf-8", xml_declaration=True)
