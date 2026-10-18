@@ -10,8 +10,8 @@ Only the first (x) component of these tags is scaled:
 minSize is scaled too (background images use it to cover the canvas).
 Tags with attributes (e.g. ifSubset) and storyboard animations of the x
 position are handled as well.
-The theme root gets defaultView="list" (custom view from
-_inc/variants/variants.xml) for the "Automatic" gamelist style.
+The theme root gets defaultView="gamecarousel" for the "Automatic"
+gamelist style.
 Carousel item sizes (itemsize, itemSizeCarousel) are NOT scaled: ES
 multiplies them by the carousel size, which is already scaled.
 Children of grid tiles are skipped, because their coordinates are relative
@@ -79,12 +79,11 @@ def process(text, log, fname):
             line = re.sub(r'\b(from|to)="(-?[0-9.]+)"', arepl, line)
         if anim_x[0] and "/>" in line:
             anim_x[0] = False
-        # "Automatic" gamelist style: the theme root gets defaultView="list"
-        # (custom view in _inc/variants/variants.xml), so ES uses our list
-        # instead of choosing a view by itself.
+        # "Automatic" gamelist style: the theme root gets defaultView="gamecarousel",
+        # so ES shows the icon carousel instead of choosing a view by itself.
         if line.startswith("<theme ") and "defaultView" not in line:
-            line = line.replace("<theme ", '<theme defaultView="list" ', 1)
-            log.append(f'{fname}:{ln}: defaultView="list"')
+            line = line.replace("<theme ", '<theme defaultView="gamecarousel" ', 1)
+            log.append(f'{fname}:{ln}: defaultView="gamecarousel"')
         out.append(line)
         # closing tags after processing the line
         for tag in re.findall(r"</([A-Za-z]+)>", line):

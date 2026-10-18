@@ -5,12 +5,12 @@
     Replaces the original game list layouts of canvas-ds:
 
       Gamelist view style      View
-      Automatic / Detailed     List    : only the game names, centred
-      Carousel                 Icons   : 3 square icons like the system view (thumbnail)
+      Detailed                 List    : only the game names, centred
+      Automatic / Carousel     Icons   : 3 square icons like the system view (thumbnail)
       Logos                    Logos   : vertical logo carousel (marquee)
       Showcase                 Showcase: vertical cover carousel (boxart), description, info
 
-    "Automatic" = "Detailed" (theme root: defaultView="detailed").
+    "Automatic" = "Carousel" (theme root: defaultView="gamecarousel").
     The Grid view of canvas-ds is not offered any more.
     Top screen in all views: hero artwork (image), video fades in after 5 s.
     Media tags as written by RocknixDS Artwork Manager:
@@ -61,7 +61,7 @@
 		</video>
 	</view>
 
-	<!-- ===================================================== List (Automatic / Detailed) -->
+	<!-- ===================================================== List (Detailed) -->
 	<view name="detailed">
 		<textlist name="gamelist">
 			<origin>0.5 0.5</origin>
@@ -73,7 +73,7 @@
 		</textlist>
 	</view>
 
-	<!-- ===================================================== Carousel: 3 icons -->
+	<!-- ===================================================== Carousel: 3 icons (also "Automatic") -->
 	<!-- Built without itemTemplate, so the custom views Logos and Details can
 	     inherit from it without taking over the icon styling.
 	     imageSource thumbnail: the migration/Artwork Manager points thumbnail

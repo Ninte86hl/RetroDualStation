@@ -20,7 +20,7 @@ original theme.
 | Canvas | 1920 × 480 (three 640 × 480 areas, the third unused) | 2048 × 768 (two 1024 × 768 screens) |
 | Horizontal positions and widths | as designed | × 1.5 (`pos`, `size`, `maxSize`, `minSize`, `w`, `logoSize`, layout variables, x animations) |
 | Vertical values, fonts | as designed | unchanged |
-| Gamelist style "Automatic" | systems without scraped media fall back to ES's unstyled basic view | the game list (`defaultView="list"`); "Basic" is no longer offered |
+| Gamelist style "Automatic" | systems without scraped media fall back to ES's unstyled basic view | the icon carousel (`defaultView="gamecarousel"`); "Basic" is no longer offered |
 
 Not scaled on purpose: item templates and grid tiles (relative to the tile)
 and carousel logo sizes (ES multiplies them by the carousel size, which is
@@ -37,8 +37,8 @@ show the hero artwork (`image`); a video fades in after 5 seconds.
 
 | Gamelist view style | Bottom screen | Media |
 |---|---|---|
-| Automatic / Detailed | only the game names, centred | – |
-| Carousel | 3 square icons, like the system view, name of the selected game below | `thumbnail` (the Artwork Manager points it to the icon) |
+| Detailed | only the game names, centred | – |
+| Automatic / Carousel | 3 square icons, like the system view, name of the selected game below | `thumbnail` (the Artwork Manager points it to the icon) |
 | Logos | vertical logo carousel | `marquee` |
 | Showcase | vertical cover carousel, description, players, year, developer | `boxart` |
 

@@ -5,8 +5,8 @@ Stand: 18.10.2026 (Zweig `theme-varianten`)
 | Eintrag in ES | Unterer Screen: Anordnung | Artwork | Datei | gamelist-Eintrag |
 |---|---|---|---|---|
 | **Alle (oberer Screen)** | Hero mittig auf Höhe der Icons, runde Ecken, nach 5 s Video, darunter das Systemlogo | Hero | `romname-hero.png` | `image` |
-| **Automatisch / Detailliert** | Spielnamen als Liste mittig, ausgewähltes Spiel hervorgehoben | – | – | – |
-| **Karussell** | 3 Icons nebeneinander, das mittlere größer, darunter der Name des ausgewählten Spiels | Icon | `romname-icon.png` | `cartridge` + `thumbnail` |
+| **Detailliert** | Spielnamen als Liste mittig, ausgewähltes Spiel hervorgehoben | – | – | – |
+| **Automatisch / Gamecarousel** | 3 Icons nebeneinander, das mittlere größer, darunter der Name des ausgewählten Spiels | Icon | `romname-icon.png` | `cartridge` + `thumbnail` |
 | **Logo** | Logos senkrecht und mittig, das ausgewählte groß, die anderen kleiner und abgedunkelt | Logo | `romname-logo.png` | `marquee` |
 | **Showcase** | links senkrechtes Cover-Karussell (Nachbarn ragen oben und unten ins Bild), rechts Name, Beschreibung, Spieler, Jahr, Entwickler | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Oberer Screen, nach 5 s** | Video blendet über das Hero-Bild | Video | vom Scraper | `video` |

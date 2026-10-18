@@ -5,7 +5,7 @@ Version: 1.0
 Author: Siddy212
 Licnese: Creative Commons CC-BY-NC-SA
 -->
-<theme defaultTransition="instant" defaultView="detailed">
+<theme defaultTransition="instant" defaultView="gamecarousel">
 	<formatVersion>7</formatVersion>
 
 	<!-- Includes -->
