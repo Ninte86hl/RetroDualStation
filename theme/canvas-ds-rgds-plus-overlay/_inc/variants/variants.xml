@@ -319,8 +319,8 @@
 		<image name="sc_icon" extra="true">
 			<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
 			<origin>0.5 0</origin>
-			<pos>0.62 0.05</pos><!-- top aligned with the list panel -->
-			<maxSize>0.17 0.66</maxSize><!-- grid 2:3, about 338 x 507 px -->
+			<pos>0.62 0.20</pos><!-- top and bottom aligned with the list panel (0.20 - 0.95) -->
+			<maxSize>0.19 0.75</maxSize><!-- grid 2:3, about 384 x 576 px -->
 			<roundCorners>${CornersLarge}</roundCorners>
 			<linearSmooth>true</linearSmooth>
 			<zIndex>20</zIndex>
@@ -328,22 +328,22 @@
 		<text name="sc_label_play_time" extra="true">
 			<text>PLAY TIME</text>
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.75</pos>
-			<size>0.2 0.04</size>
+			<pos>0.75 0.07</pos><!-- header above grid and list -->
+			<size>0.44 0.04</size>
 			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.026</fontSize>
+			<fontSize>0.03</fontSize>
 			<color>${gameMetadataColor}</color>
 			<opacity>0.6</opacity>
 			<zIndex>20</zIndex>
 		</text>
 		<text name="md_gametime_custom" extra="true">
 			<origin>0.5 0.5</origin>
-			<pos>0.62 0.80</pos><!-- bottom aligned with the list panel (0.83) -->
-			<size>0.2 0.06</size>
+			<pos>0.75 0.13</pos>
+			<size>0.44 0.08</size>
 			<alignment>center</alignment>
 			<fontPath>${fontBold}</fontPath>
-			<fontSize>0.04</fontSize>
+			<fontSize>0.06</fontSize>
 			<color>${systemInfoColor}</color>
 			<visible>true</visible>
 			<zIndex>20</zIndex>
@@ -351,14 +351,14 @@
 
 		<image name="sc_panel" extra="true">
 			<path>${themePath}/_inc/variants/panel.svg</path>
-			<pos>0.735 0.05</pos>
-			<size>0.24 0.78</size><!-- 0.05 - 0.83: same space below the last name as above the first -->
+			<pos>0.735 0.20</pos>
+			<size>0.24 0.75</size><!-- 0.20 - 0.95, same height as the grid -->
 			<zIndex>10</zIndex>
 		</image>
 		<image name="sc_selector" extra="true">
 			<path>${themePath}/_inc/variants/bar.svg</path>
 			<origin>0.5 0.5</origin>
-			<pos>0.855 0.44</pos><!-- same height as the icon centre -->
+			<pos>0.855 0.575</pos><!-- centre of the list panel -->
 			<size>0.228 0.065</size>
 			<color>${gamelistSelectorColor}</color>
 			<zIndex>40</zIndex>
@@ -366,10 +366,10 @@
 		<gamecarousel name="gamecarousel">
 			<type>vertical</type>
 			<origin>0 0.5</origin>
-			<pos>0.741 0.44</pos>
+			<pos>0.741 0.575</pos>
 			<!-- 9 rows of 59 px = 531 px (0.69): 4 above and 4 below the
 			     selection, rows outside the carousel are clipped completely -->
-			<size>0.228 0.69</size>
+			<size>0.228 0.67</size>
 			<!-- screen-relative (custom view): 467 x 50 px per name -->
 			<logoSize>0.228 0.065</logoSize>
 			<logoScale>1</logoScale>
@@ -409,7 +409,7 @@
 		     like a news ticker -->
 		<text name="md_name">
 			<origin>0 0.5</origin>
-			<pos>0.772 0.44</pos>
+			<pos>0.772 0.575</pos>
 			<size>0.198 0.065</size>
 			<alignment>left</alignment>
 			<fontPath>${fontBold}</fontPath>
