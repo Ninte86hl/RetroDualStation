@@ -5,7 +5,7 @@ Version: 1.0
 Author: Siddy212
 Licnese: Creative Commons CC-BY-NC-SA
 -->
-<theme defaultTransition="instant">
+<theme defaultTransition="instant" defaultView="detailed">
 	<formatVersion>7</formatVersion>
 
 	<!-- Includes -->
@@ -277,7 +277,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 	<!-- All Views -->
 	<!-- ~~~~~~~~~~ -->
 
-	<view name="system, basic, detailed, gamecarousel, grid">
+	<view name="system, detailed, gamecarousel, grid">
         <helpsystem name="help">
             <pos>1.5 1</pos>
             <visible>false</visible>
@@ -408,7 +408,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Gamelist: System Logo -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, gamecarousel, grid">
+	<view name="detailed, gamecarousel, grid">
 		<image name="logo" origin="0.5 0.5" linearSmooth="true">
 		    <pos>0.25 0.44</pos>
 			<path>./_inc/systems/logos/${system.theme}.svg</path>
@@ -424,7 +424,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 	</view>
 	<!-- Gamelist: Full Metadata Call-->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, gamecarousel, grid">
+	<view name="detailed, gamecarousel, grid">
 		<image name="playtime-logo" origin="0.5 0.5" linearSmooth="true" extra="true">
 			<path>./_inc/images/playtime-icon.svg</path>
 			<zIndex>4</zIndex>
@@ -565,7 +565,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Medium/Large Metadata Toggle -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, grid" ifSubset="font-size:medium|large,metadata:on">
+	<view name="detailed, grid" ifSubset="font-size:medium|large,metadata:on">
 		<text name="md_players">
 			<visible>false</visible>
 		</text>
@@ -591,7 +591,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 
 	<!-- Off Metadata Toggle -->
 	<!-- ~~~~~~~~~~~~~ -->
-	<view name="basic, detailed, gamecarousel, grid" ifSubset="metadata:off">
+	<view name="detailed, gamecarousel, grid" ifSubset="metadata:off">
 		<image name="game-metadata-background-shadow-base" extra="true">
 			<visible>false</visible>
 		</image>

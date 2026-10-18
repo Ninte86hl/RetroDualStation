@@ -20,7 +20,7 @@ original theme.
 | Canvas | 1920 × 480 (three 640 × 480 areas, the third unused) | 2048 × 768 (two 1024 × 768 screens) |
 | Horizontal positions and widths | as designed | × 1.5 (`pos`, `size`, `maxSize`, `minSize`, `w`, `logoSize`, layout variables, x animations) |
 | Vertical values, fonts | as designed | unchanged |
-| Gamelist style "Automatic" | systems without scraped media fall back to ES's unstyled basic view | the `basic` view uses the detailed layout |
+| Gamelist style "Automatic" | systems without scraped media fall back to ES's unstyled basic view | always the list (`defaultView="detailed"`); "Basic" is no longer offered |
 
 Not scaled on purpose: item templates and grid tiles (relative to the tile)
 and carousel logo sizes (ES multiplies them by the carousel size, which is
