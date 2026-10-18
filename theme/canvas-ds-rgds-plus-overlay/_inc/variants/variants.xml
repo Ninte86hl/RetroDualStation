@@ -6,8 +6,8 @@
 
       Gamelist view style      View
       Automatic / Detailed     List    : only the game names, centred
-      Carousel                 Logos   : vertical logo carousel (marquee)
-      Icons                    Icons   : 3 square icons like the system view (cartridge)
+      Carousel                 Icons   : 3 square icons like the system view (thumbnail)
+      Logos                    Logos   : vertical logo carousel (marquee)
       Details                  Details : vertical cover carousel (boxart), description, info
 
     "Automatic" = "Detailed" (theme root: defaultView="detailed").
@@ -19,8 +19,9 @@
       Icon -> cartridge (romname-icon.png)
       Grid -> boxart  (romname-grid.png)
       Logo -> marquee (romname-logo.png)
-    Fallbacks: Icons use cartridge, then thumbnail, boxart, image;
-    Details use boxart, then cartridge, thumbnail, image.
+    The migration script and the Artwork Manager point <thumbnail> to the
+    icon as well, so the carousel (thumbnail) shows the icons; scraped games
+    show their box. Details use boxart, then cartridge, thumbnail, image.
 -->
 <theme>
 	<formatVersion>7</formatVersion>
@@ -73,16 +74,64 @@
 		</textlist>
 	</view>
 
-	<!-- ===================================================== IV Logos (Carousel) -->
+	<!-- ===================================================== Carousel: 3 icons -->
+	<!-- Built without itemTemplate, so the custom views Logos and Details can
+	     inherit from it without taking over the icon styling.
+	     imageSource thumbnail: the migration/Artwork Manager points thumbnail
+	     to the icon (romname-icon.png), scraped games show their box instead. -->
 	<view name="gamecarousel">
+		<gamecarousel name="gamecarousel">
+			<type>horizontal</type>
+			<origin>0 0.5</origin>
+			<pos>0.5 0.44</pos>
+			<size>0.5 1</size>
+			<logoSize>0.255 0.345</logoSize><!-- relative to the carousel: 261 x 265 px -->
+			<logoScale>1.3</logoScale><!-- selected: 339 x 344 px -->
+			<maxLogoCount>3</maxLogoCount>
+			<scaledLogoSpacing>${logospacing}</scaledLogoSpacing>
+			<logoRotation>0</logoRotation>
+			<logoAlignment>center</logoAlignment>
+			<minLogoOpacity>0.9</minLogoOpacity>
+			<imageSource>thumbnail</imageSource>
+			<color>00000000</color>
+			<linearSmooth>true</linearSmooth>
+			<zIndex>50</zIndex>
+		</gamecarousel>
+		<image name="gamecarouselLogo">
+			<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
+			<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
+		</image>
+		<text name="gamecarouselLogoText">
+			<color>${systemInfoColor}</color>
+		</text>
+		<!-- Name of the selected game below the icons -->
+		<text name="md_name">
+			<origin>0.5 0.5</origin>
+			<pos>0.75 0.72</pos>
+			<size>0.46 0.06</size>
+			<alignment>center</alignment>
+			<fontPath>${fontBold}</fontPath>
+			<fontSize>${systemYearFontSize}</fontSize>
+			<color>${systemInfoColor}</color>
+			<autoScroll>horizontal</autoScroll>
+			<visible>true</visible>
+			<zIndex>20</zIndex>
+		</text>
+	</view>
+
+	<!-- ===================================================== Logos (marquee) -->
+	<customView name="logos" displayName="Logos" inherits="gamecarousel">
 		<gamecarousel name="gamecarousel">
 			<type>vertical</type>
 			<origin>0.5 0.5</origin>
 			<pos>0.75 0.5</pos>
 			<size>0.5 1</size>
-			<logoSize>0.425 0.165</logoSize><!-- 435 x 127 px -->
+			<!-- In custom views ES takes logoSize relative to the whole screen
+			     (2048 x 768): 0.2124 x 0.165 = 435 x 127 px -->
+			<logoSize>0.2124 0.165</logoSize>
 			<logoScale>1.35</logoScale><!-- selected: 587 x 171 px -->
 			<maxLogoCount>5</maxLogoCount>
+			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
 			<logoAlignment>center</logoAlignment>
 			<minLogoOpacity>0.35</minLogoOpacity>
@@ -91,74 +140,12 @@
 			<linearSmooth>true</linearSmooth>
 			<zIndex>50</zIndex>
 		</gamecarousel>
-	</view>
-
-	<!-- ===================================================== Icons (3 icons) -->
-	<customView name="icons" displayName="Icons" inherits="gamecarousel">
-		<gamecarousel name="gamecarousel">
-			<type>horizontal</type>
-			<origin>0 0.5</origin>
-			<pos>0.5 0.48</pos>
-			<size>0.5 1</size>
-			<!-- In custom views ES takes logoSize relative to the whole screen
-			     (2048 x 768), not to the carousel: 0.17 x 0.46 = 348 x 353 px -->
-			<logoSize>0.17 0.46</logoSize>
-			<maxLogoCount>3</maxLogoCount>
-			<logoScale>1.3</logoScale>
-			<scaledLogoSpacing>${logospacing}</scaledLogoSpacing>
-			<logoRotation>0</logoRotation>
-			<logoAlignment>center</logoAlignment>
-			<minLogoOpacity>0.9</minLogoOpacity>
-			<imageSource>cartridge</imageSource>
-			<color>ffffff00</color>
-			<linearSmooth>true</linearSmooth>
-			<zIndex>50</zIndex>
-			<itemTemplate>
-				<storyboard event="activate">
-					<animation property="scale" to="1.05" duration="150" mode="easeOut" />
-				</storyboard>
-				<storyboard event="deactivate">
-					<animation property="scale" to="1" duration="250" mode="easeOut" />
-				</storyboard>
-				<image name="shade" extra="true">
-					<path>${themePath}/_inc/system-view/square-bg.png</path>
-					<pos>0.5 0.82</pos>
-					<origin>0.5 1</origin>
-					<maxSize>0.84 0.84</maxSize>
-					<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
-					<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
-					<zIndex>2</zIndex>
-				</image>
-				<image name="gameArt" extra="true">
-					<path>firstfile({game:cartridge}, {game:thumbnail}, {game:boxart}, {game:image})</path>
-					<pos>0.5 0.78</pos>
-					<origin>0.5 1</origin>
-					<maxSize>0.75 0.75</maxSize>
-					<roundCorners ifSubset="font-size:medium|large">${CornersLarge}</roundCorners>
-					<roundCorners ifSubset="font-size:small">${CornersMedium}</roundCorners>
-					<linearSmooth>true</linearSmooth>
-					<zIndex>3</zIndex>
-				</image>
-				<text name="gameName" extra="true">
-					<text>{game:name}</text>
-					<origin>0.5 0</origin>
-					<pos>0.5 0.81</pos>
-					<size>1 0.12</size>
-					<alignment>center</alignment>
-					<fontPath>${fontBold}</fontPath>
-					<fontSize>${systemYearFontSize}</fontSize>
-					<color>${systemInfoColor}</color>
-					<zIndex>5</zIndex>
-					<opacity>0.25</opacity>
-					<storyboard event="activate">
-						<animation property="opacity" to="1.00" duration="150" mode="easeOut" />
-					</storyboard>
-					<storyboard event="deactivate">
-						<animation property="opacity" to="0.25" duration="150" mode="easeOut" />
-					</storyboard>
-				</text>
-			</itemTemplate>
-		</gamecarousel>
+		<image name="gamecarouselLogo">
+			<roundCorners>0</roundCorners>
+		</image>
+		<text name="md_name">
+			<visible>false</visible>
+		</text>
 	</customView>
 
 	<!-- ===================================================== III Details -->

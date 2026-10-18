@@ -38,8 +38,8 @@ show the hero artwork (`image`); a video fades in after 5 seconds.
 | Gamelist view style | Bottom screen | Media |
 |---|---|---|
 | Automatic / Detailed | only the game names, centred | – |
-| Carousel | vertical logo carousel | `marquee` |
-| Icons | 3 square icons, like the system view | `cartridge` (falls back to `thumbnail`) |
+| Carousel | 3 square icons, like the system view, name of the selected game below | `thumbnail` (the Artwork Manager points it to the icon) |
+| Logos | vertical logo carousel | `marquee` |
 | Details | vertical cover carousel, description, players, year, developer | `boxart` |
 
 The Grid view of canvas-ds is not offered any more.
