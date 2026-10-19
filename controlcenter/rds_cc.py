@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.8
+"""RetroDualStation Kontrollcenter – Prototyp 0.9
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.8.4"
+VERSION = "0.9"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -531,13 +531,16 @@ def wifi_set(on):
 
 def bt_state():
     # Bei ROCKNIX läuft der Bluetooth-Dienst nur, wenn Bluetooth eingeschaltet ist
+    """(an?, [Namen der verbundenen Geräte])"""
     if run(["systemctl", "is-active", "bluetooth"]) is None:
-        return False, 0
+        return False, []
     out = run(["bluetoothctl", "show"], timeout=4)
     if not out:
-        return True, 0           # Dienst läuft, Adapter meldet sich noch nicht
+        return True, []          # Dienst läuft, Adapter meldet sich noch nicht
     devs = run(["bluetoothctl", "devices", "Connected"], timeout=4) or ""
-    return "Powered: no" not in out, sum(1 for l in devs.splitlines() if l.startswith("Device "))
+    names = [l.split(" ", 2)[2] for l in devs.splitlines()
+             if l.startswith("Device ") and len(l.split(" ", 2)) > 2]
+    return "Powered: no" not in out, names
 
 
 def bt_set(on):
@@ -1496,7 +1499,7 @@ class ControlCenter:
         self.perf = 1
         self.perf_sel = 1       # Auswahl mit links/rechts, übernommen mit A
         self.wifi = (None, None)
-        self.bt = (False, 0)
+        self.bt = (False, [])
         self.bat = (None, False)
         self.game = None
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -1597,7 +1600,7 @@ class ControlCenter:
         elif i == 1:
             on = not self.bt[0]
             if bt_set(on):
-                self.bt = (on, self.bt[1] if on else 0)
+                self.bt = (on, self.bt[1] if on else [])
                 self.status_at = time.monotonic() + 2   # Dienststart abwarten
         else:
             log(TILES[i] + ": kommt in einem der nächsten Schritte")
@@ -1780,14 +1783,9 @@ class ControlCenter:
         P.text(f"{WEEKDAYS[now.tm_wday]}, {now.tm_mday}. {MONTHS[now.tm_mon - 1]}", 19, 45, 118, T["muted"])
 
         # Status-Pillen rechts oben
-        on, ssid = self.wifi
-        bt_on, bt_n = self.bt
         cap, charging = self.bat
-        if ssid and len(ssid) > 16:
-            ssid = ssid[:15] + "…"
-        pills = [("WLAN: " + (ssid or ("an" if on else "aus"))),
-                 ("Bluetooth: " + ((f"{bt_n} Gerät" + ("e" if bt_n != 1 else "")) if bt_on and bt_n else ("an" if bt_on else "aus"))),
-                 ((f"Akku {cap} %" if cap is not None else "Akku ?") + (" · lädt" if charging else ""))]
+        pills = [(f"Akku {cap} %" if cap is not None else "Akku ?") + (" · lädt" if charging else "")]
+        P.text("Kontrollcenter", 30, 630, 107, T["text"], bold=True, align="c")
         x = 1215
         for label in reversed(pills):
             wdt = P.width(label, 19, bold=True) + 48
@@ -1877,7 +1875,11 @@ class ControlCenter:
             soon = i >= 2
             fill = A if states[i] else mix(T["tile"], A, 0.22)
             P.rrect(tx, y, 282, 118, 24, fill, a=0.5 if soon else 1)
-            P.text(name, 21, tx + 25, y + 79, "ffffff" if states[i] else T["text"], bold=True)
+            tc = "ffffff" if states[i] else T["text"]
+            sub = self._tile_detail(i)
+            P.text(name, 21, tx + 25, y + (68 if sub else 79), tc, bold=True)
+            if sub:   # womit verbunden – direkt in der Kachel
+                P.text(sub, 16, tx + 25, y + 96, mix(tc, fill, 0.25))
             if soon:
                 P.text("bald", 15, tx + 25, y + 42, T["muted"])
             if i < 2:   # Untermenü
@@ -1887,6 +1889,22 @@ class ControlCenter:
             if focused and i == self.tile:
                 self._focus_ring(P, tx, y, 282, 118, 24)
             self.hits.append((tx, y, 282, 118, ("tile", i)))
+
+    def _tile_detail(self, i):
+        """Zweite Zeile der WLAN-/Bluetooth-Kachel."""
+        def short(t, n=20):
+            return t if len(t) <= n else t[:n - 1] + "…"
+        if i == 0:
+            on, ssid = self.wifi
+            return short(ssid) if ssid else ("Nicht verbunden" if on else "Aus")
+        if i == 1:
+            on, names = self.bt
+            if not on:
+                return "Aus"
+            if not names:
+                return "Kein Gerät"
+            return short(names[0], 16 if len(names) > 1 else 20) + (f" +{len(names) - 1}" if len(names) > 1 else "")
+        return ""
 
     def _draw_placeholder(self, P):
         T = self.T
@@ -2121,6 +2139,24 @@ def find_event(name):
     return None
 
 
+def list_gamepads():
+    """Pfad -> Name aller Gamepads (Geräte mit js-Handler) laut /proc/bus/input/devices."""
+    res, name = {}, None
+    try:
+        with open("/proc/bus/input/devices") as f:
+            for line in f:
+                if line.startswith("N: Name="):
+                    name = line.split("=", 1)[1].strip().strip('"')
+                elif line.startswith("H: Handlers="):
+                    parts = line.split("=", 1)[1].split()
+                    ev = next((p for p in parts if p.startswith("event")), None)
+                    if ev and any(p.startswith("js") for p in parts):
+                        res["/dev/input/" + ev] = name
+    except OSError:
+        pass
+    return res
+
+
 def open_event(name):
     path = find_event(name)
     if not path:
@@ -2216,21 +2252,52 @@ def main():
 
     ui = Overlay(cc.draw, on_touch)
     joy = open_event(JOYPAD_NAME)
+    pads = {}   # fd -> {"name", "path", "ext", "range"}: eingebautes Joypad + externe Controller
+    if joy is not None:
+        pads[joy] = {"name": JOYPAD_NAME, "path": find_event(JOYPAD_NAME), "ext": False,
+                     "range": abs_range(joy, ABS_X)}
     home = open_event(HOME_NAME)
     tfd = open_event(TOUCH_NAME)
     touch = TouchReader(tfd, cc.cfg) if tfd is not None else None
-    fds = [fd for fd in (joy, home, tfd) if fd is not None]
     mode_down = combo = False
     grabbed = False
 
     def set_grab(on):
-        # Joypad und Touchscreen gehören nur uns, solange das Overlay offen ist
+        # alle Controller und der Touchscreen gehören nur uns, solange das Overlay offen ist
         nonlocal grabbed
         if grabbed != on:
-            for fd in (joy, tfd):
+            for fd in list(pads) + [tfd]:
                 if fd is not None:
                     grab(fd, on)
             grabbed = on
+
+    def scan_pads():
+        """Externe Controller erkennen (auch später verbundene) bzw. entfernen."""
+        known = {v["path"]: fd for fd, v in pads.items()}
+        found = list_gamepads()
+        for path, name in found.items():
+            if path in known:
+                continue
+            try:
+                fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+            except OSError:
+                continue
+            pads[fd] = {"name": name, "path": path, "ext": True, "range": abs_range(fd, ABS_X)}
+            log("Controller verbunden:", name, "->", path)
+            if grabbed:
+                grab(fd, True)
+        for path, fd in known.items():
+            if path not in found and pads[fd]["ext"]:
+                drop_pad(fd)
+
+    def drop_pad(fd):
+        info = pads.pop(fd, None)
+        if info:
+            log("Controller getrennt:", info["name"])
+        try:
+            os.close(fd)
+        except OSError:
+            pass
 
     pauser = Pauser()
 
@@ -2247,11 +2314,11 @@ def main():
             ui.show(view)          # wechselt auch direkt zwischen den Ansichten
             set_grab(True)
 
-    lx_lo, lx_hi = abs_range(joy, ABS_X) if joy is not None else (0, 1)
     stick = {"dir": 0, "next": 0.0}
 
-    def handle_stick(value):
+    def handle_stick(value, rng):
         """Linker Stick links/rechts: Cursor in der Tastatur bewegen (mit Wiederholung)."""
+        lx_lo, lx_hi = rng
         n = (value - (lx_lo + lx_hi) / 2) / ((lx_hi - lx_lo) / 2)
         d = 1 if n > 0.6 else -1 if n < -0.6 else 0
         if d != stick["dir"]:
@@ -2261,12 +2328,15 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
-    def handle_joy(typ, code, value):
+    def handle_joy(typ, code, value, pad):
         nonlocal mode_down, combo
-        if typ == EV_ABS and code in (ABS_X, ABS_Y, ABS_RX, ABS_RY):
+        if pad["ext"] and typ == EV_KEY and code in (BTN_SOUTH, BTN_EAST):
+            # externe Controller nach Xbox-Art: A (unten) bestätigt, B (rechts) zurück
+            code = BTN_EAST if code == BTN_SOUTH else BTN_SOUTH
+        if typ == EV_ABS and code not in (ABS_HAT0X, ABS_HAT0Y):
             if code == ABS_X:
-                handle_stick(value)
-            return   # Sticks nie als Tastendruck werten (sonst stört Stick-Drift die Anbernic-Taste)
+                handle_stick(value, pad["range"])
+            return   # Sticks/Trigger nie als Tastendruck werten (Drift stört sonst die Home-Taste)   # Sticks nie als Tastendruck werten (sonst stört Stick-Drift die Anbernic-Taste)
         if typ == EV_KEY and code == BTN_MODE:
             if value == 1:
                 mode_down, combo = True, False
@@ -2325,8 +2395,13 @@ def main():
 
     log("bereit – Anbernic-Taste: Kontrollcenter, Home-Taste: Gameswitcher, Strg+C: Ende")
     last_minute = time.strftime("%H:%M")
+    next_pad_scan = 0.0
     try:
         while True:
+            if time.monotonic() >= next_pad_scan:
+                scan_pads()
+                next_pad_scan = time.monotonic() + 2
+            fds = [fd for fd in [home, tfd] + list(pads) if fd is not None]
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold)
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
                 try:
@@ -2337,12 +2412,17 @@ def main():
                                 px, py = touch.to_surface(t[1], t[2], *ui.size)
                                 on_touch(t[0], px, py)
                         continue
-                    for typ, code, value in read_events(fd):
+                    try:
+                        events = read_events(fd)
+                    except OSError:          # Controller ausgeschaltet/getrennt
+                        drop_pad(fd)
+                        continue
+                    for typ, code, value in events:
                         if fd == home:
                             if typ == EV_KEY and code == BTN_Z and value == 1:
                                 toggle("switcher")
-                        else:
-                            handle_joy(typ, code, value)
+                        elif fd in pads:
+                            handle_joy(typ, code, value, pads[fd])
                 except Exception:
                     # ein Fehler darf das Kontrollcenter nicht beenden
                     log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())

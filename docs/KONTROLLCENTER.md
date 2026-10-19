@@ -344,3 +344,13 @@ Bluetooth-Verhalten) – Hinweis in der Statuszeile.
 **0.8.4:** Suchknopf „Suchen“ → „Sucht …“ → „Aktualisieren“; Listen in Bereiche geteilt
 (Bluetooth: Gekoppelte / Gefundene Geräte, WLAN: Gespeicherte / Weitere Netze), eigene
 Geräte und Netze bleiben immer oben; Überschriften werden beim Navigieren übersprungen.
+
+## Prototyp 0.9 (19.10.2026)
+
+- **Externe Controller** (Test: „8BitDo Ultimate 3mode Xbox“, event7): werden laufend
+  erkannt (auch nachträglich verbunden), Home-/Xbox-Taste öffnet/schließt das CC, solange
+  das CC offen ist, gehören sie nur dem CC (vorher navigierte ES dahinter mit).
+  Bedienung nach Xbox-Art (A unten = bestätigen, B rechts = zurück). Analoge Achsen und
+  Trigger zählen nie als Tastendruck.
+- Optik (Wunsch des Nutzers): verbundenes WLAN bzw. Bluetooth-Gerät direkt in der Kachel;
+  WLAN-/Bluetooth-Pillen entfallen, oben steht „Kontrollcenter“, rechts Akku + Darstellung.
