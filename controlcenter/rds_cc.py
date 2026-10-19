@@ -1692,6 +1692,7 @@ class ControlCenter:
         self.bt = (False, [])
         self.screen_bottom_off = False
         self.screen_bottom_saved = None   # gespeicherte Helligkeit vor dem Ausschalten
+        self.screen_auto = False          # automatisch gedimmt (RetroArch-Start)
         self.bat = (None, False)
         self.game = None
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -1798,21 +1799,39 @@ class ControlCenter:
                 self.bt = (on, self.bt[1] if on else [])
                 self.status_at = time.monotonic() + 2   # Dienststart abwarten
         elif i == 2:
-            self.screen_bottom_off = not self.screen_bottom_off
-            # Backlight des unteren Screens dimmen statt wlr-randr --off
-            # (wlr-randr --off deaktiviert den Wayland-Output, auf dem das CC selbst läuft)
-            bl_bottom = next((b for label, b in self.backlights if "unten" in label.lower()), None)
-            if bl_bottom:
-                if self.screen_bottom_off:
-                    self.screen_bottom_saved = bl_bottom.get()
-                    bl_bottom.set(0, allow_off=True)   # 0 = komplett aus
-                else:
-                    bl_bottom.set(self.screen_bottom_saved if self.screen_bottom_saved else 50)
-                    self.screen_bottom_saved = None
-            log("Unterer Screen:", "aus" if self.screen_bottom_off else "an")
+            if not self.screen_bottom_off:
+                self.screen_off()
+                return "close"   # CC schließen, System bleibt bedienbar
+            self.screen_on()
         elif i == 3:
             log("Ruhemodus")
             subprocess.Popen(["systemctl", "suspend"])
+
+    def _bl_bottom(self):
+        return next((b for label, b in self.backlights if "unten" in label.lower()), None)
+
+    def screen_off(self):
+        """Unteren Bildschirm dunkel schalten (Helligkeit merken)."""
+        if self.screen_bottom_off:
+            return
+        bl = self._bl_bottom()
+        if bl:
+            self.screen_bottom_saved = bl.get()
+            bl.set(0, allow_off=True)
+        self.screen_bottom_off = True
+        log("Unterer Screen: aus")
+
+    def screen_on(self):
+        """Ursprüngliche Helligkeit wiederherstellen."""
+        if not self.screen_bottom_off:
+            return
+        bl = self._bl_bottom()
+        if bl:
+            bl.set(self.screen_bottom_saved or 50)
+        self.screen_bottom_saved = None
+        self.screen_bottom_off = False
+        self.screen_auto = False
+        log("Unterer Screen: an")
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
@@ -2754,6 +2773,8 @@ def main():
         result = {"down": cc.touch_down, "move": cc.touch_move}.get(kind, lambda *_: cc.touch_up())(x, y)
         if result == "power":
             toggle("power")
+        elif result == "close":
+            toggle("cc")
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
@@ -2911,6 +2932,9 @@ def main():
             result = cc.confirm()
             if result == "power":
                 toggle("power")
+            elif result == "close":
+                toggle("cc")
+                return
         elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
             if cc.kbd:
                 cc.kbd.toggle_shift() if code == BTN_TL else cc.kbd.toggle_layer()
@@ -2941,13 +2965,7 @@ def main():
             ui.hide()
             set_grab(False)
             pauser.resume()
-        # Unteren Screen nach Suspend immer wieder anschalten
-        if cc.screen_bottom_off:
-            cc.screen_bottom_off = False
-            bl_bottom = next((b for label, b in cc.backlights if "unten" in label.lower()), None)
-            if bl_bottom:
-                bl_bottom.set(cc.screen_bottom_saved if cc.screen_bottom_saved else 50)
-                cc.screen_bottom_saved = None
+        cc.screen_on()   # unteren Screen nach Suspend wieder an
         state["dirty"] = True
     signal.signal(signal.SIGUSR1, on_resume)
 
@@ -2955,11 +2973,23 @@ def main():
     last_minute = time.strftime("%H:%M")
     next_pad_scan = 0.0
     exit_code = [0]
+    wake = {"swallow": False}
+    last_game = {"pid": None}
     try:
         while True:
             if time.monotonic() >= next_pad_scan:
                 scan_pads()
                 next_pad_scan = time.monotonic() + 2
+                if not ui.view:
+                    g = running_game()
+                    pid = g["pid"] if g else None
+                    if pid != last_game["pid"]:
+                        if g and g["emu"] == "RetroArch":
+                            cc.screen_off()
+                            cc.screen_auto = True
+                        elif not g and cc.screen_auto:
+                            cc.screen_on()
+                        last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold)
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
@@ -3000,9 +3030,12 @@ def main():
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
                             # Nur Anbernic-Taste weckt unteren Screen auf
-                            if cc.screen_bottom_off and typ == EV_KEY and code == BTN_MODE and value == 1:
-                                cc.press_tile(2)
-                                state["dirty"] = True
+                            if typ == EV_KEY and code == BTN_MODE and (cc.screen_bottom_off or wake["swallow"]):
+                                if value == 1 and cc.screen_bottom_off:
+                                    cc.screen_on()
+                                    wake["swallow"] = True   # Loslassen nicht als CC-Aufruf werten
+                                elif value == 0:
+                                    wake["swallow"] = False
                                 continue
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
