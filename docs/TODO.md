@@ -72,7 +72,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
         Energie (automatischer Ruhemodus)
       - **RetroDualStation:** Dual/Single umschalten, CC-Einstellungen (Tastatur QWERTZ/QWERTY,
         Akzentfarbe, automatisch abdunkeln, Haltezeit, Kürzel erlauben)
-      - später: RetroAchievements-Anmeldung, Benutzerwechsel (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
+      - später: RetroAchievements-Anmeldung, Benutzerwechsel
+      - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
+      - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
+        **Start lang** → originales ES-Menü als Rückfall (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
 - [ ] DraStic: eigene Einstellungsoberfläche (`drastic.cfg`)
