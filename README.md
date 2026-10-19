@@ -25,7 +25,7 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 | EmulationStation | one screen | **both screens** |
 | Themes | single-screen | dual-screen themes like **canvas-ds** |
 | Artwork | scraper images | hero, icon and cover per game via **DualStation Sync** |
-| Bottom screen in games | RetroArch touch menu only | **Control Center** everywhere *(in progress)* |
+| Bottom screen in games | RetroArch touch menu only | **Control Center** everywhere – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Going back | – | one tap in **Ports** |
 
 ## What we offer
@@ -33,7 +33,7 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 - **Dual-screen ES** – menus, scraper, keyboard and popups placed on the right screen
 - **canvas-ds** – five game list views made for two screens
 - **DualStation Sync** – desktop companion that prepares dual-screen artwork *(see below)*
-- **Control Center** – quick settings over any game *(preview)*
+- **Control Center** – quick settings, power menu and quit game over any game
 
 ## Themes
 
@@ -60,10 +60,18 @@ Our desktop companion (currently published as
 [RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager)):
 prepares hero, icon and cover images for your games in the names and sizes canvas-ds expects.
 
-## Control Center *(preview)*
+## Control Center
 
-One button opens a control center on the bottom screen – over ES, RetroArch, DraStic or DSperate.
-The game pauses and continues where you left off.
+The **Anbernic button** opens a control center on the bottom screen – over ES, RetroArch, DraStic,
+DSperate and PortMaster. The game pauses and continues where you left off.
+
+- **Quick settings** – brightness for both screens, volume, performance, Wi-Fi, Bluetooth
+- **Quit game** – no more shortcuts to remember
+- **Bottom screen off** – play DS games on one screen; the Anbernic button turns it back on.
+  In RetroArch and PortMaster the bottom screen goes dark automatically.
+- **Power menu** – a short press on the **power button**: sleep, restart (optionally saving logs),
+  power off, restart ES
+- English or German, following the ES language
 
 | | |
 |---|---|
@@ -71,6 +79,8 @@ The game pauses and continues where you left off.
 | **Control Center** over a paused game | **Wi-Fi** – saved networks on top |
 | ![Bluetooth](docs/screenshots/control-center-bluetooth.png) | ![Keyboard](docs/screenshots/control-center-keyboard.png) |
 | **Bluetooth** – pair controllers directly | **On-screen keyboard** for passwords |
+| ![Power menu](docs/screenshots/control-center-power.png) | |
+| **Power menu** – short press on the power button | |
 
 ## Roadmap
 
@@ -79,15 +89,15 @@ The game pauses and continues where you left off.
 | ✅ | Dual-screen EmulationStation, installer, one-tap switch back |
 | ✅ | canvas-ds with five game list views |
 | ✅ | DualStation Sync: dual-screen artwork |
-| 🚧 | Control Center: brightness, volume, performance, Wi-Fi, Bluetooth, keyboard |
-| 🔜 | Control Center: save states and shortcuts, RetroAchievements, power menu |
+| ✅ | Control Center: quick settings, Wi-Fi, Bluetooth, keyboard, power menu, quit game, bottom screen off |
+| 🔜 | Control Center: save states and shortcuts, RetroAchievements |
 | 🔜 | Game switcher with auto-save and resume |
 | 🔜 | DualStation Sync: better title matching, editing game lists |
 | 🔜 | Support for the original RG DS |
 
 ## Installation
 
-1. Download **`rocknix-dualstation-v9.zip`** (and for canvas-ds **`canvas-ds-rgds-plus-v9.zip`**) from the
+1. Download **`rocknix-dualstation-v10.zip`** (includes canvas-ds) from the
    [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
 3. In ES open **Ports** → **Install ROCKNIX DualStation**.
@@ -100,10 +110,10 @@ Updating works the same way.
 <summary>ROMs on an ext4 partition? Copy the ZIP over the network</summary>
 
 ```bash
-scp rocknix-dualstation-v9.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v10.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v9.zip && rm rocknix-dualstation-v9.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v10.zip && rm rocknix-dualstation-v10.zip"
 ```
 </details>
 

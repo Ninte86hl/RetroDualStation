@@ -25,7 +25,7 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 | EmulationStation | ein Bildschirm | **beide Bildschirme** |
 | Themes | ein Bildschirm | Dual-Screen-Themes wie **canvas-ds** |
 | Artwork | Scraper-Bilder | Hero, Icon und Cover pro Spiel über **DualStation Sync** |
-| Unterer Bildschirm im Spiel | nur RetroArch-Touchmenü | **Kontrollcenter** überall *(in Arbeit)* |
+| Unterer Bildschirm im Spiel | nur RetroArch-Touchmenü | **Kontrollcenter** überall – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Zurück zum Original | – | ein Tipp unter **Ports** |
 
 ## Was wir bieten
@@ -33,7 +33,7 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 - **Dual-Screen-ES** – Menüs, Scraper, Tastatur und Meldungen auf dem richtigen Bildschirm
 - **canvas-ds** – fünf Spielelisten-Ansichten für zwei Bildschirme
 - **DualStation Sync** – PC-Begleiter für Dual-Screen-Artwork *(siehe unten)*
-- **Kontrollcenter** – Schnelleinstellungen über jedem Spiel *(Vorschau)*
+- **Kontrollcenter** – Schnelleinstellungen, Power-Menü und Spiel beenden über jedem Spiel
 
 ## Themes
 
@@ -60,10 +60,18 @@ Unser PC-Begleiter (derzeit noch als
 [RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager) veröffentlicht):
 bereitet Hero-, Icon- und Coverbilder für deine Spiele in den Namen und Größen vor, die canvas-ds erwartet.
 
-## Kontrollcenter *(Vorschau)*
+## Kontrollcenter
 
-Eine Taste öffnet ein Kontrollcenter auf dem unteren Bildschirm – über ES, RetroArch, DraStic oder DSperate.
-Das Spiel pausiert und läuft danach an derselben Stelle weiter.
+Die **Anbernic-Taste** öffnet ein Kontrollcenter auf dem unteren Bildschirm – über ES, RetroArch,
+DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an derselben Stelle weiter.
+
+- **Schnelleinstellungen** – Helligkeit beider Bildschirme, Lautstärke, Leistung, WLAN, Bluetooth
+- **Spiel beenden** – keine Tastenkürzel mehr merken
+- **Unterer Screen aus** – DS-Spiele auf einem Bildschirm spielen; die Anbernic-Taste schaltet ihn
+  wieder ein. In RetroArch und PortMaster wird der untere Bildschirm automatisch dunkel.
+- **Power-Menü** – kurz auf die **Ein/Aus-Taste**: Ruhemodus, Neu starten (wahlweise mit
+  Log-Sicherung), Ausschalten, ES neu starten
+- Deutsch oder Englisch, je nach ES-Sprache
 
 | | |
 |---|---|
@@ -71,6 +79,8 @@ Das Spiel pausiert und läuft danach an derselben Stelle weiter.
 | **Kontrollcenter** über einem pausierten Spiel | **WLAN** – gespeicherte Netze oben |
 | ![Bluetooth](docs/screenshots/control-center-bluetooth.png) | ![Tastatur](docs/screenshots/control-center-keyboard.png) |
 | **Bluetooth** – Controller direkt koppeln | **Bildschirmtastatur** für Passwörter |
+| ![Power-Menü](docs/screenshots/control-center-power.png) | |
+| **Power-Menü** – kurz auf die Ein/Aus-Taste | |
 
 ## Roadmap
 
@@ -79,15 +89,15 @@ Das Spiel pausiert und läuft danach an derselben Stelle weiter.
 | ✅ | Dual-Screen-EmulationStation, Installer, Rückweg mit einem Tipp |
 | ✅ | canvas-ds mit fünf Spielelisten-Ansichten |
 | ✅ | DualStation Sync: Dual-Screen-Artwork |
-| 🚧 | Kontrollcenter: Helligkeit, Lautstärke, Leistung, WLAN, Bluetooth, Tastatur |
-| 🔜 | Kontrollcenter: Spielstände und Tastenkürzel, RetroAchievements, Power-Menü |
+| ✅ | Kontrollcenter: Schnelleinstellungen, WLAN, Bluetooth, Tastatur, Power-Menü, Spiel beenden, unterer Screen aus |
+| 🔜 | Kontrollcenter: Spielstände und Tastenkürzel, RetroAchievements |
 | 🔜 | Gameswitcher mit automatischem Speichern und Fortsetzen |
 | 🔜 | DualStation Sync: bessere Titelsuche, Spielelisten bearbeiten |
 | 🔜 | Unterstützung für das normale RG DS |
 
 ## Installation
 
-1. **`rocknix-dualstation-v9.zip`** (für canvas-ds zusätzlich **`canvas-ds-rgds-plus-v9.zip`**) aus dem
+1. **`rocknix-dualstation-v10.zip`** (enthält canvas-ds) aus dem
    [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest) laden.
 2. In den Ordner **`ports`** bei den ROMs entpacken (`/storage/roms/ports`).
 3. In ES **Ports** → **Install ROCKNIX DualStation** starten.
@@ -100,10 +110,10 @@ Ein Update funktioniert genauso.
 <summary>ROMs auf einer ext4-Partition? ZIP über das Netzwerk kopieren</summary>
 
 ```bash
-scp rocknix-dualstation-v9.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v10.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v9.zip && rm rocknix-dualstation-v9.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v10.zip && rm rocknix-dualstation-v10.zip"
 ```
 </details>
 
