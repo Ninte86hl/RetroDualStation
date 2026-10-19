@@ -96,6 +96,7 @@ DSperate and PortMaster. The game pauses and continues where you left off.
 | 💭 maybe | Settings menu like on a smartphone, opened from the Control Center |
 | 💭 maybe | RetroAchievements – unlock notification and overview |
 | 💭 maybe | User profiles with their own saves |
+| 💭 maybe | DraStic: large pause menu and own settings screen |
 | 🕓 later | DualStation Sync: better title matching, editing game lists |
 
 ## Installation

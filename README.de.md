@@ -96,6 +96,7 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 | 💭 vielleicht | Einstellungsmenü wie am Smartphone, aufgerufen aus dem Kontrollcenter |
 | 💭 vielleicht | RetroAchievements – Benachrichtigung und Übersicht |
 | 💭 vielleicht | Benutzerprofile mit eigenen Spielständen |
+| 💭 vielleicht | DraStic: großes Pausemenü und eigene Einstellungsoberfläche |
 | 🕓 später | DualStation Sync: bessere Titelsuche, Spielelisten bearbeiten |
 
 ## Installation
