@@ -8,7 +8,7 @@ After=suspend.target hibernate.target hybrid-sleep.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'pkill -SIGUSR1 -f rds_cc.py || true'
+ExecStart=/bin/sh -c 'kill -USR1 $(pgrep -f rds_cc.py) 2>/dev/null || true'
 
 [Install]
 WantedBy=suspend.target hibernate.target hybrid-sleep.target
