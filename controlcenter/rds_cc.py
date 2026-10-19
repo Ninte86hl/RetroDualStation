@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.10.1"
+VERSION = "0.10.2"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -2111,23 +2111,24 @@ class Overlay:
             sys.exit("Keine Verbindung zu Wayland (XDG_RUNTIME_DIR/WAYLAND_DISPLAY prüfen)")
         self.compositor = self.shm = self.layer_shell = self.seat = self.touch = None
         self.outputs = {}  # proxy -> name
+        self.output_ids = {}  # Registry-Name -> proxy (für global_remove)
         self.surface = self.lsurf = self.buffer = None
         self.view = None
         self.size = None
         self.touch_id = None
+        self.pending_view = None
         self._mm = None
 
         self.registry = marshal(self.display, 1, IF_REGISTRY, ("n", None))
         G = CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_char_p, c_uint32)
         R = CFUNCTYPE(None, c_void_p, c_void_p, c_uint32)
-        listen(self.registry, G(self._on_global), R(lambda *a: None))
+        listen(self.registry, G(self._on_global), R(self._on_global_remove))
         wl.wl_display_roundtrip(self.display)
         wl.wl_display_roundtrip(self.display)
         if not (self.compositor and self.shm and self.layer_shell):
             sys.exit("Compositor bietet keine Layer-Shell an")
-        self.output = next((o for o, n in self.outputs.items() if n == OUTPUT_NAME), None)
         log("Bildschirme:", ", ".join(self.outputs.values()) or "?",
-            "| verwende", OUTPUT_NAME if self.output else "Standard")
+            "| verwende", OUTPUT_NAME if self.current_output() else "Standard")
     
     def _bind(self, name, iface, version):
         return marshal(self.registry, 0, iface, ("u", name), ("s", iface.name),
@@ -2144,12 +2145,29 @@ class Overlay:
         elif iface == b"wl_output":
             out = self._bind(name, IF_OUTPUT, min(version, 4))
             self.outputs[out] = "?"
+            self.output_ids[name] = out
+            if self.compositor:   # nachträglich (wieder) erschienen, z. B. nach dem Einschalten
+                log("Bildschirm angemeldet (Registry %d)" % name)
             self._listen_output(out)
         elif iface == b"wl_seat" and not self.seat:
             self.seat = self._bind(name, IF_SEAT, min(version, 5))
             listen(self.seat,
                    CFUNCTYPE(None, c_void_p, c_void_p, c_uint32)(self._on_caps),
                    CFUNCTYPE(None, c_void_p, c_void_p, c_char_p)(lambda *a: None))
+
+    @safe
+    def _on_global_remove(self, _data, _reg, name):
+        out = self.output_ids.pop(name, None)
+        if out is not None:
+            log("Bildschirm abgemeldet:", self.outputs.pop(out, "?"))
+            if self.surface and self.view:
+                view = self.view          # liegt auf dem verschwundenen Bildschirm → neu anlegen
+                self.hide(quiet=True)
+                self.pending_view = view
+
+    def current_output(self):
+        """Den unteren Bildschirm bei jedem Öffnen frisch suchen (er kann neu angemeldet worden sein)."""
+        return next((o for o, n in reversed(list(self.outputs.items())) if n == OUTPUT_NAME), None)
 
     def _listen_output(self, out):
         def on_name(_d, proxy, nm):
@@ -2210,16 +2228,23 @@ class Overlay:
         self.view = view
         self.surface = marshal(self.compositor, 0, IF_SURFACE, ("n", None))
         self.lsurf = marshal(self.layer_shell, 0, IF_LAYER_SURFACE, ("n", None),
-                             ("o", self.surface), ("o", self.output),
+                             ("o", self.surface), ("o", self.current_output()),
                              ("u", LAYER_OVERLAY), ("s", b"rds-controlcenter"))
         listen(self.lsurf,
                CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_uint32, c_uint32)(self._on_configure),
-               CFUNCTYPE(None, c_void_p, c_void_p)(lambda *a: self.hide()))
+               CFUNCTYPE(None, c_void_p, c_void_p)(self._on_closed))
         marshal(self.lsurf, 1, None, ("u", ANCHOR_ALL))     # set_anchor
         marshal(self.lsurf, 2, None, ("i", -1))             # set_exclusive_zone
         marshal(self.surface, 6, None)                      # commit
         wl.wl_display_flush(self.display)
-        log("angezeigt:", view)
+        log("angezeigt:", view, "auf", self.outputs.get(self.current_output(), "Standard"))
+
+    @safe
+    def _on_closed(self, _d, _lsurf):
+        log("Compositor hat die Fläche geschlossen – lege sie neu an")
+        view = self.view
+        self.hide(quiet=True)
+        self.pending_view = view
 
     @safe
     def _on_configure(self, _d, lsurf, serial, w, h):
@@ -2490,6 +2515,8 @@ def main():
     pauser = Pauser()
 
     def toggle(view):
+        if ui.pending_view and not ui.view:
+            ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
             cc.reset()
             ui.hide()
@@ -2616,6 +2643,10 @@ def main():
                     # ein Fehler darf das Kontrollcenter nicht beenden
                     log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())
                     state["dirty"] = True
+            if ui.pending_view and ui.current_output():
+                # Bildschirm war kurz weg (z. B. beim Hochfahren aus- und eingeschaltet): wieder anzeigen
+                view, ui.pending_view = ui.pending_view, None
+                ui.show(view)
             if stick["dir"] and cc.kbd and ui.view and time.monotonic() >= stick["next"]:
                 cc.kbd.cursor(stick["dir"])
                 stick["next"] = time.monotonic() + 0.12
