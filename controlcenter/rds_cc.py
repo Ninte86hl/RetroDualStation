@@ -451,7 +451,12 @@ def battery():
 
 def wifi_state():
     on = None
-    out = run(["nmcli", "-t", "-f", "WIFI", "radio"])
+    out = run(["rfkill", "list", "wifi"])
+    if out and "blocked" in out:
+        on = "Soft blocked: yes" not in out and "Hard blocked: yes" not in out
+        if not on:
+            return False, None
+    out = run(["nmcli", "-t", "-f", "WIFI", "radio"]) if on is None else None
     if out is not None:
         on = out.strip() == "enabled"
     ssid = None
@@ -471,29 +476,13 @@ def wifi_state():
 
 
 def wifi_set(on):
-    if shutil.which("wifictl"):
-        return spawn(["wifictl", "enable" if on else "disable"])
-    return spawn(["nmcli", "radio", "wifi", "on" if on else "off"])
-
-
-SYSTEM_CFG = "/storage/.config/system/configs/system.cfg"
-
-
-def set_system_setting(key, value):
-    """Schreibt key=value in die ROCKNIX-Einstellungen (wie ES es tut)."""
-    try:
-        with open(SYSTEM_CFG) as f:
-            lines = f.read().splitlines()
-    except OSError:
-        return
-    entry = f"{key}={value}"
-    for i, line in enumerate(lines):
-        if line.startswith(key + "="):
-            lines[i] = entry
-            break
+    """Wie ROCKNIX: Funk frei/sperren, Einstellung setzen, beim Einschalten neu verbinden."""
+    log("WLAN", "einschalten" if on else "ausschalten")
+    if on:
+        cmd = "set_setting wifi.enabled 1; wifictl enable; sleep 1; wifictl connect"
     else:
-        lines.append(entry)
-    wr(SYSTEM_CFG, "\n".join(lines) + "\n")
+        cmd = "wifictl disable; set_setting wifi.enabled 0"
+    return spawn(["bash", "-c", ". /etc/profile; " + cmd])
 
 
 def bt_state():
@@ -509,13 +498,13 @@ def bt_state():
 
 def bt_set(on):
     log("Bluetooth", "einschalten" if on else "ausschalten")
-    set_system_setting("controllers.bluetooth.enabled", 1 if on else 0)
     if on:
-        cmd = ("systemctl start bluetooth bluetooth-agent; sleep 2; "
-               "bluetoothctl power on")
+        cmd = ("set_setting controllers.bluetooth.enabled 1; "
+               "systemctl start bluetooth bluetooth-agent; sleep 2; bluetoothctl power on")
     else:
-        cmd = "bluetoothctl power off; systemctl stop bluetooth-agent bluetooth"
-    return spawn(["sh", "-c", cmd])
+        cmd = ("bluetoothctl power off; systemctl stop bluetooth-agent bluetooth; "
+               "set_setting controllers.bluetooth.enabled 0")
+    return spawn(["bash", "-c", ". /etc/profile; " + cmd])
 
 
 EMULATORS = {"retroarch": "RetroArch", "drastic": "DraStic", "dsperate": "DSperate",
@@ -647,7 +636,7 @@ class ControlCenter:
             on = not self.wifi[0]
             if wifi_set(on):
                 self.wifi = (on, self.wifi[1] if on else None)
-                self.status_at = time.monotonic() - 2  # bald neu abfragen
+                self.status_at = time.monotonic() + 5  # Verbindungsaufbau abwarten
         elif i == 1:
             on = not self.bt[0]
             if bt_set(on):

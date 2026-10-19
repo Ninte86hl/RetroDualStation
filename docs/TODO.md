@@ -32,6 +32,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Etappe 3: RetroAchievements
 - [ ] Etappe 4: RetroArch-Touchmenü ersetzen, in den Installer
 - [ ] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden)
+- [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
 - [ ] DraStic: eigene Einstellungsoberfläche (`drastic.cfg`)
