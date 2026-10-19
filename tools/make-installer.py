@@ -54,6 +54,8 @@ with zipfile.ZipFile(out, "w") as z:
     for f, mode in (("rds_cc.py", EXEC), ("rds-controlcenter.service", FILE),
                     ("rds-resume.service", FILE), ("rds-logind-powerkey.conf", FILE)):
         add(z, os.path.join(repo, "controlcenter", f), p + "controlcenter/" + f, mode)
+    for f in sorted(os.listdir(os.path.join(repo, "installer", "payload", "images"))):
+        add(z, os.path.join(repo, "installer", "payload", "images", f), p + "images/" + f, FILE)
     for f in ("LICENSE", "CREDITS.md"):
         add(z, os.path.join(repo, f), p + f, FILE)
 

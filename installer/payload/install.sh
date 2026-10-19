@@ -98,6 +98,34 @@ for f in "$SRC"/ports/*.sh; do
     log "Ports-Eintrag: $(basename "$f")"
 done
 
+# Icons für die Ports-Einträge (gamelist.xml ergänzen, vorhandene Einträge bleiben)
+if [ -d "$SRC/images" ]; then
+    mkdir -p "$PORTS/images"
+    cp "$SRC"/images/rds-*.png "$PORTS/images/"
+    python3 - "$PORTS/gamelist.xml" <<'PY' 2>>"$LOG"
+import os, sys, xml.etree.ElementTree as ET
+f = sys.argv[1]
+root = ET.parse(f).getroot() if os.path.exists(f) and os.path.getsize(f) else ET.Element("gameList")
+entries = {"RGDS Dual-Screen ES.sh": ("Dual-Screen ES", "rds-dual.png"),
+           "RGDS Single-Screen ES.sh": ("Single-Screen ES", "rds-single.png"),
+           "Uninstall ROCKNIX DualStation.sh": ("Uninstall ROCKNIX DualStation", "rds-uninstall.png")}
+for script, (name, img) in entries.items():
+    path = "./" + script
+    g = next((g for g in root.findall("game") if g.findtext("path") == path), None)
+    if g is None:
+        g = ET.SubElement(root, "game")
+        ET.SubElement(g, "path").text = path
+    for tag, val in (("name", name), ("image", "./images/" + img), ("thumbnail", "./images/" + img)):
+        e = g.find(tag)
+        if e is None:
+            e = ET.SubElement(g, tag)
+        e.text = val
+ET.indent(root)
+ET.ElementTree(root).write(f, encoding="utf-8", xml_declaration=True)
+PY
+    log "Icons fuer Ports-Eintraege gesetzt"
+fi
+
 # --- 2b. Kontrollcenter ---
 CCDIR=/storage/.config/retrodualstation/controlcenter
 SYSD=/storage/.config/system.d

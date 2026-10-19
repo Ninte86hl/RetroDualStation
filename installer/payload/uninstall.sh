@@ -30,6 +30,18 @@ else
     log "Helper fehlte, Drop-in direkt entfernt"
 fi
 
+# Icons und gamelist-Einträge entfernen
+rm -f "$PORTS"/images/rds-dual.png "$PORTS"/images/rds-single.png "$PORTS"/images/rds-uninstall.png "$PORTS"/images/rds-install.png
+[ -f "$PORTS/gamelist.xml" ] && python3 - "$PORTS/gamelist.xml" <<'PY' 2>>"$LOG"
+import sys, xml.etree.ElementTree as ET
+f = sys.argv[1]
+tree = ET.parse(f); root = tree.getroot()
+drop = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh"}
+for g in [g for g in root.findall("game") if g.findtext("path") in drop]:
+    root.remove(g)
+tree.write(f, encoding="utf-8", xml_declaration=True)
+PY
+
 # Kontrollcenter und Geräteeinstellungen
 SYSD=/storage/.config/system.d
 systemctl stop rds-controlcenter 2>/dev/null
