@@ -42,7 +42,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) erstreckt sich über beide Bildschirme – auf einen Bildschirm begrenzen (gefunden 19.10.2026)
 - [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
 - [x] Kontrollcenter: Pause in RetroArch, DraStic und DSperate getestet (19.10.2026)
-- [ ] Kontrollcenter: Mini-Power-Menü wie bei Android – Ausschalten, Neustart, Ruhemodus,
+- [x] Kontrollcenter: Mini-Power-Menü wie bei Android – Ausschalten, Neustart, Ruhemodus,
       ES neu starten (mit Rückfrage; laufendes Spiel vorher speichern/beenden).
       Aufruf (entschieden 19.10.2026): **Ein/Aus-Taste kurz drücken**; Ruhemodus per Zuklappen
       (Hall-Sensor, bleibt bei ROCKNIX) oder über den ersten Knopf im Menü
@@ -57,10 +57,10 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       `input_playerN_joypad_index`, wirkt nur bei RetroArch; DraStic/DSperate prüfen)
 - [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
       beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
-- [ ] Kontrollcenter: RetroArch-Touchflächen (Savestates etc.) auf dem unteren Screen bei „Screen aus“ prüfen – evtl. abschalten
-- [ ] Kontrollcenter: ROCKNIX-eigene Helligkeits-/Lautstärke-Anzeige unterdrücken, wenn im CC geregelt wird
+- [x] Kontrollcenter: RetroArch-Touchflächen (Savestates etc.) auf dem unteren Screen bei „Screen aus“ prüfen – evtl. abschalten
+- [x] Kontrollcenter: ROCKNIX-eigene Helligkeits-/Lautstärke-Anzeige unterdrücken, wenn im CC geregelt wird
 - [x] PortMaster: Ports nicht steuerbar – Ursache: seat1 `fallback yes` schnappt sich gptokeyb-Tastatur (19.10.2026 gelöst)
-- [ ] Installer (mit CC, Etappe 4) – Geräteeinstellungen vom 19.10.2026 übernehmen:
+- [x] Installer (mit CC, Etappe 4) – Geräteeinstellungen vom 19.10.2026 übernehmen:
       `seat seat0 attach "4660:22136:Fake_Keyboard"` in sway/config ·
       `set_setting rocknix.bottomscreen.type none` (lowerdeck aus) ·
       mako: `[summary~="^(Brightness|Volume):"] invisible=1` ·
