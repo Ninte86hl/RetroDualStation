@@ -1,8 +1,8 @@
-# To-do – ROCKNIX DualStation & Artwork Manager
+# To-do – RetroDualStation & Artwork Manager
 
 Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
 
-> **Leitsatz:** ROCKNIX DualStation – one system, two screens, everything in sync.
+> **Leitsatz:** RetroDualStation – one system, two screens, everything in sync.
 >
 > Vision: ein Ökosystem aus Emulation, Gaming, Artwork-Manager, Scraping und
 > Achievements, das am Gerät und am PC ineinandergreift. Der Leitsatz kommt auf
@@ -14,7 +14,16 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Bestandsaufnahme auf dem RG DS Plus (Befehle in [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
 
-## ROCKNIX DualStation
+## RetroDualStation
+
+### Umbenennung ROCKNIX DualStation → RetroDualStation (beschlossen 19.10.2026)
+- [ ] GitHub-Repository umbenennen (z. B. `retrodualstation`; GitHub leitet alte Links weiter)
+- [ ] README (EN/DE), CREDITS, Overlay-README, Doku: Name und Leitsatz
+- [ ] Installer/Uninstaller, Ports-Einträge, Meldungen, Log-Namen; ZIP-Namen ab dem nächsten Release
+- [ ] Ankündigung mit neuem Namen und Logo
+- Easter Egg (bewusst nicht erklärt): RDS liest sich auch als **R**OCKNIX **D**ual**S**tation,
+  Farben Rot (ROCKNIX) · Blau (JELOS) · Weiß – für Kenner der Szene ableitbar,
+  die Basis wird in den Danksagungen genannt
 
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [ ] Etappe 1: Schnelleinstellungen, Wisch-Gerüst, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe
@@ -33,7 +42,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ### Logo
 - [ ] RDS-Monogramm auswählen und verfeinern (Entwürfe: Verbunden, Zwei Ebenen, Verwoben)
-  – RDS = **R**etro**D**ual**S**tation (Schriftzug im Logo); Farben Rot · Weiß · Blau (ROCKNIX, JELOS – und die Landesfarben Schleswig-Holsteins)
+  – RDS = **R**etro**D**ual**S**tation; Farben Rot · Weiß · Blau (Easter Egg siehe Umbenennung; zufällig auch die Landesfarben Schleswig-Holsteins)
   – Favorit: Variante 3 „Verwoben“ mit Dual-Screen-Handheld
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
 
