@@ -36,7 +36,6 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
 - [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
-- [ ] Etappe 3: RetroAchievements
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [ ] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden)
 - [ ] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) erstreckt sich über beide Bildschirme – auf einen Bildschirm begrenzen (gefunden 19.10.2026)
@@ -57,6 +56,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       `input_playerN_joypad_index`, wirkt nur bei RetroArch; DraStic/DSperate prüfen)
 - [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
       beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
+- [ ] Etappe 3: RetroAchievements  (nach Bluetooth-Koppeln im Spiel, festgelegt 20.10.2026)
 - [x] Kontrollcenter: RetroArch-Touchflächen (Savestates etc.) auf dem unteren Screen bei „Screen aus“ prüfen – evtl. abschalten
 - [x] Kontrollcenter: ROCKNIX-eigene Helligkeits-/Lautstärke-Anzeige unterdrücken, wenn im CC geregelt wird
 - [x] PortMaster: Ports nicht steuerbar – Ursache: seat1 `fallback yes` schnappt sich gptokeyb-Tastatur (19.10.2026 gelöst)
