@@ -289,7 +289,16 @@ sonst QWERTY; fest einstellbar über `"keyboard"` in `controlcenter.json`.
 
 - **Mini-Power-Menü** (wie Android): Ausschalten, Neustart, Ruhemodus, ES neu starten;
   große Knöpfe, Rückfrage vor dem Ausführen; läuft ein Spiel, wird vorher gespeichert
-  bzw. sauber beendet. Aufruf über einen Knopf im Kontrollcenter (Kopfzeile)
+  bzw. sauber beendet.
+  **Aufruf über die Ein/Aus-Taste** (Entscheidung offen, Empfehlung wie Android):
+  - ROCKNIX heute: `input_sense` liest `rk805 pwrkey` (event0) per evtest und ruft schon
+    beim Drücken `/usr/bin/rocknix-fake-suspend power` (Ruhemodus) auf;
+    langes Halten (6–10 s) = harte Abschaltung durch den Power-Chip (bleibt als Notaus)
+  - Plan: unser Dienst übernimmt `rk805 pwrkey` exklusiv (EVIOCGRAB); kurz = wir rufen
+    `rocknix-fake-suspend power` selbst auf (Verhalten wie bisher), ~1 s halten = Power-Menü
+  - Sicherheitsnetz: endet unser Dienst, gibt der Kernel die Taste frei → ROCKNIX wie gewohnt
+- **ES-Schnittstelle** `http://localhost:1234/runningGame` (200 = Spiel läuft, 201 = keins;
+  nutzt ROCKNIX selbst in `rocknix-fake-suspend`) → für „Läuft gerade“ und den Gameswitcher
 - **Log-Manager**: die wichtigsten Logs (Kontrollcenter, ES, RetroArch, DraStic,
   Systemjournal) lesbar anzeigen; „Fehlerbericht erstellen“ sammelt sie mit Version und
   Gerätedaten in eine Datei, die Nutzer ins GitHub-Issue hängen können
