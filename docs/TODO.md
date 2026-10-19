@@ -75,7 +75,14 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       - später: RetroAchievements-Anmeldung, Benutzerwechsel
       - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
       - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
-        **Start lang** → originales ES-Menü als Rückfall (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
+        **Start lang** → originales ES-Menü als Rückfall
+- [ ] Vision (20.10.2026): ES nur noch als Anzeige/Theme-Engine, Bedienung über eigene Overlays
+      auf dem unteren Bildschirm:
+      - Bestandsaufnahme: welche ES-Dialoge öffnen sich per Taste in Systemliste und Spieleliste
+        (Start, Select, X, Y, L/R …) – je Dialog entscheiden: ersetzen, behalten, weglassen
+      - ROCKNIX-Schnellstartmenü wird überflüssig (CC deckt es ab)
+      - Overlay **Spielesuche** (Bildschirmtastatur, Ergebnisse mit Icons, Sprung in ES-Liste)
+      - Overlay **Spiel-Einstellungen** (per game: Emulator/Core, Seitenverhältnis, Shader …) (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
 - [ ] DraStic: eigene Einstellungsoberfläche (`drastic.cfg`)
