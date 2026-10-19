@@ -205,3 +205,18 @@ DraStic ist nicht quelloffen, sein Pausemenü ist auf dem RG DS Plus sehr klein.
   Codes 1035/1031/1030/1036); Bildschirme tauschen und Beenden unbelegt
 - `savestate_snapshot = 1`: DraStic legt Vorschaubilder zu Spielständen ab (Gameswitcher)
 - `controls_a` = zweite Belegung; ob DraStic dort virtuelle Tastendrücke annimmt, testen
+
+## Overlay-Test (19.10.2026) – Bauweise steht fest
+
+`swaynag -o DSI-1 -y overlay` (Wayland-Layer-Shell, Ebene „overlay“) erscheint auf dem
+**unteren Bildschirm (DSI-1)** über **ES, RetroArch, DraStic und DSperate**, ohne die
+Emulation zu stören.
+
+**Bauweise des Kontrollcenters**
+- eigenes Programm in Python 3 (auf ROCKNIX vorhanden, nichts zu kompilieren)
+- Anzeige als Layer-Shell-Fläche „overlay“ auf DSI-1, direkt über `libwayland-client`
+  (ctypes); Zeichnen mit Cairo (`libcairo`)
+- Tasten direkt über evdev: Anbernic `BTN_MODE` (event „retrogame_joypad“),
+  Return/Home `BTN_Z` (event „adc-keys-back“); solange das Kontrollcenter offen ist,
+  wird das Joypad exklusiv übernommen (EVIOCGRAB), damit Spiel/ES keine Eingaben bekommen
+- Wayland-Umgebung: `XDG_RUNTIME_DIR=/var/run/0-runtime-dir`, `WAYLAND_DISPLAY=wayland-1`
