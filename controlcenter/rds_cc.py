@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.9"
+VERSION = "0.9.1"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -229,7 +229,9 @@ for _fn, _args in {
     "cairo_fill": [c_void_p], "cairo_paint": [c_void_p], "cairo_stroke": [c_void_p],
     "cairo_set_line_width": [c_void_p, c_double],
     "cairo_line_to": [c_void_p, c_double, c_double],
+    "cairo_curve_to": [c_void_p, c_double, c_double, c_double, c_double, c_double, c_double],
     "cairo_set_line_cap": [c_void_p, c_int],
+    "cairo_set_line_join": [c_void_p, c_int],
     "cairo_clip": [c_void_p], "cairo_reset_clip": [c_void_p],
     "cairo_select_font_face": [c_void_p, c_char_p, c_int, c_int],
     "cairo_set_font_size": [c_void_p, c_double],
@@ -329,6 +331,70 @@ class Pen:
         cairo.cairo_set_line_width(cr, width * s)
         self.color(c)
         cairo.cairo_stroke(cr)
+
+    def sun(self, cx, cy, c):
+        """Sonne mit Strahlen (Symbol für den Hell-Modus)."""
+        import math
+        self.circle(cx, cy, 8, c)
+        cr = self.cr
+        cairo.cairo_new_path(cr)
+        for k in range(8):
+            a = k * math.pi / 4
+            cairo.cairo_move_to(cr, self.X(cx + 12 * math.cos(a)), self.Y(cy + 12 * math.sin(a)))
+            cairo.cairo_line_to(cr, self.X(cx + 17 * math.cos(a)), self.Y(cy + 17 * math.sin(a)))
+        cairo.cairo_set_line_cap(cr, 1)
+        cairo.cairo_set_line_width(cr, 3 * self.s)
+        self.color(c)
+        cairo.cairo_stroke(cr)
+
+    def logo(self, x, y, h, fg, knockout, red="e5383b", blue="3d7bff"):
+        """RDS-Monogramm „Verwoben“ (Logo-Entwurf Variante 3), Höhe h, oben links bei (x, y)."""
+        import math
+        k = h / 130
+        cr = self.cr
+
+        def pt(lx, ly, dx):
+            return self.X(x + (lx + 18 + dx) * k), self.Y(y + ly * k)
+
+        def path(kind, dx):
+            cairo.cairo_new_path(cr)
+            if kind == "r":       # M24 115 V15 H46 A24 25 0 0 1 46 65 H24  +  M44 65 L70 115
+                cairo.cairo_move_to(cr, *pt(24, 115, dx))
+                cairo.cairo_line_to(cr, *pt(24, 15, dx))
+                cairo.cairo_line_to(cr, *pt(46, 15, dx))
+                for i in range(1, 25):
+                    a = -math.pi / 2 + math.pi * i / 24
+                    cairo.cairo_line_to(cr, *pt(46 + 24 * math.cos(a), 40 + 25 * math.sin(a), dx))
+                cairo.cairo_line_to(cr, *pt(24, 65, dx))
+                cairo.cairo_move_to(cr, *pt(44, 65, dx))
+                cairo.cairo_line_to(cr, *pt(70, 115, dx))
+            elif kind == "d":     # M92 115 V15 H106 A44 50 0 0 1 106 115 H92
+                cairo.cairo_move_to(cr, *pt(92, 115, dx))
+                cairo.cairo_line_to(cr, *pt(92, 15, dx))
+                cairo.cairo_line_to(cr, *pt(106, 15, dx))
+                for i in range(1, 33):
+                    a = -math.pi / 2 + math.pi * i / 32
+                    cairo.cairo_line_to(cr, *pt(106 + 44 * math.cos(a), 65 + 50 * math.sin(a), dx))
+                cairo.cairo_line_to(cr, *pt(92, 115, dx))
+            else:                 # S als zwei Bézierkurven
+                cairo.cairo_move_to(cr, *pt(208, 28, dx))
+                cairo.cairo_curve_to(cr, *pt(200, 14, dx), *pt(166, 12, dx), *pt(166, 38, dx))
+                cairo.cairo_curve_to(cr, *pt(166, 64, dx), *pt(212, 60, dx), *pt(212, 88, dx))
+                cairo.cairo_curve_to(cr, *pt(212, 118, dx), *pt(172, 120, dx), *pt(162, 102, dx))
+
+        def stroke(color, width):
+            cairo.cairo_set_line_cap(cr, 1)
+            cairo.cairo_set_line_join(cr, 1)
+            cairo.cairo_set_line_width(cr, width * k * self.s)
+            self.color(color)
+            cairo.cairo_stroke(cr)
+
+        path("r", 0); stroke(red, 16)
+        path("d", -16); stroke(knockout, 30)     # Lücke = „verwoben“
+        path("d", -16); stroke(fg, 16)
+        path("s", -36); stroke(knockout, 30)
+        path("s", -36); stroke(blue, 16)
+        return 230 * k                            # Breite
 
     def text(self, txt, size, x, y, c, bold=False, align="l"):
         cr = self.cr
@@ -1785,7 +1851,11 @@ class ControlCenter:
         # Status-Pillen rechts oben
         cap, charging = self.bat
         pills = [(f"Akku {cap} %" if cap is not None else "Akku ?") + (" · lädt" if charging else "")]
-        P.text("Kontrollcenter", 30, 630, 107, T["text"], bold=True, align="c")
+        tw = P.width("Kontrollcenter", 38, bold=True)
+        lw = 230 * 52 / 130
+        lx = 630 - (lw + 16 + tw) / 2
+        P.logo(lx, 66, 52, T["text"], T["bg"])
+        P.text("Kontrollcenter", 38, lx + lw + 16, 111, T["text"], bold=True)
         x = 1215
         for label in reversed(pills):
             wdt = P.width(label, 19, bold=True) + 48
@@ -1800,10 +1870,12 @@ class ControlCenter:
             x -= 54
             cx = x + 27
             P.circle(cx, 97, 27, T["pill"])
-            if i == 0:   # Mond bzw. Sonne
-                P.circle(cx, 97, 12, T["text"])
+            if i == 0:   # Mond (Dunkel) bzw. Sonne mit Strahlen (Hell)
                 if self.T is THEMES["dark"]:
+                    P.circle(cx, 97, 12, T["text"])
                     P.circle(cx + 6, 92, 10, T["pill"])
+                else:
+                    P.sun(cx, 97, T["text"])
             else:
                 P.circle(cx, 97, 13, A)
             if top_focus and self.top_sel == i:

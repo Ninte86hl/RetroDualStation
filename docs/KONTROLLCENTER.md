@@ -354,3 +354,5 @@ Geräte und Netze bleiben immer oben; Überschriften werden beim Navigieren übe
   Trigger zählen nie als Tastendruck.
 - Optik (Wunsch des Nutzers): verbundenes WLAN bzw. Bluetooth-Gerät direkt in der Kachel;
   WLAN-/Bluetooth-Pillen entfallen, oben steht „Kontrollcenter“, rechts Akku + Darstellung.
+**0.9.1:** Hell-Modus-Symbol = Sonne mit Strahlen (passend zum Mond), Titel „Kontrollcenter“
+größer, davor das RDS-Logo (Variante 3 „Verwoben“, Rot · Weiß/Schwarz · Blau, mit Cairo gezeichnet).
