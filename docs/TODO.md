@@ -58,6 +58,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       `set_setting rocknix.bottomscreen.type none` (lowerdeck aus) ·
       mako: `[summary~="^(Brightness|Volume):"] invisible=1` ·
       Deploy-Pfad CC: `/storage/.config/retrodualstation/controlcenter/`
+- [ ] Idee (19.10.2026): Benutzerwechsel im Gameswitcher – je Benutzer eigene Savegames und
+      Speicherstände (z. B. eigene Ordner pro Profil, beim Wechsel umschalten; RetroArch
+      `savefile_directory`/`savestate_directory`, DraStic/DSperate prüfen)
+- [ ] Idee (19.10.2026): Einstellungsmenü wie am Android-Smartphone – ES-Einstellungen gezielt
+      im CC ändern (statt durch das ES-Menü zu blättern)
 - [ ] Kontrollcenter: Einstellungsseite (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
