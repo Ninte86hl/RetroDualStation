@@ -12,7 +12,7 @@ Das Binary wird im Paket immer als "emulationstation-rgds" abgelegt
 Ergebnis: rocknix-dualstation-<version>.zip
 Inhalt (wird in den Ordner "ports" auf der SD-Karte entpackt):
     Install ROCKNIX DualStation.sh
-    .dualstation/   install.sh, VERSION, Binary, rgds-test/, ports/, theme/
+    .dualstation/   install.sh, VERSION, Binary, rgds-test/, ports/, theme/, controlcenter/
 """
 import os, sys, zipfile
 
@@ -51,6 +51,9 @@ with zipfile.ZipFile(out, "w") as z:
         for f in sorted(files):
             src = os.path.join(root, f)
             add(z, src, p + "theme/" + os.path.relpath(src, os.path.dirname(theme)), FILE)
+    for f, mode in (("rds_cc.py", EXEC), ("rds-controlcenter.service", FILE),
+                    ("rds-resume.service", FILE), ("rds-logind-powerkey.conf", FILE)):
+        add(z, os.path.join(repo, "controlcenter", f), p + "controlcenter/" + f, mode)
     for f in ("LICENSE", "CREDITS.md"):
         add(z, os.path.join(repo, f), p + f, FILE)
 

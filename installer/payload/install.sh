@@ -98,6 +98,46 @@ for f in "$SRC"/ports/*.sh; do
     log "Ports-Eintrag: $(basename "$f")"
 done
 
+# --- 2b. Kontrollcenter ---
+CCDIR=/storage/.config/retrodualstation/controlcenter
+SYSD=/storage/.config/system.d
+if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
+    mkdir -p "$CCDIR" "$SYSD/essway.service.wants" /storage/.config/logind.conf.d
+    cp "$SRC/controlcenter/rds_cc.py" "$CCDIR/rds_cc.py" || fail "Could not copy the control center."
+    rm -rf "$CCDIR/__pycache__" /storage/.config/rds-controlcenter   # alter Testordner
+    cp "$SRC/controlcenter/rds-controlcenter.service" "$SYSD/"
+    cp "$SRC/controlcenter/rds-resume.service" "$SYSD/"
+    ln -sf "$SYSD/rds-controlcenter.service" "$SYSD/essway.service.wants/rds-controlcenter.service"
+    for t in suspend hibernate hybrid-sleep; do
+        mkdir -p "$SYSD/$t.target.wants"
+        ln -sf "$SYSD/rds-resume.service" "$SYSD/$t.target.wants/rds-resume.service"
+    done
+    cp "$SRC/controlcenter/rds-logind-powerkey.conf" /storage/.config/logind.conf.d/
+    systemctl daemon-reload
+    systemctl kill -s HUP systemd-logind 2>/dev/null   # Power-Taste übernimmt das CC
+    log "Kontrollcenter installiert: $CCDIR"
+
+    # Geräteeinstellungen (Rückgängig in uninstall.sh)
+    . /etc/profile 2>/dev/null
+    if [ ! -f "$DEST/bottomscreen.before" ]; then
+        get_setting rocknix.bottomscreen.type > "$DEST/bottomscreen.before" 2>/dev/null
+    fi
+    set_setting rocknix.bottomscreen.type none 2>/dev/null   # lowerdeck aus (CC ersetzt es)
+    log "lowerdeck aus (vorher: $(cat "$DEST/bottomscreen.before" 2>/dev/null))"
+
+    SWAYCFG=/storage/.config/sway/config
+    if [ -f "$SWAYCFG" ] && ! grep -q 'Fake_Keyboard' "$SWAYCFG"; then
+        printf '\n# RetroDualStation: gptokeyb-Tastatur an den oberen Screen (Ports steuerbar)\nseat seat0 attach "4660:22136:Fake_Keyboard"\n' >> "$SWAYCFG"
+        log "Sway: Fake_Keyboard an seat0"
+    fi
+
+    MAKOCFG=/storage/.config/mako/config
+    if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then
+        printf '\n# RetroDualStation\n[summary~="^(Brightness|Volume):"]\ninvisible=1\n' >> "$MAKOCFG"
+        log "mako: Helligkeit/Lautstaerke-Anzeige aus"
+    fi
+fi
+
 # --- 3. Installer entfernen und auf Dual umschalten ---
 rm -f "$PORTS/Install ROCKNIX DualStation.sh"
 rm -rf "$SRC"

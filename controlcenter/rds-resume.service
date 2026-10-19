@@ -1,6 +1,6 @@
 # RetroDualStation – Power-Menü nach dem Aufwachen schließen
-# Kopieren nach /etc/systemd/system/rds-resume.service
-# systemctl enable rds-resume.service
+# Wird vom Installer nach /storage/.config/system.d/ kopiert und
+# in suspend/hibernate/hybrid-sleep.target.wants verlinkt.
 
 [Unit]
 Description=RetroDualStation – Power-Menü nach Resume schließen

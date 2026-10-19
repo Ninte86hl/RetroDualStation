@@ -30,6 +30,21 @@ else
     log "Helper fehlte, Drop-in direkt entfernt"
 fi
 
+# Kontrollcenter und Geräteeinstellungen
+SYSD=/storage/.config/system.d
+systemctl stop rds-controlcenter 2>/dev/null
+rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlcenter.service" \
+      "$SYSD"/*.target.wants/rds-resume.service "$SYSD/rds-resume.service" \
+      /storage/.config/logind.conf.d/rds-logind-powerkey.conf
+rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
+systemctl daemon-reload
+systemctl kill -s HUP systemd-logind 2>/dev/null
+. /etc/profile 2>/dev/null
+set_setting rocknix.bottomscreen.type "$(cat "$DEST/bottomscreen.before" 2>/dev/null || echo vc)" 2>/dev/null
+sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d' /storage/.config/sway/config 2>/dev/null
+sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>/dev/null
+log "Kontrollcenter und Geraeteeinstellungen entfernt"
+
 rm -rf "$THEMEDIR/dii-ess-aye-rgds-plus" && log "entfernt: Theme dii-ess-aye-rgds-plus"
 if [ -d "$THEMEDIR/canvas-ds-rgds-plus" ]; then
     rm -rf "$THEMEDIR/canvas-ds-rgds-plus" /storage/.config/emulationstation/themesettings/canvas-ds-rgds-plus.cfg
