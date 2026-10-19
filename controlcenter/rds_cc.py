@@ -2110,103 +2110,199 @@ class ControlCenter:
 # ------------------------------------------------------------ Power-Menü ----
 
 POWER_ITEMS = [
-    ("power_sleep",   "Ruhemodus",    "systemctl suspend"),
-    ("power_restart", "Neu starten",  "systemctl reboot"),
-    ("power_off",     "Ausschalten",  "systemctl poweroff"),
-    ("power_es",      "ES neu starten", None),   # Sonderfall: Rückfrage + systemctl restart essway
+    ("power_sleep",   "Ruhemodus",      "systemctl suspend",  False),
+    ("power_restart", "Neu starten",    "systemctl reboot",   True),   # True = hat Untermenü
+    ("power_off",     "Ausschalten",    "systemctl poweroff", False),
+    ("power_es",      "ES neu starten", None,                 False),  # Sonderfall: Rückfrage
 ]
 
+LOG_DIR = "/storage/logs"
+LOG_SOURCES = [
+    "/var/log/rds-controlcenter.log",
+    "/var/log/messages",
+    "/storage/.config/emulationstation/es_log.txt",
+    "/tmp/retroarch.log",
+]
+
+def save_logs():
+    """Logs in ein tar.gz-Archiv packen. Gibt den Pfad zurück oder None bei Fehler."""
+    import tarfile, datetime
+    os.makedirs(LOG_DIR, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = f"{LOG_DIR}/rds-report-{ts}.tar.gz"
+    try:
+        with tarfile.open(out, "w:gz") as tar:
+            for src in LOG_SOURCES:
+                if os.path.exists(src):
+                    tar.add(src, arcname=os.path.basename(src))
+        log("Logs gesichert:", out)
+        return out
+    except Exception as exc:
+        log("Log-Sicherung fehlgeschlagen:", exc)
+        return None
+
+
 class PowerMenu:
-    """Kompaktes Power-Menü – vier Buttons, gleiche Optik wie das Kontrollcenter."""
+    """Power-Menü – Hauptliste + Neustart-Untermenü mit Log-Option."""
+
+    # Zustände
+    STATE_MAIN    = "main"
+    STATE_RESTART = "restart"   # Neustart-Untermenü
+    STATE_ES      = "es"        # Rückfrage ES-Neustart
 
     def __init__(self, cc):
         self.cc = cc
         self.focus = 0
-        self.confirm_es = False   # wartet auf Bestätigung für ES-Neustart
+        self.sub_focus = 0   # Fokus im Neustart-Untermenü
+        self.state = self.STATE_MAIN
+
+    # -- Untermenü-Einträge für Neu starten --
+    RESTART_ITEMS = [
+        ("Neu starten",              "systemctl reboot"),
+        ("Neu starten + Logs sichern", None),   # Sonderfall: erst Logs, dann reboot
+    ]
 
     def nav(self, _dx, dy):
-        if self.confirm_es:
-            return
-        self.focus = (self.focus + dy) % len(POWER_ITEMS)
+        if self.state == self.STATE_MAIN:
+            self.focus = (self.focus + dy) % len(POWER_ITEMS)
+        elif self.state == self.STATE_RESTART:
+            self.sub_focus = (self.sub_focus + dy) % len(self.RESTART_ITEMS)
 
     def confirm(self):
-        key, label, cmd = POWER_ITEMS[self.focus]
-        if key == "power_es":
-            if self.confirm_es:
-                self._run("systemctl restart essway")
+        """A gedrückt. Gibt False zurück wenn das Menü geschlossen werden soll."""
+        if self.state == self.STATE_MAIN:
+            key, _label, cmd, has_sub = POWER_ITEMS[self.focus]
+            if key == "power_es":
+                self.state = self.STATE_ES
+                return True
+            self._run(cmd)
+            return False
+        elif self.state == self.STATE_RESTART:
+            label, cmd = self.RESTART_ITEMS[self.sub_focus]
+            if cmd is None:
+                save_logs()
+                self._run("systemctl reboot")
             else:
-                self.confirm_es = True
-            return True   # Menü offen lassen (bis Aktion läuft)
-        self._run(cmd)
+                self._run(cmd)
+            return False
+        elif self.state == self.STATE_ES:
+            self._run("systemctl restart essway")
+            return False
+        return False
+
+    def details(self):
+        """X gedrückt oder Pfeil-Touch auf Neu starten → Untermenü öffnen."""
+        if self.state == self.STATE_MAIN:
+            _key, _label, _cmd, has_sub = POWER_ITEMS[self.focus]
+            if has_sub:
+                self.state = self.STATE_RESTART
+                self.sub_focus = 0
+                return True
         return False
 
     def cancel(self):
-        if self.confirm_es:
-            self.confirm_es = False
+        """B gedrückt. Gibt False zurück wenn das Menü geschlossen werden soll."""
+        if self.state in (self.STATE_RESTART, self.STATE_ES):
+            self.state = self.STATE_MAIN
             return True
-        return False   # Menü schließen
+        return False
 
     def _run(self, cmd):
         log("Power-Aktion:", cmd)
         subprocess.Popen(["bash", "-c", cmd])
 
     def touch_up(self, x, y, hits):
-        for hx, hy, hw, hh, idx in hits:
+        """hits: Liste von (hx, hy, hw, hh, action) mit action = ('item',i) | ('more',i) | ('yes'|'no')."""
+        for hx, hy, hw, hh, action in hits:
             if hx <= x <= hx + hw and hy <= y <= hy + hh:
-                self.focus = idx
-                self.confirm()
-                return True
-        return False
+                if isinstance(action, tuple):
+                    kind, idx = action
+                    if kind == "item":
+                        if self.state == self.STATE_MAIN:
+                            self.focus = idx
+                            return self.confirm()
+                        elif self.state == self.STATE_RESTART:
+                            self.sub_focus = idx
+                            return self.confirm()
+                    elif kind == "more":
+                        self.focus = idx
+                        self.details()
+                        return True
+                elif action == "yes":
+                    return self.confirm()
+                elif action == "no":
+                    self.cancel()
+                    return True
+        return None   # kein Treffer → kein close-Signal
 
     def draw(self, P, T, accent):
         hits = []
         W, H = 1260, 951
-        ox = 0
-        oy = 0
+        bx = 60
+        bw = W - 120
+        bh = 110
 
-        # Hintergrund
-        P.rrect(ox, oy, W, H, 32, T["bg"])
+        P.fill_all(T["bg"])
 
         # Titel mit Logo
         lh = 52
         lw = 230 * lh / 130
-        lx = ox + (W - lw - 16 - P.width("Power", 38, bold=True)) / 2
-        P.logo(lx, oy + 72 - lh / 2, lh, T["text"], T["bg"])
-        P.text("Power", 38, lx + lw + 16, oy + 72 + 38 * 0.36, T["text"], bold=True)
+        lx = (W - lw - 16 - P.width("Power", 38, bold=True)) / 2
+        P.logo(lx, 72 - lh / 2, lh, T["text"], T["bg"])
+        P.text("Power", 38, lx + lw + 16, 72 + 38 * 0.36, T["text"], bold=True)
+        P.rrect(60, 116, W - 120, 2, 1, T["dot"])
 
-        # Trennlinie
-        P.rrect(ox + 60, oy + 116, W - 120, 2, 1, T["dot"])
-
-        # Buttons
-        bx = ox + 60
-        bw = W - 120
-        bh = 110
-        n = len(POWER_ITEMS)
-        total_h = n * bh + (n - 1) * 20
-        by0 = oy + (H - total_h) / 2 + 30   # leicht nach unten versetzt wegen Titel
-
-        if self.confirm_es:
-            # Rückfrage für ES-Neustart
-            P.text("ES wirklich neu starten?", 30, ox + W / 2, oy + H / 2 - 60, T["text"], bold=True, align="c")
-            P.text("Laufendes Spiel geht verloren.", 22, ox + W / 2, oy + H / 2 - 18, T["muted"], align="c")
-            # Ja / Nein
+        if self.state == self.STATE_ES:
+            # Rückfrage ES-Neustart
+            P.text("ES wirklich neu starten?", 30, W / 2, H / 2 - 60, T["text"], bold=True, align="c")
+            P.text("Laufendes Spiel geht verloren.", 22, W / 2, H / 2 - 18, T["muted"], align="c")
             cbw = (bw - 30) / 2
             for i, (label, col) in enumerate([("Ja, neu starten", accent), ("Abbrechen", T["tile"])]):
-                bxi = ox + 60 + i * (cbw + 30)
-                byi = oy + H / 2 + 40
+                bxi = bx + i * (cbw + 30)
+                byi = H / 2 + 40
                 P.rrect(bxi, byi, cbw, 90, 20, col)
-                P.text(label, 24, bxi + cbw / 2, byi + 52, "ffffff" if i == 0 else T["text"], bold=True, align="c")
-                hits.append((bxi, byi, cbw, 90, i))   # i=0 → Ja, i=1 → Nein
+                P.text(label, 24, bxi + cbw / 2, byi + 52,
+                       "ffffff" if i == 0 else T["text"], bold=True, align="c")
+                hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
+
+        elif self.state == self.STATE_RESTART:
+            # Neustart-Untermenü
+            P.text("Neu starten", 26, W / 2, 160, T["muted"], align="c")
+            n = len(self.RESTART_ITEMS)
+            total_h = n * bh + (n - 1) * 20
+            by0 = (H - total_h) / 2 + 30
+            for i, (label, _cmd) in enumerate(self.RESTART_ITEMS):
+                by = by0 + i * (bh + 20)
+                active = i == self.sub_focus
+                P.rrect(bx, by, bw, bh, 24, accent if active else T["tile"])
+                P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
+                       "ffffff" if active else T["text"], bold=active, align="c")
+                hits.append((bx, by, bw, bh, ("item", i)))
+            P.text("B Zurück", 19, W / 2, H - 36, T["muted"], align="c")
+
         else:
-            for i, (_key, label, _cmd) in enumerate(POWER_ITEMS):
+            # Hauptliste
+            n = len(POWER_ITEMS)
+            total_h = n * bh + (n - 1) * 20
+            by0 = (H - total_h) / 2 + 30
+            for i, (_key, label, _cmd, has_sub) in enumerate(POWER_ITEMS):
                 by = by0 + i * (bh + 20)
                 active = i == self.focus
-                P.rrect(bx, by, bw, bh, 24, accent if active else T["tile"])
-                P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36, "ffffff" if active else T["text"],
-                       bold=active, align="c")
-                hits.append((bx, by, bw, bh, i))
-            # Hinweis
-            P.text("B Abbrechen", 19, ox + W / 2, oy + H - 36, T["muted"], align="c")
+                fill = accent if active else T["tile"]
+                # Breite: bei has_sub etwas kürzer für den Pfeil-Button
+                ibw = bw - (90 if has_sub else 0)
+                P.rrect(bx, by, ibw, bh, 24, fill)
+                P.text(label, 28, bx + ibw / 2, by + bh / 2 + 28 * 0.36,
+                       "ffffff" if active else T["text"], bold=active, align="c")
+                hits.append((bx, by, ibw, bh, ("item", i)))
+                if has_sub:
+                    # Pfeil-Button rechts
+                    ax = bx + ibw + 14
+                    aw = bw - ibw - 14
+                    P.rrect(ax, by, aw, bh, 24, mix(fill, T["bg"], 0.3))
+                    P.chevron(ax + aw / 2, by + bh / 2, 11, "ffffff" if active else T["text"])
+                    hits.append((ax, by, aw, bh, ("more", i)))
+            P.text("B Abbrechen  ·  X Details", 19, W / 2, H - 36, T["muted"], align="c")
 
         return hits
 
@@ -2572,8 +2668,8 @@ def main():
         if ui.view == "power":
             if kind == "up" and cc.pen:
                 dx, dy = cc.pen.to_design(x, y)
-                keep = cc.power_menu.touch_up(dx, dy, cc.power_hits)
-                if not keep:
+                result = cc.power_menu.touch_up(dx, dy, cc.power_hits)
+                if result is False:
                     toggle("power")
                 state["dirty"] = True
             return
@@ -2640,6 +2736,7 @@ def main():
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
             cc.reset()
+            cc.power_menu.state = cc.power_menu.STATE_MAIN   # Zustand zurücksetzen
             ui.hide()
             set_grab(False)
             pauser.resume()
@@ -2697,8 +2794,6 @@ def main():
         if not ui.view:
             return
         if ui.view == "power":
-            if typ == EV_KEY and code in (ABS_HAT0Y,):
-                pass   # Dpad unten/oben – wird über HAT behandelt
             if typ == EV_ABS and code == ABS_HAT0Y:
                 d = 1 if value > 0 else -1
                 cc.power_menu.nav(0, d)
@@ -2706,12 +2801,15 @@ def main():
             elif typ == EV_KEY and code in DPAD and DPAD[code][1] != 0:
                 cc.power_menu.nav(0, DPAD[code][1])
                 state["dirty"] = True
-            elif typ == EV_KEY and code == BTN_EAST and value == 1:
+            elif typ == EV_KEY and code == BTN_EAST and value == 1:   # A
                 keep = cc.power_menu.confirm()
                 if not keep:
                     toggle("power")
                 state["dirty"] = True
-            elif typ == EV_KEY and code == BTN_SOUTH and value == 1:
+            elif typ == EV_KEY and code == BTN_NORTH and value == 1:  # X → Details/Untermenü
+                cc.power_menu.details()
+                state["dirty"] = True
+            elif typ == EV_KEY and code == BTN_SOUTH and value == 1:  # B
                 if not cc.power_menu.cancel():
                     toggle("power")
                 state["dirty"] = True
