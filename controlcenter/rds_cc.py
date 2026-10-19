@@ -2927,6 +2927,8 @@ def main():
                                         toggle("power")
                                     else:
                                         log("Power: langer Druck → suspend")
+                                        if ui.view == "power":
+                                            toggle("power")
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
                             handle_joy(typ, code, value, pads[fd])
