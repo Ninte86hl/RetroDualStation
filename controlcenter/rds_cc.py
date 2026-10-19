@@ -2270,16 +2270,17 @@ class PowerMenu:
             P.text("ES wirklich neu starten?", 30, W / 2, H / 2 - 60, T["text"], bold=True, align="c")
             P.text("Laufendes Spiel geht verloren.", 22, W / 2, H / 2 - 18, T["muted"], align="c")
             cbw = (bw - 30) / 2
-            for i, (label, col) in enumerate([("Ja, neu starten", accent), ("Abbrechen", T["tile"])]):
+            for i, label in enumerate(["Ja, neu starten", "Abbrechen"]):
                 bxi = bx + i * (cbw + 30)
                 byi = H / 2 + 40
                 active = i == self.confirm_es_focus
-                fill = col if i == 0 else (accent if active else T["tile"])
-                P.rrect(bxi, byi, cbw, 90, 20, fill)
                 if active:
-                    P.rrect(bxi - 4, byi - 4, cbw + 8, 98, 24, accent, stroke=4)
+                    P.rrect(bxi, byi, cbw, 90, 20, accent)
+                else:
+                    P.rrect(bxi, byi, cbw, 90, 20, T["bg"])
+                    P.rrect(bxi, byi, cbw, 90, 20, T["dot"], stroke=2)
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
-                       "ffffff" if (i == 0 or active) else T["text"], bold=True, align="c")
+                       "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
             P.text("◄ ► Auswahl  ·  A Bestätigen  ·  B Abbrechen", 17, W / 2, H - 36, T["muted"], align="c")
 
@@ -2292,9 +2293,13 @@ class PowerMenu:
             for i, (label, _cmd) in enumerate(self.RESTART_ITEMS):
                 by = by0 + i * (bh + 20)
                 active = i == self.sub_focus
-                P.rrect(bx, by, bw, bh, 24, accent if active else T["tile"])
+                if active:
+                    P.rrect(bx, by, bw, bh, 24, accent)
+                else:
+                    P.rrect(bx, by, bw, bh, 24, T["bg"])
+                    P.rrect(bx, by, bw, bh, 24, T["dot"], stroke=2)
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
-                       "ffffff" if active else T["text"], bold=active, align="c")
+                       "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
             P.text("B Zurück", 19, W / 2, H - 36, T["muted"], align="c")
 
@@ -2306,15 +2311,19 @@ class PowerMenu:
             for i, (_key, label, _cmd, has_sub) in enumerate(POWER_ITEMS):
                 by = by0 + i * (bh + 20)
                 active = i == self.focus
-                fill = accent if active else T["tile"]
-                P.rrect(bx, by, bw, bh, 24, fill)
+                if active:
+                    P.rrect(bx, by, bw, bh, 24, accent)
+                else:
+                    P.rrect(bx, by, bw, bh, 24, T["bg"])
+                    P.rrect(bx, by, bw, bh, 24, T["dot"], stroke=2)
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
-                       "ffffff" if active else T["text"], bold=active, align="c")
+                       "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
                 if has_sub:
                     # Pfeil rechts innen im Button
-                    tc = "ffffff" if active else T["text"]
-                    P.circle(bx + bw - 52, by + bh / 2, 22, mix(fill, "000000", 0.18))
+                    tc = "ffffff" if active else T["muted"]
+                    circ_fill = mix(accent, "000000", 0.18) if active else T["dot"]
+                    P.circle(bx + bw - 52, by + bh / 2, 22, circ_fill)
                     P.chevron(bx + bw - 48, by + bh / 2, 9, tc)
                     hits.append((bx + bw - 90, by, 90, bh, ("more", i)))
             P.text("B Abbrechen  ·  X Details", 19, W / 2, H - 36, T["muted"], align="c")
