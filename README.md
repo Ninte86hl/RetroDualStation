@@ -42,6 +42,28 @@ It comes with five game list views: Gamecarousel, Detailed, Grid, Showcase and S
 - Survives device reboots
 - Left/right in the game list no longer jumps to another system in dual mode (L2/R2 still switch systems); single mode keeps your own setting
 
+## Control Center (preview)
+
+> Work in progress – not part of a release yet.
+
+One button opens a control center on the bottom screen – over ES, RetroArch, DraStic or DSperate.
+The running game pauses automatically and continues where you left off.
+
+- Brightness (top/bottom), volume, performance modes
+- Wi-Fi and Bluetooth: switch networks, pair controllers – no menu digging
+- On-screen keyboard (long-press for ä, é, ñ …), touch and D-pad, external controllers
+- Dark/light mode, accent colours, English and German
+
+| | |
+|---|---|
+| ![Control Center](docs/screenshots/control-center-main.png) | ![Wi-Fi](docs/screenshots/control-center-wifi.png) |
+| **Control Center** over a paused game | **Wi-Fi** – saved networks on top |
+| ![Bluetooth](docs/screenshots/control-center-bluetooth.png) | ![Keyboard](docs/screenshots/control-center-keyboard.png) |
+| **Bluetooth** – pair controllers directly | **On-screen keyboard** for Wi-Fi passwords |
+
+Coming next: save states and shortcuts, RetroAchievements, game switcher, power menu.
+Details: [docs/KONTROLLCENTER.md](docs/KONTROLLCENTER.md) (German).
+
 ## Screenshots
 
 | | |

@@ -42,6 +42,28 @@ Enthalten sind fünf Spielelisten-Ansichten: Gamecarousel, Detailliert, Raster, 
 - Übersteht Neustarts des Geräts
 - Links/Rechts in der Spieleliste springt im Dual-Modus nicht mehr ins nächste System (L2/R2 wechseln weiterhin); im Single-Modus bleibt deine Einstellung
 
+## Kontrollcenter (Vorschau)
+
+> In Arbeit – noch nicht Teil eines Releases.
+
+Eine Taste öffnet ein Kontrollcenter auf dem unteren Bildschirm – über ES, RetroArch, DraStic oder DSperate.
+Das laufende Spiel pausiert automatisch und läuft danach an derselben Stelle weiter.
+
+- Helligkeit (oben/unten), Lautstärke, Leistungsmodi
+- WLAN und Bluetooth: Netz wechseln, Controller koppeln – ohne Menüsuche
+- Bildschirmtastatur (Umlaute durch langes Drücken), Touch und Steuerkreuz, externe Controller
+- Hell/Dunkel, Akzentfarben, Deutsch und Englisch
+
+| | |
+|---|---|
+| ![Kontrollcenter](docs/screenshots/control-center-main.png) | ![WLAN](docs/screenshots/control-center-wifi.png) |
+| **Kontrollcenter** über einem pausierten Spiel | **WLAN** – gespeicherte Netze oben |
+| ![Bluetooth](docs/screenshots/control-center-bluetooth.png) | ![Tastatur](docs/screenshots/control-center-keyboard.png) |
+| **Bluetooth** – Controller direkt koppeln | **Bildschirmtastatur** für WLAN-Passwörter |
+
+Als Nächstes: Spielstände und Tastenkürzel, RetroAchievements, Gameswitcher, Power-Menü.
+Details: [docs/KONTROLLCENTER.md](docs/KONTROLLCENTER.md).
+
 ## Screenshots
 
 | | |
