@@ -2052,60 +2052,60 @@ class ControlCenter:
         P.text("Kontrollcenter", size, lx + lw + 16, 97 + size * 0.36, T["text"], bold=True)
 
         # Läuft gerade
-        P.rrect(45, 145, 1170, 135, 24, T["card"])
-        P.rrect(72, 167, 90, 90, 14, T["tile"])
-        P.text((self.game["name"][:1] if self.game else "–").upper(), 40, 117, 227, T["muted"], bold=True, align="c")
-        P.text("LÄUFT GERADE", 15, 187, 182, T["muted"], bold=True)
+        P.rrect(45, 145, 1170, 110, 24, T["card"])
+        P.rrect(72, 162, 76, 76, 14, T["tile"])
+        P.text((self.game["name"][:1] if self.game else "–").upper(), 34, 110, 215, T["muted"], bold=True, align="c")
+        P.text("LÄUFT GERADE", 14, 178, 177, T["muted"], bold=True)
         if self.game:
             g = self.game
-            P.text(g["name"][:34], 28, 187, 222, T["text"], bold=True, raw=True)
+            P.text(g["name"][:34], 24, 178, 210, T["text"], bold=True, raw=True)
             sub = " · ".join(p for p in (g["system"], g["emu"]) if p)
             if g["played"] is not None:
                 mins = int(g["played"] // 60)
                 sub += f" · {mins // 60}:{mins % 60:02d} h"
-            P.text(sub, 18, 187, 253, T["muted"])
-            P.rrect(955, 181, 233, 63, 32, A, a=0.45)
-            P.text("Spiel beenden", 21, 1071, 220, "ffffff", bold=True, align="c")
+            P.text(sub, 16, 178, 238, T["muted"])
+            P.rrect(955, 172, 233, 56, 28, A, a=0.45)
+            P.text("Spiel beenden", 19, 1071, 207, "ffffff", bold=True, align="c")
         else:
-            P.text("Kein Spiel aktiv", 28, 187, 222, T["text"], bold=True)
-            P.text("EmulationStation", 18, 187, 253, T["muted"])
+            P.text("Kein Spiel aktiv", 24, 178, 210, T["text"], bold=True)
+            P.text("EmulationStation", 16, 178, 238, T["muted"])
 
         # Regler
         rows = self.rows()
         sliders = [r for r in rows if r[0] == "slider"]
-        y = 300
-        card_h = 98 + (len(sliders) - 1) * 76
+        y = 270
+        card_h = 80 + (len(sliders) - 1) * 66
         P.rrect(45, y, 1170, card_h, 24, T["card"])
         for n, (_kind, key) in enumerate(sliders):
-            cy = y + 49 + n * 76
+            cy = y + 40 + n * 66
             if rows[self.focus] == ("slider", key):
-                P.rrect(57, cy - 36, 1146, 72, 14, T["focus"])
+                P.rrect(57, cy - 30, 1146, 60, 14, T["focus"])
             label = "Lautstärke" if key == "vol" else self.backlights[key][0]
-            P.text(label, 22, 80, cy + 8, T["text"], bold=True)
+            P.text(label, 20, 80, cy + 7, T["text"], bold=True)
             val = self.values.get(key, 0)
             x0, x1 = 313, 1111
             P.rrect(x0, cy - 6, x1 - x0, 12, 6, mix(T["track"], A, 0.35))
             P.rrect(x0, cy - 6, max(12, (x1 - x0) * val / 100), 12, 6, A)
             P.circle(x0 + (x1 - x0) * val / 100, cy, 13, mix(A, "ffffff", 0.45))
-            P.text(f"{val} %", 20, 1183, cy + 7, T["text"], bold=True, align="r")
+            P.text(f"{val} %", 18, 1183, cy + 6, T["text"], bold=True, align="r")
             self.tracks[key] = (x0, x1)
-            self.hits.append((57, cy - 38, 1146, 76, ("slider", key)))
-        y += card_h + 20
+            self.hits.append((57, cy - 33, 1146, 66, ("slider", key)))
+        y += card_h + 14
 
         # Leistung
-        P.rrect(45, y, 1170, 90, 24, T["card"])
-        P.text("Leistung", 22, 80, y + 53, T["text"], bold=True)
+        P.rrect(45, y, 1170, 78, 24, T["card"])
+        P.text("Leistung", 20, 80, y + 46, T["text"], bold=True)
         focused = rows[self.focus][0] == "perf"
         for i, (name, _c, _g) in enumerate(PERF_MODES):
             sx = 372 + i * 279
             active = i == self.perf
-            P.rrect(sx, y + 14, 269, 61, 16, A if active else mix(T["seg"], A, 0.12))
-            P.text(name, 20, sx + 134, y + 52, "ffffff" if active else T["text"],
+            P.rrect(sx, y + 11, 269, 55, 16, A if active else mix(T["seg"], A, 0.12))
+            P.text(name, 19, sx + 134, y + 46, "ffffff" if active else T["text"],
                    bold=active, align="c")
             if focused and i == self.perf_sel:
-                self._focus_ring(P, sx, y + 14, 269, 61, 16)
-            self.hits.append((sx, y + 10, 269, 70, ("perf", i)))
-        y += 110
+                self._focus_ring(P, sx, y + 11, 269, 55, 16)
+            self.hits.append((sx, y + 8, 269, 62, ("perf", i)))
+        y += 92
 
         # Kacheln – Reihe 1: WLAN, BT, Screen (je 282px), Reihe 2: Sleep, Power (je 432px)
         states = [bool(self.wifi[0]), bool(self.bt[0]), False, False, False]  # Screen-aus = inaktiv (nicht eingefärbt)
