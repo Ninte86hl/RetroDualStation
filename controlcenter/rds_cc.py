@@ -2875,6 +2875,17 @@ def main():
         raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, on_term)
 
+    def on_resume(*_):
+        """SIGUSR1 vom rds-resume.service nach dem Aufwachen: Power-Menü schließen."""
+        if ui.view == "power":
+            cc.power_menu.state = cc.power_menu.STATE_MAIN
+            cc.power_menu.confirm_es_focus = 0
+            ui.hide()
+            set_grab(False)
+            pauser.resume()
+        state["dirty"] = True
+    signal.signal(signal.SIGUSR1, on_resume)
+
     log("bereit – Anbernic-Taste: Kontrollcenter, Home-Taste: Gameswitcher, Strg+C: Ende")
     last_minute = time.strftime("%H:%M")
     next_pad_scan = 0.0

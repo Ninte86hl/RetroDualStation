@@ -1,0 +1,14 @@
+# RetroDualStation – Power-Menü nach dem Aufwachen schließen
+# Kopieren nach /etc/systemd/system/rds-resume.service
+# systemctl enable rds-resume.service
+
+[Unit]
+Description=RetroDualStation – Power-Menü nach Resume schließen
+After=suspend.target hibernate.target hybrid-sleep.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'pkill -SIGUSR1 -f rds_cc.py || true'
+
+[Install]
+WantedBy=suspend.target hibernate.target hybrid-sleep.target
