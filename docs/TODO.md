@@ -60,6 +60,16 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Version für das normale RG DS (640×480)
 - [ ] optional: ES-Patch für die Option „Standard-Rastergröße“
 
+### Eigener Auftritt (Idee 19.10.2026)
+- [ ] Ladebildschirm „RetroDualStation“ auf beiden Bildschirmen zwischen ROCKNIX-Bootlogo und ES
+      (eigener Dienst mit Overlay-Technik des Kontrollcenters, endet sobald ES da ist)
+- [ ] Ladebildschirm im eigenen ES-Build (bisher `--no-splash`)
+- [ ] Theme: RDS-Logo statt ROCKNIX-Logo in der Hauptansicht (nach Logo-Fertigstellung)
+- [ ] optional: Startton
+- Nicht machbar als Add-on: das allererste Bootlogo (fest in `rocknix-splash` im Startabbild) –
+  nur mit eigenem ROCKNIX-Abbild, bewusst nicht geplant
+- „Built on ROCKNIX“ bleibt in README/Danksagung; ROCKNIX-Logo nicht für uns verwenden
+
 ### Logo
 - [ ] RDS-Monogramm auswählen und verfeinern (Entwürfe: Verbunden, Zwei Ebenen, Verwoben)
   – RDS = **R**etro**D**ual**S**tation; Farben Rot · Weiß · Blau (Easter Egg siehe Umbenennung; zufällig auch die Landesfarben Schleswig-Holsteins)
