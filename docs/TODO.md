@@ -61,9 +61,18 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Idee (19.10.2026): Benutzerwechsel im Gameswitcher – je Benutzer eigene Savegames und
       Speicherstände (z. B. eigene Ordner pro Profil, beim Wechsel umschalten; RetroArch
       `savefile_directory`/`savestate_directory`, DraStic/DSperate prüfen)
-- [ ] Idee (19.10.2026): Einstellungsmenü wie am Android-Smartphone – ES-Einstellungen gezielt
-      im CC ändern (statt durch das ES-Menü zu blättern)
-- [ ] Kontrollcenter: Einstellungsseite (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
+- [ ] Einstellungsmenü wie am Smartphone (beschlossen 19.10.2026) – Aufruf über **Zahnrad-Symbol
+      in der CC-Kopfzeile**; oben Kategorie-Kacheln, darunter Listen:
+      - **Anzeige:** Theme, Theme je Modus (Dual/Single), Bildschirmschoner
+      - **Spiele & Emulatoren:** Standard-Emulator/Core je System, Emulator-Einstellungen,
+        Systeme ein-/ausblenden
+      - **Controller:** Tastenbelegung, „Als Spieler 1 verwenden“
+      - **Netzwerk:** WLAN, Bluetooth, SSH/Samba ein/aus
+      - **System:** Updates, Systeminfo, Speicherplatz, Sprache, Zeitzone/Uhrzeit,
+        Energie (automatischer Ruhemodus)
+      - **RetroDualStation:** Dual/Single umschalten, CC-Einstellungen (Tastatur QWERTZ/QWERTY,
+        Akzentfarbe, automatisch abdunkeln, Haltezeit, Kürzel erlauben)
+      - später: RetroAchievements-Anmeldung, Benutzerwechsel (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
 - [ ] DraStic: eigene Einstellungsoberfläche (`drastic.cfg`)
