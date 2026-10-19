@@ -227,3 +227,16 @@ Emulation zu stören.
 Gameswitcher-Platzhalter, jeweils auf DSI-1 über ES, RetroArch, DraStic und DSperate.
 Während der Anzeige erreichen weder Tasten noch Touch das Spiel bzw. ES.
 Behoben: doppeltes Übernehmen des Joypads beim direkten Wechsel zwischen den Ansichten.
+
+## Prototyp 0.2 (19.10.2026)
+
+Seite „Schnelleinstellungen“ nach dem freigegebenen Entwurf, Seiten 2/3 und
+Gameswitcher noch Platzhalter.
+- Touch auf der eigenen Fläche (wl_seat/wl_touch): Regler ziehen, Antippen, Wischen
+- Steuerkreuz hoch/runter = Zeile, links/rechts = Wert/Auswahl, A = Kachel, B = schließen, L1/R1 = Seite
+- Helligkeit oben/unten (`/sys/class/backlight`, Zuordnung per Konfiguration änderbar),
+  Lautstärke (`wpctl`), Leistung (CPU-/GPU-Governor), WLAN/Bluetooth an/aus,
+  Status WLAN-Name, Bluetooth-Geräte, Akku, „Läuft gerade“ aus der Prozessliste
+- Hell/Dunkel und Akzentfarbe über `/storage/.config/retrodualstation/controlcenter.json`
+  (Auswahl in der Oberfläche folgt)
+- Noch nicht: Pause, Spiel beenden, unterer Screen aus, Ruhemodus
