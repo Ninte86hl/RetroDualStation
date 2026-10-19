@@ -1928,6 +1928,8 @@ class ControlCenter:
             elif kind == "top":
                 self.focus, self.top_sel = 0, val
                 self.toggle_theme() if val == 0 else self.next_accent()
+            elif kind == "power_btn":
+                return "power"
 
     def _hit(self, x, y):
         for hx, hy, hw, hh, action in self.hits:
@@ -2016,6 +2018,14 @@ class ControlCenter:
                 self._focus_ring(P, x, 70, 54, 54, 27)
             self.hits.append((x - 4, 66, 62, 62, ("top", i)))
             x -= 14
+
+        # Power-Kreis ganz rechts in der Kopfzeile
+        x -= 54
+        pcx = x + 27
+        P.circle(pcx, 97, 27, T["pill"])
+        P.power_icon(pcx, 97, 14, T["text"], width=3)
+        self.hits.append((x - 4, 66, 62, 62, ("power_btn", None)))
+        x -= 14
 
         # Titel mit Logo mittig zwischen Datum und rechter Gruppe (passt sich der Sprache an)
         room_l, room_r = left_end + 24, x - 10
