@@ -800,6 +800,21 @@ def ra_command(cmd, reply=False):
         return None
 
 
+def quit_game(game):
+    """Laufenden Emulator beenden (RetroArch sauber per Befehl, sonst SIGTERM)."""
+    if not game:
+        return
+    log("Spiel beenden:", game["emu"], game["pid"])
+    if game["emu"] == "RetroArch" and ra_command("QUIT") is not None:
+        ra_command("QUIT")   # zweimal: RetroArch fragt sonst ggf. nach
+        return
+    try:
+        os.kill(game["pid"], signal.SIGCONT)
+        os.kill(game["pid"], signal.SIGTERM)
+    except OSError as exc:
+        log("Beenden fehlgeschlagen:", exc)
+
+
 class Pauser:
     """Hält das laufende Spiel an, solange das Overlay offen ist."""
 
@@ -1710,7 +1725,8 @@ class ControlCenter:
 
     # -- Daten --
     def rows(self):
-        r = [("top", None)] + [("slider", i) for i in range(len(self.backlights))] + [("slider", "vol")]
+        r = [("top", None)] + ([("game", None)] if self.game else []) \
+            + [("slider", i) for i in range(len(self.backlights))] + [("slider", "vol")]
         return r + [("perf", None), ("tiles", None)]
 
     def refresh(self, full=False):
@@ -1722,6 +1738,10 @@ class ControlCenter:
             self.values["vol"] = v if v is not None else self.values.get("vol", 50)
             self.perf = self.perf_sel = perf_get()
             self.game = running_game()
+            rows = self.rows()
+            self.focus = min(self.focus, len(rows) - 1)
+            if rows[self.focus][0] == "game":   # nie versehentlich auf „Beenden“ starten
+                self.focus += 1
         self.bat = battery()
         self.wifi = wifi_state()
         self.bt = bt_state()
@@ -1871,6 +1891,8 @@ class ControlCenter:
             return self.press_tile(self.tile)
         elif kind == "perf":
             self.set_perf(self.perf_sel)
+        elif kind == "game":
+            return "quit"
         elif kind == "top":
             if self.top_sel == -1:
                 return "power"
@@ -1960,6 +1982,8 @@ class ControlCenter:
                 self.toggle_theme() if val == 0 else self.next_accent()
             elif kind == "power_btn":
                 return "power"
+            elif kind == "quit":
+                return "quit"
 
     def _hit(self, x, y):
         for hx, hy, hw, hh, action in self.hits:
@@ -2084,8 +2108,12 @@ class ControlCenter:
                 mins = int(g["played"] // 60)
                 sub += f" · {mins // 60}:{mins % 60:02d} h"
             P.text(sub, 18, 187, 253, T["muted"])
-            P.rrect(955, 181, 233, 63, 32, A, a=0.45)
+            gfocus = self.rows()[self.focus][0] == "game"
+            P.rrect(955, 181, 233, 63, 32, A, a=1.0 if gfocus else 0.45)
             P.text("Spiel beenden", 21, 1071, 220, "ffffff", bold=True, align="c")
+            if gfocus:
+                self._focus_ring(P, 955, 181, 233, 63, 32)
+            self.hits.append((955, 175, 233, 75, ("quit", None)))
         else:
             P.text("Kein Spiel aktiv", 28, 187, 222, T["text"], bold=True)
             P.text("EmulationStation", 18, 187, 253, T["muted"])
@@ -2779,6 +2807,8 @@ def main():
             toggle("power")
         elif result == "close":
             toggle("cc")
+        elif result == "quit":
+            do_quit()
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
@@ -2864,6 +2894,13 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
+    def do_quit():
+        game = cc.game
+        if ui.view:
+            toggle(ui.view)   # schließt CC und hebt die Pause auf
+        quit_game(game)
+        cc.game = None
+
     def handle_joy(typ, code, value, pad):
         nonlocal mode_down, combo
         if pad["ext"] and typ == EV_KEY and code in (BTN_SOUTH, BTN_EAST):
@@ -2938,6 +2975,9 @@ def main():
                 toggle("power")
             elif result == "close":
                 toggle("cc")
+                return
+            elif result == "quit":
+                do_quit()
                 return
         elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
             if cc.kbd:
