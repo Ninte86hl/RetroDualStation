@@ -2868,6 +2868,10 @@ def main():
         if ui.pending_view and not ui.view:
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
+            if getattr(cc, "redim", False) and cc.game and cc.game["emu"] == "RetroArch":
+                cc.screen_off()   # RetroArch: beim Schließen wieder abdunkeln
+                cc.screen_auto = True
+            cc.redim = False
             cc.reset()
             cc.power_menu.state = cc.power_menu.STATE_MAIN   # Zustand zurücksetzen
             ui.hide()
@@ -3076,7 +3080,11 @@ def main():
                             # Nur Anbernic-Taste weckt unteren Screen auf
                             if typ == EV_KEY and code == BTN_MODE and (cc.screen_bottom_off or wake["swallow"]):
                                 if value == 1 and cc.screen_bottom_off:
+                                    auto = cc.screen_auto
                                     cc.screen_on()
+                                    if auto:   # RetroArch: direkt das CC zeigen
+                                        toggle("cc")
+                                        cc.redim = True
                                     wake["swallow"] = True   # Loslassen nicht als CC-Aufruf werten
                                 elif value == 0:
                                     wake["swallow"] = False
