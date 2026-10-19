@@ -72,6 +72,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
         Energie (automatischer Ruhemodus)
       - **RetroDualStation:** Dual/Single umschalten, CC-Einstellungen (Tastatur QWERTZ/QWERTY,
         Akzentfarbe, automatisch abdunkeln, Haltezeit, Kürzel erlauben)
+        + **CC anpassen** wie Schnelleinstellungen am Handy: welche Kacheln/Regler sichtbar,
+        Reihenfolge; auf der Seite „Spiel“ wählen, welche Kürzel/Funktionen (Savestate laden/
+        speichern, Screenshot, Vorspulen …) angezeigt werden
+      - Darstellung folgt Hell/Dunkel und Akzentfarbe des CC (Mockup: docs/kontrollcenter/einstellungen-mockup.png)
       - später: RetroAchievements-Anmeldung, Benutzerwechsel
       - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
       - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
