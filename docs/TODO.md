@@ -12,8 +12,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese beiden fertig sind – neue Ideen nur notieren.
-1. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
-2. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
+1. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
+2. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
 
 Danach abwägen, was als Nächstes ausgebaut wird.
 
