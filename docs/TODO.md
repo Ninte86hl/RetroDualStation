@@ -33,7 +33,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ### Logo
 - [ ] RDS-Monogramm auswählen und verfeinern (Entwürfe: Verbunden, Zwei Ebenen, Verwoben)
-  – doppelte Bedeutung: **R**etro**D**ual**S**tation, gelesen auch **R**OCKNIX **D**ual**S**tation (ehrt die Basis)
+  – RDS = **R**etro**D**ual**S**tation (Schriftzug im Logo); Farben Rot · Weiß · Blau (ROCKNIX, JELOS – und die Landesfarben Schleswig-Holsteins)
+  – Favorit: Variante 3 „Verwoben“ mit Dual-Screen-Handheld
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
 
 ### Scraper
