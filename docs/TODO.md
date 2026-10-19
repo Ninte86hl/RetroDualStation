@@ -82,7 +82,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
         (Start, Select, X, Y, L/R …) – je Dialog entscheiden: ersetzen, behalten, weglassen
       - ROCKNIX-Schnellstartmenü wird überflüssig (CC deckt es ab)
       - Overlay **Spielesuche** (Bildschirmtastatur, Ergebnisse mit Icons, Sprung in ES-Liste)
-      - Overlay **Spiel-Einstellungen** (per game: Emulator/Core, Seitenverhältnis, Shader …) (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
+      - Overlay **Spiel-Einstellungen** (per game: Emulator/Core, Seitenverhältnis, Shader …)
+      - Idee: **Bildschirmwahl** je System/Spiel (auf welchem Screen gespielt wird);
+        CC/Menüs folgen dann dem jeweils freien Bildschirm (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
 - [ ] DraStic: eigene Einstellungsoberfläche (`drastic.cfg`)
