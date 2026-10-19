@@ -2877,6 +2877,8 @@ def main():
 
     def on_resume(*_):
         """SIGUSR1 vom rds-resume.service nach dem Aufwachen: Power-Menü schließen."""
+        if ui.pending_view == "power":
+            ui.pending_view = None
         if ui.view == "power":
             cc.power_menu.state = cc.power_menu.STATE_MAIN
             cc.power_menu.confirm_es_focus = 0
@@ -2929,6 +2931,7 @@ def main():
                                         log("Power: langer Druck → suspend")
                                         if ui.view == "power":
                                             toggle("power")
+                                        ui.pending_view = None
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
                             handle_joy(typ, code, value, pads[fd])
