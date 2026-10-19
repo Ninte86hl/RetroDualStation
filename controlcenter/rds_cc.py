@@ -321,6 +321,11 @@ def tr(text):
 cairo = CDLL("libcairo.so.2")
 cairo.cairo_image_surface_create_for_data.restype = c_void_p
 cairo.cairo_image_surface_create_for_data.argtypes = [c_void_p, c_int, c_int, c_int, c_int]
+cairo.cairo_image_surface_create_from_png.restype = c_void_p
+cairo.cairo_image_surface_create_from_png.argtypes = [c_char_p]
+for _fn in ("cairo_image_surface_get_width", "cairo_image_surface_get_height", "cairo_surface_status"):
+    getattr(cairo, _fn).restype = c_int
+    getattr(cairo, _fn).argtypes = [c_void_p]
 cairo.cairo_create.restype = c_void_p
 cairo.cairo_create.argtypes = [c_void_p]
 for _fn, _args in {
@@ -336,6 +341,9 @@ for _fn, _args in {
     "cairo_set_line_cap": [c_void_p, c_int],
     "cairo_set_line_join": [c_void_p, c_int],
     "cairo_clip": [c_void_p], "cairo_reset_clip": [c_void_p],
+    "cairo_save": [c_void_p], "cairo_restore": [c_void_p],
+    "cairo_translate": [c_void_p, c_double, c_double], "cairo_scale": [c_void_p, c_double, c_double],
+    "cairo_set_source_surface": [c_void_p, c_void_p, c_double, c_double],
     "cairo_select_font_face": [c_void_p, c_char_p, c_int, c_int],
     "cairo_set_font_size": [c_void_p, c_double],
     "cairo_move_to": [c_void_p, c_double, c_double],
@@ -407,6 +415,42 @@ class Pen:
             cairo.cairo_stroke(cr)
         else:
             cairo.cairo_fill(cr)
+
+    _png = {}
+
+    def image(self, path, x, y, w, h, r=0):
+        """PNG eingepasst (cover) mit abgerundeten Ecken zeichnen. False, wenn nicht ladbar."""
+        surf = Pen._png.get(path)
+        if surf is None:
+            surf = cairo.cairo_image_surface_create_from_png(path.encode())
+            if not surf or cairo.cairo_surface_status(surf) != 0:
+                Pen._png[path] = False
+                return False
+            Pen._png[path] = surf
+        if surf is False:
+            return False
+        iw, ih = cairo.cairo_image_surface_get_width(surf), cairo.cairo_image_surface_get_height(surf)
+        if iw <= 0 or ih <= 0:
+            return False
+        cr, s = self.cr, self.s
+        X, Y, W, H = self.X(x), self.Y(y), w * s, h * s
+        R = min(r * s, W / 2, H / 2)
+        cairo.cairo_save(cr)
+        cairo.cairo_new_path(cr)
+        cairo.cairo_new_sub_path(cr)
+        cairo.cairo_arc(cr, X + W - R, Y + R, R, -PI / 2, 0)
+        cairo.cairo_arc(cr, X + W - R, Y + H - R, R, 0, PI / 2)
+        cairo.cairo_arc(cr, X + R, Y + H - R, R, PI / 2, PI)
+        cairo.cairo_arc(cr, X + R, Y + R, R, PI, 3 * PI / 2)
+        cairo.cairo_close_path(cr)
+        cairo.cairo_clip(cr)
+        k = max(W / iw, H / ih)
+        cairo.cairo_translate(cr, X + (W - iw * k) / 2, Y + (H - ih * k) / 2)
+        cairo.cairo_scale(cr, k, k)
+        cairo.cairo_set_source_surface(cr, surf, 0, 0)
+        cairo.cairo_paint(cr)
+        cairo.cairo_restore(cr)
+        return True
 
     def clip(self, x, y, w, h):
         cairo.cairo_new_path(self.cr)
@@ -789,6 +833,51 @@ def _cmdline(pid):
         return []
 
 
+ARTICLE_RE = re.compile(r"^(.+?),\s*(The|A|An|Der|Die|Das|Ein|Eine|Le|La|Les|L'|El|Los|Las|Il|Lo|Gli)\b(.*)$", re.I)
+
+
+def fix_article(name):
+    """„Legend of Zelda, The - Link's Awakening“ → „The Legend of Zelda - Link's Awakening“."""
+    m = ARTICLE_RE.match(name or "")
+    return f"{m.group(2)} {m.group(1)}{m.group(3)}" if m else name
+
+
+_META = {}
+
+
+def game_meta(rom):
+    """Name und Icon (PNG) aus der gamelist.xml des Systems; zwischengespeichert."""
+    if not rom or rom in _META:
+        return _META.get(rom, (None, None))
+    name = icon = None
+    folder = os.path.dirname(rom)
+    try:
+        import xml.etree.ElementTree as ET
+        rel = "./" + os.path.relpath(rom, folder)
+        for g in ET.parse(os.path.join(folder, "gamelist.xml")).getroot().iter("game"):
+            if g.findtext("path") == rel:
+                name = (g.findtext("name") or "").strip() or None
+                for tag in ("cartridge", "thumbnail", "image"):
+                    v = (g.findtext(tag) or "").strip()
+                    if v:
+                        path = os.path.normpath(os.path.join(folder, v))
+                        if path.lower().endswith(".png") and os.path.exists(path):
+                            icon = path
+                            break
+                break
+    except (OSError, ValueError, Exception):
+        pass
+    if not icon:   # DualStation Sync legt romname-icon.png ab
+        base = os.path.splitext(os.path.basename(rom))[0]
+        for sub in ("images", "media/images"):
+            cand = os.path.join(folder, sub, base + "-icon.png")
+            if os.path.exists(cand):
+                icon = cand
+                break
+    _META[rom] = (name, icon)
+    return name, icon
+
+
 def running_port():
     """PortMaster selbst (pugwash) oder ein gestarteter Port (/roms/ports/*.sh)."""
     tool = None
@@ -843,8 +932,9 @@ def _running_emu():
             played = uptime - start if uptime else None
         except (AttributeError, IndexError, ValueError):
             pass
-        return {"pid": int(pid), "emu": emu, "name": name or emu, "system": system,
-                "played": played}
+        meta_name, icon = game_meta(rom if "/roms/" in rom else None)
+        return {"pid": int(pid), "emu": emu, "name": fix_article(meta_name or name) or emu,
+                "system": system, "played": played, "icon": icon}
     return None
 
 
@@ -1780,6 +1870,8 @@ class ControlCenter:
         self.screen_auto = False          # automatisch gedimmt (RetroArch-Start)
         self.bat = (None, False)
         self.game = None
+        self.marquee = False
+        self.marquee_t0 = 0.0
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
         self.tracks = {}        # Regler -> (x0, x1)
         self.touch = None
@@ -1808,6 +1900,7 @@ class ControlCenter:
             self.values["vol"] = v if v is not None else self.values.get("vol", 50)
             self.perf = self.perf_sel = perf_get()
             self.game = running_game()
+            self.marquee_t0 = time.monotonic()
             rows = self.rows()
             self.focus = min(self.focus, len(rows) - 1)
             if rows[self.focus][0] == "game":   # nie versehentlich auf „Beenden“ starten
@@ -2167,12 +2260,28 @@ class ControlCenter:
 
         # Läuft gerade
         P.rrect(45, 145, 1170, 135, 24, T["card"])
-        P.rrect(72, 167, 90, 90, 14, T["tile"])
-        P.text((self.game["name"][:1] if self.game else "–").upper(), 40, 117, 227, T["muted"], bold=True, align="c")
+        icon = self.game.get("icon") if self.game else None
+        if not (icon and P.image(icon, 72, 167, 90, 90, 14)):
+            P.rrect(72, 167, 90, 90, 14, T["tile"])
+            P.text((self.game["name"][:1] if self.game else "–").upper(), 40, 117, 227, T["muted"], bold=True, align="c")
         P.text("LÄUFT GERADE", 15, 187, 182, T["muted"], bold=True)
+        self.marquee = False
         if self.game:
             g = self.game
-            P.text(g["name"][:34], 28, 187, 222, T["text"], bold=True, raw=True)
+            # Langer Titel: Laufschrift von rechts nach links
+            x0, x1 = 187, 935
+            tw = P.width(g["name"], 28, bold=True, raw=True)
+            if tw <= x1 - x0:
+                P.text(g["name"], 28, x0, 222, T["text"], bold=True, raw=True)
+            else:
+                self.marquee = True
+                gap = 90
+                t = time.monotonic() - self.marquee_t0
+                off = 0 if t < 1.5 else ((t - 1.5) * 70) % (tw + gap)
+                P.clip(x0, 185, x1 - x0, 50)
+                P.text(g["name"], 28, x0 - off, 222, T["text"], bold=True, raw=True)
+                P.text(g["name"], 28, x0 - off + tw + gap, 222, T["text"], bold=True, raw=True)
+                P.unclip()
             sub = " · ".join(p for p in (g["system"], g["emu"]) if p)
             if g["played"] is not None:
                 mins = int(g["played"] // 60)
@@ -3109,7 +3218,8 @@ def main():
                             cc.screen_on()
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold)
+            scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
+            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -3183,6 +3293,8 @@ def main():
                 if time.strftime("%H:%M") != last_minute:
                     last_minute = time.strftime("%H:%M")
                     state["dirty"] = True
+            if scrolling:
+                state["dirty"] = True
             if state["dirty"]:
                 state["dirty"] = False
                 ui.redraw()
