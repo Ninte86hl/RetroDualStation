@@ -341,3 +341,6 @@ eingeschalteter Controller verbindet sich trotzdem von selbst wieder (normales
 Bluetooth-Verhalten) – Hinweis in der Statuszeile.
 **0.8.3:** Entscheidung (19.10.2026): bei verbundenen Controllern (Gerätetyp `input-*`) kein
 „Trennen“, nur „Entfernen“ – Controller werden durch Ausschalten getrennt; Audio-Geräte behalten „Trennen“.
+**0.8.4:** Suchknopf „Suchen“ → „Sucht …“ → „Aktualisieren“; Listen in Bereiche geteilt
+(Bluetooth: Gekoppelte / Gefundene Geräte, WLAN: Gespeicherte / Weitere Netze), eigene
+Geräte und Netze bleiben immer oben; Überschriften werden beim Navigieren übersprungen.

@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.8.3"
+VERSION = "0.8.4"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -721,14 +721,19 @@ class SubMenu:
     def nav(self, dx, dy):
         self._fix_focus()
         if dy:
-            self.focus = max(0, min(len(self.items), self.focus + dy))
+            f = self.focus + dy
+            while 0 < f <= len(self.items) and self.items[f - 1].get("header"):
+                f += dy                       # Überschriften überspringen
+            if f > len(self.items):
+                f = self.focus
+            self.focus = max(0, f)
             self.col = 0 if self.focus else min(self.col, 2)
-            if self.focus:   # Fokus sichtbar halten
+            if self.focus:   # Fokus sichtbar halten (samt Überschrift darüber)
                 top = (self.focus - 1) * self.ROW
                 self.offset = min(max(self.offset, top + self.ROW - self.LIST_H), top)
                 self._clamp()
             return
-        n = 3 if self.focus == 0 else len(self.actions(self.items[self.focus - 1]))
+        n = 3 if self.focus == 0 else len(self.actions_of(self.focus - 1))
         self.col = max(0, min(n - 1, self.col + dx))
 
     def confirm(self):
@@ -736,16 +741,42 @@ class SubMenu:
         if self.focus == 0:
             self.tap(("sub", self.header()[self.col]))
         else:
-            item = self.items[self.focus - 1]
-            acts = self.actions(item)
+            acts = self.actions_of(self.focus - 1)
             if acts:
-                self.do(item, acts[min(self.col, len(acts) - 1)])
+                self.do(self.items[self.focus - 1], acts[min(self.col, len(acts) - 1)])
+
+    @staticmethod
+    def sectioned(groups):
+        """[(Überschrift, [Einträge]), …] → flache Liste mit Überschriften (leere Gruppen weg)."""
+        out = []
+        for title, entries in groups:
+            if entries:
+                out.append({"key": "#" + title, "name": title, "header": True})
+                out.extend(entries)
+        return out
+
+    def actions_of(self, idx):
+        item = self.items[idx]
+        return [] if item.get("header") else self.actions(item)
+
+    def searching(self):
+        return False
+
+    def scan_label(self):
+        if self.searching():
+            return "Sucht …"
+        return "Aktualisieren" if self.loaded else "Suchen"
 
     def _fix_focus(self):
         """Liste kann sich ändern (z. B. Gerät entfernt): Auswahl gültig halten."""
         self.focus = min(self.focus, len(self.items))
+        if self.focus and self.items[self.focus - 1].get("header"):
+            # auf eine Überschrift gerutscht: nächsten echten Eintrag nehmen, sonst den davor
+            after = [i for i in range(self.focus, len(self.items)) if not self.items[i].get("header")]
+            before = [i for i in range(self.focus - 1) if not self.items[i].get("header")]
+            self.focus = after[0] + 1 if after else before[-1] + 1 if before else 0
         if self.focus:
-            self.col = min(self.col, max(0, len(self.actions(self.items[self.focus - 1])) - 1))
+            self.col = min(self.col, max(0, len(self.actions_of(self.focus - 1)) - 1))
 
     def _clamp(self):
         self.offset = max(0.0, min(max(0.0, len(self.items) * self.ROW - self.LIST_H), self.offset))
@@ -774,7 +805,7 @@ class SubMenu:
             idx, act = hit[1], hit[2]
             if idx < len(self.items):
                 self.focus = idx + 1
-                acts = self.actions(self.items[idx])
+                acts = self.actions_of(idx)
                 self.col = acts.index(act) if act in acts else 0
                 self.do(self.items[idx], act)
 
@@ -783,8 +814,8 @@ class SubMenu:
         cc, T, A = self.cc, self.cc.T, self.cc.accent
         on = self.is_on()
         heads = [("back", 45, 170, "Zurück"),
-                 ("switch", 1215 - 150 - 14 - 170, 150, "An" if on else "Aus"),
-                 ("scan", 1215 - 170, 170, "Suchen")]
+                 ("switch", 1215 - 150 - 14 - 190, 150, "An" if on else "Aus"),
+                 ("scan", 1215 - 190, 190, self.scan_label())]
         for n, (key, x, w, label) in enumerate(heads):
             if key == "scan" and not on:
                 continue
@@ -813,6 +844,10 @@ class SubMenu:
         for idx in range(first, min(len(self.items), first + self.VISIBLE + 1)):
             item = self.items[idx]
             ry = self.LIST_Y + idx * self.ROW - self.offset
+            if item.get("header"):      # Bereichsüberschrift
+                P.text(item["name"].upper(), 16, 80, ry + 66, T["muted"], bold=True)
+                P.rrect(80, ry + 80, 1110, 2, 1, mix(T["muted"], T["card"], 0.6))
+                continue
             if self.focus == idx + 1:
                 P.rrect(57, ry, 1146, 90, 16, T["focus"])
             if item.get("highlight"):
@@ -839,7 +874,8 @@ class SubMenu:
             bar_h = max(60, self.LIST_H * self.LIST_H / total)
             bar_y = self.LIST_Y + (self.LIST_H - bar_h) * self.offset / (total - self.LIST_H)
             P.rrect(1203, bar_y, 6, bar_h, 3, mix(T["muted"], A, 0.4))
-            P.text(f"{len(self.items)} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
+            count = sum(1 for i in self.items if not i.get("header"))
+            P.text(f"{count} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
                    T["muted"], align="c")
         cc.hits.append((45, 195, 1170, self.LIST_H + 20, ("sublist",)))
         P.text("A Auswählen", 17, 45, 835, T["muted"])
@@ -859,7 +895,11 @@ class WifiMenu(SubMenu):
     def scan(self):
         spawn(["nmcli", "dev", "wifi", "rescan"])
         self.msg = "Suche nach Netzen …"
+        self.scan_until = time.monotonic() + 3
         self.refetch(2.5)
+
+    def searching(self):
+        return time.monotonic() < getattr(self, "scan_until", 0)
 
     def status_line(self):
         ssid = self.cc.wifi[1]
@@ -896,7 +936,8 @@ class WifiMenu(SubMenu):
         # verbunden → gespeichert (in Reichweite) → gespeichert (fern) → Rest nach Signal
         items.sort(key=lambda i: (not i["active"], not i["saved"], not i["near"], -i["signal"]))
         self.msg = ""
-        return items
+        return self.sectioned([("Gespeicherte Netze", [i for i in items if i["saved"]]),
+                               ("Weitere Netze", [i for i in items if not i["saved"]])])
 
     def describe(self, it):
         if not it["near"]:
@@ -984,6 +1025,9 @@ class BtMenu(SubMenu):
         self.scan_until = time.monotonic() + self.SCAN_TIME
         self.refetch(2)
 
+    def searching(self):
+        return bool(self.scan_until) and time.monotonic() < self.scan_until
+
     def close(self):
         """Suche beenden und den Koppel-Wunsch löschen (wie das ES-Menü beim Verlassen)."""
         if self.scan_until:
@@ -1007,7 +1051,7 @@ class BtMenu(SubMenu):
             return self.msg
         left = int(self.scan_until - time.monotonic()) if self.scan_until else 0
         return f"Suche nach Geräten … noch {left} s – Controller in den Kopplungsmodus versetzen" \
-            if left > 0 else "Tippe auf „Suchen“, um neue Geräte zu finden"
+            if left > 0 else f"Tippe auf „{self.scan_label()}“, um neue Geräte zu finden"
 
     @staticmethod
     def _devices(*args):
@@ -1034,7 +1078,8 @@ class BtMenu(SubMenu):
                           "connected": mac in conn, "highlight": mac in conn,
                           "input": icon.startswith("input")})
         items.sort(key=lambda i: (not i["connected"], not i["paired"], i["name"].lower()))
-        return items
+        return self.sectioned([("Gekoppelte Geräte", [i for i in items if i["paired"]]),
+                               ("Gefundene Geräte", [i for i in items if not i["paired"]])])
 
     def describe(self, it):
         state = "Verbunden" if it["connected"] else "Gekoppelt" if it["paired"] else "Neu"
