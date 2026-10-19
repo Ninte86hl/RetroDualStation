@@ -1689,6 +1689,7 @@ class ControlCenter:
         self.wifi = (None, None)
         self.bt = (False, [])
         self.screen_bottom_off = False
+        self.screen_bottom_saved = None   # gespeicherte Helligkeit vor dem Ausschalten
         self.bat = (None, False)
         self.game = None
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -1796,8 +1797,16 @@ class ControlCenter:
                 self.status_at = time.monotonic() + 2   # Dienststart abwarten
         elif i == 2:
             self.screen_bottom_off = not self.screen_bottom_off
-            cmd = "wlr-randr --output DSI-1 --off" if self.screen_bottom_off else "wlr-randr --output DSI-1 --on"
-            subprocess.Popen(["bash", "-c", cmd])
+            # Backlight des unteren Screens dimmen statt wlr-randr --off
+            # (wlr-randr --off deaktiviert den Wayland-Output, auf dem das CC selbst läuft)
+            bl_bottom = next((b for label, b in self.backlights if "unten" in label.lower()), None)
+            if bl_bottom:
+                if self.screen_bottom_off:
+                    self.screen_bottom_saved = bl_bottom.get()
+                    bl_bottom.set(1)   # 1 % = so dunkel wie möglich ohne OS-Seiteneffekte
+                else:
+                    bl_bottom.set(self.screen_bottom_saved if self.screen_bottom_saved else 50)
+                    self.screen_bottom_saved = None
             log("Unterer Screen:", "aus" if self.screen_bottom_off else "an")
         elif i == 3:
             log("Ruhemodus")
@@ -2931,7 +2940,7 @@ def main():
     signal.signal(signal.SIGTERM, on_term)
 
     def on_resume(*_):
-        """SIGUSR1 vom rds-resume.service nach dem Aufwachen: Power-Menü schließen."""
+        """SIGUSR1 vom rds-resume.service nach dem Aufwachen: Power-Menü schließen, Screen an."""
         if ui.pending_view == "power":
             ui.pending_view = None
         if ui.view == "power":
@@ -2940,6 +2949,13 @@ def main():
             ui.hide()
             set_grab(False)
             pauser.resume()
+        # Unteren Screen nach Suspend immer wieder anschalten
+        if cc.screen_bottom_off:
+            cc.screen_bottom_off = False
+            bl_bottom = next((b for label, b in cc.backlights if "unten" in label.lower()), None)
+            if bl_bottom:
+                bl_bottom.set(cc.screen_bottom_saved if cc.screen_bottom_saved else 50)
+                cc.screen_bottom_saved = None
         state["dirty"] = True
     signal.signal(signal.SIGUSR1, on_resume)
 
