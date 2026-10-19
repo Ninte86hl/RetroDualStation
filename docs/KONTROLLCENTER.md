@@ -397,6 +397,9 @@ wird bei jedem Öffnen frisch gewählt.
   Y (neu starten): vor dem Start `autoload = false`, danach zurücksetzen.
 - Achtung: `global.autosave=1` gilt auch für RetroArch (lädt dann bei jedem Start) – Gameswitcher muss
   für Y das automatische Laden pro Start unterdrücken.
+- DraStic- und DSperate-Savestates sind **nicht kompatibel** (getestet: DSperate-`AMCP.auto.dss` als
+  DraStic-Slot geladen → geht nicht). Gameswitcher merkt sich den Emulator je Spiel und setzt damit fort.
+  Der Spielstand im Spiel (`.sav`/`.dsv`) wird von beiden geteilt.
 - Ports: keine Savestates; Spiel speichert selbst. Gameswitcher zeigt Screenshot (`grim`), A = Neustart.
 - RetroAchievements-Hardcore aus (`global.retroachievements.hardcore=0`), sonst sperrt RetroArch Savestates.
 - Wichtig: Tasten nur einspeisen, wenn das CC das Joypad **nicht** exklusiv hält (EVIOCGRAB vorher lösen).
