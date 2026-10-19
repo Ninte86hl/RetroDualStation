@@ -82,8 +82,27 @@ ssh root@<IP> "ls /usr/lib | grep -iE 'wayland|layer|SDL2|cairo|gtk' ; which swa
 ssh root@<IP> "cat /sys/devices/system/cpu/cpufreq/policy*/scaling_available_governors; ls /sys/class/devfreq/; cat /sys/class/devfreq/*/available_governors"
 ```
 
+## Gameswitcher (später)
+
+Optische Spielerei mit Mehrwert: **es läuft immer nur ein Spiel**, es werden
+keine Spiele parallel im Hintergrund gehalten.
+
+- Home lang: Screenshot → Spielstand automatisch speichern → Emulator sauber beenden
+- Unterer Bildschirm: zuletzt gespielte Spiele als Karten mit ihrem letzten
+  Screenshot, Wischen zum Blättern
+- Antippen: Spiel über die ES-Schnittstelle starten, Spielstand automatisch laden
+- Karte „Zurück zu ES / nur beenden“
+- Zu klären pro Emulator:
+
+  | | Auto speichern/laden | Screenshot |
+  |---|---|---|
+  | RetroArch | eingebaut (Auto-Savestate) | Vorschaubild zum Spielstand |
+  | DraStic | testen (virtueller Tastendruck, beim Start laden) | Bildschirmfoto vor dem Beenden |
+  | DSperate | testen | Bildschirmfoto vor dem Beenden |
+
 ## Etappen
 1. Grundversion: Seite 1 + Wisch-Gerüst + Home kurz/lang + Hell/Dunkel + Akzentfarbe
 2. Seite 2: Spiel-Buttons und Spickzettel
 3. Seite 3: RetroAchievements
 4. RetroArch-Touchmenü ersetzen, Aufnahme in den Installer
+5. Gameswitcher (nutzt Home-Taste, Speichern per Tastendruck, Screenshot und RetroArch-Steuerung aus 1–2)
