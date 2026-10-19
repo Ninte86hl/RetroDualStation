@@ -57,6 +57,10 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
       beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
 - [ ] Etappe 3: RetroAchievements  (nach Bluetooth-Koppeln im Spiel, festgelegt 20.10.2026)
+      - **Benachrichtigung:** kurzes Overlay auf dem unteren Bildschirm, wenn ein Erfolg
+        freigeschaltet wird (Symbol, Titel, Punkte; blendet sich selbst aus, Spiel läuft weiter)
+      - **Erfolge-Übersicht** (CC-Seite „RetroAchievements“): erledigte und offene Erfolge
+        des laufenden Spiels mit Symbol, Beschreibung, Punkten und Fortschritt
 - [x] Kontrollcenter: RetroArch-Touchflächen (Savestates etc.) auf dem unteren Screen bei „Screen aus“ prüfen – evtl. abschalten
 - [x] Kontrollcenter: ROCKNIX-eigene Helligkeits-/Lautstärke-Anzeige unterdrücken, wenn im CC geregelt wird
 - [x] PortMaster: Ports nicht steuerbar – Ursache: seat1 `fallback yes` schnappt sich gptokeyb-Tastatur (19.10.2026 gelöst)
