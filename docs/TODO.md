@@ -58,7 +58,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Logos übertragen (DualStation: `romname-logo.png` → `<marquee>`)
 - [ ] Metadaten (Beschreibung, Genre, Spieler, Jahr, Entwickler): ScreenScraper bevorzugt, sonst TheGamesDB/IGDB
 - [ ] optional: Speicherplatz sparen (PNG-Farbreduktion, alte Scraper-Bilder verkleinern)
-- [ ] Umbenennung überlegen (z. B. DualStation Studio / Companion), Hinweis „funktioniert auch mit ROCKNIXDS“
+- [ ] Umbenennung in **DualStation Sync** (Favorit, greift den Leitsatz auf; Alternative: DualStation Dock), Hinweis „funktioniert auch mit ROCKNIXDS“; Repo-Umbenennung ist harmlos (GitHub leitet weiter), Texte/Fenstertitel/Starter anpassen
 - [ ] Aufräumen: Branch `geraeteprofile` (v4.11.0) wird nicht genutzt
 
 ## Erledigt (Auszug)
