@@ -1667,6 +1667,7 @@ class ControlCenter:
         self.perf_sel = 1       # Auswahl mit links/rechts, übernommen mit A
         self.wifi = (None, None)
         self.bt = (False, [])
+        self.screen_bottom_off = False
         self.bat = (None, False)
         self.game = None
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -1772,8 +1773,14 @@ class ControlCenter:
             if bt_set(on):
                 self.bt = (on, self.bt[1] if on else [])
                 self.status_at = time.monotonic() + 2   # Dienststart abwarten
-        else:
-            log(TILES[i] + ": kommt in einem der nächsten Schritte")
+        elif i == 2:
+            self.screen_bottom_off = not self.screen_bottom_off
+            cmd = "wlr-randr --output DSI-1 --off" if self.screen_bottom_off else "wlr-randr --output DSI-1 --on"
+            subprocess.Popen(["bash", "-c", cmd])
+            log("Unterer Screen:", "aus" if self.screen_bottom_off else "an")
+        elif i == 3:
+            log("Ruhemodus")
+            subprocess.Popen(["systemctl", "suspend"])
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
@@ -2056,11 +2063,11 @@ class ControlCenter:
         y += 110
 
         # Kacheln
-        states = [bool(self.wifi[0]), bool(self.bt[0]), False, False]
+        states = [bool(self.wifi[0]), bool(self.bt[0]), self.screen_bottom_off, False]  # Ruhemodus hat keinen An/Aus-State
         focused = rows[self.focus][0] == "tiles"
         for i, name in enumerate(TILES):
             tx = 45 + i * 297
-            soon = i >= 2
+            soon = i >= 4   # keine Kachel mehr als Platzhalter
             fill = A if states[i] else mix(T["tile"], A, 0.22)
             P.rrect(tx, y, 282, 118, 24, fill, a=0.5 if soon else 1)
             tc = "ffffff" if states[i] else T["text"]
