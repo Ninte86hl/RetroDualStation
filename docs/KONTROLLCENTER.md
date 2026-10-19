@@ -309,3 +309,6 @@ sonst QWERTY; fest einstellbar über `"keyboard"` in `controlcenter.json`.
   Systemjournal) lesbar anzeigen; „Fehlerbericht erstellen“ sammelt sie mit Version und
   Gerätedaten in eine Datei, die Nutzer ins GitHub-Issue hängen können
   (WLAN-Passwörter und andere Zugangsdaten werden vorher entfernt)
+
+**Pause getestet (19.10.2026):** RetroArch (Steuerschnittstelle), DraStic und DSperate
+(Einfrieren) halten an und laufen mit Bild und Ton weiter – über Kontrollcenter und Gameswitcher.

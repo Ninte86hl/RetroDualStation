@@ -27,13 +27,13 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
   die Basis wird in den Danksagungen genannt
 
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
-- [ ] Etappe 1: Schnelleinstellungen, Wisch-Gerüst, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe
+- [ ] Etappe 1: Schnelleinstellungen, Wisch-Gerüst, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe – alles getestet, nur Autostart steht noch aus
 - [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
 - [ ] Etappe 3: RetroAchievements
 - [ ] Etappe 4: RetroArch-Touchmenü ersetzen, in den Installer
 - [ ] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden)
 - [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
-- [ ] Kontrollcenter: Pause in RetroArch, DraStic und DSperate testen (0.4)
+- [x] Kontrollcenter: Pause in RetroArch, DraStic und DSperate getestet (19.10.2026)
 - [ ] Kontrollcenter: Mini-Power-Menü wie bei Android – Ausschalten, Neustart, Ruhemodus,
       ES neu starten (mit Rückfrage; laufendes Spiel vorher speichern/beenden).
       Aufruf (entschieden 19.10.2026): **Ein/Aus-Taste kurz drücken**; Ruhemodus per Zuklappen
