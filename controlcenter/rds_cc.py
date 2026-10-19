@@ -2289,19 +2289,16 @@ class PowerMenu:
                 by = by0 + i * (bh + 20)
                 active = i == self.focus
                 fill = accent if active else T["tile"]
-                # Breite: bei has_sub etwas kürzer für den Pfeil-Button
-                ibw = bw - (90 if has_sub else 0)
-                P.rrect(bx, by, ibw, bh, 24, fill)
-                P.text(label, 28, bx + ibw / 2, by + bh / 2 + 28 * 0.36,
+                P.rrect(bx, by, bw, bh, 24, fill)
+                P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
                        "ffffff" if active else T["text"], bold=active, align="c")
-                hits.append((bx, by, ibw, bh, ("item", i)))
+                hits.append((bx, by, bw, bh, ("item", i)))
                 if has_sub:
-                    # Pfeil-Button rechts
-                    ax = bx + ibw + 14
-                    aw = bw - ibw - 14
-                    P.rrect(ax, by, aw, bh, 24, mix(fill, T["bg"], 0.3))
-                    P.chevron(ax + aw / 2, by + bh / 2, 11, "ffffff" if active else T["text"])
-                    hits.append((ax, by, aw, bh, ("more", i)))
+                    # Pfeil rechts innen im Button
+                    tc = "ffffff" if active else T["text"]
+                    P.circle(bx + bw - 52, by + bh / 2, 22, mix(fill, "000000", 0.18))
+                    P.chevron(bx + bw - 48, by + bh / 2, 9, tc)
+                    hits.append((bx + bw - 90, by, 90, bh, ("more", i)))
             P.text("B Abbrechen  ·  X Details", 19, W / 2, H - 36, T["muted"], align="c")
 
         return hits
