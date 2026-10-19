@@ -856,7 +856,6 @@ MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August"
 ACCENTS = ["e5383b", "3d7bff", "2bb673", "f08c00", "9b5de5", "e64980"]
 PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
-TILES_ROW2_START = 4   # alle in einer Reihe
 
 
 def nmcli_split(line):
@@ -2050,95 +2049,85 @@ class ControlCenter:
         P.text("Kontrollcenter", size, lx + lw + 16, 97 + size * 0.36, T["text"], bold=True)
 
         # Läuft gerade
-        P.rrect(45, 145, 1170, 110, 24, T["card"])
-        P.rrect(72, 162, 76, 76, 14, T["tile"])
-        P.text((self.game["name"][:1] if self.game else "–").upper(), 34, 110, 215, T["muted"], bold=True, align="c")
-        P.text("LÄUFT GERADE", 14, 178, 177, T["muted"], bold=True)
+        P.rrect(45, 145, 1170, 135, 24, T["card"])
+        P.rrect(72, 167, 90, 90, 14, T["tile"])
+        P.text((self.game["name"][:1] if self.game else "–").upper(), 40, 117, 227, T["muted"], bold=True, align="c")
+        P.text("LÄUFT GERADE", 15, 187, 182, T["muted"], bold=True)
         if self.game:
             g = self.game
-            P.text(g["name"][:34], 24, 178, 210, T["text"], bold=True, raw=True)
+            P.text(g["name"][:34], 28, 187, 222, T["text"], bold=True, raw=True)
             sub = " · ".join(p for p in (g["system"], g["emu"]) if p)
             if g["played"] is not None:
                 mins = int(g["played"] // 60)
                 sub += f" · {mins // 60}:{mins % 60:02d} h"
-            P.text(sub, 16, 178, 238, T["muted"])
-            P.rrect(955, 172, 233, 56, 28, A, a=0.45)
-            P.text("Spiel beenden", 19, 1071, 207, "ffffff", bold=True, align="c")
+            P.text(sub, 18, 187, 253, T["muted"])
+            P.rrect(955, 181, 233, 63, 32, A, a=0.45)
+            P.text("Spiel beenden", 21, 1071, 220, "ffffff", bold=True, align="c")
         else:
-            P.text("Kein Spiel aktiv", 24, 178, 210, T["text"], bold=True)
-            P.text("EmulationStation", 16, 178, 238, T["muted"])
+            P.text("Kein Spiel aktiv", 28, 187, 222, T["text"], bold=True)
+            P.text("EmulationStation", 18, 187, 253, T["muted"])
 
         # Regler
         rows = self.rows()
         sliders = [r for r in rows if r[0] == "slider"]
-        y = 270
-        card_h = 80 + (len(sliders) - 1) * 66
+        y = 300
+        card_h = 98 + (len(sliders) - 1) * 76
         P.rrect(45, y, 1170, card_h, 24, T["card"])
         for n, (_kind, key) in enumerate(sliders):
-            cy = y + 40 + n * 66
+            cy = y + 49 + n * 76
             if rows[self.focus] == ("slider", key):
-                P.rrect(57, cy - 30, 1146, 60, 14, T["focus"])
+                P.rrect(57, cy - 36, 1146, 72, 14, T["focus"])
             label = "Lautstärke" if key == "vol" else self.backlights[key][0]
-            P.text(label, 20, 80, cy + 7, T["text"], bold=True)
+            P.text(label, 22, 80, cy + 8, T["text"], bold=True)
             val = self.values.get(key, 0)
             x0, x1 = 313, 1111
             P.rrect(x0, cy - 6, x1 - x0, 12, 6, mix(T["track"], A, 0.35))
             P.rrect(x0, cy - 6, max(12, (x1 - x0) * val / 100), 12, 6, A)
             P.circle(x0 + (x1 - x0) * val / 100, cy, 13, mix(A, "ffffff", 0.45))
-            P.text(f"{val} %", 18, 1183, cy + 6, T["text"], bold=True, align="r")
+            P.text(f"{val} %", 20, 1183, cy + 7, T["text"], bold=True, align="r")
             self.tracks[key] = (x0, x1)
-            self.hits.append((57, cy - 33, 1146, 66, ("slider", key)))
-        y += card_h + 14
+            self.hits.append((57, cy - 38, 1146, 76, ("slider", key)))
+        y += card_h + 20
 
         # Leistung
-        P.rrect(45, y, 1170, 78, 24, T["card"])
-        P.text("Leistung", 20, 80, y + 46, T["text"], bold=True)
+        P.rrect(45, y, 1170, 90, 24, T["card"])
+        P.text("Leistung", 22, 80, y + 53, T["text"], bold=True)
         focused = rows[self.focus][0] == "perf"
         for i, (name, _c, _g) in enumerate(PERF_MODES):
             sx = 372 + i * 279
             active = i == self.perf
-            P.rrect(sx, y + 11, 269, 55, 16, A if active else mix(T["seg"], A, 0.12))
-            P.text(name, 19, sx + 134, y + 46, "ffffff" if active else T["text"],
+            P.rrect(sx, y + 14, 269, 61, 16, A if active else mix(T["seg"], A, 0.12))
+            P.text(name, 20, sx + 134, y + 52, "ffffff" if active else T["text"],
                    bold=active, align="c")
             if focused and i == self.perf_sel:
-                self._focus_ring(P, sx, y + 11, 269, 55, 16)
-            self.hits.append((sx, y + 8, 269, 62, ("perf", i)))
-        y += 92
+                self._focus_ring(P, sx, y + 14, 269, 61, 16)
+            self.hits.append((sx, y + 10, 269, 70, ("perf", i)))
+        y += 110
 
-        # Kacheln – Reihe 1: WLAN, BT, Screen (je 282px), Reihe 2: Sleep, Power (je 432px)
         states = [bool(self.wifi[0]), bool(self.bt[0]), False, False, False]  # Screen-aus = inaktiv (nicht eingefärbt)
         focused = rows[self.focus][0] == "tiles"
-        r1 = TILES[:TILES_ROW2_START]
-        r2 = TILES[TILES_ROW2_START:]
-        r2w = (1170 - (len(r2) - 1) * 15) // len(r2)
-        th1, th2 = 118, 90   # Tile-Höhe Reihe 1 und 2
-        for row, items in enumerate([r1, r2]):
-            tw = 282 if row == 0 else r2w
-            th = th1 if row == 0 else th2
-            ry = y if row == 0 else y + th1 + 15
-            n = len(items)
-            total = n * tw + (n - 1) * 15
-            rx0 = (1260 - total) // 2
-            for j, name in enumerate(items):
-                i = j if row == 0 else j + TILES_ROW2_START
-                tx = rx0 + j * (tw + 15)
-                fill = A if states[i] else mix(T["tile"], A, 0.22)
-                P.rrect(tx, ry, tw, th, 24, fill)
-                tc = "ffffff" if states[i] else T["text"]
-                sub = self._tile_detail(i)
-                if i == 4:   # Power-Symbol statt Text
-                    P.power_icon(tx + tw / 2, ry + th / 2, 22, tc, width=4)
-                else:
-                    P.text(name, 21, tx + 25, ry + (th // 2 + 8 if sub else th // 2 + 8), tc, bold=True)
-                if sub:
-                    P.text(sub, 16, tx + 25, ry + th - 22, mix(tc, fill, 0.25))
-                if i < 2:   # WLAN/BT Untermenü-Pfeil
-                    P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
-                    P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
-                    self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
-                if focused and i == self.tile:
-                    self._focus_ring(P, tx, ry, tw, th, 24)
-                self.hits.append((tx, ry, tw, th, ("tile", i)))
+        # Kacheln – eine Reihe, gleiche Breite
+        n = len(TILES)
+        gap = 15
+        tw = (1170 - (n - 1) * gap) // n
+        th = 118
+        ry = y
+        for i, name in enumerate(TILES):
+            tx = 45 + i * (tw + gap)
+            fill = A if states[i] else mix(T["tile"], A, 0.22)
+            P.rrect(tx, ry, tw, th, 24, fill)
+            tc = "ffffff" if states[i] else T["text"]
+            sub = self._tile_detail(i)
+            P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
+            if sub:
+                P.text(sub, 16, tx + 25, ry + 96, mix(tc, fill, 0.25))
+            if i < 2:   # WLAN/BT Untermenü-Pfeil
+                P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
+                P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
+                self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
+            if focused and i == self.tile:
+                self._focus_ring(P, tx, ry, tw, th, 24)
+            self.hits.append((tx, ry, tw, th, ("tile", i)))
 
     def _tile_detail(self, i):
         """Zweite Zeile der WLAN-/Bluetooth-Kachel."""
