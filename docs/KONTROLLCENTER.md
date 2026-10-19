@@ -377,3 +377,18 @@ wird bei jedem Öffnen frisch gewählt.
 
 **Autostart getestet (19.10.2026):** ES startet normal, CC läuft nach dem Neustart ohne SSH.
 **Etappe 1 abgeschlossen.**
+
+## Gameswitcher – Testergebnisse (20.10.2026)
+
+| | RetroArch 1.22.2 | DraStic |
+|---|---|---|
+| Speichern | UDP `SAVE_STATE_SLOT 9` an 127.0.0.1:55355 | R2 (Code 313) ins Joypad `retrogame_joypad` einspeisen (evdev write) |
+| Laden | `LOAD_STATE_SLOT 9` sobald `GET_STATUS` → `PLAYING` | L2 (Code 312) einspeisen |
+| Screenshot | entsteht automatisch: `<rom>.state9.png` | selbst mit `grim` (beide DS-Screens) |
+| Ablage | `/storage/roms/savestates/<system>/<rom>.state9` | `/storage/roms/savestates/nds/<rom>_0.dss` (Slot `savestate_number`) |
+| Spiel starten | ES-API: `POST http://127.0.0.1:1234/launch` mit ROM-Pfad (getestet, Start nach ~2 s) | gleich |
+
+- DraStic speichert beim Beenden **nicht** automatisch (weder SIGTERM, SIGINT noch Menü „Exit“);
+  `drastic.cfg` hat keine Auto-Save-Option → Speichern immer per eingespeister R2-Taste vor dem Beenden.
+- DSperate: `dsperate.ini` hat `autosave`/`autoload` (aus) und Hotkeys `mod++righttrigger`/`mod++lefttrigger` – noch zu testen.
+- RetroAchievements **Hardcore** sperrt Savestates in RetroArch → im Gameswitcher erkennen und Hinweis zeigen.
