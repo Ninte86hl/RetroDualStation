@@ -41,6 +41,15 @@ versehentlich auslösen (z. B. Spiel ungewollt beendet oder Spielstand
 nur dann zeigt Seite 2 den Spickzettel.
 - RetroArch: unproblematisch, die Steuerschnittstelle braucht keine Hotkeys
 - DSperate: Tastenkürzel funktionieren und lassen sich in seiner eigenen Tastenbelegung frei anpassen (laut Nutzer) – damit können sie auf eine Belegung gelegt werden, die nur das Kontrollcenter auslöst
+- DSperate-Belegung (Fotos vom Gerät, 19.10.2026): Modifier = Funktionstaste;
+  Beenden MOD+Start, Pause MOD+West, Vorspulen-Umschalter MOD+R1,
+  Speichern MOD+R2, Laden MOD+L2, FPS MOD+North, Mic L3; Slot ±,
+  Screenshot, Bildschirm tauschen, Lautstärke, Stumm: unbelegt.
+  Jede Aktion hat eine **zweite Belegung „(2)“** und kann auf **Tastatur
+  oder Pad** gelegt werden → Plan: das Kontrollcenter belegt die (2)-Plätze
+  mit Tastaturtasten, die es am Gerät nicht gibt (z. B. F13–F24), und drückt
+  sie über eine virtuelle Tastatur. Die Pad-Kürzel können dann für
+  Einsteiger auf NONE.
 - DraStic/DSperate: die Knöpfe sollten die Kürzel per virtuellem Tastendruck
   auslösen. Sind die Kürzel abgeschaltet, braucht es einen anderen Weg
   (z. B. Belegung auf eine Taste/Kombination, die nur das virtuelle Gerät
