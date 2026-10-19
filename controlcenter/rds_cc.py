@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.2
+"""RetroDualStation Kontrollcenter – Prototyp 0.3
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -35,7 +35,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.2"
+VERSION = "0.3"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -393,7 +393,8 @@ def find_backlights(cfg):
     names = sorted(os.path.basename(p) for p in glob.glob("/sys/class/backlight/*"))
     for n in names:
         log("Hintergrundbeleuchtung:", n, "->", os.path.realpath("/sys/class/backlight/" + n))
-    top = cfg.get("backlight_top") or (names[0] if names else None)
+    # RG DS Plus: backlight1 = oben, backlight0 = unten (getestet 19.10.2026)
+    top = cfg.get("backlight_top") or (names[-1] if names else None)
     bottom = cfg.get("backlight_bottom") or next((n for n in names if n != top), None)
     result = []
     if top in names:
@@ -473,15 +474,23 @@ def wifi_set(on):
     return spawn(["nmcli", "radio", "wifi", "on" if on else "off"])
 
 
+_bt_last = [None]
+
+
 def bt_state():
-    out = run(["bluetoothctl", "show"])
+    out = run(["bluetoothctl", "show"], timeout=4)
+    line = next((l.strip() for l in (out or "").splitlines() if "Powered" in l), None)
+    if line != _bt_last[0]:   # Diagnose: nur bei Änderung melden
+        log("Bluetooth-Status:", line or ("keine Antwort" if out is None else "kein Adapter"))
+        _bt_last[0] = line
     if not out:
         return False, 0
-    devs = run(["bluetoothctl", "devices", "Connected"]) or ""
+    devs = run(["bluetoothctl", "devices", "Connected"], timeout=4) or ""
     return "Powered: yes" in out, sum(1 for l in devs.splitlines() if l.startswith("Device "))
 
 
 def bt_set(on):
+    log("Bluetooth", "einschalten" if on else "ausschalten")
     return spawn(["bluetoothctl", "power", "on" if on else "off"])
 
 
@@ -560,6 +569,7 @@ class ControlCenter:
         self.tile = 0           # Spalte in der Kachelzeile
         self.values = {}
         self.perf = 1
+        self.perf_sel = 1       # Auswahl mit links/rechts, übernommen mit A
         self.wifi = (None, None)
         self.bt = (False, 0)
         self.bat = (None, False)
@@ -583,7 +593,7 @@ class ControlCenter:
                 self.values[i] = b.get()
             v = volume_get()
             self.values["vol"] = v if v is not None else self.values.get("vol", 50)
-            self.perf = perf_get()
+            self.perf = self.perf_sel = perf_get()
             self.game = running_game()
         self.bat = battery()
         self.wifi = wifi_state()
@@ -634,13 +644,18 @@ class ControlCenter:
         if kind == "slider":
             self.set_slider(key, self.values.get(key, 50) + 5 * dx, final=True)
         elif kind == "perf":
-            self.set_perf(self.perf + dx)
+            self.perf_sel = max(0, min(len(PERF_MODES) - 1, self.perf_sel + dx))
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
 
     def confirm(self):
-        if self.page == 0 and self.rows()[self.focus][0] == "tiles":
+        if self.page != 0:
+            return
+        kind = self.rows()[self.focus][0]
+        if kind == "tiles":
             self.press_tile(self.tile)
+        elif kind == "perf":
+            self.set_perf(self.perf_sel)
 
     def turn_page(self, d):
         self.page = max(0, min(len(PAGES) - 1, self.page + d))
@@ -685,6 +700,7 @@ class ControlCenter:
             kind, val = hit
             if kind == "perf":
                 self.focus = self.rows().index(("perf", None))
+                self.perf_sel = val
                 self.set_perf(val)
             elif kind == "tile":
                 self.focus, self.tile = self.rows().index(("tiles", None)), val
@@ -800,7 +816,7 @@ class ControlCenter:
             P.rrect(sx, y + 14, 269, 61, 16, T["on_bg"] if active else T["seg"])
             P.text(name, 20, sx + 134, y + 52, T["on_text"] if active else T["text"],
                    bold=active, align="c")
-            if focused and active:
+            if focused and i == self.perf_sel:
                 self._focus_ring(P, sx, y + 14, 269, 61, 16)
             self.hits.append((sx, y + 10, 269, 70, ("perf", i)))
         y += 110
@@ -900,6 +916,8 @@ class Overlay:
     # -- Touch (wl_touch Version 5: down, up, motion, frame, cancel) --
     @safe
     def _on_caps(self, _d, seat, caps):
+        log("Eingabe-Fähigkeiten des Compositors:",
+            ", ".join(n for b, n in ((1, "Maus"), (2, "Tastatur"), (4, "Touch")) if caps & b) or "keine")
         if caps & SEAT_CAP_TOUCH and not self.touch:
             self.touch = marshal(seat, 2, IF_TOUCH, ("n", None))   # get_touch
             noop = lambda *a: None
@@ -1030,6 +1048,7 @@ EV_KEY, EV_ABS = 1, 3
 ABS_HAT0X, ABS_HAT0Y = 16, 17
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
+KNOWN_UNUSED = {307, 308, 312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
 EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
 
@@ -1142,8 +1161,10 @@ def main():
             cc.confirm()
         elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
             cc.turn_page(-1 if code == BTN_TL else 1)
-        elif typ == EV_KEY:
+        elif typ == EV_KEY and code not in KNOWN_UNUSED:
             log("Taste ohne Funktion:", code)
+            return
+        else:
             return
         state["dirty"] = True
 
