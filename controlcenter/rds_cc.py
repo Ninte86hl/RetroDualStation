@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.5
+"""RetroDualStation Kontrollcenter – Prototyp 0.6
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -39,7 +39,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.5"
+VERSION = "0.6"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -865,7 +865,8 @@ class WifiMenu(SubMenu):
         elif act == "Vergessen":
             script = 'nmcli connection delete id "$1"'
         else:
-            self.msg = "Passworteingabe kommt mit der Bildschirmtastatur im nächsten Schritt"
+            self.cc.kbd = Keyboard(self.cc, f"Passwort für {ssid}",
+                                   lambda pw: self.connect_new(ssid, pw))
             return
         log("WLAN:", act, ssid)
         spawn(["bash", "-c", script, "rds", ssid])
@@ -873,6 +874,19 @@ class WifiMenu(SubMenu):
                     "Vergessen": f"{ssid} vergessen"}[act]
         self.cc.status_at = time.monotonic() + 3
         self.refetch(4)
+
+
+    def connect_new(self, ssid, pw):
+        if not pw:
+            return
+        log("WLAN: Verbinden (neu)", ssid)          # Passwort nie ins Log
+        script = ('. /etc/profile; nmcli connection delete id "$1" >/dev/null 2>&1; '
+                  'nmcli -w 60 dev wifi connect "$1" password "$2" && '
+                  'set_setting wifi.ssid "$1" && set_setting wifi.key "$2"')
+        spawn(["bash", "-c", script, "rds", ssid, pw])
+        self.msg = f"Verbinde mit {ssid} …"
+        self.cc.status_at = time.monotonic() + 6
+        self.refetch(6)
 
 
 class BtMenu(SubMenu):
@@ -962,6 +976,231 @@ class BtMenu(SubMenu):
         self.refetch(3)
 
 
+# ------------------------------------------------------- Bildschirmtastatur --
+
+def _keyrow(chars):
+    return [("char", c, 1) for c in chars]
+
+
+KB_BOTTOM = [("layer", None, 1.5), ("char", ",", 1), ("space", None, 5), ("char", ".", 1), ("ok", None, 2.5)]
+KB_LAYERS = [
+    [_keyrow("1234567890ß"), _keyrow("qwertzuiopü"), _keyrow("asdfghjklöä"),
+     [("shift", None, 1.5)] + _keyrow("yxcvbnm-") + [("back", None, 1.5)], KB_BOTTOM],
+    [_keyrow("1234567890€"), _keyrow('!@#$%&*()?"'), _keyrow("-_+=/\\:;'~|"),
+     [("shift", None, 1.5)] + _keyrow("<>[]{}^`") + [("back", None, 1.5)], KB_BOTTOM],
+]
+KB_GAP = 10
+KB_UNIT = (1170 - 10 * KB_GAP) / 11
+
+
+class Keyboard:
+    """Eigene Bildschirmtastatur (QWERTZ) für Touch und Gamepad."""
+
+    def __init__(self, cc, title, on_ok, secret=True):
+        self.cc, self.title, self.on_ok, self.secret = cc, title, on_ok, secret
+        self.text, self.cur = "", 0
+        self.shift = 0          # 0 aus, 1 einmal, 2 dauerhaft
+        self.layer = 0
+        self.show = not secret
+        self.r, self.c = 1, 0   # Fokus auf der Tastatur (-1 = Kopfzeile)
+        self.hc = 0             # Spalte in der Kopfzeile: Abbrechen / Zeigen
+        self.field = None       # (x0, Zeichenpositionen) fürs Antippen im Textfeld
+
+    def rows(self):
+        return KB_LAYERS[self.layer]
+
+    def _label(self, kind, val):
+        if kind == "char":
+            return val.upper() if self.shift and val.isalpha() and val != "ß" else val
+        return {"layer": "abc" if self.layer else "?123", "space": "Leerzeichen",
+                "ok": "OK", "shift": "", "back": ""}[kind]
+
+    # -- Aktionen --
+    def press(self, kind, val):
+        if kind == "char":
+            ch = self._label(kind, val)
+            self.text = self.text[:self.cur] + ch + self.text[self.cur:]
+            self.cur += len(ch)
+            if self.shift == 1:
+                self.shift = 0
+        elif kind == "space":
+            self.press("char", " ")
+        elif kind == "back":
+            self.backspace()
+        elif kind == "shift":
+            self.toggle_shift()
+        elif kind == "layer":
+            self.toggle_layer()
+        elif kind == "ok":
+            self.ok()
+
+    def backspace(self):
+        if self.cur > 0:
+            self.text = self.text[:self.cur - 1] + self.text[self.cur:]
+            self.cur -= 1
+
+    def toggle_shift(self):
+        self.shift = (self.shift + 1) % 3
+
+    def toggle_layer(self):
+        self.layer = 1 - self.layer
+        self.c = min(self.c, len(self.rows()[self.r]) - 1) if self.r >= 0 else self.c
+
+    def cursor(self, d):
+        self.cur = max(0, min(len(self.text), self.cur + d))
+
+    def ok(self):
+        self.cc.kbd = None
+        self.on_ok(self.text)
+
+    def cancel(self):
+        self.cc.kbd = None
+
+    def back(self):
+        """B: letztes Zeichen löschen; bei leerem Feld abbrechen."""
+        if self.text:
+            self.backspace()
+        else:
+            self.cancel()
+
+    # -- Gamepad --
+    def _centers(self, r):
+        x, out = 45, []
+        for _k, _v, units in self.rows()[r]:
+            w = units * KB_UNIT + (units - 1) * KB_GAP
+            out.append(x + w / 2)
+            x += w + KB_GAP
+        return out
+
+    def nav(self, dx, dy):
+        if dy:
+            if self.r == -1:
+                if dy > 0:
+                    self.r, self.c = 0, 0 if self.hc == 0 else len(self.rows()[0]) - 1
+                return
+            nr = self.r + dy
+            if nr < 0:
+                self.r = -1
+                self.hc = 0 if self._centers(self.r + 1)[self.c] < 630 else 1
+                return
+            if nr >= len(self.rows()):
+                return
+            cx = self._centers(self.r)[self.c]
+            centers = self._centers(nr)
+            self.r, self.c = nr, min(range(len(centers)), key=lambda i: abs(centers[i] - cx))
+        elif self.r == -1:
+            self.hc = max(0, min(1, self.hc + dx))
+        else:
+            self.c = max(0, min(len(self.rows()[self.r]) - 1, self.c + dx))
+
+    def confirm(self):
+        if self.r == -1:
+            self.cancel() if self.hc == 0 else setattr(self, "show", not self.show)
+        else:
+            kind, val, _u = self.rows()[self.r][self.c]
+            self.press(kind, val)
+
+    # -- Touch --
+    def tap(self, hit, x=None):
+        kind = hit[0]
+        if kind == "kb":
+            r, c = hit[1], hit[2]
+            self.r, self.c = r, c
+            k, v, _u = self.rows()[r][c]
+            self.press(k, v)
+        elif kind == "kb_cancel":
+            self.cancel()
+        elif kind == "kb_show":
+            self.show = not self.show
+        elif kind == "kb_field" and x is not None and self.field:
+            x0, pos = self.field
+            self.cur = min(range(len(pos)), key=lambda i: abs(x0 + pos[i] - x))
+
+    # -- Zeichnen --
+    def draw(self, P):
+        cc, T, A = self.cc, self.cc.T, self.cc.accent
+        hits = cc.hits
+        # Kopfzeile
+        for n, (key, x, w, label) in enumerate([("kb_cancel", 45, 190, "Abbrechen"),
+                                                ("kb_show", 1215 - 190, 190, "Verbergen" if self.show else "Zeigen")]):
+            if key == "kb_show" and not self.secret:
+                continue
+            P.rrect(x, 62, w, 62, 31, T["pill"])
+            P.text(label, 20, x + w / 2, 100, T["text"], bold=True, align="c")
+            if self.r == -1 and self.hc == n:
+                cc._focus_ring(P, x, 62, w, 62, 31)
+            hits.append((x, 58, w, 70, (key,)))
+        P.text(self.title[:34], 26, 630, 102, T["text"], bold=True, align="c")
+
+        # Textfeld mit Cursor
+        P.rrect(45, 148, 1170, 92, 20, T["card"])
+        P.rrect(45, 148, 1170, 92, 20, A, stroke=3)
+        hidden = self.secret and not self.show
+        pos = [0.0]
+        for i in range(len(self.text)):
+            pos.append(pos[-1] + (26 if hidden else P.width(self.text[i], 30)))
+        shift = max(0, pos[self.cur] - 1080)       # langer Text: mitlaufen
+        x0 = 75 - shift
+        if hidden:
+            for i in range(len(self.text)):
+                cx = x0 + pos[i] + 13
+                if 60 < cx < 1200:
+                    P.circle(cx, 194, 7, T["text"])
+        else:
+            vis_start = next((i for i in range(len(pos)) if x0 + pos[i] >= 60), 0)
+            P.text(self.text[vis_start:], 30, x0 + pos[vis_start], 205, T["text"])
+        if not self.text:
+            P.text("Passwort eingeben" if self.secret else "Text eingeben", 26, 75, 204, T["muted"])
+        P.rrect(x0 + pos[self.cur] - 1, 170, 3, 48, 1.5, A)
+        self.field = (x0, pos)
+        hits.append((45, 148, 1170, 92, ("kb_field",)))
+
+        # Tasten
+        for r, row in enumerate(self.rows()):
+            x, y = 45, 268 + r * 102
+            for c, (kind, val, units) in enumerate(row):
+                w = units * KB_UNIT + (units - 1) * KB_GAP
+                special = kind != "char"
+                active = (kind == "shift" and self.shift) or kind == "ok"
+                fill = A if active else mix(T["tile"], A, 0.30 if special else 0.12)
+                tc = "ffffff" if active else T["text"]
+                P.rrect(x, y, w, 92, 16, fill)
+                if kind == "shift":   # Pfeil nach oben, bei Dauer-Großschreibung mit Strich
+                    cx = x + w / 2
+                    cairo.cairo_new_path(P.cr)
+                    cairo.cairo_move_to(P.cr, P.X(cx - 14), P.Y(y + 50))
+                    cairo.cairo_line_to(P.cr, P.X(cx), P.Y(y + 32))
+                    cairo.cairo_line_to(P.cr, P.X(cx + 14), P.Y(y + 50))
+                    cairo.cairo_move_to(P.cr, P.X(cx), P.Y(y + 33))
+                    cairo.cairo_line_to(P.cr, P.X(cx), P.Y(y + 60))
+                    if self.shift == 2:
+                        cairo.cairo_move_to(P.cr, P.X(cx - 12), P.Y(y + 68))
+                        cairo.cairo_line_to(P.cr, P.X(cx + 12), P.Y(y + 68))
+                    cairo.cairo_set_line_width(P.cr, 4 * P.s)
+                    cairo.cairo_set_line_cap(P.cr, 1)
+                    P.color(tc)
+                    cairo.cairo_stroke(P.cr)
+                elif kind == "back":  # Rücktaste: Pfeil nach links
+                    cx = x + w / 2
+                    P.chevron(cx - 6, y + 46, -11, tc)
+                    cairo.cairo_new_path(P.cr)
+                    cairo.cairo_move_to(P.cr, P.X(cx - 16), P.Y(y + 46))
+                    cairo.cairo_line_to(P.cr, P.X(cx + 18), P.Y(y + 46))
+                    cairo.cairo_stroke(P.cr)
+                else:
+                    label = self._label(kind, val)
+                    P.text(label, 30 if kind == "char" else 21, x + w / 2, y + 57, tc,
+                           bold=kind != "char", align="c")
+                if self.r == r and self.c == c:
+                    cc._focus_ring(P, x, y, w, 92, 16)
+                hits.append((x, y, w, 92, ("kb", r, c)))
+                x += w + KB_GAP
+
+        P.text("A Taste · B Löschen · L1 Groß · R1 ?123 · Stick Cursor · Start OK",
+               17, 630, 835, T["muted"], align="c")
+
+
+
 class ControlCenter:
     """Zustand, Zeichnen und Bedienung des Kontrollcenters."""
 
@@ -990,6 +1229,7 @@ class ControlCenter:
         self.status_at = 0.0
         self.pen = None
         self.sub = None         # geöffnetes Untermenü (WLAN/Bluetooth)
+        self.kbd = None         # geöffnete Bildschirmtastatur
         self.changed = False    # Hintergrund-Abfrage hat neue Daten
 
     # -- Daten --
@@ -1044,8 +1284,16 @@ class ControlCenter:
         self.sub = (WifiMenu if i == 0 else BtMenu)(self)
         log("Untermenü:", self.sub.title)
 
+    def reset(self):
+        """Beim Schließen des Overlays: Tastatur und Untermenü verlassen."""
+        self.kbd = None
+        self.back()
+
     def back(self):
-        """B: Untermenü schließen. Liefert True, wenn das Kontrollcenter offen bleibt."""
+        """B: Tastatur/Untermenü zurück. Liefert True, wenn das Kontrollcenter offen bleibt."""
+        if self.kbd:
+            self.kbd.back()
+            return True
         if self.sub:
             self.sub.close()
             self.sub = None
@@ -1076,6 +1324,9 @@ class ControlCenter:
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
+        if self.kbd:
+            self.kbd.nav(dx, dy)
+            return
         if self.sub:
             self.sub.nav(dx, dy)
             return
@@ -1096,6 +1347,9 @@ class ControlCenter:
             self.top_sel = max(0, min(1, self.top_sel + dx))
 
     def confirm(self):
+        if self.kbd:
+            self.kbd.confirm()
+            return
         if self.sub:
             self.sub.confirm()
             return
@@ -1144,6 +1398,12 @@ class ControlCenter:
             self.drag = None
             return
         dx, dy = x1 - x0, y1 - y0
+        if self.kbd:
+            if abs(dx) < 40 and abs(dy) < 40:
+                hit = self._hit(x0, y0)
+                if hit:
+                    self.kbd.tap(hit, x0)
+            return
         if self.sub:
             if abs(dy) > 60 and abs(dy) > abs(dx):
                 self.sub.scroll(-1 if dy > 0 else 1)
@@ -1194,6 +1454,9 @@ class ControlCenter:
         self.hits, self.tracks = [], {}
         if view == "switcher":
             self._draw_switcher(P)
+            return
+        if self.kbd:
+            self.kbd.draw(P)
             return
         if self.sub:
             pass
@@ -1544,7 +1807,8 @@ class Overlay:
 # ----------------------------------------------------------------- Tasten ----
 
 EV_SYN, EV_KEY, EV_ABS = 0, 1, 3
-ABS_X, ABS_Y, ABS_HAT0X, ABS_HAT0Y = 0, 1, 16, 17
+ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_HAT0X, ABS_HAT0Y = 0, 1, 3, 4, 16, 17
+BTN_SELECT, BTN_START = 314, 315
 BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
@@ -1682,7 +1946,7 @@ def main():
 
     def toggle(view):
         if ui.view == view:
-            cc.back()
+            cc.reset()
             ui.hide()
             set_grab(False)
             pauser.resume()
@@ -1693,8 +1957,26 @@ def main():
             ui.show(view)          # wechselt auch direkt zwischen den Ansichten
             set_grab(True)
 
+    lx_lo, lx_hi = abs_range(joy, ABS_X) if joy is not None else (0, 1)
+    stick = {"dir": 0, "next": 0.0}
+
+    def handle_stick(value):
+        """Linker Stick links/rechts: Cursor in der Tastatur bewegen (mit Wiederholung)."""
+        n = (value - (lx_lo + lx_hi) / 2) / ((lx_hi - lx_lo) / 2)
+        d = 1 if n > 0.6 else -1 if n < -0.6 else 0
+        if d != stick["dir"]:
+            stick["dir"] = d
+            if d and ui.view and cc.kbd:
+                cc.kbd.cursor(d)
+                stick["next"] = time.monotonic() + 0.4
+                state["dirty"] = True
+
     def handle_joy(typ, code, value):
         nonlocal mode_down, combo
+        if typ == EV_ABS and code in (ABS_X, ABS_Y, ABS_RX, ABS_RY):
+            if code == ABS_X:
+                handle_stick(value)
+            return   # Sticks nie als Tastendruck werten (sonst stört Stick-Drift die Anbernic-Taste)
         if typ == EV_KEY and code == BTN_MODE:
             if value == 1:
                 mode_down, combo = True, False
@@ -1725,7 +2007,14 @@ def main():
         elif typ == EV_KEY and code == BTN_EAST:
             cc.confirm()
         elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
-            cc.turn_page(-1 if code == BTN_TL else 1)
+            if cc.kbd:
+                cc.kbd.toggle_shift() if code == BTN_TL else cc.kbd.toggle_layer()
+            else:
+                cc.turn_page(-1 if code == BTN_TL else 1)
+        elif typ == EV_KEY and code == BTN_START and cc.kbd:
+            cc.kbd.ok()
+        elif typ == EV_KEY and code == BTN_SELECT and cc.kbd and cc.kbd.secret:
+            cc.kbd.show = not cc.kbd.show
         elif typ == EV_KEY and code not in KNOWN_UNUSED:
             log("Taste ohne Funktion:", code)
             return
@@ -1741,7 +2030,7 @@ def main():
     last_minute = time.strftime("%H:%M")
     try:
         while True:
-            for fd in ui.pump(0.5 if cc.sub else 1.0, fds):
+            for fd in ui.pump(0.1 if stick["dir"] else 0.5 if cc.sub else 1.0, fds):
                 if fd == tfd:
                     for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                         t = touch.feed(*ev)
@@ -1755,6 +2044,10 @@ def main():
                             toggle("switcher")
                     else:
                         handle_joy(typ, code, value)
+            if stick["dir"] and cc.kbd and ui.view and time.monotonic() >= stick["next"]:
+                cc.kbd.cursor(stick["dir"])
+                stick["next"] = time.monotonic() + 0.12
+                state["dirty"] = True
             if ui.view == "cc":
                 cc.tick()
                 if cc.changed:

@@ -265,3 +265,14 @@ Gameswitcher noch Platzhalter.
     gesicherte neue Netze brauchen die Bildschirmtastatur (nächster Schritt)
   - Bluetooth: 30 s suchen, koppeln (pair + trust + connect), verbinden, trennen, entfernen
   - Abfragen laufen im Hintergrund, die Oberfläche bleibt bedienbar
+
+## Prototyp 0.6 (19.10.2026)
+
+Eigene Bildschirmtastatur (die von ES lässt sich außerhalb von ES nicht nutzen):
+QWERTZ mit ä/ö/ü/ß, Umschalten (einmal/dauerhaft), Zeichen-Ebene „?123“, Passwort
+zeigen/verbergen, Akzentfarbe. Bedienung per Touch **und** Gamepad: Steuerkreuz + A,
+B = löschen (bei leerem Feld abbrechen), L1 = Groß, R1 = ?123, Select = zeigen,
+Start = OK, **linker Stick = Cursor links/rechts** (Idee des Nutzers), Antippen im
+Textfeld setzt den Cursor. Erster Einsatz: Passwort für neue WLAN-Netze
+(`nmcli dev wifi connect … password …`, dann `wifi.ssid`/`wifi.key` wie ROCKNIX).
+Sticks werden nicht mehr als Tastendruck gewertet (Stick-Drift störte sonst die Anbernic-Taste).
