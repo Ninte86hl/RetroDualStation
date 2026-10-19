@@ -9,3 +9,5 @@ emulationstation-rgds-*
 *.rej
 rocknix-dualstation-*.zip
 canvas-ds-rgds-plus-*.zip
+__pycache__/
+*.pyc
