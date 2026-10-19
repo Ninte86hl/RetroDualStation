@@ -10,6 +10,10 @@ Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
 
 Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
+> **Grundsatz:** Einfach und gut steuerbar. Niemand muss Technik verstehen, um RetroDualStation
+> zu nutzen – Bedienung wie vom Smartphone gewohnt, schnell, mit Touch und Tasten. Sicherheit
+> vor Funktionsumfang: stabile ROCKNIX-Basis, jederzeit mit einem Tipp zurück.
+
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
 1. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
