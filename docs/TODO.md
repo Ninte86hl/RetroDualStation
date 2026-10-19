@@ -30,7 +30,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
 - [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
 - [ ] Etappe 3: RetroAchievements
-- [ ] Etappe 4: RetroArch-Touchmenü ersetzen, in den Installer
+- [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [ ] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden)
 - [ ] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) erstreckt sich über beide Bildschirme – auf einen Bildschirm begrenzen (gefunden 19.10.2026)
 - [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
