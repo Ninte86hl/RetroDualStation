@@ -617,8 +617,11 @@ class Backlight:
         v = rd(self.dir + "/brightness")
         return round(int(v) * 100 / self.max) if v and v.isdigit() else 50
 
-    def set(self, pct):
-        wr(self.dir + "/brightness", max(1, round(max(5, min(100, pct)) * self.max / 100)))
+    def set(self, pct, allow_off=False):
+        raw = round(max(5, min(100, pct)) * self.max / 100)
+        if allow_off and pct == 0:
+            raw = 0
+        wr(self.dir + "/brightness", max(0 if allow_off else 1, raw))
 
 
 def find_backlights(cfg):
@@ -1803,7 +1806,7 @@ class ControlCenter:
             if bl_bottom:
                 if self.screen_bottom_off:
                     self.screen_bottom_saved = bl_bottom.get()
-                    bl_bottom.set(1)   # 1 % = so dunkel wie möglich ohne OS-Seiteneffekte
+                    bl_bottom.set(0, allow_off=True)   # 0 = komplett aus
                 else:
                     bl_bottom.set(self.screen_bottom_saved if self.screen_bottom_saved else 50)
                     self.screen_bottom_saved = None
