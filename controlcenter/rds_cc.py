@@ -3300,6 +3300,9 @@ def main():
             pauser.resume()
         else:
             if not ui.view:
+                if cc.screen_bottom_off and cc.screen_auto:   # automatisch abgedunkelt → für die Anzeige an
+                    cc.screen_on()
+                    cc.redim = True
                 cc.refresh(full=True)
                 if view == "switcher":
                     cc.switcher.load()
