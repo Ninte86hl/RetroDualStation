@@ -11,13 +11,14 @@ Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
 Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Priorität (festgelegt 20.10.2026)
-Keine neuen Funktionen, bis diese beiden fertig sind – neue Ideen nur notieren.
+Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
 1. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
    - Liste der zuletzt gespielten Spiele mit **Screenshot vom letzten Zeitpunkt** (beim Auto-Speichern)
    - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
      (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
      **X** Spiel-Einstellungen (später, mit dem Overlay „Spiel-Einstellungen“) · **B** schließen
 2. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
+3. **Version für das normale RG DS** (640×480) – sobald 1 und 2 gebaut und getestet sind
 
 Danach abwägen, was als Nächstes ausgebaut wird.
 
