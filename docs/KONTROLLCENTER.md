@@ -40,6 +40,7 @@ versehentlich auslösen (z. B. Spiel ungewollt beendet oder Spielstand
 überschrieben). Für erfahrene Nutzer ein Schalter „Tastenkürzel erlauben“;
 nur dann zeigt Seite 2 den Spickzettel.
 - RetroArch: unproblematisch, die Steuerschnittstelle braucht keine Hotkeys
+- DSperate: Tastenkürzel funktionieren (laut Nutzer)
 - DraStic/DSperate: die Knöpfe sollten die Kürzel per virtuellem Tastendruck
   auslösen. Sind die Kürzel abgeschaltet, braucht es einen anderen Weg
   (z. B. Belegung auf eine Taste/Kombination, die nur das virtuelle Gerät
@@ -132,7 +133,7 @@ keine Spiele parallel im Hintergrund gehalten.
   |---|---|---|
   | RetroArch | eingebaut (Auto-Savestate) | Vorschaubild zum Spielstand |
   | DraStic | testen (virtueller Tastendruck, beim Start laden) | Bildschirmfoto vor dem Beenden |
-  | DSperate | testen | Bildschirmfoto vor dem Beenden |
+  | DSperate | eingebaut (Einstellung für automatisches Speichern/Laden) | Bildschirmfoto vor dem Beenden |
 
 ## Etappen
 1. Grundversion: Seite 1 + Wisch-Gerüst + Home kurz/lang + Hell/Dunkel + Akzentfarbe
