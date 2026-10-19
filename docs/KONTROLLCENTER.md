@@ -254,3 +254,14 @@ Gameswitcher noch Platzhalter.
 - 0.4: Pause (RetroArch per `GET_STATUS`/`PAUSE_TOGGLE` über UDP 55355, sonst SIGSTOP/SIGCONT),
   Hell/Dunkel + Akzentfarbe oben links neben den Status-Pillen (gespeichert in
   `controlcenter.json`), Autostart-Dienst `controlcenter/rds-controlcenter.service`
+
+## Prototyp 0.5 (19.10.2026)
+
+- Akzentfarbe für Regler, Leistungsmodus und Kacheln; „an“ = volle Akzentfarbe,
+  „aus“ = leicht eingefärbt (Wunsch des Nutzers)
+- Untermenüs über „›“ auf der WLAN-/Bluetooth-Kachel (Gamepad: X/Y):
+  - WLAN: Netze suchen (`nmcli dev wifi rescan/list`), gespeicherte Netze verbinden
+    (setzt auch `wifi.ssid`/`wifi.key` wie ROCKNIX), offene Netze verbinden, trennen, vergessen;
+    gesicherte neue Netze brauchen die Bildschirmtastatur (nächster Schritt)
+  - Bluetooth: 30 s suchen, koppeln (pair + trust + connect), verbinden, trennen, entfernen
+  - Abfragen laufen im Hintergrund, die Oberfläche bleibt bedienbar

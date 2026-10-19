@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.4
+"""RetroDualStation Kontrollcenter – Prototyp 0.5
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -31,6 +31,7 @@ import shutil
 import signal
 import socket
 import struct
+import threading
 import subprocess
 import sys
 import time
@@ -38,7 +39,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.4"
+VERSION = "0.5"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -225,6 +226,8 @@ for _fn, _args in {
     "cairo_new_path": [c_void_p],
     "cairo_fill": [c_void_p], "cairo_paint": [c_void_p], "cairo_stroke": [c_void_p],
     "cairo_set_line_width": [c_void_p, c_double],
+    "cairo_line_to": [c_void_p, c_double, c_double],
+    "cairo_set_line_cap": [c_void_p, c_int],
     "cairo_select_font_face": [c_void_p, c_char_p, c_int, c_int],
     "cairo_set_font_size": [c_void_p, c_double],
     "cairo_move_to": [c_void_p, c_double, c_double],
@@ -245,6 +248,12 @@ cairo.cairo_text_extents.restype = None
 cairo.cairo_text_extents.argtypes = [c_void_p, c_char_p, POINTER(TextExtents)]
 
 PI = 3.141592653589793
+
+
+def mix(a, b, t):
+    """Mischt zwei Farben (hex ohne #), t=0 -> a, t=1 -> b."""
+    ca, cb = [int(a[i:i + 2], 16) for i in (0, 2, 4)], [int(b[i:i + 2], 16) for i in (0, 2, 4)]
+    return "".join("%02x" % round(x + (y - x) * t) for x, y in zip(ca, cb))
 
 
 def _rgb(hexstr, a=1.0):
@@ -296,6 +305,19 @@ class Pen:
         cairo.cairo_arc(self.cr, self.X(x), self.Y(y), r * self.s, 0, 2 * PI)
         self.color(c)
         cairo.cairo_fill(self.cr)
+
+    def chevron(self, x, y, size, c, width=4):
+        """Pfeil „›“ mit Spitze bei (x, y)."""
+        cr, s = self.cr, self.s
+        cairo.cairo_new_path(cr)
+        h = abs(size)
+        cairo.cairo_move_to(cr, self.X(x - size / 2), self.Y(y - h))
+        cairo.cairo_line_to(cr, self.X(x + size / 2), self.Y(y))
+        cairo.cairo_line_to(cr, self.X(x - size / 2), self.Y(y + h))
+        cairo.cairo_set_line_cap(cr, 1)
+        cairo.cairo_set_line_width(cr, width * s)
+        self.color(c)
+        cairo.cairo_stroke(cr)
 
     def text(self, txt, size, x, y, c, bold=False, align="l"):
         cr = self.cr
@@ -635,6 +657,311 @@ PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
 
 
+def nmcli_split(line):
+    return [f.replace("\\:", ":") for f in re.split(r"(?<!\\):", line)]
+
+
+class SubMenu:
+    """Gemeinsame Grundlage für WLAN- und Bluetooth-Untermenü."""
+    title = ""
+    VISIBLE = 6
+
+    def __init__(self, cc):
+        self.cc = cc
+        self.items = []
+        self.msg = ""
+        self.loaded = False
+        self.focus = 0      # 0 = Kopfzeile, 1.. = Einträge
+        self.col = 0        # Spalte (Kopfzeile: Zurück/Schalter/Suchen, Eintrag: Aktion)
+        self.top = 0        # erster sichtbarer Eintrag
+        self.fetch_at = 0.0
+        self.fetching = False
+        self.scan()
+
+    # -- Daten im Hintergrund holen, damit die Oberfläche nicht hängt --
+    def tick(self):
+        if not self.fetching and time.monotonic() >= self.fetch_at:
+            self.fetching = True
+            threading.Thread(target=self._fetch_thread, daemon=True).start()
+
+    def _fetch_thread(self):
+        try:
+            items = self.fetch() if self.is_on() else []
+        except Exception as exc:
+            log("Abfrage fehlgeschlagen:", exc)
+            items = self.items
+        self.items, self.loaded = items, True
+        self.fetch_at = time.monotonic() + 3
+        self.fetching = False
+        self.cc.changed = True
+
+    def refetch(self, delay=1.5):
+        self.fetch_at = time.monotonic() + delay
+
+    def close(self):
+        pass
+
+    # -- Bedienung --
+    def header(self):
+        return ["back", "switch", "scan"]
+
+    def nav(self, dx, dy):
+        if dy:
+            self.focus = max(0, min(len(self.items), self.focus + dy))
+            self.col = 0 if self.focus else min(self.col, 2)
+            if self.focus:
+                self.top = max(min(self.top, self.focus - 1), self.focus - self.VISIBLE)
+            return
+        n = 3 if self.focus == 0 else len(self.actions(self.items[self.focus - 1]))
+        self.col = max(0, min(n - 1, self.col + dx))
+
+    def confirm(self):
+        if self.focus == 0:
+            self.tap(("sub", self.header()[self.col]))
+        else:
+            item = self.items[self.focus - 1]
+            acts = self.actions(item)
+            if acts:
+                self.do(item, acts[min(self.col, len(acts) - 1)])
+
+    def scroll(self, d):
+        self.top = max(0, min(max(0, len(self.items) - self.VISIBLE), self.top + d * 3))
+
+    def tap(self, hit):
+        kind = hit[0]
+        if kind == "sub" and hit[1] == "back":
+            self.cc.back()
+        elif kind == "sub" and hit[1] == "switch":
+            self.toggle()
+            self.items = []
+            self.refetch(4)
+        elif kind == "sub" and hit[1] == "scan":
+            if self.is_on():
+                self.scan()
+        elif kind == "subact":
+            idx, act = hit[1], hit[2]
+            if idx < len(self.items):
+                self.focus = idx + 1
+                acts = self.actions(self.items[idx])
+                self.col = acts.index(act) if act in acts else 0
+                self.do(self.items[idx], act)
+
+    # -- Zeichnen --
+    def draw(self, P):
+        cc, T, A = self.cc, self.cc.T, self.cc.accent
+        on = self.is_on()
+        heads = [("back", 45, 170, "Zurück"),
+                 ("switch", 1215 - 150 - 14 - 170, 150, "An" if on else "Aus"),
+                 ("scan", 1215 - 170, 170, "Suchen")]
+        for n, (key, x, w, label) in enumerate(heads):
+            if key == "scan" and not on:
+                continue
+            fill = A if key == "switch" and on else mix(T["tile"], A, 0.22) if key == "switch" else T["pill"]
+            P.rrect(x, 62, w, 62, 31, fill)
+            tc = "ffffff" if key == "switch" and on else T["text"]
+            if key == "back":
+                P.chevron(x + 30, 93, -9, tc)   # negative Größe = Pfeil nach links
+            P.text(label, 20, x + w / 2 + (12 if key == "back" else 0), 100, tc, bold=True, align="c")
+            if self.focus == 0 and self.col == n:
+                cc._focus_ring(P, x, 62, w, 62, 31)
+            cc.hits.append((x, 58, w, 70, ("sub", key)))
+
+        P.text(self.title, 40, 240, 108, T["text"], bold=True)
+        P.text(self.status_line() if on else f"{self.title} ist aus", 19, 45, 172, T["muted"])
+
+        P.rrect(45, 195, 1170, 6 * 98 + 20, 24, T["card"])
+        if not on:
+            P.text(f"{self.title} einschalten, um {self.what} zu sehen", 22, 630, 500, T["muted"], align="c")
+        elif not self.items:
+            P.text("Suche läuft …" if not self.loaded or self.msg else f"Keine {self.what} gefunden",
+                   22, 630, 500, T["muted"], align="c")
+        for row, idx in enumerate(range(self.top, min(len(self.items), self.top + self.VISIBLE))):
+            item = self.items[idx]
+            ry = 205 + row * 98
+            if self.focus == idx + 1:
+                P.rrect(57, ry, 1146, 90, 16, T["focus"])
+            if item.get("highlight"):
+                P.circle(85, ry + 45, 8, A)
+            P.text(item["name"][:30], 23, 110, ry + 42, T["text"], bold=True)
+            P.text(self.describe(item), 17, 110, ry + 70, T["muted"])
+            x = 1191
+            acts = self.actions(item)
+            for a_i in range(len(acts) - 1, -1, -1):
+                act = acts[a_i]
+                w = P.width(act, 18, bold=True) + 44
+                x -= w
+                primary = a_i == 0
+                P.rrect(x, ry + 19, w, 52, 26, A if primary else mix(T["tile"], A, 0.22))
+                P.text(act, 18, x + w / 2, ry + 52, "ffffff" if primary else T["text"], bold=True, align="c")
+                if self.focus == idx + 1 and self.col == a_i:
+                    cc._focus_ring(P, x, ry + 19, w, 52, 26)
+                cc.hits.append((x, ry + 10, w, 70, ("subact", idx, act)))
+                x -= 12
+        if len(self.items) > self.VISIBLE:
+            P.text(f"{self.top + 1}–{min(len(self.items), self.top + self.VISIBLE)} von {len(self.items)}"
+                   "  ·  wischen zum Blättern", 17, 630, 835, T["muted"], align="c")
+        P.text("A Auswählen", 17, 45, 835, T["muted"])
+        P.text("B Zurück", 17, 1215, 835, T["muted"], align="r")
+
+
+class WifiMenu(SubMenu):
+    title = "WLAN"
+    what = "Netze"
+
+    def is_on(self):
+        return bool(self.cc.wifi[0])
+
+    def toggle(self):
+        self.cc.press_tile(0)
+
+    def scan(self):
+        spawn(["nmcli", "dev", "wifi", "rescan"])
+        self.msg = "Suche nach Netzen …"
+        self.refetch(2.5)
+
+    def status_line(self):
+        ssid = self.cc.wifi[1]
+        return self.msg or (f"Verbunden mit {ssid}" if ssid else "Nicht verbunden")
+
+    def fetch(self):
+        out = run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list"], timeout=6) or ""
+        con = run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"], timeout=4) or ""
+        saved = {f[0] for f in map(nmcli_split, con.splitlines()) if len(f) > 1 and "wireless" in f[1]}
+        items, seen = [], set()
+        for line in out.splitlines():
+            f = nmcli_split(line)
+            if len(f) < 4 or not f[1] or f[1] in seen:
+                continue
+            seen.add(f[1])
+            items.append({"key": f[1], "name": f[1], "active": f[0] == "*", "saved": f[1] in saved,
+                          "signal": int(f[2]) if f[2].isdigit() else 0,
+                          "secure": f[3] not in ("", "--"), "highlight": f[0] == "*"})
+        items.sort(key=lambda i: (not i["active"], not i["saved"], -i["signal"]))
+        self.msg = ""
+        return items
+
+    def describe(self, it):
+        state = "Verbunden" if it["active"] else "Gespeichert" if it["saved"] else \
+            "Gesichert" if it["secure"] else "Offen"
+        return f"{state} · Signal {it['signal']} %"
+
+    def actions(self, it):
+        if it["active"]:
+            return ["Trennen"]
+        if it["saved"]:
+            return ["Verbinden", "Vergessen"]
+        return ["Passwort …"] if it["secure"] else ["Verbinden"]
+
+    def do(self, it, act):
+        ssid = it["name"]
+        prof = ". /etc/profile; "
+        if act == "Verbinden" and it["saved"]:
+            script = (prof + 'nmcli connection up id "$1" && set_setting wifi.ssid "$1" && '
+                      'set_setting wifi.key "$(nmcli -s -g 802-11-wireless-security.psk connection show id "$1")"')
+        elif act == "Verbinden":
+            script = prof + 'nmcli dev wifi connect "$1" && set_setting wifi.ssid "$1" && set_setting wifi.key ""'
+        elif act == "Trennen":
+            script = 'nmcli dev disconnect "$(ls /sys/class/net | grep -m1 ^wlan)"'
+        elif act == "Vergessen":
+            script = 'nmcli connection delete id "$1"'
+        else:
+            self.msg = "Passworteingabe kommt mit der Bildschirmtastatur im nächsten Schritt"
+            return
+        log("WLAN:", act, ssid)
+        spawn(["bash", "-c", script, "rds", ssid])
+        self.msg = {"Verbinden": f"Verbinde mit {ssid} …", "Trennen": "Trenne …",
+                    "Vergessen": f"{ssid} vergessen"}[act]
+        self.cc.status_at = time.monotonic() + 3
+        self.refetch(4)
+
+
+class BtMenu(SubMenu):
+    title = "Bluetooth"
+    what = "Geräte"
+
+    def __init__(self, cc):
+        self.scan_until = 0.0
+        self.scan_proc = None
+        super().__init__(cc)
+
+    def is_on(self):
+        return bool(self.cc.bt[0])
+
+    def toggle(self):
+        self.cc.press_tile(1)
+
+    def scan(self):
+        if not self.is_on() or not shutil.which("bluetoothctl"):
+            return
+        self.close()
+        try:
+            self.scan_proc = subprocess.Popen(["bluetoothctl", "--timeout", "30", "scan", "on"],
+                                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.scan_until = time.monotonic() + 30
+        except OSError as exc:
+            log("Suche fehlgeschlagen:", exc)
+        self.refetch(2)
+
+    def close(self):
+        if self.scan_proc and self.scan_proc.poll() is None:
+            self.scan_proc.terminate()
+        self.scan_proc = None
+
+    def status_line(self):
+        if self.msg:
+            return self.msg
+        left = int(self.scan_until - time.monotonic())
+        return f"Suche nach Geräten … noch {left} s – Controller in den Kopplungsmodus versetzen" \
+            if left > 0 else "Tippe auf „Suchen“, um neue Geräte zu finden"
+
+    @staticmethod
+    def _devices(*args):
+        out = run(["bluetoothctl", "devices", *args], timeout=4) or ""
+        res = {}
+        for line in out.splitlines():
+            parts = line.split(" ", 2)
+            if len(parts) >= 2 and parts[0] == "Device":
+                res[parts[1]] = parts[2] if len(parts) > 2 else parts[1]
+        return res
+
+    def fetch(self):
+        alld, paired, conn = self._devices(), self._devices("Paired"), self._devices("Connected")
+        items = []
+        for mac, name in alld.items():
+            if name.replace("-", ":") == mac:
+                continue   # Geräte ohne Namen weglassen
+            items.append({"key": mac, "name": name, "mac": mac, "paired": mac in paired,
+                          "connected": mac in conn, "highlight": mac in conn})
+        items.sort(key=lambda i: (not i["connected"], not i["paired"], i["name"].lower()))
+        if self.msg and time.monotonic() > getattr(self, "msg_until", 0):
+            self.msg = ""
+        return items
+
+    def describe(self, it):
+        return ("Verbunden" if it["connected"] else "Gekoppelt" if it["paired"] else "Neu") + " · " + it["mac"]
+
+    def actions(self, it):
+        if it["connected"]:
+            return ["Trennen", "Entfernen"]
+        if it["paired"]:
+            return ["Verbinden", "Entfernen"]
+        return ["Koppeln"]
+
+    def do(self, it, act):
+        mac = it["mac"]
+        script = {"Koppeln": 'bluetoothctl pair "$1" && bluetoothctl trust "$1" && bluetoothctl connect "$1"',
+                  "Verbinden": 'bluetoothctl connect "$1"',
+                  "Trennen": 'bluetoothctl disconnect "$1"',
+                  "Entfernen": 'bluetoothctl remove "$1"'}[act]
+        log("Bluetooth:", act, it["name"], mac)
+        spawn(["bash", "-c", script, "rds", mac])
+        self.msg = {"Koppeln": f"Kopple {it['name']} …", "Verbinden": f"Verbinde {it['name']} …",
+                    "Trennen": f"Trenne {it['name']} …", "Entfernen": f"{it['name']} entfernt"}[act]
+        self.msg_until = time.monotonic() + 8
+        self.cc.status_at = time.monotonic() + 3
+        self.refetch(3)
+
+
 class ControlCenter:
     """Zustand, Zeichnen und Bedienung des Kontrollcenters."""
 
@@ -662,6 +989,8 @@ class ControlCenter:
         self.vol_sent = 0.0
         self.status_at = 0.0
         self.pen = None
+        self.sub = None         # geöffnetes Untermenü (WLAN/Bluetooth)
+        self.changed = False    # Hintergrund-Abfrage hat neue Daten
 
     # -- Daten --
     def rows(self):
@@ -711,6 +1040,26 @@ class ControlCenter:
         self.cfg["accent"] = "#" + self.accent
         save_config(self.cfg)
 
+    def open_sub(self, i):
+        self.sub = (WifiMenu if i == 0 else BtMenu)(self)
+        log("Untermenü:", self.sub.title)
+
+    def back(self):
+        """B: Untermenü schließen. Liefert True, wenn das Kontrollcenter offen bleibt."""
+        if self.sub:
+            self.sub.close()
+            self.sub = None
+            return True
+        return False
+
+    def tick(self):
+        if self.sub:
+            self.sub.tick()
+
+    def details(self):
+        if self.page == 0 and not self.sub and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
+            self.open_sub(self.tile)
+
     def press_tile(self, i):
         if i == 0:
             on = not self.wifi[0]
@@ -727,6 +1076,9 @@ class ControlCenter:
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
+        if self.sub:
+            self.sub.nav(dx, dy)
+            return
         if self.page != 0:
             return
         rows = self.rows()
@@ -744,6 +1096,9 @@ class ControlCenter:
             self.top_sel = max(0, min(1, self.top_sel + dx))
 
     def confirm(self):
+        if self.sub:
+            self.sub.confirm()
+            return
         if self.page != 0:
             return
         kind = self.rows()[self.focus][0]
@@ -755,6 +1110,8 @@ class ControlCenter:
             self.toggle_theme() if self.top_sel == 0 else self.next_accent()
 
     def turn_page(self, d):
+        if self.sub:
+            return
         self.page = max(0, min(len(PAGES) - 1, self.page + d))
 
     # -- Bedienung mit Touch (Pixel des Bildschirms) --
@@ -787,6 +1144,14 @@ class ControlCenter:
             self.drag = None
             return
         dx, dy = x1 - x0, y1 - y0
+        if self.sub:
+            if abs(dy) > 60 and abs(dy) > abs(dx):
+                self.sub.scroll(-1 if dy > 0 else 1)
+            elif abs(dx) < 30 and abs(dy) < 30:
+                hit = self._hit(x0, y0)
+                if hit:
+                    self.sub.tap(hit)
+            return
         if abs(dx) > 180 and abs(dx) > abs(dy):
             self.turn_page(-1 if dx > 0 else 1)
             return
@@ -802,6 +1167,9 @@ class ControlCenter:
             elif kind == "tile":
                 self.focus, self.tile = self.rows().index(("tiles", None)), val
                 self.press_tile(val)
+            elif kind == "more":
+                self.focus, self.tile = self.rows().index(("tiles", None)), val
+                self.open_sub(val)
             elif kind == "page":
                 self.page = val
             elif kind == "top":
@@ -827,12 +1195,20 @@ class ControlCenter:
         if view == "switcher":
             self._draw_switcher(P)
             return
-        if self.page == 0:
+        if self.sub:
+            pass
+        elif self.page == 0:
             self._draw_quick(P)
         else:
             self._draw_placeholder(P)
         # Fußzeile mit Seitenpunkten
-        P.text("L1 / R1 Seite wechseln", 17, 45, 835, T["muted"])
+        if self.sub:
+            self.sub.draw(P)
+            return
+        left = "L1 / R1 Seite wechseln"
+        if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
+            left = "A Ein/Aus  ·  X / Y Details"
+        P.text(left, 17, 45, 835, T["muted"])
         P.text("B Schließen", 17, 1215, 835, T["muted"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
@@ -917,9 +1293,9 @@ class ControlCenter:
             P.text(label, 22, 80, cy + 8, T["text"], bold=True)
             val = self.values.get(key, 0)
             x0, x1 = 313, 1111
-            P.rrect(x0, cy - 6, x1 - x0, 12, 6, T["track"])
-            P.rrect(x0, cy - 6, max(12, (x1 - x0) * val / 100), 12, 6, T["on_bg"])
-            P.circle(x0 + (x1 - x0) * val / 100, cy, 11, A)
+            P.rrect(x0, cy - 6, x1 - x0, 12, 6, mix(T["track"], A, 0.35))
+            P.rrect(x0, cy - 6, max(12, (x1 - x0) * val / 100), 12, 6, A)
+            P.circle(x0 + (x1 - x0) * val / 100, cy, 13, mix(A, "ffffff", 0.45))
             P.text(f"{val} %", 20, 1183, cy + 7, T["text"], bold=True, align="r")
             self.tracks[key] = (x0, x1)
             self.hits.append((57, cy - 38, 1146, 76, ("slider", key)))
@@ -932,8 +1308,8 @@ class ControlCenter:
         for i, (name, _c, _g) in enumerate(PERF_MODES):
             sx = 372 + i * 279
             active = i == self.perf
-            P.rrect(sx, y + 14, 269, 61, 16, T["on_bg"] if active else T["seg"])
-            P.text(name, 20, sx + 134, y + 52, T["on_text"] if active else T["text"],
+            P.rrect(sx, y + 14, 269, 61, 16, A if active else mix(T["seg"], A, 0.12))
+            P.text(name, 20, sx + 134, y + 52, "ffffff" if active else T["text"],
                    bold=active, align="c")
             if focused and i == self.perf_sel:
                 self._focus_ring(P, sx, y + 14, 269, 61, 16)
@@ -946,10 +1322,15 @@ class ControlCenter:
         for i, name in enumerate(TILES):
             tx = 45 + i * 297
             soon = i >= 2
-            P.rrect(tx, y, 282, 118, 24, T["on_bg"] if states[i] else T["tile"], a=0.5 if soon else 1)
-            P.text(name, 21, tx + 25, y + 79, T["on_text"] if states[i] else T["text"], bold=True)
+            fill = A if states[i] else mix(T["tile"], A, 0.22)
+            P.rrect(tx, y, 282, 118, 24, fill, a=0.5 if soon else 1)
+            P.text(name, 21, tx + 25, y + 79, "ffffff" if states[i] else T["text"], bold=True)
             if soon:
                 P.text("bald", 15, tx + 25, y + 42, T["muted"])
+            if i < 2:   # Untermenü
+                P.circle(tx + 244, y + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
+                P.chevron(tx + 248, y + 38, 9, "ffffff" if states[i] else T["text"])
+                self.hits.append((tx + 200, y, 82, 80, ("more", i)))
             if focused and i == self.tile:
                 self._focus_ring(P, tx, y, 282, 118, 24)
             self.hits.append((tx, y, 282, 118, ("tile", i)))
@@ -1167,7 +1548,8 @@ ABS_X, ABS_Y, ABS_HAT0X, ABS_HAT0Y = 0, 1, 16, 17
 BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
-KNOWN_UNUSED = {307, 308, 312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
+BTN_NORTH, BTN_WEST = 307, 308
+KNOWN_UNUSED = {312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
 EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
 
@@ -1300,6 +1682,7 @@ def main():
 
     def toggle(view):
         if ui.view == view:
+            cc.back()
             ui.hide()
             set_grab(False)
             pauser.resume()
@@ -1334,8 +1717,11 @@ def main():
         elif typ == EV_KEY and code in DPAD:
             cc.nav(*DPAD[code])
         elif typ == EV_KEY and code == BTN_SOUTH:
-            toggle(ui.view)
-            return
+            if not cc.back():
+                toggle(ui.view)
+                return
+        elif typ == EV_KEY and code in (BTN_NORTH, BTN_WEST):
+            cc.details()
         elif typ == EV_KEY and code == BTN_EAST:
             cc.confirm()
         elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
@@ -1355,7 +1741,7 @@ def main():
     last_minute = time.strftime("%H:%M")
     try:
         while True:
-            for fd in ui.pump(1.0, fds):
+            for fd in ui.pump(0.5 if cc.sub else 1.0, fds):
                 if fd == tfd:
                     for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                         t = touch.feed(*ev)
@@ -1370,6 +1756,10 @@ def main():
                     else:
                         handle_joy(typ, code, value)
             if ui.view == "cc":
+                cc.tick()
+                if cc.changed:
+                    cc.changed = False
+                    state["dirty"] = True
                 if time.monotonic() - cc.status_at > 5:
                     cc.refresh()
                     state["dirty"] = True
