@@ -1,6 +1,12 @@
 # To-do – ROCKNIX DualStation & Artwork Manager
 
 Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
+
+> **Leitsatz:** ROCKNIX DualStation – one system, two screens, everything in sync.
+>
+> Vision: ein Ökosystem aus Emulation, Gaming, Artwork-Manager, Scraping und
+> Achievements, das am Gerät und am PC ineinandergreift. Der Leitsatz kommt auf
+> die GitHub-Seite, sobald Kontrollcenter und Desktop-Begleiter da sind.
 Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Als Nächstes
