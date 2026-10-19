@@ -2153,7 +2153,8 @@ class PowerMenu:
     def __init__(self, cc):
         self.cc = cc
         self.focus = 0
-        self.sub_focus = 0   # Fokus im Neustart-Untermenü
+        self.sub_focus = 0        # Fokus im Neustart-Untermenü
+        self.confirm_es_focus = 0 # 0 = Ja, 1 = Nein (ES-Rückfrage)
         self.state = self.STATE_MAIN
 
     # -- Untermenü-Einträge für Neu starten --
@@ -2162,11 +2163,15 @@ class PowerMenu:
         ("Neu starten + Logs sichern", None),   # Sonderfall: erst Logs, dann reboot
     ]
 
-    def nav(self, _dx, dy):
+    def nav(self, dx, dy):
         if self.state == self.STATE_MAIN:
             self.focus = (self.focus + dy) % len(POWER_ITEMS)
         elif self.state == self.STATE_RESTART:
             self.sub_focus = (self.sub_focus + dy) % len(self.RESTART_ITEMS)
+        elif self.state == self.STATE_ES:
+            # links/rechts zwischen Ja und Nein (confirm_es_focus: 0=Ja, 1=Nein)
+            if dx:
+                self.confirm_es_focus = (self.confirm_es_focus + dx) % 2
 
     def confirm(self):
         """A gedrückt. Gibt False zurück wenn das Menü geschlossen werden soll."""
@@ -2186,8 +2191,12 @@ class PowerMenu:
                 self._run(cmd)
             return False
         elif self.state == self.STATE_ES:
-            self._run("systemctl restart essway")
-            return False
+            if self.confirm_es_focus == 0:
+                self._run("systemctl restart essway")
+                return False
+            else:
+                self.state = self.STATE_MAIN   # Abbrechen
+                return True
         return False
 
     def details(self):
@@ -2204,6 +2213,7 @@ class PowerMenu:
         """B gedrückt. Gibt False zurück wenn das Menü geschlossen werden soll."""
         if self.state in (self.STATE_RESTART, self.STATE_ES):
             self.state = self.STATE_MAIN
+            self.confirm_es_focus = 0
             return True
         return False
 
@@ -2263,10 +2273,15 @@ class PowerMenu:
             for i, (label, col) in enumerate([("Ja, neu starten", accent), ("Abbrechen", T["tile"])]):
                 bxi = bx + i * (cbw + 30)
                 byi = H / 2 + 40
-                P.rrect(bxi, byi, cbw, 90, 20, col)
+                active = i == self.confirm_es_focus
+                fill = col if i == 0 else (accent if active else T["tile"])
+                P.rrect(bxi, byi, cbw, 90, 20, fill)
+                if active:
+                    P.rrect(bxi - 4, byi - 4, cbw + 8, 98, 24, accent, stroke=4)
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
-                       "ffffff" if i == 0 else T["text"], bold=True, align="c")
+                       "ffffff" if (i == 0 or active) else T["text"], bold=True, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
+            P.text("◄ ► Auswahl  ·  A Bestätigen  ·  B Abbrechen", 17, W / 2, H - 36, T["muted"], align="c")
 
         elif self.state == self.STATE_RESTART:
             # Neustart-Untermenü
@@ -2797,9 +2812,14 @@ def main():
             if typ == EV_ABS and code == ABS_HAT0Y and value != 0:
                 cc.power_menu.nav(0, 1 if value > 0 else -1)
                 state["dirty"] = True
-            elif typ == EV_KEY and code in DPAD and DPAD[code][1] != 0:
-                cc.power_menu.nav(0, DPAD[code][1])
+            elif typ == EV_ABS and code == ABS_HAT0X and value != 0:
+                cc.power_menu.nav(1 if value > 0 else -1, 0)
                 state["dirty"] = True
+            elif typ == EV_KEY and code in DPAD:
+                dx, dy = DPAD[code]
+                if dx or dy:
+                    cc.power_menu.nav(dx, dy)
+                    state["dirty"] = True
             elif typ == EV_KEY and code == BTN_EAST and value == 1:   # A
                 keep = cc.power_menu.confirm()
                 if not keep:
