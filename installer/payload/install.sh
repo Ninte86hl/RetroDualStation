@@ -168,6 +168,7 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         printf '\n# RetroDualStation: gptokeyb-Tastatur an den oberen Screen (Ports steuerbar)\nseat seat0 attach "4660:22136:Fake_Keyboard"\n' >> "$SWAYCFG"
         log "Sway: Fake_Keyboard an seat0"
     fi
+    swaymsg seat seat0 attach "4660:22136:Fake_Keyboard" >/dev/null 2>&1   # sofort wirksam
 
     MAKOCFG=/storage/.config/mako/config
     if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then
