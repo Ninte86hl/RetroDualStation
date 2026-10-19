@@ -2209,7 +2209,10 @@ class PowerMenu:
 
     def _run(self, cmd):
         log("Power-Aktion:", cmd)
-        subprocess.Popen(["bash", "-c", cmd])
+        def _go():
+            time.sleep(0.3)   # Overlay hat Zeit sich zu schließen
+            subprocess.Popen(["bash", "-c", cmd])
+        threading.Thread(target=_go, daemon=True).start()
 
     def touch_up(self, x, y, hits):
         """hits: Liste von (hx, hy, hw, hh, action) mit action = ('item',i) | ('more',i) | ('yes'|'no')."""
@@ -2791,9 +2794,8 @@ def main():
         if not ui.view:
             return
         if ui.view == "power":
-            if typ == EV_ABS and code == ABS_HAT0Y:
-                d = 1 if value > 0 else -1
-                cc.power_menu.nav(0, d)
+            if typ == EV_ABS and code == ABS_HAT0Y and value != 0:
+                cc.power_menu.nav(0, 1 if value > 0 else -1)
                 state["dirty"] = True
             elif typ == EV_KEY and code in DPAD and DPAD[code][1] != 0:
                 cc.power_menu.nav(0, DPAD[code][1])
