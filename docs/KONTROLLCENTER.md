@@ -15,9 +15,15 @@ Entwurf (Mockup, drei Seiten + helle Variante): Design-Artifact
 
 | Aktion | Wirkung |
 |---|---|
-| Home kurz | Kontrollcenter auf dem **unteren Bildschirm** ein-/ausblenden |
-| Home lang | laufendes Spiel beenden |
-| Home bei ausgeschaltetem unterem Bildschirm | Bildschirm wieder einschalten |
+| **Anbernic-Taste** (allein gedrückt) | Kontrollcenter auf dem **unteren Bildschirm** ein-/ausblenden |
+| **Return/Home-Taste** | Gameswitcher ein-/ausblenden (Spielstand speichern, Spiel wechseln, zurück zu ES) |
+| Return/Home lang | laufendes Spiel direkt beenden (ohne Switcher) |
+| eine der beiden bei ausgeschaltetem unterem Bildschirm | Bildschirm wieder einschalten |
+
+Beide Tasten gibt es am RG DS und am RG DS Plus. Die Anbernic-Taste dient in
+Emulatoren auch als Hotkey-Modifikator: das Kontrollcenter öffnet sich nur,
+wenn sie **allein** gedrückt und losgelassen wird; als Teil einer
+Tastenkombination (z. B. Anbernic + R1) bleibt sie unangetastet.
 | Wischen links/rechts oder L1/R1 | Seite wechseln (Punkte unten zeigen die Seite) |
 | Steuerkreuz + A | Auswahl ohne Touch |
 
