@@ -476,24 +476,46 @@ def wifi_set(on):
     return spawn(["nmcli", "radio", "wifi", "on" if on else "off"])
 
 
-_bt_last = [None]
+SYSTEM_CFG = "/storage/.config/system/configs/system.cfg"
+
+
+def set_system_setting(key, value):
+    """Schreibt key=value in die ROCKNIX-Einstellungen (wie ES es tut)."""
+    try:
+        with open(SYSTEM_CFG) as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return
+    entry = f"{key}={value}"
+    for i, line in enumerate(lines):
+        if line.startswith(key + "="):
+            lines[i] = entry
+            break
+    else:
+        lines.append(entry)
+    wr(SYSTEM_CFG, "\n".join(lines) + "\n")
 
 
 def bt_state():
-    out = run(["bluetoothctl", "show"], timeout=4)
-    line = next((l.strip() for l in (out or "").splitlines() if "Powered" in l), None)
-    if line != _bt_last[0]:   # Diagnose: nur bei Änderung melden
-        log("Bluetooth-Status:", line or ("keine Antwort" if out is None else "kein Adapter"))
-        _bt_last[0] = line
-    if not out:
+    # Bei ROCKNIX läuft der Bluetooth-Dienst nur, wenn Bluetooth eingeschaltet ist
+    if run(["systemctl", "is-active", "bluetooth"]) is None:
         return False, 0
+    out = run(["bluetoothctl", "show"], timeout=4)
+    if not out:
+        return True, 0           # Dienst läuft, Adapter meldet sich noch nicht
     devs = run(["bluetoothctl", "devices", "Connected"], timeout=4) or ""
-    return "Powered: yes" in out, sum(1 for l in devs.splitlines() if l.startswith("Device "))
+    return "Powered: no" not in out, sum(1 for l in devs.splitlines() if l.startswith("Device "))
 
 
 def bt_set(on):
     log("Bluetooth", "einschalten" if on else "ausschalten")
-    return spawn(["bluetoothctl", "power", "on" if on else "off"])
+    set_system_setting("controllers.bluetooth.enabled", 1 if on else 0)
+    if on:
+        cmd = ("systemctl start bluetooth bluetooth-agent; sleep 2; "
+               "bluetoothctl power on")
+    else:
+        cmd = "bluetoothctl power off; systemctl stop bluetooth-agent bluetooth"
+    return spawn(["sh", "-c", cmd])
 
 
 EMULATORS = {"retroarch": "RetroArch", "drastic": "DraStic", "dsperate": "DSperate",
@@ -630,7 +652,7 @@ class ControlCenter:
             on = not self.bt[0]
             if bt_set(on):
                 self.bt = (on, self.bt[1] if on else 0)
-                self.status_at = time.monotonic() - 2
+                self.status_at = time.monotonic() + 2   # Dienststart abwarten
         else:
             log(TILES[i] + ": kommt in einem der nächsten Schritte")
 
