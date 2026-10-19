@@ -329,3 +329,7 @@ neues WLAN mit Passwort verbunden. Bluetooth: Controller gefunden, Koppeln des
   `rocknix-bluetooth trust <MAC>` (Helfer koppelt, vertraut, verbindet mit Wiederholungen
   und **sichert die Kopplung** für den nächsten Start), Verbinden/Trennen/Entfernen und
   Ein/Aus ebenfalls über `rocknix-bluetooth`; Statusmeldungen des Helfers aus `/run/bt_status`
+
+**Vergleichstest ES (19.10.2026):** Koppeln des 8BitDo Ultimate 3-mode Xbox über das ES-Menü
+klappt (Helfer-Log: Pairing → Trusting → Connected successfully). Treiber ok; Ursache war der
+alte CC-Weg (eigenes `bluetoothctl pair`). 0.8 nutzt denselben Weg wie ES.

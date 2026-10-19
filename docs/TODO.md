@@ -32,6 +32,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Etappe 3: RetroAchievements
 - [ ] Etappe 4: RetroArch-Touchmenü ersetzen, in den Installer
 - [ ] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden)
+- [ ] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) erstreckt sich über beide Bildschirme – auf einen Bildschirm begrenzen (gefunden 19.10.2026)
 - [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
 - [x] Kontrollcenter: Pause in RetroArch, DraStic und DSperate getestet (19.10.2026)
 - [ ] Kontrollcenter: Mini-Power-Menü wie bei Android – Ausschalten, Neustart, Ruhemodus,
