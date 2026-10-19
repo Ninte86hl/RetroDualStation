@@ -62,6 +62,16 @@ derselben Stelle weiter.
 - Nur RetroArch-Spiele, braucht WLAN; ohne beides ein kurzer Hinweis statt leerer Seite
 
 ## Aussehen
+
+**Freigegebener Entwurf (19.10.2026):** so soll es optisch umgesetzt werden.
+
+| | |
+|---|---|
+| ![Schnelleinstellungen](kontrollcenter/1-schnelleinstellungen.png) | ![Spiel](kontrollcenter/2-spiel.png) |
+| 1 · Schnelleinstellungen | 2 · Spiel |
+| ![Erfolge](kontrollcenter/3-erfolge.png) | ![Gameswitcher](kontrollcenter/gameswitcher.png) |
+| 3 · RetroAchievements | Gameswitcher |
+
 - **Hell / Dunkel** (Standard Dunkel), umschaltbar im Kontrollcenter, wird gemerkt
 - **Akzentfarben** wählbar (fester Bestandteil, nicht nur Bonus): Farbe für
   aktive Kacheln, Regler und Auswahl
