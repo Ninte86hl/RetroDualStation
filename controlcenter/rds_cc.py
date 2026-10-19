@@ -443,6 +443,26 @@ class Pen:
         self.color(c)
         cairo.cairo_stroke(cr)
 
+    def power_icon(self, cx, cy, r, c, width=4):
+        """Power-Symbol: Kreisbogen 270° + senkrechter Strich oben."""
+        import math
+        cr = self.cr
+        cairo.cairo_new_path(cr)
+        a0 = math.pi * 0.75   # 135° (unten links)
+        a1 = math.pi * 2.25   # 405° = 45° (unten rechts), also 270° Bogen
+        cairo.cairo_arc(cr, self.X(cx), self.Y(cy), r * self.s, a0, a1)
+        cairo.cairo_set_line_cap(cr, 1)
+        cairo.cairo_set_line_width(cr, width * self.s)
+        self.color(c)
+        cairo.cairo_stroke(cr)
+        cairo.cairo_new_path(cr)
+        cairo.cairo_move_to(cr, self.X(cx), self.Y(cy - r * 0.3))
+        cairo.cairo_line_to(cr, self.X(cx), self.Y(cy - r * 1.1))
+        cairo.cairo_set_line_cap(cr, 1)
+        cairo.cairo_set_line_width(cr, width * self.s)
+        self.color(c)
+        cairo.cairo_stroke(cr)
+
     def logo(self, x, y, h, fg, knockout, red="e5383b", blue="3d7bff"):
         """RDS-Monogramm „Verwoben“ (Logo-Entwurf Variante 3), Höhe h, oben links bei (x, y)."""
         import math
@@ -2084,7 +2104,10 @@ class ControlCenter:
                 P.rrect(tx, ry, tw, 118, 24, fill)
                 tc = "ffffff" if states[i] else T["text"]
                 sub = self._tile_detail(i)
-                P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
+                if i == 4:   # Power-Symbol statt Text
+                    P.power_icon(tx + tw / 2, ry + 50, 28, tc, width=5)
+                else:
+                    P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
                 if sub:
                     P.text(sub, 16, tx + 25, ry + 96, mix(tc, fill, 0.25))
                 if i < 2:   # WLAN/BT Untermenü-Pfeil
