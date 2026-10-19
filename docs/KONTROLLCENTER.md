@@ -165,3 +165,41 @@ DraStic ist nicht quelloffen, sein Pausemenü ist auf dem RG DS Plus sehr klein.
      selbst und würde Änderungen überschreiben); Sicherung vor der ersten Änderung
    - Änderungen gelten beim nächsten Start; mit dem Gameswitcher kaum spürbar
    - Fundort: `find /storage -name 'drastic.cfg'`
+
+## Bestandsaufnahme RG DS Plus (19.10.2026)
+
+**Tasten**
+- Anbernic-Taste: `retrogame_joypad` (`/dev/input/event6`), `BTN_MODE` (316)
+- Return/Home-Taste: `adc-keys-back` (`/dev/input/event2`), `BTN_Z` (309)
+- ROCKNIX-Tastendienst `/usr/bin/input_sense` (Bash + `evtest` je Gerät): Lautstärke,
+  Power, Deckel, Hotkeys über Funktionstaste (`key.function.a` …, in system.cfg
+  überschreibbar). Unser Dienst muss sich mit ihm vertragen (Anbernic-Taste allein
+  vs. als Modifikator).
+
+**Grafik & System**
+- vorhanden: SDL2 (+ image, ttf, mixer, gfx), GTK3, Cairo, Qt6 Wayland, Wayland-Client;
+  keine Layer-Shell-Bibliothek
+- Ton `wpctl`/`amixer` (PipeWire) · WLAN `iwd`/`iwctl` + NetworkManager ·
+  Bluetooth `bluetoothctl` · Benachrichtigungen `mako`
+- Leistung: CPU `ondemand powersave performance schedutil`, GPU (`fde60000.gpu`)
+  `powersave performance simple_ondemand` → Sparen = powersave/powersave,
+  Ausgewogen = schedutil/simple_ondemand, Leistung = performance/performance
+
+**Das RetroArch-Touchmenü: „lowerdeck“** (`/usr/share/lowerdeck`, GPL-2.0-or-later)
+- Python 3 + SDL2 über ctypes (keine Zusatzpakete), Fenster per Sway-Regel
+  (`app_id` „lowerdeck“) auf den unteren Bildschirm
+- Gestartet von `runemu.sh` mit `--rom --core --platform --ra-pid`
+- Steuert RetroArch über UDP 55355 (MENU_TOGGLE, SAVE_STATE_SLOT, LOAD_STATE_SLOT,
+  GET_CONFIG_PARAM …), Savestate-Vorschaubilder, Helligkeitsregler, Abdunkeln bei Leerlauf
+- **RetroAchievements ohne API-Schlüssel:** `ra_proxy.py` sitzt als lokaler Proxy zwischen
+  RetroArch und retroachievements.org (`cheevos_custom_host`) und liest die Daten mit
+- → sehr gute Grundlage: Kontrollcenter darauf aufbauen (Abzweig/Fork, dann ebenfalls
+  GPL-2.0-or-later für diesen Teil) oder dessen Technik übernehmen. Bei Single-Screen-
+  Spielen ist der untere Bildschirm frei – kein Overlay nötig; nur bei DraStic (beide
+  Bildschirme) muss sich das Kontrollcenter darüberlegen.
+
+**DraStic** (`/storage/.config/drastic/config/drastic.cfg`)
+- Menü, Speichern, Laden, Vorspulen sind auf Joypad-Tasten belegt (`controls_b`,
+  Codes 1035/1031/1030/1036); Bildschirme tauschen und Beenden unbelegt
+- `savestate_snapshot = 1`: DraStic legt Vorschaubilder zu Spielständen ab (Gameswitcher)
+- `controls_a` = zweite Belegung; ob DraStic dort virtuelle Tastendrücke annimmt, testen

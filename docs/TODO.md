@@ -11,7 +11,8 @@ Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
 Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Als Nächstes
-- [ ] Bestandsaufnahme auf dem RG DS Plus (Befehle in [KONTROLLCENTER.md](KONTROLLCENTER.md))
+- [x] Bestandsaufnahme auf dem RG DS Plus (Ergebnis in [KONTROLLCENTER.md](KONTROLLCENTER.md))
+- [ ] Entscheidung: Kontrollcenter auf „lowerdeck“ aufbauen (GPL) oder eigene Umsetzung mit dessen Technik
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
 
 ## RetroDualStation
