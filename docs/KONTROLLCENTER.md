@@ -34,6 +34,17 @@ derselben Stelle weiter.
 - Speichern/Laden aus Seite 2: Emulator kurz auftauen, Befehl auslösen, wieder einfrieren
 - auf dem Gerät testen, ob der Ton beim Einfrieren knackt; sonst während der Pause stummschalten
 
+**Emulator-Tastenkürzel:** Standard **aus**: Speichern, Laden, Vorspulen usw.
+laufen nur über das Kontrollcenter, damit Einsteiger keine Kombinationen
+versehentlich auslösen (z. B. Spiel ungewollt beendet oder Spielstand
+überschrieben). Für erfahrene Nutzer ein Schalter „Tastenkürzel erlauben“;
+nur dann zeigt Seite 2 den Spickzettel.
+- RetroArch: unproblematisch, die Steuerschnittstelle braucht keine Hotkeys
+- DraStic/DSperate: die Knöpfe sollten die Kürzel per virtuellem Tastendruck
+  auslösen. Sind die Kürzel abgeschaltet, braucht es einen anderen Weg
+  (z. B. Belegung auf eine Taste/Kombination, die nur das virtuelle Gerät
+  drücken kann) – auf dem Gerät testen
+
 ## Seiten
 
 ### 1 · Schnelleinstellungen
