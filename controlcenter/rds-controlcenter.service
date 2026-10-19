@@ -1,18 +1,23 @@
 # SPDX-License-Identifier: MIT
-# RetroDualStation Kontrollcenter – startet mit der Oberfläche (nach Sway/ES)
+# RetroDualStation Kontrollcenter – läuft zusammen mit EmulationStation.
+#
+# Wichtig: das Kontrollcenter startet Sway NICHT selbst (kein Requires=sway.service).
+# Es hängt sich an essway: startet erst, wenn ES läuft (Sway ist dann fertig eingerichtet),
+# und wird mit ES zusammen beendet bzw. neu gestartet.
 [Unit]
 Description=RetroDualStation Kontrollcenter
-After=sway.service essway.service
-Requires=sway.service
+After=essway.service
+PartOf=essway.service
 
 [Service]
 Type=simple
 Environment=XDG_RUNTIME_DIR=/var/run/0-runtime-dir
 Environment=WAYLAND_DISPLAY=wayland-1
 Environment=HOME=/storage
+ExecStartPre=/bin/sleep 2
 ExecStart=/usr/bin/python3 /storage/.config/retrodualstation/controlcenter/rds_cc.py
-Restart=always
+Restart=on-failure
 RestartSec=3
 
 [Install]
-WantedBy=rocknix.target
+WantedBy=essway.service

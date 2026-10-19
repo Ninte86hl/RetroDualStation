@@ -368,3 +368,9 @@ Oberfläche auf Englisch, wenn die ROCKNIX-Systemsprache nicht Deutsch ist (`sys
 wird bei jedem Öffnen neu gelesen → ES-Sprache umstellen genügt). Übersetzung zentral in
 `tr()` (Wörterbuch + Muster für Sätze mit Namen); Nutzerdaten (Netz-, Geräte-, Spielnamen,
 Eingaben) werden nie übersetzt. Titel passt sich in Größe und Lage der Sprache an.
+
+**Autostart (19.10.2026):** Erster Versuch (`Requires=sway.service`, `WantedBy=rocknix.target`)
+startete Sway beim Booten zu früh → ES blieb schwarz. Jetzt: `WantedBy=essway.service`,
+`After=` + `PartOf=essway.service` – das CC startet mit ES und endet mit ES; startet Sway nie selbst.
+Zusätzlich (0.10.1/0.10.2): verlorene Sway-Verbindung → Neustart über den Dienst; Bildschirm
+wird bei jedem Öffnen frisch gewählt.
