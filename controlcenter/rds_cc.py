@@ -751,8 +751,64 @@ SYSTEMS = {"nds": "Nintendo DS", "gba": "Game Boy Advance", "gb": "Game Boy",
            "dreamcast": "Dreamcast", "arcade": "Arcade"}
 
 
+AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automatisch dunkel
+PORT_RE = re.compile(r"/roms/ports/([^/]+)\.sh$")
+
+
+def proc_tree(pid):
+    """PID samt allen Nachfahren (Kinder zuerst)."""
+    kids = {}
+    for p in os.listdir("/proc"):
+        if p.isdigit():
+            try:
+                ppid = int(rd(f"/proc/{p}/stat").rsplit(")", 1)[1].split()[1])
+                kids.setdefault(ppid, []).append(int(p))
+            except (AttributeError, IndexError, ValueError):
+                pass
+    out = []
+    def walk(x):
+        for k in kids.get(x, []):
+            walk(k)
+        out.append(x)
+    walk(pid)
+    return out
+
+
+def _cmdline(pid):
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as f:
+            return [a.decode("utf-8", "replace") for a in f.read().split(b"\0") if a]
+    except OSError:
+        return []
+
+
+def running_port():
+    """PortMaster selbst (pugwash) oder ein gestarteter Port (/roms/ports/*.sh)."""
+    tool = None
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        args = _cmdline(pid)
+        if not args:
+            continue
+        if os.path.basename(args[0]) == "bash" and len(args) > 1:
+            m = PORT_RE.search(args[1])
+            if m and "PortMaster" not in m.group(1):
+                return {"pid": int(pid), "emu": "PortMaster", "name": m.group(1),
+                        "system": "Ports", "played": None}
+        if any(os.path.basename(a) == "pugwash" for a in args[:3]):
+            tool = {"pid": int(pid), "emu": "PortMaster", "name": "PortMaster",
+                    "system": "", "played": None}
+    return tool
+
+
 def running_game():
     """Sucht einen laufenden Emulator und leitet Spiel/System aus der Befehlszeile ab."""
+    g = _running_emu()
+    return g or running_port()
+
+
+def _running_emu():
     try:
         uptime = float(rd("/proc/uptime").split()[0])
         hz = os.sysconf("SC_CLK_TCK")
@@ -808,11 +864,12 @@ def quit_game(game):
     if game["emu"] == "RetroArch" and ra_command("QUIT") is not None:
         ra_command("QUIT")   # zweimal: RetroArch fragt sonst ggf. nach
         return
-    try:
-        os.kill(game["pid"], signal.SIGCONT)
-        os.kill(game["pid"], signal.SIGTERM)
-    except OSError as exc:
-        log("Beenden fehlgeschlagen:", exc)
+    for p in proc_tree(game["pid"]):
+        try:
+            os.kill(p, signal.SIGCONT)
+            os.kill(p, signal.SIGTERM)
+        except OSError:
+            pass
 
 
 class Pauser:
@@ -836,7 +893,12 @@ class Pauser:
                     log("Pause: RetroArch meldet", status.strip()[:40], "– nichts zu tun")
                 return
         try:
-            os.kill(game["pid"], signal.SIGSTOP)
+            self.pids = proc_tree(game["pid"])
+            for p in reversed(self.pids):
+                try:
+                    os.kill(p, signal.SIGSTOP)
+                except OSError:
+                    pass
             self.how, self.pid = "stop", game["pid"]
             log("Pause:", game["emu"], "eingefroren (PID %d)" % game["pid"])
         except OSError as exc:
@@ -846,10 +908,11 @@ class Pauser:
         if self.how == "ra":
             ra_command("PAUSE_TOGGLE")
         elif self.how == "stop":
-            try:
-                os.kill(self.pid, signal.SIGCONT)
-            except OSError:
-                pass
+            for p in getattr(self, "pids", [self.pid]):
+                try:
+                    os.kill(p, signal.SIGCONT)
+                except OSError:
+                    pass
         if self.how:
             log("Pause beendet")
         self.how = self.pid = None
@@ -2868,7 +2931,7 @@ def main():
         if ui.pending_view and not ui.view:
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
-            if getattr(cc, "redim", False) and cc.game and cc.game["emu"] == "RetroArch":
+            if getattr(cc, "redim", False) and cc.game and cc.game["emu"] in AUTO_DIM_EMUS:
                 cc.screen_off()   # RetroArch: beim Schließen wieder abdunkeln
                 cc.screen_auto = True
             cc.redim = False
@@ -3032,7 +3095,7 @@ def main():
                     g = running_game()
                     pid = g["pid"] if g else None
                     if pid != last_game["pid"]:
-                        if g and g["emu"] == "RetroArch":
+                        if g and g["emu"] in AUTO_DIM_EMUS:
                             cc.screen_off()
                             cc.screen_auto = True
                         elif not g and cc.screen_auto:
