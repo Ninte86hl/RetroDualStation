@@ -855,7 +855,7 @@ MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August"
           "September", "Oktober", "November", "Dezember"]
 ACCENTS = ["e5383b", "3d7bff", "2bb673", "f08c00", "9b5de5", "e64980"]
 PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
-TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus", "Power"]
+TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
 TILES_ROW2_START = 3   # ab Index 3 zweite Reihe
 
 
@@ -1814,8 +1814,6 @@ class ControlCenter:
         elif i == 3:
             log("Ruhemodus")
             subprocess.Popen(["systemctl", "suspend"])
-        elif i == 4:
-            return "power"   # Aufrufer öffnet Power-Menü
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
