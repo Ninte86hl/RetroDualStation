@@ -10,6 +10,13 @@ Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
 
 Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
+## Priorität (festgelegt 20.10.2026)
+Keine neuen Funktionen, bis diese beiden fertig sind – neue Ideen nur notieren.
+1. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
+2. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden, Benutzerwechsel)
+
+Danach abwägen, was als Nächstes ausgebaut wird.
+
 ## Als Nächstes
 - [x] Bestandsaufnahme auf dem RG DS Plus (Ergebnis in [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [x] Entscheidung (19.10.2026): Kontrollcenter als **Eigenentwicklung** (eigener Code, MIT wie der Rest; lowerdeck nur als Hinweis, dass der Weg funktioniert – kein Code übernommen)
