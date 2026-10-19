@@ -98,6 +98,16 @@ for f in "$SRC"/ports/*.sh; do
     log "Ports-Eintrag: $(basename "$f")"
 done
 
+# canvas-ds (Standard-Theme im Dual-Modus, falls im Paket)
+if [ -d "$SRC/theme/canvas-ds-rgds-plus" ]; then
+    rm -rf "$THEMEDIR/canvas-ds-rgds-plus.new"
+    mv "$SRC/theme/canvas-ds-rgds-plus" "$THEMEDIR/canvas-ds-rgds-plus.new" || fail "Could not copy canvas-ds (not enough space?)."
+    rm -rf "$THEMEDIR/canvas-ds-rgds-plus"
+    mv "$THEMEDIR/canvas-ds-rgds-plus.new" "$THEMEDIR/canvas-ds-rgds-plus"
+    [ -f "$DEST/theme.dual" ] || echo canvas-ds-rgds-plus > "$DEST/theme.dual"
+    log "Theme kopiert: canvas-ds-rgds-plus (Standard im Dual-Modus: $(cat "$DEST/theme.dual"))"
+fi
+
 # Icons für die Ports-Einträge (gamelist.xml ergänzen, vorhandene Einträge bleiben)
 if [ -d "$SRC/images" ]; then
     mkdir -p "$PORTS/images"
@@ -146,11 +156,11 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     log "Kontrollcenter installiert: $CCDIR"
 
     # Geräteeinstellungen (Rückgängig in uninstall.sh)
-    . /etc/profile 2>/dev/null
+    # /etc/profile nur in einer Subshell laden (setzt sonst eigene Variablen / beendet das Skript)
     if [ ! -f "$DEST/bottomscreen.before" ]; then
-        get_setting rocknix.bottomscreen.type > "$DEST/bottomscreen.before" 2>/dev/null
+        ( . /etc/profile >/dev/null 2>&1; get_setting rocknix.bottomscreen.type ) > "$DEST/bottomscreen.before" 2>/dev/null
     fi
-    set_setting rocknix.bottomscreen.type none 2>/dev/null   # lowerdeck aus (CC ersetzt es)
+    ( . /etc/profile >/dev/null 2>&1; set_setting rocknix.bottomscreen.type none ) >/dev/null 2>&1   # lowerdeck aus
     log "lowerdeck aus (vorher: $(cat "$DEST/bottomscreen.before" 2>/dev/null))"
 
     SWAYCFG=/storage/.config/sway/config

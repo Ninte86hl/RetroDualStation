@@ -51,8 +51,8 @@ rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlc
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
 systemctl daemon-reload
 systemctl kill -s HUP systemd-logind 2>/dev/null
-. /etc/profile 2>/dev/null
-set_setting rocknix.bottomscreen.type "$(cat "$DEST/bottomscreen.before" 2>/dev/null || echo vc)" 2>/dev/null
+BS="$(cat "$DEST/bottomscreen.before" 2>/dev/null)"
+( . /etc/profile >/dev/null 2>&1; set_setting rocknix.bottomscreen.type "${BS:-vc}" ) >/dev/null 2>&1
 sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d' /storage/.config/sway/config 2>/dev/null
 sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>/dev/null
 log "Kontrollcenter und Geraeteeinstellungen entfernt"

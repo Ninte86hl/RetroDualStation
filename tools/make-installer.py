@@ -2,7 +2,9 @@
 """Baut die Installations-ZIP von ROCKNIX DualStation.
 
 Aufruf (im Repo-Ordner):
-    python3 tools/make-installer.py <ES-Binary> <version>
+    python3 tools/make-installer.py <ES-Binary> <version> [<canvas-ds-ZIP>]
+Mit canvas-ds-ZIP (aus tools/make-canvas-installer.py) wird canvas-ds mitinstalliert
+und als Standard-Theme im Dual-Modus gesetzt.
 Beispiel:
     python3 tools/make-installer.py emulationstation-rgds v9
 
@@ -17,9 +19,10 @@ Inhalt (wird in den Ordner "ports" auf der SD-Karte entpackt):
 import os, sys, zipfile
 
 repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if len(sys.argv) != 3:
+if len(sys.argv) not in (3, 4):
     sys.exit(__doc__)
 binary, version = sys.argv[1], sys.argv[2]
+canvas = sys.argv[3] if len(sys.argv) == 4 else None
 binname = "emulationstation-rgds"
 
 out = os.path.join(repo, f"rocknix-dualstation-{version}.zip")
@@ -56,6 +59,14 @@ with zipfile.ZipFile(out, "w") as z:
         add(z, os.path.join(repo, "controlcenter", f), p + "controlcenter/" + f, mode)
     for f in sorted(os.listdir(os.path.join(repo, "installer", "payload", "images"))):
         add(z, os.path.join(repo, "installer", "payload", "images", f), p + "images/" + f, FILE)
+    if canvas:   # canvas-ds aus dessen Installer-ZIP übernehmen
+        with zipfile.ZipFile(canvas) as cz:
+            pre = ".canvas-ds/canvas-ds-rgds-plus/"
+            for info in cz.infolist():
+                if info.filename.startswith(pre) and not info.is_dir():
+                    ni = zipfile.ZipInfo(p + "theme/canvas-ds-rgds-plus/" + info.filename[len(pre):], info.date_time)
+                    ni.external_attr, ni.compress_type = FILE, zipfile.ZIP_DEFLATED
+                    z.writestr(ni, cz.read(info))
     for f in ("LICENSE", "CREDITS.md"):
         add(z, os.path.join(repo, f), p + f, FILE)
 
