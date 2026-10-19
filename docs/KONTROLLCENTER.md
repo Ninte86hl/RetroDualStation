@@ -150,3 +150,18 @@ keine Spiele parallel im Hintergrund gehalten.
 3. Seite 3: RetroAchievements
 4. RetroArch-Touchmenü ersetzen, Aufnahme in den Installer
 5. Gameswitcher (nutzt Home-Taste, Speichern per Tastendruck, Screenshot und RetroArch-Steuerung aus 1–2)
+
+## DraStic-Einstellungen (nach dem Kontrollcenter)
+
+DraStic ist nicht quelloffen, sein Pausemenü ist auf dem RG DS Plus sehr klein.
+1. Schneller Gewinn: das vergrößerte Pausemenü vom RG DS übernehmen
+   (`librgdsmenu.so` per LD_PRELOAD, 2,2×).
+2. Eigene Einstellungsoberfläche im DSperate-Stil, die DraStics Textdatei
+   (`drastic.cfg`) liest und schreibt:
+   - Kategorien Emulation, Bild, Layout, Tasten; große Schrift, Touch
+   - Bedeutung und erlaubte Werte jedes Eintrags einmalig festhalten
+     (Tastencodes → lesbare Tastennamen)
+   - nur schreiben, wenn DraStic nicht läuft (DraStic speichert beim Beenden
+     selbst und würde Änderungen überschreiben); Sicherung vor der ersten Änderung
+   - Änderungen gelten beim nächsten Start; mit dem Gameswitcher kaum spürbar
+   - Fundort: `find /storage -name 'drastic.cfg'`
