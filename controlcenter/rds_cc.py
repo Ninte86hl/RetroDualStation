@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.9.1"
+VERSION = "0.10"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -211,6 +211,99 @@ def safe(fn):
             log("Fehler in", fn.__name__ + ":", exc)
     wrapper.__name__ = fn.__name__
     return wrapper
+
+
+# ------------------------------------------------------------- Sprachen ------
+# Deutsch ist die Grundsprache im Code; Englisch für alle anderen Systemsprachen.
+
+LANG = ["de"]
+
+EN = {
+    "Aktualisieren": "Refresh", "Suchen": "Search", "Sucht …": "Searching …", "Zurück": "Back",
+    "An": "On", "Aus": "Off", "Verbinden": "Connect", "Trennen": "Disconnect",
+    "Vergessen": "Forget", "Passwort …": "Password …", "Koppeln": "Pair", "Entfernen": "Remove",
+    "A Auswählen": "A Select", "B Zurück": "B Back", "WLAN": "Wi-Fi",
+    "Gespeicherte Netze": "Saved networks", "Weitere Netze": "Other networks",
+    "Gekoppelte Geräte": "Paired devices", "Gefundene Geräte": "Found devices",
+    "Abbrechen": "Cancel", "Zeigen": "Show", "Verbergen": "Hide",
+    "Passwort eingeben": "Enter password", "Text eingeben": "Enter text", "Leerzeichen": "Space",
+    "Links/Rechts wählen · A einfügen · B schließen": "Left/Right choose · A insert · B close",
+    "A Taste (halten: ä, ö, ü …) · B Löschen · L1 Groß · R1 ?123 · Stick Cursor · Start OK":
+        "A key (hold for ä, é, ñ …) · B delete · L1 shift · R1 ?123 · Stick cursor · Start OK",
+    "L1 / R1 Seite wechseln": "L1 / R1 switch page",
+    "A Ein/Aus  ·  X / Y Details": "A on/off  ·  X / Y details",
+    "B Schließen": "B Close", "Kontrollcenter": "Control Center",
+    "LÄUFT GERADE": "NOW PLAYING", "Spiel beenden": "Quit game", "Kein Spiel aktiv": "No game running",
+    "Helligkeit oben": "Top brightness", "Helligkeit unten": "Bottom brightness",
+    "Lautstärke": "Volume", "Leistung": "Performance", "Sparen": "Battery saver",
+    "Ausgewogen": "Balanced", "Unterer Screen aus": "Bottom screen off", "Ruhemodus": "Sleep",
+    "bald": "soon", "Nicht verbunden": "Not connected", "Kein Gerät": "No device",
+    "Schnelleinstellungen": "Quick settings", "Spiel": "Game", "Gameswitcher": "Game switcher",
+    "Home oder B: schließen": "Home or B: close", "Suche läuft …": "Searching …",
+    "Suche nach Netzen …": "Searching for networks …", "Trenne …": "Disconnecting …",
+    "Verbunden": "Connected", "Gespeichert": "Saved", "Gesichert": "Secured", "Offen": "Open",
+    "nicht in Reichweite": "out of range", "Gekoppelt": "Paired", "Neu": "New",
+    "trennen: Controller ausschalten": "to disconnect, turn controller off",
+    "Netze": "networks", "Geräte": "devices", " · lädt": " · charging",
+}
+EN.update({k.upper(): v.upper() for k, v in list(EN.items()) if k.upper() not in EN})
+_DAYS = dict(zip(["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+                 ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]))
+_MONTHS = dict(zip(["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
+                    "September", "Oktober", "November", "Dezember"],
+                   ["January", "February", "March", "April", "May", "June", "July", "August",
+                    "September", "October", "November", "December"]))
+EN_PATTERNS = [
+    (r"^Akku (\S+) %( · lädt)?$", lambda m: f"Battery {m[1]} %" + (" · charging" if m[2] else "")),
+    (r"^(\w+), (\d+)\. (\w+)$", lambda m: f"{_DAYS.get(m[1], m[1])}, {_MONTHS.get(m[3], m[3])} {m[2]}"),
+    (r"^Verbunden mit (.+)$", lambda m: f"Connected to {m[1]}"),
+    (r"^(WLAN|Bluetooth) ist aus$", lambda m: f"{tr(m[1])} is off"),
+    (r"^(WLAN|Bluetooth) einschalten, um (\w+) zu sehen$", lambda m: f"Turn on {tr(m[1])} to see {tr(m[2])}"),
+    (r"^Keine (\w+) gefunden$", lambda m: f"No {tr(m[1])} found"),
+    (r"^(\d+) (\w+)  ·  mit dem Finger scrollen$", lambda m: f"{m[1]} {tr(m[2])}  ·  scroll with your finger"),
+    (r"^kommt in Etappe (\d+)$", lambda m: f"coming in stage {m[1]}"),
+    (r"^Suche nach Geräten … noch (\d+) s – Controller in den Kopplungsmodus versetzen$",
+     lambda m: f"Searching for devices … {m[1]} s left – put your controller in pairing mode"),
+    (r"^Tippe auf „(.+)“, um neue Geräte zu finden$", lambda m: f"Tap “{tr(m[1])}” to find new devices"),
+    (r"^Verbinde mit (.+) …$", lambda m: f"Connecting to {m[1]} …"),
+    (r"^Kopple (.+) … \(bis zu 60 s\)$", lambda m: f"Pairing {m[1]} … (up to 60 s)"),
+    (r"^Verbinde (.+) …$", lambda m: f"Connecting {m[1]} …"),
+    (r"^Trenne (.+) …$", lambda m: f"Disconnecting {m[1]} …"),
+    (r"^(.+) getrennt – zum dauerhaften Trennen Controller ausschalten$",
+     lambda m: f"{m[1]} disconnected – turn the controller off to keep it disconnected"),
+    (r"^(.+) entfernt$", lambda m: f"{m[1]} removed"),
+    (r"^(.+) vergessen$", lambda m: f"{m[1]} forgotten"),
+    (r"^Passwort für (.+)$", lambda m: f"Password for {m[1]}"),
+]
+
+
+def ui_language():
+    """'de' bei deutscher Systemsprache, sonst 'en'."""
+    lang = ""
+    try:
+        with open("/storage/.config/system/configs/system.cfg") as f:
+            for line in f:
+                if line.startswith("system.language="):
+                    lang = line.split("=", 1)[1].strip().lower()
+    except OSError:
+        pass
+    lang = lang or os.environ.get("LANG", "de").lower()
+    return "de" if lang.startswith("de") else "en"
+
+
+def tr(text):
+    """Übersetzt eine Oberflächen-Zeichenkette in die aktuelle Sprache."""
+    if LANG[0] == "de" or not text:
+        return text
+    if text in EN:
+        return EN[text]
+    for pat, fn in EN_PATTERNS:
+        m = re.match(pat, text)
+        if m:
+            return fn(m)
+    if " · " in text:   # z. B. „Verbunden · Signal 78 %“
+        return " · ".join(EN.get(part, part) for part in text.split(" · "))
+    return text
 
 
 # ------------------------------------------------------------------ Cairo ----
@@ -396,7 +489,9 @@ class Pen:
         path("s", -36); stroke(blue, 16)
         return 230 * k                            # Breite
 
-    def text(self, txt, size, x, y, c, bold=False, align="l"):
+    def text(self, txt, size, x, y, c, bold=False, align="l", raw=False):
+        if not raw:
+            txt = tr(txt)
         cr = self.cr
         cairo.cairo_select_font_face(cr, b"sans-serif", 0, 1 if bold else 0)
         cairo.cairo_set_font_size(cr, size * self.s)
@@ -413,7 +508,9 @@ class Pen:
         cairo.cairo_show_text(cr, data)
         return ext.x_advance / self.s
 
-    def width(self, txt, size, bold=False):
+    def width(self, txt, size, bold=False, raw=False):
+        if not raw:
+            txt = tr(txt)
         cairo.cairo_select_font_face(self.cr, b"sans-serif", 0, 1 if bold else 0)
         cairo.cairo_set_font_size(self.cr, size * self.s)
         ext = TextExtents()
@@ -914,14 +1011,14 @@ class SubMenu:
             item = self.items[idx]
             ry = self.LIST_Y + idx * self.ROW - self.offset
             if item.get("header"):      # Bereichsüberschrift
-                P.text(item["name"].upper(), 16, 80, ry + 66, T["muted"], bold=True)
+                P.text(tr(item["name"]).upper(), 16, 80, ry + 66, T["muted"], bold=True, raw=True)
                 P.rrect(80, ry + 80, 1110, 2, 1, mix(T["muted"], T["card"], 0.6))
                 continue
             if self.focus == idx + 1:
                 P.rrect(57, ry, 1146, 90, 16, T["focus"])
             if item.get("highlight"):
                 P.circle(85, ry + 45, 8, A)
-            P.text(item["name"][:30], 23, 110, ry + 42, T["text"], bold=True)
+            P.text(item["name"][:30], 23, 110, ry + 42, T["text"], bold=True, raw=True)
             P.text(self.describe(item), 17, 110, ry + 70, T["muted"])
             x = 1191
             acts = self.actions(item)
@@ -1464,7 +1561,7 @@ class Keyboard:
         hidden = self.secret and not self.show
         pos = [0.0]
         for i in range(len(self.text)):
-            pos.append(pos[-1] + (26 if hidden else P.width(self.text[i], 30)))
+            pos.append(pos[-1] + (26 if hidden else P.width(self.text[i], 30, raw=True)))
         shift = max(0, pos[self.cur] - 1080)       # langer Text: mitlaufen
         x0 = 75 - shift
         if hidden:
@@ -1474,7 +1571,7 @@ class Keyboard:
                     P.circle(cx, 194, 7, T["text"])
         else:
             vis_start = next((i for i in range(len(pos)) if x0 + pos[i] >= 60), 0)
-            P.text(self.text[vis_start:], 30, x0 + pos[vis_start], 205, T["text"])
+            P.text(self.text[vis_start:], 30, x0 + pos[vis_start], 205, T["text"], raw=True)
         if not self.text:
             P.text("Passwort eingeben" if self.secret else "Text eingeben", 26, 75, 204, T["muted"])
         P.rrect(x0 + pos[self.cur] - 1, 170, 3, 48, 1.5, A)
@@ -1553,6 +1650,7 @@ class ControlCenter:
 
     def __init__(self):
         self.cfg = load_config()
+        LANG[0] = ui_language()
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.backlights = find_backlights(self.cfg)
@@ -1586,6 +1684,7 @@ class ControlCenter:
 
     def refresh(self, full=False):
         if full:
+            LANG[0] = ui_language()   # ES-Sprache gewechselt → beim nächsten Öffnen übernehmen
             for i, (_label, b) in enumerate(self.backlights):
                 self.values[i] = b.get()
             v = volume_get()
@@ -1846,16 +1945,13 @@ class ControlCenter:
         T, A = self.T, self.accent
         now = time.localtime()
         P.text(time.strftime("%H:%M", now), 52, 45, 90, T["text"], bold=True)
-        P.text(f"{WEEKDAYS[now.tm_wday]}, {now.tm_mday}. {MONTHS[now.tm_mon - 1]}", 19, 45, 118, T["muted"])
+        date = f"{WEEKDAYS[now.tm_wday]}, {now.tm_mday}. {MONTHS[now.tm_mon - 1]}"
+        P.text(date, 19, 45, 118, T["muted"])
+        left_end = 45 + max(P.width(date, 19), P.width(time.strftime("%H:%M", now), 52, bold=True))
 
         # Status-Pillen rechts oben
         cap, charging = self.bat
         pills = [(f"Akku {cap} %" if cap is not None else "Akku ?") + (" · lädt" if charging else "")]
-        tw = P.width("Kontrollcenter", 38, bold=True)
-        lw = 230 * 52 / 130
-        lx = 630 - (lw + 16 + tw) / 2
-        P.logo(lx, 66, 52, T["text"], T["bg"])
-        P.text("Kontrollcenter", 38, lx + lw + 16, 111, T["text"], bold=True)
         x = 1215
         for label in reversed(pills):
             wdt = P.width(label, 19, bold=True) + 48
@@ -1883,6 +1979,18 @@ class ControlCenter:
             self.hits.append((x - 4, 66, 62, 62, ("top", i)))
             x -= 14
 
+        # Titel mit Logo mittig zwischen Datum und rechter Gruppe (passt sich der Sprache an)
+        room_l, room_r = left_end + 24, x - 10
+        size = 38
+        while size > 26 and P.width("Kontrollcenter", size, bold=True) + 16 + size * 1.37 * 230 / 130 > room_r - room_l:
+            size -= 2
+        lh = size * 1.37
+        lw = 230 * lh / 130
+        tw = P.width("Kontrollcenter", size, bold=True)
+        lx = max(room_l, (room_l + room_r) / 2 - (lw + 16 + tw) / 2)
+        P.logo(lx, 97 - lh / 2, lh, T["text"], T["bg"])
+        P.text("Kontrollcenter", size, lx + lw + 16, 97 + size * 0.36, T["text"], bold=True)
+
         # Läuft gerade
         P.rrect(45, 145, 1170, 135, 24, T["card"])
         P.rrect(72, 167, 90, 90, 14, T["tile"])
@@ -1890,7 +1998,7 @@ class ControlCenter:
         P.text("LÄUFT GERADE", 15, 187, 182, T["muted"], bold=True)
         if self.game:
             g = self.game
-            P.text(g["name"][:34], 28, 187, 222, T["text"], bold=True)
+            P.text(g["name"][:34], 28, 187, 222, T["text"], bold=True, raw=True)
             sub = " · ".join(p for p in (g["system"], g["emu"]) if p)
             if g["played"] is not None:
                 mins = int(g["played"] // 60)

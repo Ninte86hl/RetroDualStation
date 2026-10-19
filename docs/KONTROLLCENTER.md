@@ -361,3 +361,10 @@ größer, davor das RDS-Logo (Variante 3 „Verwoben“, Rot · Weiß/Schwarz ·
 dahinter ruhig, Kacheln zeigen WLAN/Gerät, RetroArch-Menü öffnet nicht zusätzlich. Im Spiel
 funktioniert der 8BitDo nicht – auch ohne CC: Spielerzuordnung (ES-Controller-Einstellungen,
 nur RetroArch nutzt sie). Außerdem beendet runemu den Bluetooth-Helfer während Spielen.
+
+## 0.10 (19.10.2026): Englisch
+
+Oberfläche auf Englisch, wenn die ROCKNIX-Systemsprache nicht Deutsch ist (`system.language`,
+wird bei jedem Öffnen neu gelesen → ES-Sprache umstellen genügt). Übersetzung zentral in
+`tr()` (Wörterbuch + Muster für Sätze mit Namen); Nutzerdaten (Netz-, Geräte-, Spielnamen,
+Eingaben) werden nie übersetzt. Titel passt sich in Größe und Lage der Sprache an.
