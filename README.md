@@ -90,10 +90,13 @@ DSperate and PortMaster. The game pauses and continues where you left off.
 | ✅ | canvas-ds with five game list views |
 | ✅ | DualStation Sync: dual-screen artwork |
 | ✅ | Control Center: quick settings, Wi-Fi, Bluetooth, keyboard, power menu, quit game, bottom screen off |
-| 🔜 | Control Center: save states and shortcuts, RetroAchievements |
-| 🔜 | Game switcher with auto-save and resume |
-| 🔜 | DualStation Sync: better title matching, editing game lists |
-| 🔜 | Support for the original RG DS |
+| 🔜 **next** | Game switcher – recent games with a screenshot of where you left off; **A** resume, **Y** start fresh |
+| 🔜 | Control Center: game page – save states and shortcuts |
+| 💭 maybe | Settings menu like on a smartphone, opened from the Control Center |
+| 💭 maybe | RetroAchievements – unlock notification and overview |
+| 💭 maybe | User profiles with their own saves |
+| 🕓 later | DualStation Sync: better title matching, editing game lists |
+| 🕓 later | Support for the original RG DS |
 
 ## Installation
 
