@@ -333,3 +333,9 @@ neues WLAN mit Passwort verbunden. Bluetooth: Controller gefunden, Koppeln des
 **Vergleichstest ES (19.10.2026):** Koppeln des 8BitDo Ultimate 3-mode Xbox über das ES-Menü
 klappt (Helfer-Log: Pairing → Trusting → Connected successfully). Treiber ok; Ursache war der
 alte CC-Weg (eigenes `bluetoothctl pair`). 0.8 nutzt denselben Weg wie ES.
+
+**Test 0.8.1 (19.10.2026):** Entfernen, Suchen und Koppeln des 8BitDo im CC funktionieren.
+Nach „Trennen“ verband er sich sofort neu → 0.8.2: Suche stoppen und `/run/bt_device`
+löschen bei Trennen/Entfernen und beim Verlassen des Untermenüs. Ein gekoppelter,
+eingeschalteter Controller verbindet sich trotzdem von selbst wieder (normales
+Bluetooth-Verhalten) – Hinweis in der Statuszeile.

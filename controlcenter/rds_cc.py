@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.8.1"
+VERSION = "0.8.2"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -962,6 +962,7 @@ class BtMenu(SubMenu):
     title = "Bluetooth"
     what = "Geräte"
     CONTROL = "/run/bt_discovery_control"
+    WANTED = "/run/bt_device"         # Gerät, das der Helfer koppeln/verbinden soll
     STATUS = "/run/bt_status"
     SCAN_TIME = 60
 
@@ -984,9 +985,14 @@ class BtMenu(SubMenu):
         self.refetch(2)
 
     def close(self):
+        """Suche beenden und den Koppel-Wunsch löschen (wie das ES-Menü beim Verlassen)."""
         if self.scan_until:
             wr(self.CONTROL, "stop")
             self.scan_until = 0.0
+        try:
+            os.remove(self.WANTED)
+        except OSError:
+            pass
 
     def tick(self):
         if self.scan_until and time.monotonic() > self.scan_until:
@@ -1038,13 +1044,16 @@ class BtMenu(SubMenu):
         mac = it["mac"]
         if act == "Koppeln" and not self.scan_until:
             self.scan()                    # der Helfer koppelt nur während der Suche
+        if act in ("Trennen", "Entfernen"):
+            self.close()                   # sonst verbindet der Helfer das Gerät sofort neu
         cmd = {"Koppeln": "trust", "Verbinden": "connect", "Trennen": "disconnect",
                "Entfernen": "remove"}[act]
         log("Bluetooth:", act, it["name"], mac)
         spawn(["rocknix-bluetooth", cmd, mac])
         self.msg = {"Koppeln": f"Kopple {it['name']} … (bis zu 60 s)",
                     "Verbinden": f"Verbinde {it['name']} …",
-                    "Trennen": f"Trenne {it['name']} …", "Entfernen": f"{it['name']} entfernt"}[act]
+                    "Trennen": f"{it['name']} getrennt – zum dauerhaften Trennen Controller ausschalten",
+                    "Entfernen": f"{it['name']} entfernt"}[act]
         self.msg_until = time.monotonic() + 8
         self.cc.status_at = time.monotonic() + 3
         self.refetch(3)
