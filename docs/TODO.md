@@ -31,6 +31,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Version für das normale RG DS (640×480)
 - [ ] optional: ES-Patch für die Option „Standard-Rastergröße“
 
+### Logo
+- [ ] RDS-Monogramm auswählen und verfeinern (Entwürfe: Verbunden, Zwei Ebenen, Verwoben)
+  – doppelte Bedeutung: **R**etro**D**ual**S**tation, gelesen auch **R**OCKNIX **D**ual**S**tation (ehrt die Basis)
+- [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
+
 ### Scraper
 - [ ] ScreenScraper-Entwicklerzugang beantragen (Forum; Antragstext vorbereiten)
 - [ ] mit Zugang: Scraper im Dual-Build von ES wieder aktivieren (Zugangsdaten nur als GitHub-Secret beim Bauen, nie im Repository)
