@@ -16,7 +16,8 @@ Start zum Testen über SSH:   python3 rds_cc.py      (Ende mit Strg+C)
 
 Einstellungen (optional): /storage/.config/retrodualstation/controlcenter.json
   {"theme": "dark" | "light", "accent": "#e5383b",
-   "backlight_top": "<name>", "backlight_bottom": "<name>"}
+   "backlight_top": "<name>", "backlight_bottom": "<name>",
+   "touch_swap": true|false, "touch_flip_x": true|false, "touch_flip_y": true|false}
 """
 import ctypes
 import fcntl
@@ -39,6 +40,7 @@ VERSION = "0.3"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
+TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -1044,8 +1046,9 @@ class Overlay:
 
 # ----------------------------------------------------------------- Tasten ----
 
-EV_KEY, EV_ABS = 1, 3
-ABS_HAT0X, ABS_HAT0Y = 16, 17
+EV_SYN, EV_KEY, EV_ABS = 0, 1, 3
+ABS_X, ABS_Y, ABS_HAT0X, ABS_HAT0Y = 0, 1, 16, 17
+BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
 KNOWN_UNUSED = {307, 308, 312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
@@ -1075,7 +1078,7 @@ def open_event(name):
     return os.open(path, os.O_RDONLY | os.O_NONBLOCK)
 
 
-def read_events(fd):
+def read_events(fd, types=(EV_KEY, EV_ABS)):
     try:
         data = os.read(fd, EVENT.size * 64)
     except BlockingIOError:
@@ -1083,9 +1086,60 @@ def read_events(fd):
     out = []
     for off in range(0, len(data) - EVENT.size + 1, EVENT.size):
         _s, _us, typ, code, value = EVENT.unpack_from(data, off)
-        if typ in (EV_KEY, EV_ABS):
+        if typ in types:
             out.append((typ, code, value))
     return out
+
+
+def abs_range(fd, code):
+    buf = bytearray(24)  # struct input_absinfo
+    try:
+        fcntl.ioctl(fd, 0x80184540 + code, buf)  # EVIOCGABS(code)
+    except OSError:
+        return 0, 1
+    _val, lo, hi = struct.unpack_from("iii", buf)
+    return lo, (hi if hi > lo else lo + 1)
+
+
+class TouchReader:
+    """Liest den Touchscreen direkt (Einzelfinger-Emulation: ABS_X/ABS_Y + BTN_TOUCH)."""
+
+    def __init__(self, fd, cfg):
+        self.rx, self.ry = abs_range(fd, ABS_X), abs_range(fd, ABS_Y)
+        self.cfg = cfg
+        self.x = self.y = 0
+        self.down = False
+        self.change = None
+        log("Touch-Bereich roh: x", self.rx, "y", self.ry)
+
+    def feed(self, typ, code, value):
+        """Liefert ('down'|'move'|'up', nx, ny) mit nx/ny 0..1 (Rohachsen) oder None."""
+        if typ == EV_ABS and code == ABS_X:
+            self.x = value
+            self.change = self.change or ("move" if self.down else None)
+        elif typ == EV_ABS and code == ABS_Y:
+            self.y = value
+            self.change = self.change or ("move" if self.down else None)
+        elif typ == EV_KEY and code == BTN_TOUCH:
+            self.down = value == 1
+            self.change = "down" if self.down else "up"
+        elif typ == EV_SYN and self.change:
+            kind, self.change = self.change, None
+            nx = (self.x - self.rx[0]) / (self.rx[1] - self.rx[0])
+            ny = (self.y - self.ry[0]) / (self.ry[1] - self.ry[0])
+            return kind, nx, ny
+        return None
+
+    def to_surface(self, nx, ny, w, h):
+        raw_landscape = (self.rx[1] - self.rx[0]) >= (self.ry[1] - self.ry[0])
+        swap = self.cfg.get("touch_swap", raw_landscape != (w >= h))
+        if swap:
+            nx, ny = ny, nx
+        if self.cfg.get("touch_flip_x"):
+            nx = 1 - nx
+        if self.cfg.get("touch_flip_y"):
+            ny = 1 - ny
+        return nx * w, ny * h
 
 
 def grab(fd, on):
@@ -1111,14 +1165,19 @@ def main():
     ui = Overlay(cc.draw, on_touch)
     joy = open_event(JOYPAD_NAME)
     home = open_event(HOME_NAME)
-    fds = [fd for fd in (joy, home) if fd is not None]
+    tfd = open_event(TOUCH_NAME)
+    touch = TouchReader(tfd, cc.cfg) if tfd is not None else None
+    fds = [fd for fd in (joy, home, tfd) if fd is not None]
     mode_down = combo = False
     grabbed = False
 
     def set_grab(on):
+        # Joypad und Touchscreen gehören nur uns, solange das Overlay offen ist
         nonlocal grabbed
-        if joy is not None and grabbed != on:
-            grab(joy, on)
+        if grabbed != on:
+            for fd in (joy, tfd):
+                if fd is not None:
+                    grab(fd, on)
             grabbed = on
 
     def toggle(view):
@@ -1173,6 +1232,15 @@ def main():
     try:
         while True:
             for fd in ui.pump(1.0, fds):
+                if fd == tfd:
+                    for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
+                        t = touch.feed(*ev)
+                        if t and ui.view and ui.size:
+                            px, py = touch.to_surface(t[1], t[2], *ui.size)
+                            if t[0] == "down":
+                                log("Touch: roh %.2f/%.2f -> Bild %d/%d" % (t[1], t[2], px, py))
+                            on_touch(t[0], px, py)
+                    continue
                 for typ, code, value in read_events(fd):
                     if fd == home:
                         if typ == EV_KEY and code == BTN_Z and value == 1:
