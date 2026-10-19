@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.6
+"""RetroDualStation Kontrollcenter – Prototyp 0.7
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -17,6 +17,7 @@ Start zum Testen über SSH:   python3 rds_cc.py      (Ende mit Strg+C)
 Einstellungen (optional): /storage/.config/retrodualstation/controlcenter.json
   {"theme": "dark" | "light", "accent": "#e5383b",
    "backlight_top": "<name>", "backlight_bottom": "<name>",
+   "keyboard": "qwertz" | "qwerty"   (sonst nach Systemsprache),
    "touch_swap": true|false, "touch_flip_x": true|false, "touch_flip_y": true|false}
 """
 import ctypes
@@ -39,7 +40,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.6"
+VERSION = "0.7"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -982,15 +983,43 @@ def _keyrow(chars):
     return [("char", c, 1) for c in chars]
 
 
-KB_BOTTOM = [("layer", None, 1.5), ("char", ",", 1), ("space", None, 5), ("char", ".", 1), ("ok", None, 2.5)]
+KB_BOTTOM = [("layer", None, 1.5), ("char", ",", 1), ("space", None, 4), ("char", ".", 1), ("ok", None, 2.5)]
+# wie am Handy: 10 Spalten, Umlaute und Sonderformen durch langes Drücken
 KB_LAYERS = [
-    [_keyrow("1234567890ß"), _keyrow("qwertzuiopü"), _keyrow("asdfghjklöä"),
-     [("shift", None, 1.5)] + _keyrow("yxcvbnm-") + [("back", None, 1.5)], KB_BOTTOM],
-    [_keyrow("1234567890€"), _keyrow('!@#$%&*()?"'), _keyrow("-_+=/\\:;'~|"),
-     [("shift", None, 1.5)] + _keyrow("<>[]{}^`") + [("back", None, 1.5)], KB_BOTTOM],
+    [_keyrow("1234567890"), _keyrow("qwertzuiop"), _keyrow("asdfghjkl"),
+     [("shift", None, 1.5)] + _keyrow("yxcvbnm") + [("back", None, 1.5)], KB_BOTTOM],
+    [_keyrow("1234567890"), _keyrow("!@#$%&*()?"), _keyrow("-_+=/\\:;'\""),
+     [("shift", None, 1.5)] + _keyrow("<>[]{}|") + [("back", None, 1.5)], KB_BOTTOM],
 ]
+KB_QWERTY = [
+    [_keyrow("1234567890"), _keyrow("qwertyuiop"), _keyrow("asdfghjkl"),
+     [("shift", None, 1.5)] + _keyrow("zxcvbnm") + [("back", None, 1.5)], KB_BOTTOM],
+    KB_LAYERS[1],
+]
+KB_OFFSET = [0, 0, 0.5, 0, 0]     # Reihe „asdf…“ halb eingerückt wie am Handy
+KB_VARIANTS = {"a": "äàáâæ", "o": "öóòôø", "u": "üúùû", "s": "ß", "e": "éèêë€",
+               "i": "íìîï", "n": "ñ", "c": "ç",
+               "$": "€£¥", "-": "–~", "|": "~^`", "?": "¿", "!": "¡", ".": "…", "'": "`´"}
 KB_GAP = 10
-KB_UNIT = (1170 - 10 * KB_GAP) / 11
+KB_UNIT = (1170 - 9 * KB_GAP) / 10
+KB_HOLD = 0.45                   # Sekunden bis zum Varianten-Menü
+
+
+def keyboard_layout(cfg):
+    """QWERTZ für deutschsprachige Systeme, sonst QWERTY; per Einstellung überschreibbar."""
+    forced = (cfg.get("keyboard") or "").lower()
+    if forced in ("qwertz", "qwerty"):
+        return forced
+    lang = ""
+    try:
+        with open("/storage/.config/system/configs/system.cfg") as f:
+            for line in f:
+                if line.startswith("system.language="):
+                    lang = line.split("=", 1)[1].strip().lower()
+    except OSError:
+        pass
+    lang = lang or os.environ.get("LANG", "").lower()
+    return "qwertz" if lang.startswith("de") else "qwerty"
 
 
 class Keyboard:
@@ -1002,12 +1031,15 @@ class Keyboard:
         self.shift = 0          # 0 aus, 1 einmal, 2 dauerhaft
         self.layer = 0
         self.show = not secret
+        self.layers = KB_LAYERS if keyboard_layout(cc.cfg) == "qwertz" else KB_QWERTY
         self.r, self.c = 1, 0   # Fokus auf der Tastatur (-1 = Kopfzeile)
         self.hc = 0             # Spalte in der Kopfzeile: Abbrechen / Zeigen
         self.field = None       # (x0, Zeichenpositionen) fürs Antippen im Textfeld
+        self.popup = None       # Varianten-Leiste beim langen Drücken
+        self.hold = None        # (start, quelle, daten) für langes Drücken
 
     def rows(self):
-        return KB_LAYERS[self.layer]
+        return self.layers[self.layer]
 
     def _label(self, kind, val):
         if kind == "char":
@@ -1018,11 +1050,7 @@ class Keyboard:
     # -- Aktionen --
     def press(self, kind, val):
         if kind == "char":
-            ch = self._label(kind, val)
-            self.text = self.text[:self.cur] + ch + self.text[self.cur:]
-            self.cur += len(ch)
-            if self.shift == 1:
-                self.shift = 0
+            self.insert(self._label(kind, val))
         elif kind == "space":
             self.press("char", " ")
         elif kind == "back":
@@ -1033,6 +1061,87 @@ class Keyboard:
             self.toggle_layer()
         elif kind == "ok":
             self.ok()
+
+    def variants(self, r, c):
+        kind, val, _u = self.rows()[r][c]
+        if kind != "char" or val not in KB_VARIANTS:
+            return None
+        return [self._label("char", v) if v != "ß" else v for v in KB_VARIANTS[val]]
+
+    def open_popup(self, r, c, by_touch):
+        var = self.variants(r, c)
+        if var:
+            self.popup = {"r": r, "c": c, "vars": var, "sel": 0, "touch": by_touch, "xs": []}
+            self.r, self.c = r, c
+
+    def insert(self, ch):
+        self.text = self.text[:self.cur] + ch + self.text[self.cur:]
+        self.cur += len(ch)
+        if self.shift == 1:
+            self.shift = 0
+
+    def pick(self):
+        if self.popup:
+            self.insert(self.popup["vars"][self.popup["sel"]])
+            self.popup = None
+
+    def tick(self):
+        """Langes Drücken erkennen (Touch oder A)."""
+        if not self.hold or self.popup:
+            return False
+        start, src, data = self.hold
+        if src.endswith("-used") or time.monotonic() - start < KB_HOLD:
+            return False
+        if src == "touch":
+            hit = data
+            if hit and hit[0] == "kb":
+                self.open_popup(hit[1], hit[2], True)
+        elif self.r >= 0:
+            self.open_popup(self.r, self.c, False)
+        self.hold = (start, src + "-used", data)
+        return bool(self.popup)
+
+    # Gamepad-A: Druck und Loslassen getrennt (langes Halten öffnet Varianten)
+    def a_down(self):
+        if self.popup:
+            return
+        self.hold = (time.monotonic(), "pad", None)
+
+    def a_up(self):
+        hold, self.hold = self.hold, None
+        if self.popup:
+            if hold and hold[1] == "pad-used":
+                return               # gerade erst geöffnet: Auswahl folgt
+            self.pick()
+            return
+        if hold and hold[1] == "pad-used":
+            return                   # gehalten, aber Taste ohne Varianten
+        self.confirm()
+
+    # Touch: Finger halten → Varianten, ziehen → auswählen, loslassen → einfügen
+    def touch_down(self, x, y):
+        hit = self.cc._hit(x, y)
+        self.hold = (time.monotonic(), "touch", hit)
+        self.t_from = (x, y)
+
+    def touch_move(self, x, y):
+        if self.hold and not self.popup and (abs(x - self.t_from[0]) > 40 or abs(y - self.t_from[1]) > 40):
+            self.hold = None         # Finger bewegt: kein langes Drücken
+        if self.popup and self.popup["touch"] and self.popup["xs"]:
+            xs = self.popup["xs"]
+            self.popup["sel"] = min(range(len(xs)), key=lambda i: abs(xs[i] - x))
+
+    def touch_up(self, x0, y0, x1, y1):
+        hold, self.hold = self.hold, None
+        if self.popup and self.popup["touch"]:
+            self.pick()
+            return
+        if hold and hold[1] == "touch-used":
+            return                   # gehalten auf Taste ohne Varianten
+        if abs(x1 - x0) < 40 and abs(y1 - y0) < 40:
+            hit = self.cc._hit(x0, y0)
+            if hit:
+                self.tap(hit, x0)
 
     def backspace(self):
         if self.cur > 0:
@@ -1057,15 +1166,17 @@ class Keyboard:
         self.cc.kbd = None
 
     def back(self):
-        """B: letztes Zeichen löschen; bei leerem Feld abbrechen."""
-        if self.text:
+        """B: Varianten schließen, sonst letztes Zeichen löschen; bei leerem Feld abbrechen."""
+        if self.popup:
+            self.popup = None
+        elif self.text:
             self.backspace()
         else:
             self.cancel()
 
     # -- Gamepad --
     def _centers(self, r):
-        x, out = 45, []
+        x, out = 45 + KB_OFFSET[r] * (KB_UNIT + KB_GAP), []
         for _k, _v, units in self.rows()[r]:
             w = units * KB_UNIT + (units - 1) * KB_GAP
             out.append(x + w / 2)
@@ -1073,6 +1184,10 @@ class Keyboard:
         return out
 
     def nav(self, dx, dy):
+        if self.popup:
+            if dx:
+                self.popup["sel"] = max(0, min(len(self.popup["vars"]) - 1, self.popup["sel"] + dx))
+            return
         if dy:
             if self.r == -1:
                 if dy > 0:
@@ -1103,6 +1218,11 @@ class Keyboard:
     # -- Touch --
     def tap(self, hit, x=None):
         kind = hit[0]
+        if kind == "kb_var" and self.popup:
+            self.popup["sel"] = hit[1]
+            self.pick()
+            return
+        self.popup = None
         if kind == "kb":
             r, c = hit[1], hit[2]
             self.r, self.c = r, c
@@ -1157,7 +1277,7 @@ class Keyboard:
 
         # Tasten
         for r, row in enumerate(self.rows()):
-            x, y = 45, 268 + r * 102
+            x, y = 45 + KB_OFFSET[r] * (KB_UNIT + KB_GAP), 268 + r * 102
             for c, (kind, val, units) in enumerate(row):
                 w = units * KB_UNIT + (units - 1) * KB_GAP
                 special = kind != "char"
@@ -1189,15 +1309,36 @@ class Keyboard:
                     cairo.cairo_stroke(P.cr)
                 else:
                     label = self._label(kind, val)
-                    P.text(label, 30 if kind == "char" else 21, x + w / 2, y + 57, tc,
+                    P.text(label, 32 if kind == "char" else 21, x + w / 2, y + 58, tc,
                            bold=kind != "char", align="c")
+                    var = self.variants(r, c)
+                    if var:   # wichtigste Variante klein in der Ecke
+                        P.text(var[0], 15, x + w - 12, y + 24, T["muted"], align="r")
                 if self.r == r and self.c == c:
                     cc._focus_ring(P, x, y, w, 92, 16)
                 hits.append((x, y, w, 92, ("kb", r, c)))
                 x += w + KB_GAP
 
-        P.text("A Taste · B Löschen · L1 Groß · R1 ?123 · Stick Cursor · Start OK",
-               17, 630, 835, T["muted"], align="c")
+        if self.popup:
+            pp = self.popup
+            n = len(pp["vars"])
+            bw, cx = 92, self._centers(pp["r"])[pp["c"]]
+            width = n * bw + (n - 1) * 8 + 24
+            px = max(45, min(1215 - width, cx - width / 2))
+            py = 268 + pp["r"] * 102 - 118
+            P.rrect(px - 3, py - 3, width + 6, 116, 22, A)      # Rahmen in Akzentfarbe
+            P.rrect(px, py, width, 110, 20, T["card"])
+            pp["xs"] = []
+            for i, v in enumerate(pp["vars"]):
+                bx = px + 12 + i * (bw + 8)
+                sel = i == pp["sel"]
+                P.rrect(bx, py + 9, bw, 92, 14, A if sel else mix(T["tile"], A, 0.12))
+                P.text(v, 32, bx + bw / 2, py + 67, "ffffff" if sel else T["text"], align="c")
+                pp["xs"].append(bx + bw / 2)
+                hits.insert(0, (bx, py + 9, bw, 92, ("kb_var", i)))
+        hint = ("Links/Rechts wählen · A einfügen · B schließen" if self.popup else
+                "A Taste (halten: ä, ö, ü …) · B Löschen · L1 Groß · R1 ?123 · Stick Cursor · Start OK")
+        P.text(hint, 17, 630, 835, T["muted"], align="c")
 
 
 
@@ -1301,6 +1442,8 @@ class ControlCenter:
         return False
 
     def tick(self):
+        if self.kbd and self.kbd.tick():
+            self.changed = True
         if self.sub:
             self.sub.tick()
 
@@ -1374,6 +1517,9 @@ class ControlCenter:
             return
         x, y = self.pen.to_design(px, py)
         self.touch = (x, y, x, y)
+        if self.kbd:
+            self.kbd.touch_down(x, y)
+            return
         hit = self._hit(x, y)
         if hit and hit[0] == "slider":
             self.drag = hit[1]
@@ -1385,6 +1531,9 @@ class ControlCenter:
             return
         x, y = self.pen.to_design(px, py)
         self.touch = self.touch[:2] + (x, y)
+        if self.kbd:
+            self.kbd.touch_move(x, y)
+            return
         if self.drag is not None:
             self._drag_to(x)
 
@@ -1399,10 +1548,7 @@ class ControlCenter:
             return
         dx, dy = x1 - x0, y1 - y0
         if self.kbd:
-            if abs(dx) < 40 and abs(dy) < 40:
-                hit = self._hit(x0, y0)
-                if hit:
-                    self.kbd.tap(hit, x0)
+            self.kbd.touch_up(x0, y0, x1, y1)
             return
         if self.sub:
             if abs(dy) > 60 and abs(dy) > abs(dx):
@@ -1985,6 +2131,13 @@ def main():
                     toggle("cc")
                 mode_down = False
             return
+        if typ == EV_KEY and code == BTN_EAST and cc.kbd and ui.view and not mode_down:
+            if value == 1:
+                cc.kbd.a_down()
+            elif value == 0:
+                cc.kbd.a_up()
+                state["dirty"] = True
+            return
         pressed = value != 0 if typ == EV_ABS else value == 1
         if not pressed:
             return
@@ -2030,7 +2183,8 @@ def main():
     last_minute = time.strftime("%H:%M")
     try:
         while True:
-            for fd in ui.pump(0.1 if stick["dir"] else 0.5 if cc.sub else 1.0, fds):
+            busy = stick["dir"] or (cc.kbd and cc.kbd.hold)
+            for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
                 if fd == tfd:
                     for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                         t = touch.feed(*ev)

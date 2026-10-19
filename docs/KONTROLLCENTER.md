@@ -276,3 +276,11 @@ Start = OK, **linker Stick = Cursor links/rechts** (Idee des Nutzers), Antippen 
 Textfeld setzt den Cursor. Erster Einsatz: Passwort für neue WLAN-Netze
 (`nmcli dev wifi connect … password …`, dann `wifi.ssid`/`wifi.key` wie ROCKNIX).
 Sticks werden nicht mehr als Tastendruck gewertet (Stick-Drift störte sonst die Anbernic-Taste).
+
+## Prototyp 0.7 (19.10.2026)
+
+Tastatur wie am Handy (Wunsch des Nutzers): 10 Spalten, Umlaute und Sonderformen per
+**langem Drücken** (Touch: halten, ziehen, loslassen; Gamepad: A halten, links/rechts,
+A einfügen, B schließen); wichtigste Variante klein in der Tastenecke.
+Layout **QWERTZ bei deutscher Systemsprache** (`system.language` in `system.cfg`),
+sonst QWERTY; fest einstellbar über `"keyboard"` in `controlcenter.json`.
