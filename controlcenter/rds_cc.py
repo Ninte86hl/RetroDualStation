@@ -2108,7 +2108,7 @@ class ControlCenter:
         y += 110
 
         # Kacheln – Reihe 1: WLAN, BT, Screen (je 282px), Reihe 2: Sleep, Power (je 432px)
-        states = [bool(self.wifi[0]), bool(self.bt[0]), self.screen_bottom_off, False, False]
+        states = [bool(self.wifi[0]), bool(self.bt[0]), False, False, False]  # Screen-aus = inaktiv (nicht eingefärbt)
         focused = rows[self.focus][0] == "tiles"
         r1 = TILES[:TILES_ROW2_START]
         r2 = TILES[TILES_ROW2_START:]
@@ -2979,6 +2979,11 @@ def main():
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                             t = touch.feed(*ev)
                             if t and ui.view and ui.size:
+                                # Touch weckt unteren Screen auf – Aktion erst danach
+                                if cc.screen_bottom_off and t[0] == "down":
+                                    cc.press_tile(2)   # Screen wieder an
+                                    state["dirty"] = True
+                                    continue
                                 px, py = touch.to_surface(t[1], t[2], *ui.size)
                                 on_touch(t[0], px, py)
                         continue
@@ -3008,6 +3013,11 @@ def main():
                                         ui.pending_view = None
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
+                            # Jede Taste weckt unteren Screen auf
+                            if cc.screen_bottom_off and typ == EV_KEY and value == 1:
+                                cc.press_tile(2)
+                                state["dirty"] = True
+                                continue
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
                     # ein Fehler darf das Kontrollcenter nicht beenden
