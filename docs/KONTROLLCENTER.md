@@ -220,3 +220,10 @@ Emulation zu stören.
   Return/Home `BTN_Z` (event „adc-keys-back“); solange das Kontrollcenter offen ist,
   wird das Joypad exklusiv übernommen (EVIOCGRAB), damit Spiel/ES keine Eingaben bekommen
 - Wayland-Umgebung: `XDG_RUNTIME_DIR=/var/run/0-runtime-dir`, `WAYLAND_DISPLAY=wayland-1`
+
+## Prototyp 0.1 getestet (19.10.2026)
+
+`controlcenter/rds_cc.py`: Anbernic-Taste öffnet das Kontrollcenter, Home-Taste den
+Gameswitcher-Platzhalter, jeweils auf DSI-1 über ES, RetroArch, DraStic und DSperate.
+Während der Anzeige erreichen weder Tasten noch Touch das Spiel bzw. ES.
+Behoben: doppeltes Übernehmen des Joypads beim direkten Wechsel zwischen den Ansichten.

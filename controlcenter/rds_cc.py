@@ -457,17 +457,23 @@ def main():
     home = open_event(HOME_NAME)
     fds = [fd for fd in (joy, home) if fd is not None]
     mode_down = combo = False
+    grabbed = False
+
+    def set_grab(on):
+        nonlocal grabbed
+        if joy is not None and grabbed != on:
+            grab(joy, on)
+            grabbed = on
+
     log("bereit – Anbernic-Taste: Kontrollcenter, Home-Taste: Gameswitcher, Strg+C: Ende")
 
     def toggle(view):
         if ui.view == view:
             ui.hide()
-            if joy is not None:
-                grab(joy, False)
+            set_grab(False)
         else:
-            ui.show(view)
-            if joy is not None:
-                grab(joy, True)
+            ui.show(view)          # wechselt auch direkt zwischen den Ansichten
+            set_grab(True)
 
     try:
         while True:
@@ -490,8 +496,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        if joy is not None:
-            grab(joy, False)
+        set_grab(False)
         if ui.view:
             ui.hide()
         log("beendet")
