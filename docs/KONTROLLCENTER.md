@@ -374,3 +374,6 @@ startete Sway beim Booten zu früh → ES blieb schwarz. Jetzt: `WantedBy=essway
 `After=` + `PartOf=essway.service` – das CC startet mit ES und endet mit ES; startet Sway nie selbst.
 Zusätzlich (0.10.1/0.10.2): verlorene Sway-Verbindung → Neustart über den Dienst; Bildschirm
 wird bei jedem Öffnen frisch gewählt.
+
+**Autostart getestet (19.10.2026):** ES startet normal, CC läuft nach dem Neustart ohne SSH.
+**Etappe 1 abgeschlossen.**

@@ -27,7 +27,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
   die Basis wird in den Danksagungen genannt
 
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
-- [ ] Etappe 1: Schnelleinstellungen, Wisch-Gerüst, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe – alles getestet, nur Autostart steht noch aus
+- [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
 - [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
 - [ ] Etappe 3: RetroAchievements
 - [ ] Etappe 4: RetroArch-Touchmenü ersetzen, in den Installer
