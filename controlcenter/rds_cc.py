@@ -856,7 +856,7 @@ MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August"
 ACCENTS = ["e5383b", "3d7bff", "2bb673", "f08c00", "9b5de5", "e64980"]
 PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
-TILES_ROW2_START = 3   # ab Index 3 zweite Reihe
+TILES_ROW2_START = 4   # alle in einer Reihe
 
 
 def nmcli_split(line):
