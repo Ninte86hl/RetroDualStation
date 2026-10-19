@@ -77,6 +77,11 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Idee (19.10.2026): Benutzerwechsel im Gameswitcher – je Benutzer eigene Savegames und
       Speicherstände (z. B. eigene Ordner pro Profil, beim Wechsel umschalten; RetroArch
       `savefile_directory`/`savestate_directory`, DraStic/DSperate prüfen)
+- [ ] Idee (20.10.2026, ohne Priorität): **Einrichtungsassistent** beim ersten Start nach der
+      Installation – WLAN, Zeitzone, Sprache, Theme, kurze Einführung in Anbernic-/Power-Taste;
+      überspringbar, später aus den Einstellungen erneut aufrufbar (Anregung: BananaLinux)
+- [ ] Idee (20.10.2026, ohne Priorität): **Sicherheit** – prüfen, ob ROCKNIX im Ruhemodus bei
+      leerem Akku sauber herunterfährt; sonst ergänzen (Anregung: BananaLinux)
 - [ ] Einstellungsmenü wie am Smartphone (beschlossen 19.10.2026) – Aufruf über **Zahnrad-Symbol
       in der CC-Kopfzeile**; oben Kategorie-Kacheln, darunter Listen:
       - **Anzeige:** Theme, Theme je Modus (Dual/Single), Bildschirmschoner
