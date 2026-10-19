@@ -2113,9 +2113,11 @@ class ControlCenter:
         r1 = TILES[:TILES_ROW2_START]
         r2 = TILES[TILES_ROW2_START:]
         r2w = (1170 - (len(r2) - 1) * 15) // len(r2)
+        th1, th2 = 118, 90   # Tile-Höhe Reihe 1 und 2
         for row, items in enumerate([r1, r2]):
             tw = 282 if row == 0 else r2w
-            ry = y if row == 0 else y + 134
+            th = th1 if row == 0 else th2
+            ry = y if row == 0 else y + th1 + 15
             n = len(items)
             total = n * tw + (n - 1) * 15
             rx0 = (1260 - total) // 2
@@ -2123,22 +2125,22 @@ class ControlCenter:
                 i = j if row == 0 else j + TILES_ROW2_START
                 tx = rx0 + j * (tw + 15)
                 fill = A if states[i] else mix(T["tile"], A, 0.22)
-                P.rrect(tx, ry, tw, 118, 24, fill)
+                P.rrect(tx, ry, tw, th, 24, fill)
                 tc = "ffffff" if states[i] else T["text"]
                 sub = self._tile_detail(i)
                 if i == 4:   # Power-Symbol statt Text
-                    P.power_icon(tx + tw / 2, ry + 50, 28, tc, width=5)
+                    P.power_icon(tx + tw / 2, ry + th / 2, 22, tc, width=4)
                 else:
-                    P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
+                    P.text(name, 21, tx + 25, ry + (th // 2 + 8 if sub else th // 2 + 8), tc, bold=True)
                 if sub:
-                    P.text(sub, 16, tx + 25, ry + 96, mix(tc, fill, 0.25))
+                    P.text(sub, 16, tx + 25, ry + th - 22, mix(tc, fill, 0.25))
                 if i < 2:   # WLAN/BT Untermenü-Pfeil
                     P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
                     P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
                     self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
                 if focused and i == self.tile:
-                    self._focus_ring(P, tx, ry, tw, 118, 24)
-                self.hits.append((tx, ry, tw, 118, ("tile", i)))
+                    self._focus_ring(P, tx, ry, tw, th, 24)
+                self.hits.append((tx, ry, tw, th, ("tile", i)))
 
     def _tile_detail(self, i):
         """Zweite Zeile der WLAN-/Bluetooth-Kachel."""
