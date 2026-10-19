@@ -45,6 +45,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Kontrollcenter: Log-Manager für einfache Fehlersuche – Logs von Kontrollcenter, ES,
       RetroArch, DraStic, System an einer Stelle ansehen; „Fehlerbericht erstellen“ packt sie
       in eine Datei (z. B. `/storage/logs/`), die man per Netzwerkfreigabe holen kann
+- [ ] Kontrollcenter: „Als Spieler 1 verwenden“ für Controller im Bluetooth-Untermenü
+      (ES übergibt die Zuordnung per `--controllers` an runemu → setsettings →
+      `input_playerN_joypad_index`, wirkt nur bei RetroArch; DraStic/DSperate prüfen)
+- [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
+      beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
 - [ ] Kontrollcenter: Einstellungsseite (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)

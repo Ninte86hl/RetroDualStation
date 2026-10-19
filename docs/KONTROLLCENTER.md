@@ -356,3 +356,8 @@ Geräte und Netze bleiben immer oben; Überschriften werden beim Navigieren übe
   WLAN-/Bluetooth-Pillen entfallen, oben steht „Kontrollcenter“, rechts Akku + Darstellung.
 **0.9.1:** Hell-Modus-Symbol = Sonne mit Strahlen (passend zum Mond), Titel „Kontrollcenter“
 größer, davor das RDS-Logo (Variante 3 „Verwoben“, Rot · Weiß/Schwarz · Blau, mit Cairo gezeichnet).
+
+**Test 0.9 (19.10.2026):** externer Controller wird erkannt, Xbox-Taste öffnet das CC, ES bleibt
+dahinter ruhig, Kacheln zeigen WLAN/Gerät, RetroArch-Menü öffnet nicht zusätzlich. Im Spiel
+funktioniert der 8BitDo nicht – auch ohne CC: Spielerzuordnung (ES-Controller-Einstellungen,
+nur RetroArch nutzt sie). Außerdem beendet runemu den Bluetooth-Helfer während Spielen.
