@@ -240,3 +240,17 @@ Gameswitcher noch Platzhalter.
 - Hell/Dunkel und Akzentfarbe über `/storage/.config/retrodualstation/controlcenter.json`
   (Auswahl in der Oberfläche folgt)
 - Noch nicht: Pause, Spiel beenden, unterer Screen aus, Ruhemodus
+
+## Prototyp 0.3/0.4 (19.10.2026)
+
+- Touch direkt vom Touchscreen (`Goodix Capacitive TouchScreen`, event1, 1024×768,
+  ohne Drehung); Sway meldet am Seat nur „Tastatur“, daher kein Wayland-Touch
+- Helligkeit: `backlight1` = oben, `backlight0` = unten
+- WLAN wie ROCKNIX: `set_setting wifi.enabled`, `wifictl enable|disable` (nur rfkill),
+  danach `wifictl connect`; Status über `rfkill`
+- Bluetooth wie ROCKNIX: Dienste `bluetooth` + `bluetooth-agent` starten/stoppen,
+  `set_setting controllers.bluetooth.enabled`
+- ES liest `system.cfg` nur beim Start → ES-Menü zeigt Änderungen erst nach Neustart (To-do)
+- 0.4: Pause (RetroArch per `GET_STATUS`/`PAUSE_TOGGLE` über UDP 55355, sonst SIGSTOP/SIGCONT),
+  Hell/Dunkel + Akzentfarbe oben links neben den Status-Pillen (gespeichert in
+  `controlcenter.json`), Autostart-Dienst `controlcenter/rds-controlcenter.service`

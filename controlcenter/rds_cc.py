@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.3
+"""RetroDualStation Kontrollcenter – Prototyp 0.4
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -28,6 +28,8 @@ import os
 import re
 import select
 import shutil
+import signal
+import socket
 import struct
 import subprocess
 import sys
@@ -36,7 +38,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.3"
+VERSION = "0.4"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -366,6 +368,15 @@ def wr(path, val):
         return False
 
 
+def save_config(cfg):
+    try:
+        os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(cfg, f, indent=2)
+    except OSError as exc:
+        log("Einstellungen nicht gespeichert:", exc)
+
+
 def load_config():
     try:
         with open(CONFIG_PATH) as f:
@@ -529,7 +540,7 @@ def running_game():
             continue
         comm = (rd(f"/proc/{pid}/comm") or "").lower()
         emu = next((v for k, v in EMULATORS.items() if comm.startswith(k)), None)
-        if not emu:
+        if not emu or comm.endswith(".sh"):   # Startskripte nicht einfrieren
             continue
         try:
             with open(f"/proc/{pid}/cmdline", "rb") as f:
@@ -551,6 +562,61 @@ def running_game():
     return None
 
 
+# --------------------------------------------------------------- Pause -------
+
+RA_ADDR = ("127.0.0.1", 55355)   # RetroArch-Steuerschnittstelle (Netzwerkbefehle)
+
+
+def ra_command(cmd, reply=False):
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(0.3)
+            sock.sendto(cmd.encode(), RA_ADDR)
+            return sock.recv(4096).decode("utf-8", "replace") if reply else ""
+    except OSError:
+        return None
+
+
+class Pauser:
+    """Hält das laufende Spiel an, solange das Overlay offen ist."""
+
+    def __init__(self):
+        self.how = None
+        self.pid = None
+
+    def pause(self, game):
+        if self.how or not game:
+            return
+        if game["emu"] == "RetroArch":
+            status = ra_command("GET_STATUS", reply=True)
+            if status is not None:
+                if "PLAYING" in status:
+                    ra_command("PAUSE_TOGGLE")
+                    self.how = "ra"
+                    log("Pause: RetroArch angehalten")
+                else:
+                    log("Pause: RetroArch meldet", status.strip()[:40], "– nichts zu tun")
+                return
+        try:
+            os.kill(game["pid"], signal.SIGSTOP)
+            self.how, self.pid = "stop", game["pid"]
+            log("Pause:", game["emu"], "eingefroren (PID %d)" % game["pid"])
+        except OSError as exc:
+            log("Pause fehlgeschlagen:", exc)
+
+    def resume(self):
+        if self.how == "ra":
+            ra_command("PAUSE_TOGGLE")
+        elif self.how == "stop":
+            try:
+                os.kill(self.pid, signal.SIGCONT)
+            except OSError:
+                pass
+        if self.how:
+            log("Pause beendet")
+        self.how = self.pid = None
+
+
 # --------------------------------------------------------- Darstellung -------
 
 THEMES = {
@@ -564,6 +630,7 @@ THEMES = {
 WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
           "September", "Oktober", "November", "Dezember"]
+ACCENTS = ["e5383b", "3d7bff", "2bb673", "f08c00", "9b5de5", "e64980"]
 PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
 
@@ -578,7 +645,8 @@ class ControlCenter:
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
         self.page = 0
-        self.focus = 0          # Zeile auf Seite 1
+        self.focus = 1          # Zeile auf Seite 1 (0 = Darstellung oben)
+        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe
         self.tile = 0           # Spalte in der Kachelzeile
         self.values = {}
         self.perf = 1
@@ -597,7 +665,7 @@ class ControlCenter:
 
     # -- Daten --
     def rows(self):
-        r = [("slider", i) for i in range(len(self.backlights))] + [("slider", "vol")]
+        r = [("top", None)] + [("slider", i) for i in range(len(self.backlights))] + [("slider", "vol")]
         return r + [("perf", None), ("tiles", None)]
 
     def refresh(self, full=False):
@@ -631,6 +699,18 @@ class ControlCenter:
             self.perf = i
             perf_set(i)
 
+    def toggle_theme(self):
+        name = "light" if self.T is THEMES["dark"] else "dark"
+        self.T = THEMES[name]
+        self.cfg["theme"] = name
+        save_config(self.cfg)
+
+    def next_accent(self):
+        i = ACCENTS.index(self.accent) if self.accent in ACCENTS else -1
+        self.accent = ACCENTS[(i + 1) % len(ACCENTS)]
+        self.cfg["accent"] = "#" + self.accent
+        save_config(self.cfg)
+
     def press_tile(self, i):
         if i == 0:
             on = not self.wifi[0]
@@ -660,6 +740,8 @@ class ControlCenter:
             self.perf_sel = max(0, min(len(PERF_MODES) - 1, self.perf_sel + dx))
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
+        elif kind == "top":
+            self.top_sel = max(0, min(1, self.top_sel + dx))
 
     def confirm(self):
         if self.page != 0:
@@ -669,6 +751,8 @@ class ControlCenter:
             self.press_tile(self.tile)
         elif kind == "perf":
             self.set_perf(self.perf_sel)
+        elif kind == "top":
+            self.toggle_theme() if self.top_sel == 0 else self.next_accent()
 
     def turn_page(self, d):
         self.page = max(0, min(len(PAGES) - 1, self.page + d))
@@ -720,6 +804,9 @@ class ControlCenter:
                 self.press_tile(val)
             elif kind == "page":
                 self.page = val
+            elif kind == "top":
+                self.focus, self.top_sel = 0, val
+                self.toggle_theme() if val == 0 else self.next_accent()
 
     def _hit(self, x, y):
         for hx, hy, hw, hh, action in self.hits:
@@ -767,6 +854,8 @@ class ControlCenter:
         on, ssid = self.wifi
         bt_on, bt_n = self.bt
         cap, charging = self.bat
+        if ssid and len(ssid) > 16:
+            ssid = ssid[:15] + "…"
         pills = [("WLAN: " + (ssid or ("an" if on else "aus"))),
                  ("Bluetooth: " + ((f"{bt_n} Gerät" + ("e" if bt_n != 1 else "")) if bt_on and bt_n else ("an" if bt_on else "aus"))),
                  ((f"Akku {cap} %" if cap is not None else "Akku ?") + (" · lädt" if charging else ""))]
@@ -776,6 +865,23 @@ class ControlCenter:
             x -= wdt
             P.rrect(x, 70, wdt, 54, 27, T["pill"])
             P.text(label, 19, x + 24, 104, T["text"], bold=True)
+            x -= 14
+
+        # Darstellung: Hell/Dunkel und Akzentfarbe
+        top_focus = self.rows()[self.focus][0] == "top"
+        for i in (1, 0):
+            x -= 54
+            cx = x + 27
+            P.circle(cx, 97, 27, T["pill"])
+            if i == 0:   # Mond bzw. Sonne
+                P.circle(cx, 97, 12, T["text"])
+                if self.T is THEMES["dark"]:
+                    P.circle(cx + 6, 92, 10, T["pill"])
+            else:
+                P.circle(cx, 97, 13, A)
+            if top_focus and self.top_sel == i:
+                self._focus_ring(P, x, 70, 54, 54, 27)
+            self.hits.append((x - 4, 66, 62, 62, ("top", i)))
             x -= 14
 
         # Läuft gerade
@@ -889,8 +995,7 @@ class Overlay:
         self.output = next((o for o, n in self.outputs.items() if n == OUTPUT_NAME), None)
         log("Bildschirme:", ", ".join(self.outputs.values()) or "?",
             "| verwende", OUTPUT_NAME if self.output else "Standard")
-        log("Touch:", "ja" if self.touch else "nicht gefunden")
-
+    
     def _bind(self, name, iface, version):
         return marshal(self.registry, 0, iface, ("u", name), ("s", iface.name),
                        ("u", version), ("n", None), version=version)
@@ -1191,13 +1296,17 @@ def main():
                     grab(fd, on)
             grabbed = on
 
+    pauser = Pauser()
+
     def toggle(view):
         if ui.view == view:
             ui.hide()
             set_grab(False)
+            pauser.resume()
         else:
-            if view == "cc":
+            if not ui.view:
                 cc.refresh(full=True)
+                pauser.pause(cc.game)
             ui.show(view)          # wechselt auch direkt zwischen den Ansichten
             set_grab(True)
 
@@ -1238,6 +1347,10 @@ def main():
             return
         state["dirty"] = True
 
+    def on_term(*_):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, on_term)
+
     log("bereit – Anbernic-Taste: Kontrollcenter, Home-Taste: Gameswitcher, Strg+C: Ende")
     last_minute = time.strftime("%H:%M")
     try:
@@ -1248,8 +1361,6 @@ def main():
                         t = touch.feed(*ev)
                         if t and ui.view and ui.size:
                             px, py = touch.to_surface(t[1], t[2], *ui.size)
-                            if t[0] == "down":
-                                log("Touch: roh %.2f/%.2f -> Bild %d/%d" % (t[1], t[2], px, py))
                             on_touch(t[0], px, py)
                     continue
                 for typ, code, value in read_events(fd):
@@ -1272,6 +1383,7 @@ def main():
         pass
     finally:
         set_grab(False)
+        pauser.resume()            # ein Spiel nie eingefroren zurücklassen
         if ui.view:
             ui.hide()
         log("beendet")

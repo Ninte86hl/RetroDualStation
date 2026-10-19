@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+# RetroDualStation Kontrollcenter – startet mit der Oberfläche (nach Sway/ES)
+[Unit]
+Description=RetroDualStation Kontrollcenter
+After=sway.service essway.service
+Requires=sway.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/var/run/0-runtime-dir
+Environment=WAYLAND_DISPLAY=wayland-1
+Environment=HOME=/storage
+ExecStart=/usr/bin/python3 /storage/.config/retrodualstation/controlcenter/rds_cc.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=rocknix.target
