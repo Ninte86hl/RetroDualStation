@@ -52,6 +52,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
 - [ ] Kontrollcenter: RetroArch-Touchflächen (Savestates etc.) auf dem unteren Screen bei „Screen aus“ prüfen – evtl. abschalten
 - [ ] Kontrollcenter: ROCKNIX-eigene Helligkeits-/Lautstärke-Anzeige unterdrücken, wenn im CC geregelt wird
+- [ ] PortMaster: Celeste Classic nicht steuerbar (nur Start+Select beendet) – auch ohne CC; anderen Port gegenprüfen
 - [ ] Kontrollcenter: Einstellungsseite (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - [ ] DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
