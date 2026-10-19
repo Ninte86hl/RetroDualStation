@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.10"
+VERSION = "0.10.1"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -82,7 +82,8 @@ class WlArgument(Union):
 wl.wl_display_connect.restype = c_void_p
 wl.wl_display_connect.argtypes = [c_char_p]
 for _fn in ("wl_display_roundtrip", "wl_display_dispatch_pending", "wl_display_flush",
-            "wl_display_prepare_read", "wl_display_read_events", "wl_display_get_fd"):
+            "wl_display_prepare_read", "wl_display_read_events", "wl_display_get_fd",
+            "wl_display_get_error"):
     getattr(wl, _fn).restype = c_int
     getattr(wl, _fn).argtypes = [c_void_p]
 wl.wl_display_cancel_read.restype = None
@@ -2277,18 +2278,25 @@ class Overlay:
             log("verborgen")
 
     # -- Ereignisschleife --
+    def _check(self, result):
+        """Bricht ab, wenn die Verbindung zum Compositor weg ist (z. B. Sway neu gestartet).
+        Der Dienst startet das Kontrollcenter dann neu und verbindet sich frisch."""
+        if result < 0 or wl.wl_display_get_error(self.display):
+            raise ConnectionError("Verbindung zu Sway verloren")
+        return result
+
     def pump(self, timeout, extra_fds):
         d = self.display
         while wl.wl_display_prepare_read(d) != 0:
-            wl.wl_display_dispatch_pending(d)
+            self._check(wl.wl_display_dispatch_pending(d))
         wl.wl_display_flush(d)
         wfd = wl.wl_display_get_fd(d)
         ready, _, _ = select.select([wfd] + extra_fds, [], [], timeout)
         if wfd in ready:
-            wl.wl_display_read_events(d)
+            self._check(wl.wl_display_read_events(d))
         else:
             wl.wl_display_cancel_read(d)
-        wl.wl_display_dispatch_pending(d)
+        self._check(wl.wl_display_dispatch_pending(d))
         return [fd for fd in ready if fd != wfd]
 
 
@@ -2576,6 +2584,7 @@ def main():
     log("bereit – Anbernic-Taste: Kontrollcenter, Home-Taste: Gameswitcher, Strg+C: Ende")
     last_minute = time.strftime("%H:%M")
     next_pad_scan = 0.0
+    exit_code = [0]
     try:
         while True:
             if time.monotonic() >= next_pad_scan:
@@ -2627,12 +2636,20 @@ def main():
                 ui.redraw()
     except KeyboardInterrupt:
         pass
+    except ConnectionError as exc:
+        log(str(exc), "– beende, der Dienst startet neu")
+        exit_code[0] = 1
     finally:
         set_grab(False)
         pauser.resume()            # ein Spiel nie eingefroren zurücklassen
         if ui.view:
-            ui.hide()
+            try:
+                ui.hide()
+            except Exception:
+                pass
         log("beendet")
+    if exit_code[0]:
+        sys.exit(exit_code[0])
 
 
 if __name__ == "__main__":
