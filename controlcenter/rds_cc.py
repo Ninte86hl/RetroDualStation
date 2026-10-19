@@ -2475,7 +2475,8 @@ class Overlay:
         log("Compositor hat die Fläche geschlossen – lege sie neu an")
         view = self.view
         self.hide(quiet=True)
-        self.pending_view = view
+        if view != "power":   # Power-Menü nie automatisch wiederherstellen
+            self.pending_view = view
 
     @safe
     def _on_configure(self, _d, lsurf, serial, w, h):
