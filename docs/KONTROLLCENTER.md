@@ -290,12 +290,18 @@ sonst QWERTY; fest einstellbar über `"keyboard"` in `controlcenter.json`.
 - **Mini-Power-Menü** (wie Android): Ausschalten, Neustart, Ruhemodus, ES neu starten;
   große Knöpfe, Rückfrage vor dem Ausführen; läuft ein Spiel, wird vorher gespeichert
   bzw. sauber beendet.
-  **Aufruf über die Ein/Aus-Taste** (Entscheidung offen, Empfehlung wie Android):
+  **Aufruf über die Ein/Aus-Taste** – entschieden (19.10.2026): **kurz drücken = Power-Menü**,
+  weil das RG DS (Plus) klappbar ist und beim Zuklappen über den Hall-Sensor
+  (`gpio-keys-hall`, event4 → `rocknix-fake-suspend lid close/open`) ohnehin schläft.
+  „Ruhemodus“ ist der erste Knopf im Menü (z. B. aufgeklappt am Ladekabel). Hintergrund:
   - ROCKNIX heute: `input_sense` liest `rk805 pwrkey` (event0) per evtest und ruft schon
     beim Drücken `/usr/bin/rocknix-fake-suspend power` (Ruhemodus) auf;
     langes Halten (6–10 s) = harte Abschaltung durch den Power-Chip (bleibt als Notaus)
-  - Plan: unser Dienst übernimmt `rk805 pwrkey` exklusiv (EVIOCGRAB); kurz = wir rufen
-    `rocknix-fake-suspend power` selbst auf (Verhalten wie bisher), ~1 s halten = Power-Menü
+  - Umsetzung: unser Dienst übernimmt `rk805 pwrkey` exklusiv (EVIOCGRAB); kurz drücken
+    öffnet das Power-Menü, „Ruhemodus“ dort ruft `rocknix-fake-suspend power` auf
+  - Zuklappen: Pause bleibt bis zum Aufklappen bestehen; „Unterer Screen aus“ danach
+    beibehalten bzw. bewusst wieder einschalten (ROCKNIX schaltet beim Aufklappen die
+    Beleuchtung wieder an)
   - Sicherheitsnetz: endet unser Dienst, gibt der Kernel die Taste frei → ROCKNIX wie gewohnt
 - **ES-Schnittstelle** `http://localhost:1234/runningGame` (200 = Spiel läuft, 201 = keins;
   nutzt ROCKNIX selbst in `rocknix-fake-suspend`) → für „Läuft gerade“ und den Gameswitcher

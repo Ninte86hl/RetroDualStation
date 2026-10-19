@@ -36,8 +36,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Kontrollcenter: Pause in RetroArch, DraStic und DSperate testen (0.4)
 - [ ] Kontrollcenter: Mini-Power-Menü wie bei Android – Ausschalten, Neustart, Ruhemodus,
       ES neu starten (mit Rückfrage; laufendes Spiel vorher speichern/beenden).
-      Aufruf: **Ein/Aus-Taste ~1 s halten**; kurz drücken bleibt Ruhemodus
-      (`rocknix-fake-suspend power`, von uns weitergereicht)
+      Aufruf (entschieden 19.10.2026): **Ein/Aus-Taste kurz drücken**; Ruhemodus per Zuklappen
+      (Hall-Sensor, bleibt bei ROCKNIX) oder über den ersten Knopf im Menü
+- [ ] Kontrollcenter: Zuklappen/Aufklappen berücksichtigen (Pause bleibt bis zum Aufklappen;
+      „Unterer Screen aus“ nach dem Aufklappen beibehalten bzw. bewusst wieder einschalten)
 - [ ] Kontrollcenter: „Läuft gerade“ über die ES-Schnittstelle `http://localhost:1234/runningGame`
 - [ ] Kontrollcenter: Log-Manager für einfache Fehlersuche – Logs von Kontrollcenter, ES,
       RetroArch, DraStic, System an einer Stelle ansehen; „Fehlerbericht erstellen“ packt sie
