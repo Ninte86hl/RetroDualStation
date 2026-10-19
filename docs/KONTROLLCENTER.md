@@ -384,7 +384,7 @@ wird bei jedem Öffnen frisch gewählt.
 |---|---|---|
 | Speichern | UDP `SAVE_STATE_SLOT 9` an 127.0.0.1:55355 | R2 (Code 313) ins Joypad `retrogame_joypad` einspeisen (evdev write) |
 | Laden | `LOAD_STATE_SLOT 9` sobald `GET_STATUS` → `PLAYING` | L2 (Code 312) einspeisen |
-| Screenshot | entsteht automatisch: `<rom>.state9.png` | selbst mit `grim` (beide DS-Screens) |
+| Screenshot | entsteht automatisch: `<rom>.state9.png` | selbst mit `grim -o DSI-2` – **nur oberer Screen** (übersichtlicher) |
 | Ablage | `/storage/roms/savestates/<system>/<rom>.state9` | `/storage/roms/savestates/nds/<rom>_0.dss` (Slot `savestate_number`) |
 | Spiel starten | ES-API: `POST http://127.0.0.1:1234/launch` mit ROM-Pfad (getestet, Start nach ~2 s) | gleich |
 
