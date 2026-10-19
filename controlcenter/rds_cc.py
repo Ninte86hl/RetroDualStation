@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.11.0"
+VERSION = "0.12.0"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -242,6 +242,10 @@ EN = {
     "Ausgewogen": "Balanced", "Unterer Screen aus": "Bottom screen off", "Ruhemodus": "Sleep",
     "Neu starten": "Restart", "Ausschalten": "Power off", "ES neu starten": "Restart ES",
     "Neu starten + Logs sichern": "Restart + save logs",
+    "Weiterspielen": "Resume", "Optionen (bald)": "Options (soon)", "Schließen": "Close",
+    "Noch keine Spiele gespielt": "No games played yet", "Home oder B: schließen": "Home or B: close",
+    "Spielstand über das Spiel selbst": "Progress is saved by the game itself",
+    "gerade eben": "just now", "Spiel wird gestartet …": "Starting game …",
     "ES wirklich neu starten?": "Really restart ES?",
     "Laufendes Spiel geht verloren.": "The running game will be lost.",
     "Ja, neu starten": "Yes, restart",
@@ -264,6 +268,9 @@ _MONTHS = dict(zip(["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli"
                    ["January", "February", "March", "April", "May", "June", "July", "August",
                     "September", "October", "November", "December"]))
 EN_PATTERNS = [
+    (r"^vor (\d+) min$", lambda m: f"{m.group(1)} min ago"),
+    (r"^vor (\d+) h$", lambda m: f"{m.group(1)} h ago"),
+    (r"^vor (\d+) Tagen$", lambda m: f"{m.group(1)} days ago"),
     (r"^Akku (\S+) %( · lädt)?$", lambda m: f"Battery {m[1]} %" + (" · charging" if m[2] else "")),
     (r"^(\w+), (\d+)\. (\w+)$", lambda m: f"{_DAYS.get(m[1], m[1])}, {_MONTHS.get(m[3], m[3])} {m[2]}"),
     (r"^Verbunden mit (.+)$", lambda m: f"Connected to {m[1]}"),
@@ -891,7 +898,7 @@ def running_port():
             m = PORT_RE.search(args[1])
             if m and "PortMaster" not in m.group(1):
                 return {"pid": int(pid), "emu": "PortMaster", "name": m.group(1),
-                        "system": "Ports", "played": None}
+                        "system": "Ports", "played": None, "rom": args[1]}
         if any(os.path.basename(a) == "pugwash" for a in args[:3]):
             tool = {"pid": int(pid), "emu": "PortMaster", "name": "PortMaster",
                     "system": "", "played": None}
@@ -934,7 +941,8 @@ def _running_emu():
             pass
         meta_name, icon = game_meta(rom if "/roms/" in rom else None)
         return {"pid": int(pid), "emu": emu, "name": fix_article(meta_name or name) or emu,
-                "system": system, "played": played, "icon": icon}
+                "system": system, "played": played, "icon": icon,
+                "rom": rom if "/roms/" in rom else None}
     return None
 
 
@@ -967,6 +975,163 @@ def quit_game(game):
             os.kill(p, signal.SIGTERM)
         except OSError:
             pass
+
+
+# ------------------------------------------------------------ Gameswitcher --
+
+GS_DIR = "/storage/.config/retrodualstation/switcher"
+GS_HISTORY = GS_DIR + "/history.json"
+GS_MAX = 12
+SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
+
+
+def inject_keys(seq):
+    """Tastendrücke ins eingebaute Joypad einspeisen (sehen alle Programme wie echte Drücke).
+    seq: Liste aus (code, wert) oder Pausen in Sekunden (float)."""
+    dev = next(("/dev/input/" + p.split("/")[4] for p in glob.glob("/sys/class/input/event*/device/name")
+                if (rd(p) or "").strip() == JOYPAD_NAME), None)
+    if not dev:
+        return False
+    fd = os.open(dev, os.O_WRONLY)
+    try:
+        for item in seq:
+            if isinstance(item, float):
+                time.sleep(item)
+                continue
+            code, val = item
+            os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
+            os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
+    finally:
+        os.close(fd)
+    return True
+
+
+def es_launch(rom):
+    """Spiel über die ES-Schnittstelle starten (ES wählt Emulator wie beim normalen Start)."""
+    try:
+        import urllib.request
+        req = urllib.request.Request("http://127.0.0.1:1234/launch", data=rom.encode(), method="POST")
+        urllib.request.urlopen(req, timeout=5).read()
+        return True
+    except Exception as exc:
+        log("Start über ES fehlgeschlagen:", exc)
+        return False
+
+
+def rom_of(pid):
+    args = _cmdline(pid)
+    return next((a for a in reversed(args) if "/roms/" in a), None)
+
+
+class Switcher:
+    """Zuletzt gespielte Spiele: speichern beim Öffnen, fortsetzen (A) oder neu starten (Y)."""
+
+    def __init__(self):
+        self.items = []
+        self.sel = 0
+        self.busy = None   # Text während einer Aktion
+        self.load()
+
+    def load(self):
+        try:
+            with open(GS_HISTORY) as f:
+                self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))][:GS_MAX]
+        except (OSError, ValueError):
+            self.items = []
+
+    def save(self):
+        os.makedirs(GS_DIR, exist_ok=True)
+        tmp = GS_HISTORY + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(self.items, f, indent=1)
+        os.replace(tmp, GS_HISTORY)
+
+    def remember(self, game, shot=None):
+        """Laufendes Spiel oben in die Liste setzen."""
+        rom = game.get("rom") or rom_of(game["pid"])
+        if not rom:
+            return
+        old = next((i for i in self.items if i["rom"] == rom), {})
+        entry = {"rom": rom, "name": game["name"], "system": game.get("system", ""),
+                 "emu": game["emu"], "icon": game.get("icon"), "time": time.time(),
+                 "shot": shot or old.get("shot")}
+        self.items = [entry] + [i for i in self.items if i["rom"] != rom]
+        self.items = self.items[:GS_MAX]
+        self.save()
+
+    def capture(self, game):
+        """Beim Öffnen im Spiel: Speicherstand anlegen + Screenshot. Läuft VOR Pause und Grab."""
+        if not game:
+            return
+        rom = game.get("rom") or rom_of(game["pid"])
+        if not rom:
+            return
+        os.makedirs(GS_DIR, exist_ok=True)
+        shot = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
+        emu = game["emu"]
+        if emu == "RetroArch":
+            ra_command(f"SAVE_STATE_SLOT {SLOT}")
+            png = os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
+                               os.path.splitext(os.path.basename(rom))[0] + f".state{SLOT}.png")
+            for _ in range(15):          # Vorschaubild abwarten
+                time.sleep(0.1)
+                if os.path.exists(png) and time.time() - os.path.getmtime(png) < 5:
+                    break
+            if os.path.exists(png):
+                shot = png
+        else:
+            if emu == "DraStic":
+                inject_keys([(313, 1), 0.15, (313, 0)])   # R2 = Speicherstand
+                time.sleep(1.2)
+            # DS: nur oberer Bildschirm; sonst ganzer oberer Ausgang
+            subprocess.run(["grim", "-o", "DSI-2", shot], timeout=5,
+                           env=dict(os.environ), capture_output=True)
+        self.remember(game, shot if os.path.exists(shot) else None)
+        log("Gameswitcher: gespeichert", emu, os.path.basename(rom))
+
+    def resume_steps(self, item, fresh):
+        """Nach dem Start (im Hintergrund): Speicherstand laden bzw. Autoload unterdrücken."""
+        emu = item["emu"]
+        deadline = time.time() + 30
+        if emu == "RetroArch":
+            while time.time() < deadline:
+                st = ra_command("GET_STATUS", reply=True)
+                if st and "PLAYING" in st:
+                    time.sleep(1.5)
+                    ra_command("RESET" if fresh else f"LOAD_STATE_SLOT {SLOT}")
+                    break
+                time.sleep(0.5)
+        elif emu == "DraStic" and not fresh:
+            while time.time() < deadline and not run(["pidof", "drastic"]):
+                time.sleep(0.5)
+            time.sleep(4)                       # DraStic braucht etwas, bis das Spiel läuft
+            inject_keys([(312, 1), 0.15, (312, 0)])   # L2 = laden
+        # DSperate lädt selbst (autoload); für „neu starten“ siehe launch()
+
+    def launch(self, item, fresh, current=None):
+        """Laufendes Spiel beenden (speichert vorher), dann item starten."""
+        def work():
+            if current:
+                quit_game(current)
+                for _ in range(40):
+                    if not running_game():
+                        break
+                    time.sleep(0.25)
+                time.sleep(1.0)
+            ini = "/storage/.config/dsperate/dsperate.ini"
+            restore = None
+            if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
+                txt = rd(ini) or ""
+                if "autoload = true" in txt:
+                    restore = txt
+                    wr(ini, txt.replace("autoload = true", "autoload = false"))
+            log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
+            if es_launch(item["rom"]):
+                self.resume_steps(item, fresh)
+            if restore:
+                time.sleep(10)
+                wr(ini, restore)
+        threading.Thread(target=work, daemon=True).start()
 
 
 class Pauser:
@@ -1872,6 +2037,7 @@ class ControlCenter:
         self.game = None
         self.marquee = False
         self.marquee_t0 = 0.0
+        self.switcher = Switcher()
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
         self.tracks = {}        # Regler -> (x0, x1)
         self.touch = None
@@ -2382,10 +2548,71 @@ class ControlCenter:
         P.text(f"kommt in {stage}", 22, 630, 470, T["muted"], align="c")
 
     def _draw_switcher(self, P):
-        T = self.T
-        P.text("Gameswitcher", 44, 630, 420, T["text"], bold=True, align="c")
-        P.text("kommt in Etappe 5", 22, 630, 470, T["muted"], align="c")
-        P.text("Home oder B: schließen", 17, 630, 835, T["muted"], align="c")
+        T, A = self.T, self.accent
+        sw = self.switcher
+        now = time.localtime()
+        P.text(time.strftime("%H:%M", now), 52, 45, 90, T["text"], bold=True)
+        lw = 230 * 52 / 130
+        tw = P.width("Gameswitcher", 38, bold=True)
+        lx = (1260 - lw - 16 - tw) / 2
+        P.logo(lx, 97 - 26, 52, T["text"], T["bg"])
+        P.text("Gameswitcher", 38, lx + lw + 16, 97 + 38 * 0.36, T["text"], bold=True)
+        if sw.busy:
+            P.text(sw.busy, 30, 630, 480, T["text"], bold=True, align="c", raw=True)
+            return
+        if not sw.items:
+            P.text("Noch keine Spiele gespielt", 30, 630, 460, T["text"], bold=True, align="c")
+            P.text("Home oder B: schließen", 18, 630, 925, T["muted"], align="c")
+            return
+        # Karussell: ausgewählte Karte groß in der Mitte, Nachbarn links/rechts
+        cw, ch = 560, 420
+        cy = 170
+        for k in (-2, -1, 1, 2, 0):           # Mitte zuletzt (oben drauf)
+            i = sw.sel + k
+            if not 0 <= i < len(sw.items):
+                continue
+            it = sw.items[i]
+            sc = 1.0 if k == 0 else 0.6
+            w, h = cw * sc, ch * sc
+            x = 630 + k * 430 - w / 2
+            y = cy + (ch - h) / 2
+            P.rrect(x, y, w, h, 26, T["card"])
+            shot = it.get("shot")
+            if not (shot and os.path.exists(shot) and P.image(shot, x, y, w, h, 26)):
+                icon = it.get("icon")
+                if not (icon and P.image(icon, x + w / 2 - 70 * sc, y + h / 2 - 70 * sc, 140 * sc, 140 * sc, 20)):
+                    P.text(it["name"][:1].upper(), 90 * sc, x + w / 2, y + h / 2 + 30 * sc, T["muted"], bold=True, align="c", raw=True)
+            if k == 0:
+                P.rrect(x - 6, y - 6, w + 12, h + 12, 32, A, stroke=5)
+            else:
+                P.rrect(x, y, w, h, 26, T["bg"], a=0.45)
+            self.hits.append((x, y, w, h, ("gs", i)))
+        it = sw.items[sw.sel]
+        name = it["name"]
+        while P.width(name, 32, bold=True, raw=True) > 1100 and len(name) > 4:
+            name = name[:-2]
+        if name != it["name"]:
+            name = name.rstrip() + "…"
+        P.text(name, 32, 630, 660, T["text"], bold=True, align="c", raw=True)
+        mins = int((time.time() - it.get("time", time.time())) // 60)
+        ago = ("gerade eben" if mins < 1 else f"vor {mins} min" if mins < 60
+               else f"vor {mins // 60} h" if mins < 1440 else f"vor {mins // 1440} Tagen")
+        sub = " · ".join(p for p in (it.get("system"), it.get("emu"), tr(ago)) if p)
+        P.text(sub, 20, 630, 700, T["muted"], align="c", raw=True)
+        # Seitenpunkte
+        n = len(sw.items)
+        for i in range(n):
+            P.circle(630 + (i - (n - 1) / 2) * 22, 745, 6 if i == sw.sel else 4, A if i == sw.sel else T["dot"])
+        # Tasten
+        btns = [("A", "Weiterspielen"), ("Y", "Neu starten"), ("X", "Optionen (bald)"), ("B", "Schließen")]
+        bx = 630 - 4 * 270 / 2
+        for j, (key, label) in enumerate(btns):
+            x = bx + j * 270
+            P.rrect(x + 10, 790, 250, 70, 35, A if j == 0 else T["card"], a=1.0 if j != 2 else 0.5)
+            P.text(f"{key}  {tr(label)}", 20, x + 135, 832, "ffffff" if j == 0 else T["text"], bold=j == 0, align="c", raw=True)
+            self.hits.append((x + 10, 790, 250, 70, ("gs_btn", key)))
+        if it.get("emu") in ("PortMaster",):
+            P.text("Spielstand über das Spiel selbst", 17, 630, 905, T["muted"], align="c")
 
 
 # ------------------------------------------------------------ Power-Menü ----
@@ -2971,6 +3198,21 @@ def main():
     state = {"dirty": False}
 
     def on_touch(kind, x, y):
+        if ui.view == "switcher":
+            if kind == "up" and cc.pen:
+                dx, dy = cc.pen.to_design(x, y)
+                hit = next((h[4] for h in reversed(cc.hits)
+                            if h[0] <= dx <= h[0] + h[2] and h[1] <= dy <= h[1] + h[3]), None)
+                if hit and hit[0] == "gs":
+                    if hit[1] == cc.switcher.sel:
+                        gs_act(False)
+                    else:
+                        cc.switcher.sel = hit[1]
+                elif hit and hit[0] == "gs_btn":
+                    {"A": lambda: gs_act(False), "Y": lambda: gs_act(True),
+                     "B": lambda: toggle("switcher")}.get(hit[1], lambda: None)()
+                state["dirty"] = True
+            return
         if ui.view == "power":
             if kind == "up" and cc.pen:
                 dx, dy = cc.pen.to_design(x, y)
@@ -3059,9 +3301,26 @@ def main():
         else:
             if not ui.view:
                 cc.refresh(full=True)
+                if view == "switcher":
+                    cc.switcher.load()
+                    cc.switcher.capture(cc.game)   # speichern + Screenshot, vor Pause und Grab
+                    cc.switcher.sel = 0
                 pauser.pause(cc.game)
             ui.show(view)          # wechselt auch direkt zwischen den Ansichten
             set_grab(True)
+
+    def gs_act(fresh):
+        """A (fresh=False) weiterspielen, Y (fresh=True) neu starten."""
+        sw = cc.switcher
+        if not sw.items:
+            return
+        item = sw.items[sw.sel]
+        cur = cc.game
+        same = cur and (cur.get("rom") or rom_of(cur["pid"])) == item["rom"]
+        toggle("switcher")                 # schließen, Pause aufheben
+        if same and not fresh:
+            return                          # einfach zurück ins laufende Spiel
+        sw.launch(item, fresh, current=cur)
 
     stick = {"dir": 0, "next": 0.0}
 
@@ -3115,6 +3374,25 @@ def main():
             combo = True  # Teil einer Tastenkombination
             return
         if not ui.view:
+            return
+        if ui.view == "switcher":
+            sw = cc.switcher
+            dx = 0
+            if typ == EV_ABS and code == ABS_HAT0X and value != 0:
+                dx = 1 if value > 0 else -1
+            elif typ == EV_KEY and code in DPAD:
+                dx = DPAD[code][0]
+            elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
+                dx = -1 if code == BTN_TL else 1
+            if dx and sw.items:
+                sw.sel = max(0, min(len(sw.items) - 1, sw.sel + dx))
+            elif typ == EV_KEY and code == BTN_EAST:      # A
+                gs_act(False)
+            elif typ == EV_KEY and code == BTN_WEST:      # Y
+                gs_act(True)
+            elif typ == EV_KEY and code == BTN_SOUTH:     # B
+                toggle("switcher")
+            state["dirty"] = True
             return
         if ui.view == "power":
             if typ == EV_ABS and code == ABS_HAT0Y and value != 0:
@@ -3211,6 +3489,11 @@ def main():
                     g = running_game()
                     pid = g["pid"] if g else None
                     if pid != last_game["pid"]:
+                        if g:
+                            try:
+                                cc.switcher.remember(g)
+                            except Exception as exc:
+                                log("Gameswitcher: Merken fehlgeschlagen:", exc)
                         if g and g["emu"] in AUTO_DIM_EMUS:
                             cc.screen_off()
                             cc.screen_auto = True
