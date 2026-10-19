@@ -832,7 +832,8 @@ MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August"
           "September", "Oktober", "November", "Dezember"]
 ACCENTS = ["e5383b", "3d7bff", "2bb673", "f08c00", "9b5de5", "e64980"]
 PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
-TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
+TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus", "Power"]
+TILES_ROW2_START = 3   # ab Index 3 zweite Reihe
 
 
 def nmcli_split(line):
@@ -1781,6 +1782,8 @@ class ControlCenter:
         elif i == 3:
             log("Ruhemodus")
             subprocess.Popen(["systemctl", "suspend"])
+        elif i == 4:
+            return "power"   # Aufrufer öffnet Power-Menü
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
@@ -1817,7 +1820,7 @@ class ControlCenter:
             return
         kind = self.rows()[self.focus][0]
         if kind == "tiles":
-            self.press_tile(self.tile)
+            return self.press_tile(self.tile)
         elif kind == "perf":
             self.set_perf(self.perf_sel)
         elif kind == "top":
@@ -1896,7 +1899,7 @@ class ControlCenter:
                 self.set_perf(val)
             elif kind == "tile":
                 self.focus, self.tile = self.rows().index(("tiles", None)), val
-                self.press_tile(val)
+                return self.press_tile(val)
             elif kind == "more":
                 self.focus, self.tile = self.rows().index(("tiles", None)), val
                 self.open_sub(val)
@@ -2062,28 +2065,35 @@ class ControlCenter:
             self.hits.append((sx, y + 10, 269, 70, ("perf", i)))
         y += 110
 
-        # Kacheln
-        states = [bool(self.wifi[0]), bool(self.bt[0]), self.screen_bottom_off, False]  # Ruhemodus hat keinen An/Aus-State
+        # Kacheln – Reihe 1: WLAN, BT, Screen (je 282px), Reihe 2: Sleep, Power (je 432px)
+        states = [bool(self.wifi[0]), bool(self.bt[0]), self.screen_bottom_off, False, False]
         focused = rows[self.focus][0] == "tiles"
-        for i, name in enumerate(TILES):
-            tx = 45 + i * 297
-            soon = i >= 4   # keine Kachel mehr als Platzhalter
-            fill = A if states[i] else mix(T["tile"], A, 0.22)
-            P.rrect(tx, y, 282, 118, 24, fill, a=0.5 if soon else 1)
-            tc = "ffffff" if states[i] else T["text"]
-            sub = self._tile_detail(i)
-            P.text(name, 21, tx + 25, y + (68 if sub else 79), tc, bold=True)
-            if sub:   # womit verbunden – direkt in der Kachel
-                P.text(sub, 16, tx + 25, y + 96, mix(tc, fill, 0.25))
-            if soon:
-                P.text("bald", 15, tx + 25, y + 42, T["muted"])
-            if i < 2:   # Untermenü
-                P.circle(tx + 244, y + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
-                P.chevron(tx + 248, y + 38, 9, "ffffff" if states[i] else T["text"])
-                self.hits.append((tx + 200, y, 82, 80, ("more", i)))
-            if focused and i == self.tile:
-                self._focus_ring(P, tx, y, 282, 118, 24)
-            self.hits.append((tx, y, 282, 118, ("tile", i)))
+        r1 = TILES[:TILES_ROW2_START]
+        r2 = TILES[TILES_ROW2_START:]
+        r2w = (1170 - (len(r2) - 1) * 15) // len(r2)
+        for row, items in enumerate([r1, r2]):
+            tw = 282 if row == 0 else r2w
+            ry = y if row == 0 else y + 134
+            n = len(items)
+            total = n * tw + (n - 1) * 15
+            rx0 = (1260 - total) // 2
+            for j, name in enumerate(items):
+                i = j if row == 0 else j + TILES_ROW2_START
+                tx = rx0 + j * (tw + 15)
+                fill = A if states[i] else mix(T["tile"], A, 0.22)
+                P.rrect(tx, ry, tw, 118, 24, fill)
+                tc = "ffffff" if states[i] else T["text"]
+                sub = self._tile_detail(i)
+                P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
+                if sub:
+                    P.text(sub, 16, tx + 25, ry + 96, mix(tc, fill, 0.25))
+                if i < 2:   # WLAN/BT Untermenü-Pfeil
+                    P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
+                    P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
+                    self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
+                if focused and i == self.tile:
+                    self._focus_ring(P, tx, ry, tw, 118, 24)
+                self.hits.append((tx, ry, tw, 118, ("tile", i)))
 
     def _tile_detail(self, i):
         """Zweite Zeile der WLAN-/Bluetooth-Kachel."""
@@ -2707,7 +2717,9 @@ def main():
             return
         if ui.view != "cc":
             return
-        {"down": cc.touch_down, "move": cc.touch_move}.get(kind, lambda *_: cc.touch_up())(x, y)
+        result = {"down": cc.touch_down, "move": cc.touch_move}.get(kind, lambda *_: cc.touch_up())(x, y)
+        if result == "power":
+            toggle("power")
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
@@ -2862,7 +2874,9 @@ def main():
         elif typ == EV_KEY and code in (BTN_NORTH, BTN_WEST):
             cc.details()
         elif typ == EV_KEY and code == BTN_EAST:
-            cc.confirm()
+            result = cc.confirm()
+            if result == "power":
+                toggle("power")
         elif typ == EV_KEY and code in (BTN_TL, BTN_TR):
             if cc.kbd:
                 cc.kbd.toggle_shift() if code == BTN_TL else cc.kbd.toggle_layer()
