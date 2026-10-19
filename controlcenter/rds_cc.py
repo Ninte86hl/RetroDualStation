@@ -36,11 +36,12 @@ import threading
 import subprocess
 import sys
 import time
+import traceback
 from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.8"
+VERSION = "0.8.1"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -702,6 +703,7 @@ class SubMenu:
             log("Abfrage fehlgeschlagen:", exc)
             items = self.items
         self.items, self.loaded = items, True
+        self._fix_focus()
         self.fetch_at = time.monotonic() + 3
         self.fetching = False
         self.cc.changed = True
@@ -717,6 +719,7 @@ class SubMenu:
         return ["back", "switch", "scan"]
 
     def nav(self, dx, dy):
+        self._fix_focus()
         if dy:
             self.focus = max(0, min(len(self.items), self.focus + dy))
             self.col = 0 if self.focus else min(self.col, 2)
@@ -729,6 +732,7 @@ class SubMenu:
         self.col = max(0, min(n - 1, self.col + dx))
 
     def confirm(self):
+        self._fix_focus()
         if self.focus == 0:
             self.tap(("sub", self.header()[self.col]))
         else:
@@ -736,6 +740,12 @@ class SubMenu:
             acts = self.actions(item)
             if acts:
                 self.do(item, acts[min(self.col, len(acts) - 1)])
+
+    def _fix_focus(self):
+        """Liste kann sich ändern (z. B. Gerät entfernt): Auswahl gültig halten."""
+        self.focus = min(self.focus, len(self.items))
+        if self.focus:
+            self.col = min(self.col, max(0, len(self.actions(self.items[self.focus - 1])) - 1))
 
     def _clamp(self):
         self.offset = max(0.0, min(max(0.0, len(self.items) * self.ROW - self.LIST_H), self.offset))
@@ -2255,19 +2265,24 @@ def main():
         while True:
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold)
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
-                if fd == tfd:
-                    for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
-                        t = touch.feed(*ev)
-                        if t and ui.view and ui.size:
-                            px, py = touch.to_surface(t[1], t[2], *ui.size)
-                            on_touch(t[0], px, py)
-                    continue
-                for typ, code, value in read_events(fd):
-                    if fd == home:
-                        if typ == EV_KEY and code == BTN_Z and value == 1:
-                            toggle("switcher")
-                    else:
-                        handle_joy(typ, code, value)
+                try:
+                    if fd == tfd:
+                        for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
+                            t = touch.feed(*ev)
+                            if t and ui.view and ui.size:
+                                px, py = touch.to_surface(t[1], t[2], *ui.size)
+                                on_touch(t[0], px, py)
+                        continue
+                    for typ, code, value in read_events(fd):
+                        if fd == home:
+                            if typ == EV_KEY and code == BTN_Z and value == 1:
+                                toggle("switcher")
+                        else:
+                            handle_joy(typ, code, value)
+                except Exception:
+                    # ein Fehler darf das Kontrollcenter nicht beenden
+                    log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())
+                    state["dirty"] = True
             if stick["dir"] and cc.kbd and ui.view and time.monotonic() >= stick["next"]:
                 cc.kbd.cursor(stick["dir"])
                 stick["next"] = time.monotonic() + 0.12
