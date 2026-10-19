@@ -339,3 +339,5 @@ Nach „Trennen“ verband er sich sofort neu → 0.8.2: Suche stoppen und `/run
 löschen bei Trennen/Entfernen und beim Verlassen des Untermenüs. Ein gekoppelter,
 eingeschalteter Controller verbindet sich trotzdem von selbst wieder (normales
 Bluetooth-Verhalten) – Hinweis in der Statuszeile.
+**0.8.3:** Entscheidung (19.10.2026): bei verbundenen Controllern (Gerätetyp `input-*`) kein
+„Trennen“, nur „Entfernen“ – Controller werden durch Ausschalten getrennt; Audio-Geräte behalten „Trennen“.

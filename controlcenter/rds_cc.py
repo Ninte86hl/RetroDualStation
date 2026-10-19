@@ -41,7 +41,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.8.2"
+VERSION = "0.8.3"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -1025,17 +1025,27 @@ class BtMenu(SubMenu):
         for mac, name in alld.items():
             if name.replace("-", ":") == mac:
                 continue   # Geräte ohne Namen weglassen
+            icon = ""
+            if mac in paired:   # Gerätetyp nur für gekoppelte Geräte abfragen (wenige, schnell)
+                info = run(["bluetoothctl", "info", mac], timeout=3) or ""
+                m = re.search(r"Icon:\s*(\S+)", info)
+                icon = m.group(1) if m else ""
             items.append({"key": mac, "name": name, "mac": mac, "paired": mac in paired,
-                          "connected": mac in conn, "highlight": mac in conn})
+                          "connected": mac in conn, "highlight": mac in conn,
+                          "input": icon.startswith("input")})
         items.sort(key=lambda i: (not i["connected"], not i["paired"], i["name"].lower()))
         return items
 
     def describe(self, it):
-        return ("Verbunden" if it["connected"] else "Gekoppelt" if it["paired"] else "Neu") + " · " + it["mac"]
+        state = "Verbunden" if it["connected"] else "Gekoppelt" if it["paired"] else "Neu"
+        if it.get("input") and it["connected"]:
+            state += " · trennen: Controller ausschalten"
+        return state + " · " + it["mac"]
 
     def actions(self, it):
         if it["connected"]:
-            return ["Trennen", "Entfernen"]
+            # Controller verbinden sich von selbst neu → getrennt wird durch Ausschalten
+            return ["Entfernen"] if it.get("input") else ["Trennen", "Entfernen"]
         if it["paired"]:
             return ["Verbinden", "Entfernen"]
         return ["Koppeln"]
