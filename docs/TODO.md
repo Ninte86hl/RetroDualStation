@@ -12,7 +12,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Als Nächstes
 - [x] Bestandsaufnahme auf dem RG DS Plus (Ergebnis in [KONTROLLCENTER.md](KONTROLLCENTER.md))
-- [ ] Entscheidung: Kontrollcenter auf „lowerdeck“ aufbauen (GPL) oder eigene Umsetzung mit dessen Technik
+- [x] Entscheidung (19.10.2026): Kontrollcenter als **Eigenentwicklung** (eigener Code, MIT wie der Rest; lowerdeck nur als Hinweis, dass der Weg funktioniert – kein Code übernommen)
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
 
 ## RetroDualStation

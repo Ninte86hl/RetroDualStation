@@ -193,8 +193,10 @@ DraStic ist nicht quelloffen, sein Pausemenü ist auf dem RG DS Plus sehr klein.
   GET_CONFIG_PARAM …), Savestate-Vorschaubilder, Helligkeitsregler, Abdunkeln bei Leerlauf
 - **RetroAchievements ohne API-Schlüssel:** `ra_proxy.py` sitzt als lokaler Proxy zwischen
   RetroArch und retroachievements.org (`cheevos_custom_host`) und liest die Daten mit
-- → sehr gute Grundlage: Kontrollcenter darauf aufbauen (Abzweig/Fork, dann ebenfalls
-  GPL-2.0-or-later für diesen Teil) oder dessen Technik übernehmen. Bei Single-Screen-
+- **Entscheidung:** Eigenentwicklung, kein Code aus lowerdeck. Öffentlich dokumentierte
+  Schnittstellen (RetroArch-Netzwerkbefehle UDP 55355, SDL2, sysfs, wpctl …) nutzen wir
+  selbst; lowerdeck zeigt nur, dass der Weg auf dem Gerät funktioniert. Im Dual-Modus
+  wird lowerdeck abgeschaltet und durch das Kontrollcenter ersetzt. Bei Single-Screen-
   Spielen ist der untere Bildschirm frei – kein Overlay nötig; nur bei DraStic (beide
   Bildschirme) muss sich das Kontrollcenter darüberlegen.
 
