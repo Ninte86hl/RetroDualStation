@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""RetroDualStation Kontrollcenter – Prototyp 0.7
+"""RetroDualStation Kontrollcenter – Prototyp 0.8
 
 Zeigt auf dem unteren Bildschirm (DSI-1) eine Fläche auf der Wayland-Overlay-Ebene,
 also über ES und über jedem Emulator.
@@ -40,7 +40,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.7"
+VERSION = "0.8"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
@@ -229,6 +229,7 @@ for _fn, _args in {
     "cairo_set_line_width": [c_void_p, c_double],
     "cairo_line_to": [c_void_p, c_double, c_double],
     "cairo_set_line_cap": [c_void_p, c_int],
+    "cairo_clip": [c_void_p], "cairo_reset_clip": [c_void_p],
     "cairo_select_font_face": [c_void_p, c_char_p, c_int, c_int],
     "cairo_set_font_size": [c_void_p, c_double],
     "cairo_move_to": [c_void_p, c_double, c_double],
@@ -300,6 +301,14 @@ class Pen:
             cairo.cairo_stroke(cr)
         else:
             cairo.cairo_fill(cr)
+
+    def clip(self, x, y, w, h):
+        cairo.cairo_new_path(self.cr)
+        cairo.cairo_rectangle(self.cr, self.X(x), self.Y(y), w * self.s, h * self.s)
+        cairo.cairo_clip(self.cr)
+
+    def unclip(self):
+        cairo.cairo_reset_clip(self.cr)
 
     def circle(self, x, y, r, c):
         cairo.cairo_new_path(self.cr)
@@ -532,12 +541,10 @@ def bt_state():
 
 def bt_set(on):
     log("Bluetooth", "einschalten" if on else "ausschalten")
-    if on:
-        cmd = ("set_setting controllers.bluetooth.enabled 1; "
-               "systemctl start bluetooth bluetooth-agent; sleep 2; bluetoothctl power on")
+    if on:   # wie das ES-Menü: Einstellung, Dienst und Helfer über rocknix-bluetooth
+        cmd = "rocknix-bluetooth enable; sleep 1; bluetoothctl power on"
     else:
-        cmd = ("bluetoothctl power off; systemctl stop bluetooth-agent bluetooth; "
-               "set_setting controllers.bluetooth.enabled 0")
+        cmd = "bluetoothctl power off; rocknix-bluetooth disable"
     return spawn(["bash", "-c", ". /etc/profile; " + cmd])
 
 
@@ -666,6 +673,8 @@ class SubMenu:
     """Gemeinsame Grundlage für WLAN- und Bluetooth-Untermenü."""
     title = ""
     VISIBLE = 6
+    ROW = 98
+    LIST_Y, LIST_H = 205, 6 * 98
 
     def __init__(self, cc):
         self.cc = cc
@@ -674,7 +683,8 @@ class SubMenu:
         self.loaded = False
         self.focus = 0      # 0 = Kopfzeile, 1.. = Einträge
         self.col = 0        # Spalte (Kopfzeile: Zurück/Schalter/Suchen, Eintrag: Aktion)
-        self.top = 0        # erster sichtbarer Eintrag
+        self.offset = 0.0   # Scroll-Position in Entwurfs-Pixeln
+        self.drag_from = None
         self.fetch_at = 0.0
         self.fetching = False
         self.scan()
@@ -710,8 +720,10 @@ class SubMenu:
         if dy:
             self.focus = max(0, min(len(self.items), self.focus + dy))
             self.col = 0 if self.focus else min(self.col, 2)
-            if self.focus:
-                self.top = max(min(self.top, self.focus - 1), self.focus - self.VISIBLE)
+            if self.focus:   # Fokus sichtbar halten
+                top = (self.focus - 1) * self.ROW
+                self.offset = min(max(self.offset, top + self.ROW - self.LIST_H), top)
+                self._clamp()
             return
         n = 3 if self.focus == 0 else len(self.actions(self.items[self.focus - 1]))
         self.col = max(0, min(n - 1, self.col + dx))
@@ -725,8 +737,17 @@ class SubMenu:
             if acts:
                 self.do(item, acts[min(self.col, len(acts) - 1)])
 
-    def scroll(self, d):
-        self.top = max(0, min(max(0, len(self.items) - self.VISIBLE), self.top + d * 3))
+    def _clamp(self):
+        self.offset = max(0.0, min(max(0.0, len(self.items) * self.ROW - self.LIST_H), self.offset))
+
+    # Finger ziehen = Liste scrollen (wie am Handy)
+    def drag_start(self):
+        self.drag_from = self.offset
+
+    def drag(self, dy):
+        if self.drag_from is not None:
+            self.offset = self.drag_from - dy
+            self._clamp()
 
     def tap(self, hit):
         kind = hit[0]
@@ -770,15 +791,18 @@ class SubMenu:
         P.text(self.title, 40, 240, 108, T["text"], bold=True)
         P.text(self.status_line() if on else f"{self.title} ist aus", 19, 45, 172, T["muted"])
 
-        P.rrect(45, 195, 1170, 6 * 98 + 20, 24, T["card"])
+        P.rrect(45, 195, 1170, self.LIST_H + 20, 24, T["card"])
         if not on:
             P.text(f"{self.title} einschalten, um {self.what} zu sehen", 22, 630, 500, T["muted"], align="c")
         elif not self.items:
             P.text("Suche läuft …" if not self.loaded or self.msg else f"Keine {self.what} gefunden",
                    22, 630, 500, T["muted"], align="c")
-        for row, idx in enumerate(range(self.top, min(len(self.items), self.top + self.VISIBLE))):
+        self._clamp()
+        P.clip(45, self.LIST_Y - 6, 1170, self.LIST_H + 12)
+        first = int(self.offset // self.ROW)
+        for idx in range(first, min(len(self.items), first + self.VISIBLE + 1)):
             item = self.items[idx]
-            ry = 205 + row * 98
+            ry = self.LIST_Y + idx * self.ROW - self.offset
             if self.focus == idx + 1:
                 P.rrect(57, ry, 1146, 90, 16, T["focus"])
             if item.get("highlight"):
@@ -796,11 +820,18 @@ class SubMenu:
                 P.text(act, 18, x + w / 2, ry + 52, "ffffff" if primary else T["text"], bold=True, align="c")
                 if self.focus == idx + 1 and self.col == a_i:
                     cc._focus_ring(P, x, ry + 19, w, 52, 26)
-                cc.hits.append((x, ry + 10, w, 70, ("subact", idx, act)))
+                if self.LIST_Y - 10 <= ry + 19 and ry + 71 <= self.LIST_Y + self.LIST_H + 10:
+                    cc.hits.append((x, ry + 10, w, 70, ("subact", idx, act)))
                 x -= 12
-        if len(self.items) > self.VISIBLE:
-            P.text(f"{self.top + 1}–{min(len(self.items), self.top + self.VISIBLE)} von {len(self.items)}"
-                   "  ·  wischen zum Blättern", 17, 630, 835, T["muted"], align="c")
+        P.unclip()
+        total = len(self.items) * self.ROW
+        if total > self.LIST_H:   # Scrollbalken
+            bar_h = max(60, self.LIST_H * self.LIST_H / total)
+            bar_y = self.LIST_Y + (self.LIST_H - bar_h) * self.offset / (total - self.LIST_H)
+            P.rrect(1203, bar_y, 6, bar_h, 3, mix(T["muted"], A, 0.4))
+            P.text(f"{len(self.items)} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
+                   T["muted"], align="c")
+        cc.hits.append((45, 195, 1170, self.LIST_H + 20, ("sublist",)))
         P.text("A Auswählen", 17, 45, 835, T["muted"])
         P.text("B Zurück", 17, 1215, 835, T["muted"], align="r")
 
@@ -824,10 +855,20 @@ class WifiMenu(SubMenu):
         ssid = self.cc.wifi[1]
         return self.msg or (f"Verbunden mit {ssid}" if ssid else "Nicht verbunden")
 
+    def saved_networks(self):
+        """SSID -> Name der gespeicherten Verbindung (Name und SSID können abweichen)."""
+        con = run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"], timeout=4) or ""
+        saved = {}
+        for f in map(nmcli_split, con.splitlines()):
+            if len(f) > 1 and "wireless" in f[1]:
+                ssid = (run(["nmcli", "-g", "802-11-wireless.ssid", "connection", "show", "id", f[0]],
+                            timeout=3) or "").strip() or f[0]
+                saved[ssid] = f[0]
+        return saved
+
     def fetch(self):
         out = run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list"], timeout=6) or ""
-        con = run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"], timeout=4) or ""
-        saved = {f[0] for f in map(nmcli_split, con.splitlines()) if len(f) > 1 and "wireless" in f[1]}
+        saved = self.saved_networks()
         items, seen = [], set()
         for line in out.splitlines():
             f = nmcli_split(line)
@@ -835,13 +876,21 @@ class WifiMenu(SubMenu):
                 continue
             seen.add(f[1])
             items.append({"key": f[1], "name": f[1], "active": f[0] == "*", "saved": f[1] in saved,
+                          "con": saved.get(f[1]), "near": True,
                           "signal": int(f[2]) if f[2].isdigit() else 0,
                           "secure": f[3] not in ("", "--"), "highlight": f[0] == "*"})
-        items.sort(key=lambda i: (not i["active"], not i["saved"], -i["signal"]))
+        for ssid, con in saved.items():      # gespeichert, aber gerade nicht in Reichweite
+            if ssid not in seen:
+                items.append({"key": ssid, "name": ssid, "active": False, "saved": True, "con": con,
+                              "near": False, "signal": 0, "secure": True, "highlight": False})
+        # verbunden → gespeichert (in Reichweite) → gespeichert (fern) → Rest nach Signal
+        items.sort(key=lambda i: (not i["active"], not i["saved"], not i["near"], -i["signal"]))
         self.msg = ""
         return items
 
     def describe(self, it):
+        if not it["near"]:
+            return "Gespeichert · nicht in Reichweite"
         state = "Verbunden" if it["active"] else "Gespeichert" if it["saved"] else \
             "Gesichert" if it["secure"] else "Offen"
         return f"{state} · Signal {it['signal']} %"
@@ -850,27 +899,31 @@ class WifiMenu(SubMenu):
         if it["active"]:
             return ["Trennen"]
         if it["saved"]:
-            return ["Verbinden", "Vergessen"]
+            return ["Verbinden", "Vergessen"] if it["near"] else ["Vergessen"]
         return ["Passwort …"] if it["secure"] else ["Verbinden"]
 
     def do(self, it, act):
         ssid = it["name"]
         prof = ". /etc/profile; "
         if act == "Verbinden" and it["saved"]:
-            script = (prof + 'nmcli connection up id "$1" && set_setting wifi.ssid "$1" && '
-                      'set_setting wifi.key "$(nmcli -s -g 802-11-wireless-security.psk connection show id "$1")"')
+            # gespeicherte Verbindung einfach wieder aufbauen; klappt das nicht und ist es das
+            # ROCKNIX-Standardnetz, verbindet wifictl mit den gespeicherten Zugangsdaten
+            script = (prof + 'nmcli -w 30 connection up id "$2" || '
+                      '{ [ "$(get_setting wifi.ssid)" = "$1" ] && wifictl connect; } && '
+                      'set_setting wifi.ssid "$1" && '
+                      'set_setting wifi.key "$(nmcli -s -g 802-11-wireless-security.psk connection show id "$2")"')
         elif act == "Verbinden":
             script = prof + 'nmcli dev wifi connect "$1" && set_setting wifi.ssid "$1" && set_setting wifi.key ""'
         elif act == "Trennen":
             script = 'nmcli dev disconnect "$(ls /sys/class/net | grep -m1 ^wlan)"'
         elif act == "Vergessen":
-            script = 'nmcli connection delete id "$1"'
+            script = 'nmcli connection delete id "$2"'
         else:
             self.cc.kbd = Keyboard(self.cc, f"Passwort für {ssid}",
                                    lambda pw: self.connect_new(ssid, pw))
             return
         log("WLAN:", act, ssid)
-        spawn(["bash", "-c", script, "rds", ssid])
+        spawn(["bash", "-c", script, "rds", ssid, it.get("con") or ssid])
         self.msg = {"Verbinden": f"Verbinde mit {ssid} …", "Trennen": "Trenne …",
                     "Vergessen": f"{ssid} vergessen"}[act]
         self.cc.status_at = time.monotonic() + 3
@@ -891,12 +944,20 @@ class WifiMenu(SubMenu):
 
 
 class BtMenu(SubMenu):
+    """Bluetooth über ROCKNIX' eigenen Weg (rocknix-bluetooth + Bluetooth-Helfer).
+
+    Der Helfer (bluetooth-agent) sucht, koppelt, vertraut und verbindet selbst;
+    `rocknix-bluetooth trust` sichert die Kopplung danach, damit sie einen Neustart übersteht.
+    """
     title = "Bluetooth"
     what = "Geräte"
+    CONTROL = "/run/bt_discovery_control"
+    STATUS = "/run/bt_status"
+    SCAN_TIME = 60
 
     def __init__(self, cc):
         self.scan_until = 0.0
-        self.scan_proc = None
+        self.msg_until = 0.0
         super().__init__(cc)
 
     def is_on(self):
@@ -906,26 +967,29 @@ class BtMenu(SubMenu):
         self.cc.press_tile(1)
 
     def scan(self):
-        if not self.is_on() or not shutil.which("bluetoothctl"):
+        if not self.is_on():
             return
-        self.close()
-        try:
-            self.scan_proc = subprocess.Popen(["bluetoothctl", "--timeout", "30", "scan", "on"],
-                                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.scan_until = time.monotonic() + 30
-        except OSError as exc:
-            log("Suche fehlgeschlagen:", exc)
+        wr(self.CONTROL, "start")          # Suche über den ROCKNIX-Helfer
+        self.scan_until = time.monotonic() + self.SCAN_TIME
         self.refetch(2)
 
     def close(self):
-        if self.scan_proc and self.scan_proc.poll() is None:
-            self.scan_proc.terminate()
-        self.scan_proc = None
+        if self.scan_until:
+            wr(self.CONTROL, "stop")
+            self.scan_until = 0.0
+
+    def tick(self):
+        if self.scan_until and time.monotonic() > self.scan_until:
+            self.close()
+        super().tick()
 
     def status_line(self):
-        if self.msg:
+        helper = rd(self.STATUS) or ""
+        if helper and time.monotonic() < self.msg_until + 30:
+            return helper                   # Meldung des Helfers, z. B. „Pairing …“
+        if self.msg and time.monotonic() < self.msg_until:
             return self.msg
-        left = int(self.scan_until - time.monotonic())
+        left = int(self.scan_until - time.monotonic()) if self.scan_until else 0
         return f"Suche nach Geräten … noch {left} s – Controller in den Kopplungsmodus versetzen" \
             if left > 0 else "Tippe auf „Suchen“, um neue Geräte zu finden"
 
@@ -948,8 +1012,6 @@ class BtMenu(SubMenu):
             items.append({"key": mac, "name": name, "mac": mac, "paired": mac in paired,
                           "connected": mac in conn, "highlight": mac in conn})
         items.sort(key=lambda i: (not i["connected"], not i["paired"], i["name"].lower()))
-        if self.msg and time.monotonic() > getattr(self, "msg_until", 0):
-            self.msg = ""
         return items
 
     def describe(self, it):
@@ -964,13 +1026,14 @@ class BtMenu(SubMenu):
 
     def do(self, it, act):
         mac = it["mac"]
-        script = {"Koppeln": 'bluetoothctl pair "$1" && bluetoothctl trust "$1" && bluetoothctl connect "$1"',
-                  "Verbinden": 'bluetoothctl connect "$1"',
-                  "Trennen": 'bluetoothctl disconnect "$1"',
-                  "Entfernen": 'bluetoothctl remove "$1"'}[act]
+        if act == "Koppeln" and not self.scan_until:
+            self.scan()                    # der Helfer koppelt nur während der Suche
+        cmd = {"Koppeln": "trust", "Verbinden": "connect", "Trennen": "disconnect",
+               "Entfernen": "remove"}[act]
         log("Bluetooth:", act, it["name"], mac)
-        spawn(["bash", "-c", script, "rds", mac])
-        self.msg = {"Koppeln": f"Kopple {it['name']} …", "Verbinden": f"Verbinde {it['name']} …",
+        spawn(["rocknix-bluetooth", cmd, mac])
+        self.msg = {"Koppeln": f"Kopple {it['name']} … (bis zu 60 s)",
+                    "Verbinden": f"Verbinde {it['name']} …",
                     "Trennen": f"Trenne {it['name']} …", "Entfernen": f"{it['name']} entfernt"}[act]
         self.msg_until = time.monotonic() + 8
         self.cc.status_at = time.monotonic() + 3
@@ -1520,6 +1583,9 @@ class ControlCenter:
         if self.kbd:
             self.kbd.touch_down(x, y)
             return
+        if self.sub:
+            self.sub.drag_start()
+            return
         hit = self._hit(x, y)
         if hit and hit[0] == "slider":
             self.drag = hit[1]
@@ -1533,6 +1599,11 @@ class ControlCenter:
         self.touch = self.touch[:2] + (x, y)
         if self.kbd:
             self.kbd.touch_move(x, y)
+            return
+        if self.sub:
+            dy = y - self.touch[1]
+            if abs(dy) > 15:
+                self.sub.drag(dy)
             return
         if self.drag is not None:
             self._drag_to(x)
@@ -1551,11 +1622,10 @@ class ControlCenter:
             self.kbd.touch_up(x0, y0, x1, y1)
             return
         if self.sub:
-            if abs(dy) > 60 and abs(dy) > abs(dx):
-                self.sub.scroll(-1 if dy > 0 else 1)
-            elif abs(dx) < 30 and abs(dy) < 30:
+            self.sub.drag_from = None
+            if abs(dx) < 30 and abs(dy) < 15:
                 hit = self._hit(x0, y0)
-                if hit:
+                if hit and hit[0] != "sublist":
                     self.sub.tap(hit)
             return
         if abs(dx) > 180 and abs(dx) > abs(dy):

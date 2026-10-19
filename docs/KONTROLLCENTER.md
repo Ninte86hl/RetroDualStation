@@ -312,3 +312,20 @@ sonst QWERTY; fest einstellbar über `"keyboard"` in `controlcenter.json`.
 
 **Pause getestet (19.10.2026):** RetroArch (Steuerschnittstelle), DraStic und DSperate
 (Einfrieren) halten an und laufen mit Bild und Ton weiter – über Kontrollcenter und Gameswitcher.
+
+## Prototyp 0.8 (19.10.2026)
+
+Test 0.7 (Nutzer): Tastatur komplett ok (Haltezeit angenehm), WLAN-Liste/Suche ok,
+neues WLAN mit Passwort verbunden. Bluetooth: Controller gefunden, Koppeln des
+„8BitDo Ultimate 3-mode for Xbox“ schlug fehl.
+
+- Listen scrollen mit dem Finger (pixelgenau, Scrollbalken), Gamepad hält den Fokus sichtbar
+- WLAN: gespeicherte Verbindungen über ihre **SSID** erkannt (Verbindungsname kann abweichen,
+  z. B. Hotspot) → stehen oben mit „Verbinden“; gespeicherte, aber ferne Netze unten
+  („nicht in Reichweite“, nur „Vergessen“). Verbinden: `nmcli connection up`, sonst bei
+  ROCKNIX-Standardnetz `wifictl connect`
+- **Bluetooth jetzt über ROCKNIX' eigenen Weg** (wie das ES-Menü): Suche über den
+  Bluetooth-Helfer (`/run/bt_discovery_control` start/stop), Koppeln mit
+  `rocknix-bluetooth trust <MAC>` (Helfer koppelt, vertraut, verbindet mit Wiederholungen
+  und **sichert die Kopplung** für den nächsten Start), Verbinden/Trennen/Entfernen und
+  Ein/Aus ebenfalls über `rocknix-bluetooth`; Statusmeldungen des Helfers aus `/run/bt_status`
