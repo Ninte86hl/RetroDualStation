@@ -3323,6 +3323,10 @@ def main():
         toggle("switcher")                 # schließen, Pause aufheben
         if same and not fresh:
             return                          # einfach zurück ins laufende Spiel
+        if same and fresh and cur["emu"] == "RetroArch":
+            ra_command("RESET")             # im laufenden RetroArch neu starten, ohne Beenden
+            log("Gameswitcher: RetroArch zurückgesetzt", item["name"])
+            return
         sw.launch(item, fresh, current=cur)
 
     stick = {"dir": 0, "next": 0.0}
