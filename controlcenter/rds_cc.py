@@ -2160,51 +2160,53 @@ class PowerMenu:
 
     def draw(self, P, T, accent):
         hits = []
-        W, H = 800, 560
-        ox = (1260 - W) / 2
-        oy = (951 - H) / 2
+        W, H = 1260, 951
+        ox = 0
+        oy = 0
 
         # Hintergrund
         P.rrect(ox, oy, W, H, 32, T["bg"])
 
         # Titel mit Logo
-        lh = 44
+        lh = 52
         lw = 230 * lh / 130
-        lx = ox + (W - lw - 16 - P.width("Power", 32, bold=True)) / 2
-        P.logo(lx, oy + 48 - lh / 2, lh, T["text"], T["bg"])
-        P.text("Power", 32, lx + lw + 16, oy + 48 + 32 * 0.36, T["text"], bold=True)
+        lx = ox + (W - lw - 16 - P.width("Power", 38, bold=True)) / 2
+        P.logo(lx, oy + 72 - lh / 2, lh, T["text"], T["bg"])
+        P.text("Power", 38, lx + lw + 16, oy + 72 + 38 * 0.36, T["text"], bold=True)
 
         # Trennlinie
-        P.rrect(ox + 40, oy + 84, W - 80, 2, 1, T["dot"])
+        P.rrect(ox + 60, oy + 116, W - 120, 2, 1, T["dot"])
 
         # Buttons
-        bx = ox + 40
-        bw = W - 80
-        bh = 80
-        by0 = oy + 104
+        bx = ox + 60
+        bw = W - 120
+        bh = 110
+        n = len(POWER_ITEMS)
+        total_h = n * bh + (n - 1) * 20
+        by0 = oy + (H - total_h) / 2 + 30   # leicht nach unten versetzt wegen Titel
 
         if self.confirm_es:
             # Rückfrage für ES-Neustart
-            P.text("ES wirklich neu starten?", 24, ox + W / 2, oy + H / 2 - 50, T["text"], bold=True, align="c")
-            P.text("Laufendes Spiel geht verloren.", 19, ox + W / 2, oy + H / 2 - 14, T["muted"], align="c")
+            P.text("ES wirklich neu starten?", 30, ox + W / 2, oy + H / 2 - 60, T["text"], bold=True, align="c")
+            P.text("Laufendes Spiel geht verloren.", 22, ox + W / 2, oy + H / 2 - 18, T["muted"], align="c")
             # Ja / Nein
+            cbw = (bw - 30) / 2
             for i, (label, col) in enumerate([("Ja, neu starten", accent), ("Abbrechen", T["tile"])]):
-                bxi = ox + 40 + i * (bw / 2 + 20)
-                bwi = bw / 2 - 10
-                byi = oy + H / 2 + 30
-                P.rrect(bxi, byi, bwi, 64, 16, col)
-                P.text(label, 20, bxi + bwi / 2, byi + 40, "ffffff" if i == 0 else T["text"], bold=True, align="c")
-                hits.append((bxi, byi, bwi, 64, i))   # i=0 → Ja, i=1 → Nein
+                bxi = ox + 60 + i * (cbw + 30)
+                byi = oy + H / 2 + 40
+                P.rrect(bxi, byi, cbw, 90, 20, col)
+                P.text(label, 24, bxi + cbw / 2, byi + 52, "ffffff" if i == 0 else T["text"], bold=True, align="c")
+                hits.append((bxi, byi, cbw, 90, i))   # i=0 → Ja, i=1 → Nein
         else:
             for i, (_key, label, _cmd) in enumerate(POWER_ITEMS):
-                by = by0 + i * (bh + 12)
+                by = by0 + i * (bh + 20)
                 active = i == self.focus
-                P.rrect(bx, by, bw, bh, 20, accent if active else T["tile"])
-                P.text(label, 24, bx + bw / 2, by + bh / 2 + 24 * 0.36, "ffffff" if active else T["text"],
+                P.rrect(bx, by, bw, bh, 24, accent if active else T["tile"])
+                P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36, "ffffff" if active else T["text"],
                        bold=active, align="c")
                 hits.append((bx, by, bw, bh, i))
             # Hinweis
-            P.text("B Abbrechen", 17, ox + W / 2, oy + H - 28, T["muted"], align="c")
+            P.text("B Abbrechen", 19, ox + W / 2, oy + H - 36, T["muted"], align="c")
 
         return hits
 
