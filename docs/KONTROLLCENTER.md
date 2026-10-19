@@ -21,6 +21,13 @@ Entwurf (Mockup, drei Seiten + helle Variante): Design-Artifact
 | Wischen links/rechts oder L1/R1 | Seite wechseln (Punkte unten zeigen die Seite) |
 | Steuerkreuz + A | Auswahl ohne Touch |
 
+**Pause:** Beim Öffnen pausiert das laufende Spiel, beim Schließen läuft es an
+derselben Stelle weiter.
+- RetroArch: Pause-Befehl über die Steuerschnittstelle
+- alle anderen (DraStic, DSperate …): Prozess einfrieren/auftauen (SIGSTOP/SIGCONT)
+- Speichern/Laden aus Seite 2: Emulator kurz auftauen, Befehl auslösen, wieder einfrieren
+- auf dem Gerät testen, ob der Ton beim Einfrieren knackt; sonst während der Pause stummschalten
+
 ## Seiten
 
 ### 1 · Schnelleinstellungen
