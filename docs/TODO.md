@@ -14,7 +14,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 Keine neuen Funktionen, bis diese beiden fertig sind – neue Ideen nur notieren.
 1. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
    - Liste der zuletzt gespielten Spiele mit **Screenshot vom letzten Zeitpunkt** (beim Auto-Speichern)
-   - Tasten: **A** Spiel neu starten (ohne Speicherstand) · **Y** letzten Speicherstand laden ·
+   - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
+     (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
      **X** Spiel-Einstellungen (später, mit dem Overlay „Spiel-Einstellungen“) · **B** schließen
 2. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
 
