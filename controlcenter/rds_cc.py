@@ -2979,11 +2979,8 @@ def main():
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                             t = touch.feed(*ev)
                             if t and ui.view and ui.size:
-                                # Touch weckt unteren Screen auf – Aktion erst danach
-                                if cc.screen_bottom_off and t[0] == "down":
-                                    cc.press_tile(2)   # Screen wieder an
-                                    state["dirty"] = True
-                                    continue
+                                if cc.screen_bottom_off:
+                                    continue   # Touch ignorieren wenn Screen aus
                                 px, py = touch.to_surface(t[1], t[2], *ui.size)
                                 on_touch(t[0], px, py)
                         continue
@@ -3013,8 +3010,8 @@ def main():
                                         ui.pending_view = None
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
-                            # Jede Taste weckt unteren Screen auf
-                            if cc.screen_bottom_off and typ == EV_KEY and value == 1:
+                            # Nur Anbernic-Taste weckt unteren Screen auf
+                            if cc.screen_bottom_off and typ == EV_KEY and code == BTN_MODE and value == 1:
                                 cc.press_tile(2)
                                 state["dirty"] = True
                                 continue
