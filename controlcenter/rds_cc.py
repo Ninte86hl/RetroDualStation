@@ -41,11 +41,13 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
 
-VERSION = "0.10.2"
+VERSION = "0.11.0"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
+POWER_NAME = "rk805 pwrkey"
+POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -1677,6 +1679,8 @@ class ControlCenter:
         self.sub = None         # geöffnetes Untermenü (WLAN/Bluetooth)
         self.kbd = None         # geöffnete Bildschirmtastatur
         self.changed = False    # Hintergrund-Abfrage hat neue Daten
+        self.power_menu = PowerMenu(self)
+        self.power_hits = []    # Touch-Ziele des Power-Menüs
 
     # -- Daten --
     def rows(self):
@@ -1911,6 +1915,9 @@ class ControlCenter:
         T = self.T
         P.fill_all(T["bg"])
         self.hits, self.tracks = [], {}
+        if view == "power":
+            self.power_hits = self.power_menu.draw(P, T, self.accent)
+            return
         if view == "switcher":
             self._draw_switcher(P)
             return
@@ -2098,6 +2105,108 @@ class ControlCenter:
         P.text("Gameswitcher", 44, 630, 420, T["text"], bold=True, align="c")
         P.text("kommt in Etappe 5", 22, 630, 470, T["muted"], align="c")
         P.text("Home oder B: schließen", 17, 630, 835, T["muted"], align="c")
+
+
+# ------------------------------------------------------------ Power-Menü ----
+
+POWER_ITEMS = [
+    ("power_sleep",   "Ruhemodus",    "systemctl suspend"),
+    ("power_restart", "Neu starten",  "systemctl reboot"),
+    ("power_off",     "Ausschalten",  "systemctl poweroff"),
+    ("power_es",      "ES neu starten", None),   # Sonderfall: Rückfrage + systemctl restart essway
+]
+
+class PowerMenu:
+    """Kompaktes Power-Menü – vier Buttons, gleiche Optik wie das Kontrollcenter."""
+
+    def __init__(self, cc):
+        self.cc = cc
+        self.focus = 0
+        self.confirm_es = False   # wartet auf Bestätigung für ES-Neustart
+
+    def nav(self, _dx, dy):
+        if self.confirm_es:
+            return
+        self.focus = (self.focus + dy) % len(POWER_ITEMS)
+
+    def confirm(self):
+        key, label, cmd = POWER_ITEMS[self.focus]
+        if key == "power_es":
+            if self.confirm_es:
+                self._run("systemctl restart essway")
+            else:
+                self.confirm_es = True
+            return True   # Menü offen lassen (bis Aktion läuft)
+        self._run(cmd)
+        return False
+
+    def cancel(self):
+        if self.confirm_es:
+            self.confirm_es = False
+            return True
+        return False   # Menü schließen
+
+    def _run(self, cmd):
+        log("Power-Aktion:", cmd)
+        subprocess.Popen(["bash", "-c", cmd])
+
+    def touch_up(self, x, y, hits):
+        for hx, hy, hw, hh, idx in hits:
+            if hx <= x <= hx + hw and hy <= y <= hy + hh:
+                self.focus = idx
+                self.confirm()
+                return True
+        return False
+
+    def draw(self, P, T, accent):
+        hits = []
+        W, H = 800, 560
+        ox = (1260 - W) / 2
+        oy = (951 - H) / 2
+
+        # Hintergrund
+        P.rrect(ox, oy, W, H, 32, T["bg"])
+
+        # Titel mit Logo
+        lh = 44
+        lw = 230 * lh / 130
+        lx = ox + (W - lw - 16 - P.width("Power", 32, bold=True)) / 2
+        P.logo(lx, oy + 48 - lh / 2, lh, T["text"], T["bg"])
+        P.text("Power", 32, lx + lw + 16, oy + 48 + 32 * 0.36, T["text"], bold=True)
+
+        # Trennlinie
+        P.rrect(ox + 40, oy + 84, W - 80, 2, 1, T["dot"])
+
+        # Buttons
+        bx = ox + 40
+        bw = W - 80
+        bh = 80
+        by0 = oy + 104
+
+        if self.confirm_es:
+            # Rückfrage für ES-Neustart
+            P.text("ES wirklich neu starten?", 24, ox + W / 2, oy + H / 2 - 50, T["text"], bold=True, align="c")
+            P.text("Laufendes Spiel geht verloren.", 19, ox + W / 2, oy + H / 2 - 14, T["muted"], align="c")
+            # Ja / Nein
+            for i, (label, col) in enumerate([("Ja, neu starten", accent), ("Abbrechen", T["tile"])]):
+                bxi = ox + 40 + i * (bw / 2 + 20)
+                bwi = bw / 2 - 10
+                byi = oy + H / 2 + 30
+                P.rrect(bxi, byi, bwi, 64, 16, col)
+                P.text(label, 20, bxi + bwi / 2, byi + 40, "ffffff" if i == 0 else T["text"], bold=True, align="c")
+                hits.append((bxi, byi, bwi, 64, i))   # i=0 → Ja, i=1 → Nein
+        else:
+            for i, (_key, label, _cmd) in enumerate(POWER_ITEMS):
+                by = by0 + i * (bh + 12)
+                active = i == self.focus
+                P.rrect(bx, by, bw, bh, 20, accent if active else T["tile"])
+                P.text(label, 24, bx + bw / 2, by + bh / 2 + 24 * 0.36, "ffffff" if active else T["text"],
+                       bold=active, align="c")
+                hits.append((bx, by, bw, bh, i))
+            # Hinweis
+            P.text("B Abbrechen", 17, ox + W / 2, oy + H - 28, T["muted"], align="c")
+
+        return hits
 
 
 # ------------------------------------------------------------ Overlay-App ----
@@ -2458,6 +2567,14 @@ def main():
     state = {"dirty": False}
 
     def on_touch(kind, x, y):
+        if ui.view == "power":
+            if kind == "up" and cc.pen:
+                dx, dy = cc.pen.to_design(x, y)
+                keep = cc.power_menu.touch_up(dx, dy, cc.power_hits)
+                if not keep:
+                    toggle("power")
+                state["dirty"] = True
+            return
         if ui.view != "cc":
             return
         {"down": cc.touch_down, "move": cc.touch_move}.get(kind, lambda *_: cc.touch_up())(x, y)
@@ -2470,6 +2587,8 @@ def main():
         pads[joy] = {"name": JOYPAD_NAME, "path": find_event(JOYPAD_NAME), "ext": False,
                      "range": abs_range(joy, ABS_X)}
     home = open_event(HOME_NAME)
+    pwr = open_event(POWER_NAME)
+    pwr_down_at = None   # Zeitstempel des Drückens (für Kurz/Lang)
     tfd = open_event(TOUCH_NAME)
     touch = TouchReader(tfd, cc.cfg) if tfd is not None else None
     mode_down = combo = False
@@ -2575,6 +2694,26 @@ def main():
             return
         if not ui.view:
             return
+        if ui.view == "power":
+            if typ == EV_KEY and code in (ABS_HAT0Y,):
+                pass   # Dpad unten/oben – wird über HAT behandelt
+            if typ == EV_ABS and code == ABS_HAT0Y:
+                d = 1 if value > 0 else -1
+                cc.power_menu.nav(0, d)
+                state["dirty"] = True
+            elif typ == EV_KEY and code in DPAD and DPAD[code][1] != 0:
+                cc.power_menu.nav(0, DPAD[code][1])
+                state["dirty"] = True
+            elif typ == EV_KEY and code == BTN_EAST and value == 1:
+                keep = cc.power_menu.confirm()
+                if not keep:
+                    toggle("power")
+                state["dirty"] = True
+            elif typ == EV_KEY and code == BTN_SOUTH and value == 1:
+                if not cc.power_menu.cancel():
+                    toggle("power")
+                state["dirty"] = True
+            return
         if typ == EV_ABS and code in (ABS_HAT0X, ABS_HAT0Y):
             d = 1 if value > 0 else -1
             cc.nav(d, 0) if code == ABS_HAT0X else cc.nav(0, d)
@@ -2617,7 +2756,7 @@ def main():
             if time.monotonic() >= next_pad_scan:
                 scan_pads()
                 next_pad_scan = time.monotonic() + 2
-            fds = [fd for fd in [home, tfd] + list(pads) if fd is not None]
+            fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold)
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
                 try:
@@ -2637,6 +2776,19 @@ def main():
                         if fd == home:
                             if typ == EV_KEY and code == BTN_Z and value == 1:
                                 toggle("switcher")
+                        elif fd == pwr:
+                            KEY_POWER = 116
+                            if typ == EV_KEY and code == KEY_POWER:
+                                if value == 1:
+                                    pwr_down_at = time.monotonic()
+                                elif value == 0 and pwr_down_at is not None:
+                                    held_ms = (time.monotonic() - pwr_down_at) * 1000
+                                    pwr_down_at = None
+                                    if held_ms < POWER_LONG_MS:
+                                        toggle("power")
+                                    else:
+                                        log("Power: langer Druck → suspend")
+                                        subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
