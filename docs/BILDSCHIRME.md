@@ -34,7 +34,7 @@ auf einen Bereich statt auf feste Zahlen. Ein neues Gerät = eine neue Konfigura
 - Der Installer schreibt `screens.cfg` passend zum erkannten Gerät.
 - Test: RG DS Plus muss sich exakt wie v12 verhalten.
 - Stand Patch 004: Breiten und X-Positionen kommen aus den Bereichen; Höhen/Y nutzen noch die
-  Fensterhöhe (reicht für gleich hohe Bildschirme, z. B. RG DS). `screens.cfg` schreibt der Installer noch nicht.
+  Fensterhöhe (reicht für gleich hohe Bildschirme, z. B. RG DS). Der Installer legt `screens.cfg` an (ab v13), vorhandene bleibt.
 
 ## Stufe B – Themes bekommen die Bereiche – Variablen umgesetzt: Patch 005 ([THEMES.md](THEMES.md))
 
@@ -47,6 +47,12 @@ auf einen Bereich statt auf feste Zahlen. Ein neues Gerät = eine neue Konfigura
 - Alte Themes bleiben unverändert lauffähig.
 
 ## Stufe C – canvas-ds und Geräte
+
+**Ergebnis der Prüfung (20.10.2026):** canvas-ds rechnet mit relativen Koordinaten (0 … 1 des Fensters).
+Bei zwei **gleich großen 4:3-Bildschirmen nebeneinander** – RG DS Plus (2 × 1024 × 768) wie normales RG DS
+(2 × 640 × 480) – passt das Overlay also schon ohne Änderung. Ein Umbau auf die Variablen lohnt sich erst
+für Geräte mit ungleichen Bildschirmen und wird bis dahin zurückgestellt (weniger Eingriff in toniremis Theme).
+
 
 - canvas-ds-Overlay auf die neuen Variablen umstellen (statt fester 1024er-Koordinaten).
 - Geräteprofile: RG DS Plus (2 × 1024 × 768), RG DS (2 × 640 × 480), weitere bei Bedarf

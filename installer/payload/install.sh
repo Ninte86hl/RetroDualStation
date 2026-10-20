@@ -48,6 +48,20 @@ sys.exit(0 if ok else 1)' 2>>"$LOG"; then
 fi
 log "Geraet: RG DS Plus erkannt"
 
+# Bildschirm-Bereiche fuer ES (Patch 004/005); eigene Anpassungen bleiben erhalten
+SCREENS=/storage/.config/retrodualstation/screens.cfg
+if [ ! -f "$SCREENS" ]; then
+    mkdir -p /storage/.config/retrodualstation
+    cat > "$SCREENS" <<'EOS'
+# RetroDualStation: Bildschirm-Bereiche im ES-Fenster (x,y,Breite,Hoehe)
+# RG DS Plus: links = oberer Bildschirm, rechts = unterer
+top=0,0,1024,768
+bottom=1024,0,1024,768
+menu=top
+EOS
+    log "screens.cfg angelegt (RG DS Plus)"
+fi
+
 chmod +x "$SRC/$BIN" 2>/dev/null
 cp "$SRC/$BIN" /tmp/dualstation-bincheck && chmod +x /tmp/dualstation-bincheck
 MISSING="$(ldd /tmp/dualstation-bincheck 2>&1 | grep 'not found')"
