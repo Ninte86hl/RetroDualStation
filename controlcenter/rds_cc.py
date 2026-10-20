@@ -1080,12 +1080,19 @@ class Switcher:
             if os.path.exists(png):
                 shot = png
         else:
-            if emu == "DraStic":
-                inject_keys([(313, 1), 0.15, (313, 0)])   # R2 = Speicherstand
-                time.sleep(1.2)
-            # DS: nur oberer Bildschirm; sonst ganzer oberer Ausgang
+            # Screenshot zuerst (oberer Bildschirm), dann speichern
             subprocess.run(["grim", "-o", "DSI-2", shot], timeout=5,
                            env=dict(os.environ), capture_output=True)
+            if emu == "DraStic":
+                dss = os.path.join("/storage/roms/savestates/nds",
+                                   os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
+                before = os.path.getmtime(dss) if os.path.exists(dss) else 0
+                inject_keys([(313, 1), 0.1, (313, 0)])   # R2 = Speicherstand
+                for _ in range(30):                        # nur so lange warten, bis die Datei fertig ist
+                    time.sleep(0.1)
+                    if os.path.exists(dss) and os.path.getmtime(dss) > before:
+                        time.sleep(0.2)                    # Schreiben abschließen lassen
+                        break
         self.remember(game, shot if os.path.exists(shot) else None)
         log("Gameswitcher: gespeichert", emu, os.path.basename(rom))
 
@@ -1113,11 +1120,11 @@ class Switcher:
         def work():
             if current:
                 quit_game(current)
-                for _ in range(40):
+                for _ in range(60):
                     if not running_game():
                         break
-                    time.sleep(0.25)
-                time.sleep(1.0)
+                    time.sleep(0.15)
+                time.sleep(0.3)
             ini = "/storage/.config/dsperate/dsperate.ini"
             restore = None
             if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
