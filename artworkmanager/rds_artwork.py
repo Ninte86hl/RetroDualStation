@@ -694,7 +694,7 @@ class App:
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen",
                    "settings": "Ändern"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
-                ("B", "Beenden" if self.view == "systems" else "Zurück", self.back),
+                ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else ("X", "", None),
                 ("Y", "", None)]
 
@@ -723,7 +723,7 @@ class App:
 
         backups = sorted((WORK / "data" / "backups").glob("*.zip")) if (WORK / "data" / "backups").is_dir() else []
         log_file = WORK / "manager.log"
-        cache = size(WORK / "data" / "cache") + size(PREVIEW_DIR)
+        cache = size(WORK / "data" / "cache" / "downloads") + size(PREVIEW_DIR)
         return [
             ("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", self.edit_key),
             ("Sicherung vor dem Speichern", "an" if self.settings.get("backup") else "aus", self.toggle_backup),
@@ -758,7 +758,9 @@ class App:
 
     def clear_cache(self):
         import shutil
-        for path in (WORK / "data" / "cache", PREVIEW_DIR):
+        # nur heruntergeladene Bilder und Vorschauen; iiSU-Rahmen (data/platform-borders) und
+        # Namenslisten (data/cache/libretro, tosec …) bleiben, sonst müssten sie neu geladen werden
+        for path in (WORK / "data" / "cache" / "downloads", PREVIEW_DIR):
             shutil.rmtree(path, ignore_errors=True)
         PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
         self.previews.clear()
@@ -878,6 +880,18 @@ class App:
         if right:
             P.text(right, 24, 1220, 66, T["muted"], align="r", raw=True)
 
+    def home_icon(self, P, cx, cy, c):
+        """Kleines Haus für die Home-Taste (Dach + Körper)."""
+        cr, sc = P.cr, P.s
+        cc.cairo.cairo_new_path(cr)
+        cc.cairo.cairo_move_to(cr, P.X(cx - 11), P.Y(cy - 1))
+        cc.cairo.cairo_line_to(cr, P.X(cx), P.Y(cy - 11))
+        cc.cairo.cairo_line_to(cr, P.X(cx + 11), P.Y(cy - 1))
+        cc.cairo.cairo_close_path(cr)
+        P.color(c)
+        cc.cairo.cairo_fill(cr)
+        P.rrect(cx - 7, cy - 2, 14, 12, 2, c)
+
     def bar(self, P, hint_left, hint_right=""):
         """Feste A/B/X/Y-Leiste und Hinweiszeile ganz unten."""
         T, A = self.T, self.accent
@@ -887,11 +901,19 @@ class App:
             primary = on and n == 0
             P.rrect(x, BAR_Y, w, BAR_H, 22, A if primary else T["tile"], a=1.0 if on else 0.35)
             cx = x + w / 2
+            keys = list(key)                       # z. B. "B⌂" = B oder Home
             tw = P.width(label, 27, bold=True, raw=True) if label else 0
-            kx = cx - (tw + 52) / 2 + 21 if label else cx
-            P.circle(kx, BAR_Y + BAR_H / 2, 21, "ffffff" if primary else T["card"])
-            P.text(key, 22, kx, BAR_Y + BAR_H / 2 + 8, A if primary else (T["text"] if on else T["muted"]),
-                   bold=True, align="c", raw=True)
+            kw = 42 * len(keys) + 6 * (len(keys) - 1)
+            kx = cx - (tw + kw + 10) / 2 + 21 if label else cx - kw / 2 + 21
+            for k in keys:
+                P.circle(kx, BAR_Y + BAR_H / 2, 21, "ffffff" if primary else T["card"])
+                if k == "⌂":
+                    self.home_icon(P, kx, BAR_Y + BAR_H / 2, T["text"] if on else T["muted"])
+                else:
+                    P.text(k, 22, kx, BAR_Y + BAR_H / 2 + 8, A if primary else (T["text"] if on else T["muted"]),
+                           bold=True, align="c", raw=True)
+                kx += 48
+            kx -= 48
             if label:
                 P.text(label, 27, kx + 31, BAR_Y + BAR_H / 2 + 10, "ffffff" if primary else
                        (T["text"] if on else T["muted"]), bold=True, raw=True)
