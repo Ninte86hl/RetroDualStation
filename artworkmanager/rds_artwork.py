@@ -64,9 +64,18 @@ PREVIEW_DIR = Path("/tmp/rds-artwork")
 KINDS = [("boxart", "Boxart"), ("cartridge", "Cartridge"), ("image", "Image")]
 # Raster des unteren Bildschirms (Entwurfskoordinaten 1260 × 951, wie im Kontrollcenter)
 LIST_Y, ROW_H, ROWS = 100, 74, 9            # Listen: 9 sichtbare Zeilen
-TABS_Y, TABS_H = 100, 78                    # Artwork-Stile
-GAL_Y = 196                                 # Bildleiste
-TILE_W, TILE_STEP, TILES = 300, 320, 4      # Kachelbreite, Abstand, voll sichtbare Kacheln
+TABS_Y, TABS_H = 28, 78                     # Artwork-Stile (Spielname steht oben)
+GAL_Y = 120                                 # Bildleiste
+# Kachelform je Artwork-Stil: (Breite, Höhe) – Hülle hochkant, Cartridge quadratisch, Hero breit
+TILE_SIZE = {"boxart": (330, 495), "cartridge": (370, 370), "image": (760, 245)}
+TILE_GAP = 22
+
+
+def tile_geom(kind):
+    """Breite, Höhe, Schrittweite und Anzahl voll sichtbarer Kacheln."""
+    w, h = TILE_SIZE[kind]
+    step = w + TILE_GAP
+    return w, h, step, max(1, int((1200 + TILE_GAP) // step))
 BAR_Y, BAR_H = 800, 86                      # A/B/X/Y-Leiste
 HINT_Y = 930                                # Hinweiszeile
 
@@ -387,7 +396,8 @@ class App:
         kind = self.kind_key()
         items = self.cands.get(kind) or []
         first = self.gscroll.get(kind, 0)
-        for j in range(max(0, first - 1), min(len(items), first + TILES + 2)):
+        tiles = tile_geom(kind)[3]
+        for j in range(max(0, first - 1), min(len(items), first + tiles + 2)):
             self._load_preview(items[j])
 
     def _load_preview(self, item):
@@ -425,8 +435,8 @@ class App:
         first = self.gscroll.get(kind, 0)
         if i < first:
             first = i
-        elif i >= first + TILES:
-            first = i - TILES + 1
+        elif i >= first + tile_geom(kind)[3]:
+            first = i - tile_geom(kind)[3] + 1
         self.gscroll[kind] = first
         self.want_previews()
         self.top_dirty = True
@@ -437,7 +447,7 @@ class App:
     def scroll_gallery(self, d):
         kind = self.kind_key()
         n = len(self.cands.get(kind) or [])
-        self.gscroll[kind] = max(0, min(max(0, n - TILES), self.gscroll.get(kind, 0) + d))
+        self.gscroll[kind] = max(0, min(max(0, n - tile_geom(kind)[3]), self.gscroll.get(kind, 0) + d))
         self.want_previews()
 
     def switch_kind(self, d):
@@ -716,7 +726,7 @@ class App:
             self.move(-round(dy / ROW_H))                 # senkrecht wischen = Liste blättern
             return
         if self.view == "game" and abs(dx) > 60 and abs(dx) > abs(dy):
-            self.scroll_gallery(-round(dx / TILE_STEP))  # waagerecht wischen = Bildleiste blättern
+            self.scroll_gallery(-round(dx / tile_geom(self.kind_key())[2]))  # waagerecht wischen = Bildleiste blättern
             return
         self.on_tap(x0, y0)
 
@@ -870,7 +880,6 @@ class App:
 
     def draw_game(self, P):
         T, A = self.T, self.accent
-        self.header(P, self.title)
         x, w = 30, (1200 - 2 * 14) / 3
         for n, (kind, label) in enumerate(KINDS):
             on = n == self.kind
@@ -888,28 +897,28 @@ class App:
         cur = self.idx[kind]
         first = self.gscroll.get(kind, 0)
         gy, gh = GAL_Y, BAR_Y - 20 - GAL_Y
-        th = gh - 40
+        tw_, th, step, tiles = tile_geom(kind)
         if not items:
             P.text("Keine Bilder für diesen Artwork-Stil", 30, 630, gy + gh / 2, T["muted"], align="c", raw=True)
-        for j in range(first, min(len(items), first + TILES + 1)):
-            tx = 34 + (j - first) * TILE_STEP
-            ty = gy + 20
+        for j in range(first, min(len(items), first + tiles + 1)):
+            tx = 34 + (j - first) * step
+            ty = gy + (gh - th) / 2
             sel = j == cur
             if sel:
-                P.rrect(tx - 9, ty - 9, TILE_W + 18, th + 18, 24, A)
-            P.rrect(tx, ty, TILE_W, th, 18, T["card"])
+                P.rrect(tx - 9, ty - 9, tw_ + 18, th + 18, 24, A)
+            P.rrect(tx, ty, tw_, th, 18, T["card"])
             path = self.preview_of(items[j])
             if path and path != "…":
-                self.fit(P, path, tx + 8, ty + 8, TILE_W - 16, th - 16)
+                self.fit(P, path, tx + 8, ty + 8, tw_ - 16, th - 16)
             else:
-                P.text("…" if path == "…" or path is None and items[j] else "–", 30, tx + TILE_W / 2, ty + th / 2,
+                P.text("…" if path == "…" or path is None and items[j] else "–", 30, tx + tw_ / 2, ty + th / 2,
                        T["muted"], align="c", raw=True)
             if self.chosen.get(kind) is items[j]:
-                P.circle(tx + TILE_W - 28, ty + 28, 22, "2bb673")
-                P.text("✓", 26, tx + TILE_W - 28, ty + 37, "ffffff", bold=True, align="c", raw=True)
-            self.hits.append((tx, ty, TILE_W, th, ("tile", j)))
-        if len(items) > first + TILES:   # Hinweis: es geht weiter
-            P.rrect(1180, gy + 20, 80, th, 0, T["bg"], a=0.6)
+                P.circle(tx + tw_ - 28, ty + 28, 22, "2bb673")
+                P.text("✓", 26, tx + tw_ - 28, ty + 37, "ffffff", bold=True, align="c", raw=True)
+            self.hits.append((tx, ty, tw_, th, ("tile", j)))
+        if len(items) > first + tiles:   # Hinweis: es geht weiter
+            P.rrect(1180, gy, 80, gh, 0, T["bg"], a=0.6)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
         self.bar(P, "◀ ▶ Bild wählen · Wischen blättert", "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
@@ -937,34 +946,27 @@ class App:
         return P.image(path, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, r=10, stretch=True)
 
     def draw_top(self, cr, w, h):
+        """Oben: Spielname und das gewählte Artwork, so groß wie möglich."""
         P = Pen(cr, w, h)
-        A = self.accent
         P.fill_all("000000")
         if self.view not in ("game", "search") or not self.rom:
             P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
             P.text("RetroDualStation", 32, 630, 490, "bdbdbd", align="c", raw=True)
             return
         kind = self.kind_key()
-        items = self.cands.get(kind) or []
         c = self.cand()
-        lw = P.text(KINDS[self.kind][1], 34, 40, 58, "ffffff", bold=True, raw=True)
-        P.text("▲ ▼ / L R Artwork-Stil wechseln", 22, 40 + lw + 24, 56, "bdbdbd", raw=True)
-        if items:
-            P.text(f"{self.idx[kind] + 1} / {len(items)}", 28, 1220, 58, "ffffff", bold=True, align="r", raw=True)
+        P.clip(30, 10, 1200, 70)
+        P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
+        P.unclip()
         path = self.preview_of(c)
         if path and path != "…":
-            self.fit(P, path, 40, 90, 820, 820)
+            self.fit(P, path, 40, 95, 1180, 840)
         else:
             P.text("Lädt …" if path == "…" else "Keine Bilder" if not c else "Vorschau nicht verfügbar",
-                   34, 450, 500, "bdbdbd", align="c", raw=True)
+                   34, 630, 520, "bdbdbd", align="c", raw=True)
         if c and self.chosen.get(kind) is c:
-            P.rrect(1000, 860, 220, 56, 28, "2bb673")
-            P.text("✓ übernommen", 24, 1110, 896, "ffffff", bold=True, align="c", raw=True)
-        P.text("Aktuell", 24, 1060, 120, "bdbdbd", align="c", raw=True)
-        cur = self.current.get(kind)
-        P.rrect(900, 140, 320, 320, 16, "262626")
-        if not (cur and self.fit(P, cur, 912, 152, 296, 296)):
-            P.text("keins", 24, 1060, 308, "8a8a8a", align="c", raw=True)
+            P.rrect(1000, 870, 220, 56, 28, "2bb673")
+            P.text("✓ übernommen", 24, 1110, 906, "ffffff", bold=True, align="c", raw=True)
 
 
 # ------------------------------------------------------------------ main ----
