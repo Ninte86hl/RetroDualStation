@@ -36,7 +36,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 ### Offen nach v12
 - [x] Issue #5 (maniman303): Artwork-Standard dokumentiert (`docs/ARTWORK.md`, 20.10.2026)
 - [ ] Issue #5: ScreenScraper-Dev-Kennung beantragt (20.10.2026, Forum „ScreenScraper WebAPI“) – danach ES-Build über GitHub Actions mit Secret
-- [ ] Issue #5: Bildschirm-Bereiche im ES-Patch (`rds-screens.cfg`, `screen="top|bottom"` im Theme) – vor der RG-DS-Version; Konzept zuerst
+- [ ] Issue #5: Bildschirm-Bereiche im ES-Patch – vor der RG-DS-Version; Konzept: [BILDSCHIRME.md](BILDSCHIRME.md)
 - [ ] Artwork Manager: libretro-Thumbnails als Quelle ohne Schlüssel
 - [ ] Issue #5 beantworten, sobald Punkte stehen
 - [ ] Artwork Manager: SGDB-Wiederholung bei Zeitüberschreitung, M3U in Unterordnern
