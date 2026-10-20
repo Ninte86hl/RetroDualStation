@@ -1199,6 +1199,11 @@ class Switcher:
                             pass
                         time.sleep(0.15)
                     log("Gameswitcher: ES bereit nach %.1f s" % (time.monotonic() - t0))
+                    for _ in range(100):          # Startskript des alten Spiels muss fertig sein
+                        if not run(["pgrep", "-f", "runemu.sh"]):
+                            break
+                        time.sleep(0.1)
+                    log("Gameswitcher: runemu beendet nach %.1f s" % (time.monotonic() - t0))
                 if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
                     txt = rd(ini) or ""
                     if "autoload = true" in txt:
