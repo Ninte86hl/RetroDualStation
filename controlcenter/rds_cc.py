@@ -2611,35 +2611,41 @@ class ControlCenter:
         """Unterer Bildschirm während des Wechsels."""
         T, A = self.T, self.accent
         it, fresh = self.loading or ({"name": ""}, False)
-        P.logo(630 - 115 * 0.8, 260, 130 * 0.8, T["text"], T["bg"])
-        icon = it.get("icon")
-        if icon and P.image(icon, 630 - 80, 400, 160, 160, 24):
-            pass
-        P.text("Wird neu gestartet …" if fresh else "Wird fortgesetzt …", 30, 630, 640, T["muted"], align="c")
+        P.logo(630 - 115 * 0.8, 330, 130 * 0.8, T["text"], T["bg"])
+        P.text("Wird neu gestartet …" if fresh else "Wird fortgesetzt …", 30, 630, 520, T["muted"], align="c")
         name = it.get("name", "")
         while P.width(name, 40, bold=True, raw=True) > 1150 and len(name) > 4:
             name = name[:-2]
-        P.text(name if name == it.get("name") else name.rstrip() + "…", 40, 630, 700,
+        P.text(name if name == it.get("name") else name.rstrip() + "…", 40, 630, 580,
                T["text"], bold=True, align="c", raw=True)
         # einfache Fortschrittsanzeige (läuft, solange gezeichnet wird)
         t = time.monotonic() * 2.2
         for k in range(3):
             a = 0.3 + 0.7 * max(0.0, math.sin(t - k * 0.7))
-            P.rrect(630 - 50 + k * 40 - 8, 770, 16, 16, 8, A, a=a)
+            P.rrect(630 - 50 + k * 40 - 8, 640, 16, 16, 8, A, a=a)
 
     def paint_top_loading(self, cr, w, h):
-        """Oberer Bildschirm während des Wechsels: letzter Screenshot, abgedunkelt."""
-        T = self.T
+        """Oberer Bildschirm während des Wechsels: Spiel-Icon groß, Name, Hinweis."""
+        T, A = self.T, self.accent
         P = Pen(cr, w, h)
-        P.fill_all("000000")
+        P.fill_all(T["bg"])
         it, fresh = self.loading or ({}, False)
-        shot = it.get("shot")
-        if not fresh and shot and os.path.exists(shot):
-            # Bild auf den ganzen Bildschirm (Pen-Koordinaten decken 1260 x 951 ab)
-            P.image(shot, -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s, 0)
-            P.rrect(-P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s, 0, "000000", a=0.35)
-        P.rrect(630 - 260, 840, 520, 70, 35, "000000", a=0.6)
-        P.text("Wird neu gestartet …" if fresh else "Wird fortgesetzt …", 26, 630, 884, "ffffff", align="c")
+        icon = it.get("icon")
+        size = 380
+        x, y = 630 - size / 2, 150
+        if not (icon and os.path.exists(icon) and P.image(icon, x, y, size, size, 48)):
+            P.rrect(x, y, size, size, 48, T["tile"])
+            P.text((it.get("name") or "?")[:1].upper(), 200, 630, y + size / 2 + 72, T["muted"],
+                   bold=True, align="c", raw=True)
+        name = it.get("name", "")
+        while P.width(name, 46, bold=True, raw=True) > 1150 and len(name) > 4:
+            name = name[:-2]
+        P.text(name if name == it.get("name") else name.rstrip() + "…", 46, 630, 640,
+               T["text"], bold=True, align="c", raw=True)
+        P.text("Wird neu gestartet …" if fresh else "Wird fortgesetzt …", 28, 630, 700, T["muted"], align="c")
+        sub = " · ".join(p for p in (it.get("system"), it.get("emu")) if p)
+        if sub:
+            P.text(sub, 22, 630, 745, T["muted"], align="c", raw=True)
 
     def _draw_switcher(self, P):
         T, A = self.T, self.accent
