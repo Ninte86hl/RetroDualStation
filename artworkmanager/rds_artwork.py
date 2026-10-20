@@ -203,6 +203,7 @@ def fade(P, x, y, w, h):
 # Übersetzt wird beim Zeichnen (AmPen), damit der übrige Code deutsch bleiben kann.
 EN_AM = {
     "Leerzeichen": "Space", "Abbrechen": "Cancel",
+    "Eigenes Bild": "Own image",
     "Filter": "Filter", "Keine Spiele für diesen Filter": "No games for this filter",
     "Spieleliste": "Game list", "Filter: alle · fehlende · keine Artworks": "Filter: all · missing · no artwork",
     "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
@@ -348,6 +349,43 @@ class AmPen(Pen):
 
 
 from multidisc import find_groups, apply_groups, referenced_by_m3u  # noqa: E402
+
+
+OWN = WORK / "eigene"                       # eigene Bilder: eigene/, eigene/<system>/, eigene/alle/
+OWN_EXT = {".png", ".jpg", ".jpeg", ".webp"}
+
+
+def fetch(url):
+    """Bild holen: eigene Datei (file://) direkt, sonst über den Zwischenspeicher aus dem Netz."""
+    if url.startswith("file://"):
+        return Path(url[7:]).read_bytes()
+    return cached_download(WORK / "data" / "cache", url, download_artwork)
+
+
+def own_images(system, rom, names):
+    """Eigene Bilder für ein Spiel: Dateiname = Spiel- oder ROM-Name (in eigene/ oder eigene/<system>/),
+    dazu alles aus eigene/alle/."""
+    try:
+        for d in (OWN, OWN / "alle"):
+            d.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return []
+    wanted = {normalize_name(n) for n in list(names) + [display_name_from_rom(rom)] if n}
+    files = []
+    for folder in (OWN / system, OWN):
+        if folder.is_dir():
+            files += [f for f in sorted(folder.iterdir()) if f.is_file() and f.suffix.lower() in OWN_EXT
+                      and normalize_name(display_name_from_rom(f.name)) in wanted]
+    files += [f for f in sorted((OWN / "alle").iterdir()) if f.is_file() and f.suffix.lower() in OWN_EXT]
+    out, seen = [], set()
+    for f in files:
+        if str(f) in seen:
+            continue
+        seen.add(str(f))
+        url = "file://" + str(f)
+        out.append({"id": "own-" + f.name, "url": url, "preview_url": url, "source": "Eigenes Bild",
+                    "_own": True})
+    return out
 
 
 def has_gamelist(system):
@@ -683,6 +721,11 @@ class App:
             pages = iidb_asset_pages(result["iidb"]["id"]) if result.get("iidb") else {}
             raw = artwork_candidates_for_games(result, pages, sgdb)
             self.cands = by_style(raw)
+            own = own_images(key, rom, [title, search, rom_name])     # eigene Bilder vorn in allen Tabs
+            for k in self.cands:
+                self.cands[k] = own + self.cands[k]
+            if own:
+                log(f"  eigene Bilder: {len(own)}")
             for c in list(self.cands["boxart"]):   # Größe unbekannt (iiDB): gleich laden und prüfen
                 if is_2x3(c.get("width"), c.get("height")) is None:
                     self._load_preview(c)
@@ -767,11 +810,11 @@ class App:
         def go():
             with self.loader:          # höchstens drei Downloads gleichzeitig
                 try:
-                    data = cached_download(WORK / "data" / "cache", url, download_artwork)
+                    data = fetch(url)
                     path = PREVIEW_DIR / "cand" / (str(abs(hash(url))) + ".png")
                     size = to_png(data, path)
                     self.previews[url] = str(path)
-                    if item in (self.cands.get("boxart") or []) and is_2x3(*size) is False:
+                    if item in (self.cands.get("boxart") or []) and not item.get("_own") and is_2x3(*size) is False:
                         self.drop_boxart(item)
                 except Exception as exc:
                     log("Vorschau nicht ladbar:", url, exc)
@@ -872,7 +915,7 @@ class App:
             from_web = {k: v for k, v in chosen.items() if not v.get("_png")}
             if from_web:
                 self.app.stage_scraper_artwork(rom, from_web,
-                                               lambda url: cached_download(WORK / "data" / "cache", url, download_artwork))
+                                               lambda url: fetch(url))
             for k, v in chosen.items():           # im Editor gestaltet: fertiges PNG
                 if v.get("_png"):
                     self.app.stage_artwork(rom, k, v["_png"])
@@ -921,7 +964,7 @@ class App:
         system = self.system["key"]
 
         def go():
-            data = cached_download(WORK / "data" / "cache", c.get("url") or c.get("preview_url"), download_artwork)
+            data = fetch(c.get("url") or c.get("preview_url"))
             try:
                 prepare_iisu_borders(WORK / "data", system)
             except Exception as exc:

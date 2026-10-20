@@ -93,6 +93,8 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **X** | Editor: turn the chosen image into a 1:1 cartridge image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border) |
 
 Before the first save per system a backup is created (can be turned off in the settings).
+**Own images:** put PNG/JPG/WebP files into `ports/artworkmanager/eigene/` (or `eigene/<system>/`), named like the game – they appear first in every tab marked *Own image*. Everything in `eigene/alle/` appears for every game.
+
 The SteamGridDB API key can also be entered on a PC in
 `/storage/roms/ports/artworkmanager/settings.cfg`.
 
