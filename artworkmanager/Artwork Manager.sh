@@ -1,5 +1,5 @@
 #!/bin/bash
 # RetroDualStation Artwork Manager – Start über Ports in EmulationStation
-D=/storage/.config/retrodualstation
-mkdir -p "$D/artwork"
-exec python3 "$D/artwork/rds_artwork.py" >"$D/artwork/manager.log" 2>&1
+# Programm und Daten: /storage/roms/ports/artworkmanager
+D=/storage/roms/ports/artworkmanager
+exec python3 "$D/rds_artwork.py" >"$D/manager.log" 2>&1
