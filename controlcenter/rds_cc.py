@@ -1549,7 +1549,7 @@ GAME_ACTIONS = {
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
                 ("help", "Tasten"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("shot", "Screenshot"),
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
                  ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
@@ -4619,12 +4619,13 @@ def main():
                 log("Seite Spiel: DraStic", key, "über Taste", idx)
             threading.Thread(target=later, daemon=True).start()
             return
-        if emu == "DSperate" and key == "menu":
+        if emu == "DSperate" and key in ("menu", "ff"):
             toggle("cc")
             def later():
                 time.sleep(0.3)
-                ok = dsperate_press("pause")              # „pause“ öffnet bei DSperate das Menü
-                log("Seite Spiel: DSperate-Menü", "ok" if ok else "nicht belegt")
+                # „pause“ öffnet bei DSperate das Menü; Vorspulen über das Umschalt-Kürzel
+                ok = dsperate_press("pause" if key == "menu" else "fast_forward_toggle")
+                log("Seite Spiel: DSperate", key, "ok" if ok else "nicht belegt")
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
