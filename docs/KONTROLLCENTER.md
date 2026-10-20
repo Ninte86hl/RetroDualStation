@@ -518,3 +518,10 @@ Später: Installer setzt dieses Schema optional (mit Sicherung).
 
 ### Log des Kontrollcenters
 Das CC schreibt ins Journal: `journalctl -u rds-controlcenter --no-pager | tail -40`
+
+### DraStic-Slots (21.10.2026)
+- DraStic speichert/lädt per Taste nur in seinem eingestellten Slot `savestate_number` (drastic.cfg, meist 0); Dateien `<ROM>_<n>.dss`.
+- Das CC bietet trotzdem Slot 0–8: Speichern in Slot n = R2 drücken, dann `_b.dss` nach `_n.dss` kopieren;
+  Laden aus Slot n = `_n.dss` nach `_b.dss` kopieren, L2 drücken. Slot b wird vorher gesichert (`.rdsbak`) und danach zurückgelegt.
+- Die Dateien entsprechen DraStics eigenen Slots – sie erscheinen auch in seinem Menü.
+- Vorschaubild: Screenshot des oberen Bildschirms → `<ROM>_<n>.dss.png`.

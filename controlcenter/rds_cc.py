@@ -1717,7 +1717,18 @@ SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLO
 SHOT_DIR = "/storage/roms/screenshots"
 
 
-SLOT_EMUS = ("RetroArch", "DSperate")    # Emulatoren mit Slot-Auswahl
+SLOT_EMUS = ("RetroArch", "DSperate", "DraStic")    # Emulatoren mit Slot-Auswahl
+
+
+def drastic_base_slot():
+    """Slot, in den DraStic per Taste speichert (savestate_number in drastic.cfg)."""
+    m = re.search(r"^savestate_number\s*=\s*(\d+)", rd("/storage/.config/drastic/config/drastic.cfg") or "", re.M)
+    return int(m.group(1)) if m else 0
+
+
+def drastic_slot_path(game, n):
+    rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
+    return os.path.join("/storage/roms/savestates/nds", "%s_%d.dss" % (os.path.splitext(os.path.basename(rom))[0], n))
 
 
 def nds_gamecode(rom):
@@ -3525,6 +3536,8 @@ class ControlCenter:
         rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
         if not rom:
             return None
+        if g.get("emu") == "DraStic":
+            return drastic_slot_path(g, n)
         if g.get("emu") == "DSperate":
             if g.get("_code") is None:
                 g["_code"] = nds_gamecode(rom) or ""
@@ -4664,23 +4677,43 @@ def main():
                             os.remove(shot + ".tmp")
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 elif emu == "DraStic":
-                    # kurz auftauen und Taste einspeisen (ohne Grab erreicht sie den Emulator)
-                    rom = g.get("rom") or rom_of(g["pid"]) or ""
-                    dss = os.path.join("/storage/roms/savestates/nds",
-                                       os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
-                    before = os.path.getmtime(dss) if os.path.exists(dss) else 0
-                    code = 313 if key == "save" else 312     # R2 speichern, L2 laden
-                    inject_keys([(code, 1), 0.1, (code, 0)])
-                    for _ in range(25):
-                        time.sleep(0.1)
-                        if key == "save" and os.path.exists(dss) and os.path.getmtime(dss) > before:
-                            time.sleep(0.2)
-                            break
-                    else:
-                        pass
-                    if key == "load":
-                        time.sleep(0.5)
-                    ok = key == "load" or (os.path.exists(dss) and os.path.getmtime(dss) > before)
+                    # DraStic speichert/lädt per Taste (R2/L2) immer in seinem eingestellten Slot b.
+                    # Andere Slots: Datei von/nach <rom>_<n>.dss kopieren; Slot b wird vorher gesichert.
+                    n, b = cc.slot, drastic_base_slot()
+                    fb, fn = drastic_slot_path(g, b), drastic_slot_path(g, n)
+                    bak = fb + ".rdsbak"
+                    if n != b and os.path.exists(fb):
+                        shutil.copy2(fb, bak)
+                    try:
+                        if key == "load" and n != b:
+                            shutil.copy2(fn, fb)
+                        before = os.path.getmtime(fb) if os.path.exists(fb) else 0
+                        shot = None
+                        if key == "save":
+                            shot = fn + ".png"
+                            subprocess.run(["grim", "-l", "1", "-o", TOP_OUTPUT, shot + ".tmp"], timeout=5,
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        code = 313 if key == "save" else 312     # R2 speichern, L2 laden
+                        inject_keys([(code, 1), 0.1, (code, 0)])
+                        ok = False
+                        for _ in range(30):
+                            time.sleep(0.1)
+                            if key == "save" and os.path.exists(fb) and os.path.getmtime(fb) > before:
+                                time.sleep(0.2)                  # Schreiben abschließen lassen
+                                ok = True
+                                break
+                        if key == "load":
+                            time.sleep(0.8)                      # DraStic liest die Datei
+                            ok = True
+                        if key == "save" and ok and n != b:
+                            shutil.copy2(fb, fn)
+                        if shot and os.path.exists(shot + ".tmp"):
+                            os.replace(shot + ".tmp", shot) if ok else os.remove(shot + ".tmp")
+                    finally:
+                        if n != b and os.path.exists(bak):
+                            os.replace(bak, fb)                  # Slot b unverändert zurück
+                        elif n != b and key == "load" and os.path.exists(fb):
+                            os.remove(fb)                        # war vorher leer
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 log("Seite Spiel:", emu, key, "→", msg)
             except Exception:
