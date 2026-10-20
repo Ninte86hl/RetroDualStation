@@ -423,3 +423,7 @@ wird bei jedem Öffnen frisch gewählt.
   RetroArch→RetroArch: **10,9 s → 6,3 s**. Ohne Patch Rückfall auf `/launch`.
 - ES-Datei auf dem Gerät nie direkt per `scp` überschreiben (läuft → „Text file busy“): erst als
   `.emulationstation-rgds.new` kopieren, dann `mv -f`.
+- Ton während des Wechsels stumm (`wpctl set-mute`), DraStic nur **einmal** L2 (doppelt ließ die Musik springen).
+- `ra_proxy.py` (RetroAchievements-Proxy von ROCKNIX) hält das CC dauerhaft am Laufen → runemu wartet nicht,
+  RetroArch meldet sich sofort an. RetroArch→RetroArch **4,8 s**, RetroArch→DraStic **4,5 s** (Start: 12,6 s).
+- Offen: DSperate im Gameswitcher, Optik-Feintuning, Release v11 (neues ES mit 002-Patch + CC + Installer).
