@@ -1124,7 +1124,11 @@ class Switcher:
         t0 = time.monotonic()
         deadline = time.time() + 30
         if emu == "RetroArch":
+            seen = False
             while time.time() < deadline:
+                if not seen and run(["pidof", "retroarch"]):
+                    seen = True
+                    log("Gameswitcher: RetroArch-Prozess nach %.1f s" % (time.monotonic() - t0))
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
                     log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
@@ -1183,7 +1187,18 @@ class Switcher:
                         if not running_game():
                             break
                         time.sleep(0.15)
-                    time.sleep(0.3)
+                    log("Gameswitcher: altes Spiel beendet nach %.1f s" % (time.monotonic() - t0))
+                    # warten, bis ES wieder bereit ist (sonst wird der Start verzögert abgearbeitet)
+                    for _ in range(40):
+                        try:
+                            import urllib.request
+                            r = urllib.request.urlopen("http://127.0.0.1:1234/runningGame", timeout=1).read()
+                            if b"NO GAME" in r:
+                                break
+                        except Exception:
+                            pass
+                        time.sleep(0.15)
+                    log("Gameswitcher: ES bereit nach %.1f s" % (time.monotonic() - t0))
                 if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
                     txt = rd(ini) or ""
                     if "autoload = true" in txt:
