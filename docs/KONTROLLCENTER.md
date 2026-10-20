@@ -430,3 +430,12 @@ wird bei jedem Öffnen frisch gewählt.
 - `ra_proxy` dauerhaft am Leben halten **zurückgenommen** (20.10.2026): führte zu „RetroAchievements login
   failed to respond“ – der Proxy hält Benutzer/Token/Warteschlange im Speicher und ist für einen frischen
   Start pro Spiel gedacht. Nicht wieder einbauen.
+
+### Tour – Stand 20.10.2026 (v12)
+- Sechs Seiten (Tasten, Kontrollcenter, Gameswitcher, Power-Menü, Artwork Manager), Bilder in `controlcenter/tour/`.
+- Läuft **einmal** ca. 20 s nach dem Start, wenn kein Spiel läuft; danach `/storage/.config/retrodualstation/tour.done`.
+  Der Installer löscht die Datei, damit die Tour nach einem Update wieder kommt.
+- **Select** im Kontrollcenter öffnet die Tour jederzeit erneut (Fußzeile: **Select** – Tour).
+- Bedienung: **A** / **▶** weiter · **B** / **◀** zurück · **Start** beenden.
+- Gleicher Inhalt als Anleitung: [TOUR.de.md](TOUR.de.md) / [TOUR.md](TOUR.md).
+

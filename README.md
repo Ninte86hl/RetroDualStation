@@ -5,7 +5,7 @@
 Dual-screen EmulationStation for the **Anbernic RG DS Plus**, built on **ROCKNIX**.
 *Formerly “ROCKNIX DualStation”.*
 
-🇩🇪 [Deutsche Version](README.de.md)
+🇩🇪 [Deutsche Version](README.de.md) · 🧭 [Quick tour](docs/TOUR.md)
 
 <p align="center"><img src="docs/screenshots/canvas-system.png" alt="canvas-ds on RetroDualStation: system view on both screens" width="360"></p>
 
@@ -24,7 +24,7 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 |---|---|---|
 | EmulationStation | one screen | **both screens** |
 | Themes | single-screen | dual-screen themes like **canvas-ds** |
-| Artwork | scraper images | hero, icon and cover per game via **DualStation Sync** |
+| Artwork | scraper images | boxart, icon and hero per game via the **Artwork Manager** – right on the device |
 | Bottom screen in games | RetroArch touch menu only | **Control Center** everywhere – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Going back | – | one tap in **Ports** |
 
@@ -32,9 +32,11 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 
 - **Dual-screen ES** – menus, scraper, keyboard and popups placed on the right screen
 - **canvas-ds** – five game list views made for two screens
-- **DualStation Sync** – desktop companion that prepares dual-screen artwork *(see below)*
+- **Artwork Manager** – find and fit artwork for your games on the device itself *(see below)*
 - **Control Center** – quick settings, power menu and quit game over any game
 - **Game switcher** – jump between your recent games and continue where you left off
+- **Game search** – press **Y** in the system view to search all systems at once
+- **Quick tour** – runs once after installing, again any time with **Select** in the Control Center
 
 ## Themes
 
@@ -51,13 +53,27 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 | **Showcase** – cover and game list | **Spotlight** – one large card that slides in |  |
 
 Artwork: `romname-hero.png`, `romname-icon.png`, `romname-box.png` and the scraper logo –
-DualStation Sync creates the first three for you; missing images fall back to scraper media.
+the Artwork Manager creates the first three for you; missing images fall back to scraper media.
 
-## DualStation Sync
+## Artwork Manager
 
-Our desktop companion (currently published as
-[RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager)):
-prepares hero, icon and cover images for your games in the names and sizes canvas-ds expects.
+Start it from **Ports → Artwork Manager**. It fills in **boxart**, **cartridge icon** (1:1) and
+**hero image** for your games – the top screen shows a live preview of how they look together,
+the bottom screen holds lists, search and buttons.
+
+- Sources: iiSU database and SteamGridDB (free API key in the settings), plus **your own images**
+  from `ports/artworkmanager/eigene/`
+- **Single search** (Start) or **batch** (Select) through all games with missing artwork
+- **Icon editor** – turns any icon into a 1:1 image with the iiSU border (move, zoom, choose border)
+- **Filter** in the game list: all · missing · no artwork; **game search** across all systems
+- **Multi-disc games** merged into one `.m3u` entry (settings), arcade names from the FBNeo list
+- A backup of each `gamelist.xml` before the first save, restore in the settings
+
+Requirement: each system needs a `gamelist.xml` – create it once with the scraper in single-screen mode.
+All buttons: [quick tour](docs/TOUR.md#5-artwork-manager).
+
+The PC version stays available as
+[RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager).
 
 ## Control Center
 
@@ -83,7 +99,7 @@ DSperate and PortMaster. The game pauses and continues where you left off.
 
 **Hold the Home button** (1.5 s) to see your recently played games – each with a picture of where
 you left off, in the shape of its console. **A** resumes exactly there, **Y** starts fresh,
-**X** removes it from the list. A **short press** saves and takes you back to ES.
+**X** removes it from the list. A **short press** saves and takes you back to ES, **pressing twice** jumps straight to the previous game.
 
 Works with RetroArch, DraStic, DSperate and PortMaster. Switching takes about 5 seconds –
 a loading screen covers both screens and the sound stays muted until you're back in the game.
@@ -96,20 +112,20 @@ a loading screen covers both screens and the sound stays muted until you're back
 |---|---|
 | ✅ | Dual-screen EmulationStation, installer, one-tap switch back |
 | ✅ | canvas-ds with five game list views |
-| ✅ | DualStation Sync: dual-screen artwork |
+| ✅ | Artwork Manager on the device – boxart, icon, hero, icon editor, M3U *(in v12)* |
 | ✅ | Control Center: quick settings, Wi-Fi, Bluetooth, keyboard, power menu, quit game, bottom screen off |
 | ✅ | Game switcher – recent games with a screenshot of where you left off; **A** resume, **Y** start fresh *(in v11)* |
+| ✅ | Game search with **Y** in the system view, quick tour *(in v12)* |
 | 🔜 **next** | Control Center: game page – save states and shortcuts |
 | 🔜 | Support for the original RG DS |
 | 💭 maybe | Settings menu like on a smartphone, opened from the Control Center |
 | 💭 maybe | RetroAchievements – unlock notification and overview |
 | 💭 maybe | User profiles with their own saves |
-| 💭 maybe | DraStic: large pause menu and own settings screen |
-| 🕓 later | DualStation Sync: better title matching, editing game lists |
+| 🕓 later | Artwork Manager: editing game lists, M3U in subfolders |
 
 ## Installation
 
-1. Download **`rocknix-dualstation-v11.zip`** (includes canvas-ds) from the
+1. Download **`rocknix-dualstation-v12.zip`** (includes canvas-ds) from the
    [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
 3. In ES open **Ports** → **Install ROCKNIX DualStation**.
@@ -122,10 +138,10 @@ Updating works the same way.
 <summary>ROMs on an ext4 partition? Copy the ZIP over the network</summary>
 
 ```bash
-scp rocknix-dualstation-v11.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v12.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v11.zip && rm rocknix-dualstation-v11.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v12.zip && rm rocknix-dualstation-v12.zip"
 ```
 </details>
 
@@ -136,6 +152,7 @@ Games, media, game lists and saves are not touched.
 
 - **No ScreenScraper and no RetroAchievements** in the dual-screen build – the credentials are
   reserved for the official ROCKNIX build. To scrape, switch to *Single* via Ports and back.
+- PS1: the installer sets **pcsx_rearmed** if no working core is selected.
 - DS via RetroArch cores is untested; DraStic and DSperate work.
 - DraStic touch not responding? Set **Follow 3D Renderer** to *Auto* (also happens on stock ROCKNIX).
 

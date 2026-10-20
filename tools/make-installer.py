@@ -3,8 +3,13 @@
 
 Aufruf (im Repo-Ordner):
     python3 tools/make-installer.py <ES-Binary> <version> [<canvas-ds-ZIP>]
+                                    [--artwork <Artwork-Manager-Repo>] [--pillow <Pillow-Wheel>]
 Mit canvas-ds-ZIP (aus tools/make-canvas-installer.py) wird canvas-ds mitinstalliert
 und als Standard-Theme im Dual-Modus gesetzt.
+--artwork: Ordner des RocknixDS-Artwork-Managers (Branch v5-foundation); dessen Paket
+           rocknixds_artwork_manager kommt zusammen mit artworkmanager/ in den Ports-Ordner.
+--pillow:  Pillow-Wheel für das Gerät (cp314, manylinux aarch64). Fehlt es, lädt der
+           Installer Pillow auf dem Gerät selbst aus dem Internet.
 Beispiel:
     python3 tools/make-installer.py emulationstation-rgds v9
 
@@ -19,10 +24,18 @@ Inhalt (wird in den Ordner "ports" auf der SD-Karte entpackt):
 import os, sys, zipfile
 
 repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if len(sys.argv) not in (3, 4):
+args, opts = [], {}
+it = iter(sys.argv[1:])
+for x in it:
+    if x in ("--artwork", "--pillow"):
+        opts[x] = next(it, None)
+    else:
+        args.append(x)
+if len(args) not in (2, 3) or None in opts.values():
     sys.exit(__doc__)
-binary, version = sys.argv[1], sys.argv[2]
-canvas = sys.argv[3] if len(sys.argv) == 4 else None
+binary, version = args[0], args[1]
+canvas = args[2] if len(args) == 3 else None
+artwork_repo, pillow = opts.get("--artwork"), opts.get("--pillow")
 binname = "emulationstation-rgds"
 
 out = os.path.join(repo, f"rocknix-dualstation-{version}.zip")
@@ -57,6 +70,9 @@ with zipfile.ZipFile(out, "w") as z:
     for f, mode in (("rds_cc.py", EXEC), ("rds-controlcenter.service", FILE),
                     ("rds-resume.service", FILE), ("rds-logind-powerkey.conf", FILE)):
         add(z, os.path.join(repo, "controlcenter", f), p + "controlcenter/" + f, mode)
+    tour = os.path.join(repo, "controlcenter", "tour")      # Bilder der Tour
+    for f in sorted(os.listdir(tour)):
+        add(z, os.path.join(tour, f), p + "controlcenter/tour/" + f, FILE)
     for f in sorted(os.listdir(os.path.join(repo, "installer", "payload", "images"))):
         add(z, os.path.join(repo, "installer", "payload", "images", f), p + "images/" + f, FILE)
     if canvas:   # canvas-ds aus dessen Installer-ZIP übernehmen
@@ -67,6 +83,21 @@ with zipfile.ZipFile(out, "w") as z:
                     ni = zipfile.ZipInfo(p + "theme/canvas-ds-rgds-plus/" + info.filename[len(pre):], info.date_time)
                     ni.external_attr, ni.compress_type = FILE, zipfile.ZIP_DEFLATED
                     z.writestr(ni, cz.read(info))
+    # Artwork Manager (Gerätefassung): Programm, Ports-Eintrag, Manager-Paket, Pillow
+    for f in ("rds_artwork.py", "multidisc.py"):
+        add(z, os.path.join(repo, "artworkmanager", f), p + "artworkmanager/" + f, FILE)
+    add(z, os.path.join(repo, "artworkmanager", "Artwork Manager.sh"), p + "ports/Artwork Manager.sh", EXEC)
+    if artwork_repo:
+        pkg = os.path.join(artwork_repo, "rocknixds_artwork_manager")
+        if not os.path.isfile(os.path.join(pkg, "__init__.py")):
+            sys.exit(f"Kein Artwork-Manager-Paket gefunden: {pkg}")
+        for f in sorted(os.listdir(pkg)):
+            if f.endswith(".py"):
+                add(z, os.path.join(pkg, f), p + "artworkmanager/rocknixds_artwork_manager/" + f, FILE)
+    else:
+        print("Hinweis: ohne --artwork kommt das Artwork-Manager-Paket nicht mit")
+    if pillow:
+        add(z, pillow, p + "lib/pillow.whl", FILE)
     for f in ("LICENSE", "CREDITS.md"):
         add(z, os.path.join(repo, f), p + f, FILE)
 

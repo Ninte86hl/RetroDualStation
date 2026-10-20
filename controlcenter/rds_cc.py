@@ -51,6 +51,7 @@ TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
 HOME_LONG_S = 1.5      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
+HOME_DOUBLE_S = 0.35   # Home zweimal kurz hintereinander → Gameswitcher
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -225,6 +226,11 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
+    "Fertig": "Done", "Weiter": "Next", "Tour beenden": "End tour", "Tour": "Tour",
+    "Seite wechseln": "switch page", "Ein/Aus": "on/off", "Details": "details",
+    "Auswählen": "Select", "wählen": "choose", "einfügen": "insert", "schließen": "close",
+    "Taste (halten: ä, ö, ü …)": "key (hold for ä, é, ñ …)", "Löschen": "delete", "Groß": "shift",
+    "Cursor": "cursor", "Auswahl": "Select", "Bestätigen": "Confirm", "Zurück": "Back",
     "Aktualisieren": "Refresh", "Suchen": "Search", "Sucht …": "Searching …", "Zurück": "Back",
     "An": "On", "Aus": "Off", "Verbinden": "Connect", "Trennen": "Disconnect",
     "Vergessen": "Forget", "Passwort …": "Password …", "Koppeln": "Pair", "Entfernen": "Remove",
@@ -605,6 +611,19 @@ class Pen:
         cairo.cairo_move_to(cr, px, self.Y(y))
         cairo.cairo_show_text(cr, data)
         return ext.x_advance / self.s
+
+    def hint(self, items, size, x, y, c, key_c=None, align="l"):
+        """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“, mit „·“ getrennt.
+        items: [("A", "Auswählen"), ("B", "Zurück")] – Erklärungen werden übersetzt, Tasten nicht."""
+        parts = []
+        for n, (key, text) in enumerate(items):
+            if n:
+                parts.append(("  ·  ", False))
+            parts += [(key, True), ((" – " + tr(text)) if text else "", False)]
+        total = sum(self.width(t, size, bold=b, raw=True) for t, b in parts)
+        x = x - total / 2 if align == "c" else x - total if align == "r" else x
+        for t, b in parts:
+            x += self.text(t, size, x, y, (key_c or c) if b else c, bold=b, raw=True)
 
     def width(self, txt, size, bold=False, raw=False):
         if not raw:
@@ -1020,6 +1039,65 @@ def png_size(path):
     except OSError:
         pass
     return None
+
+
+# ------------------------------------------------------------------ Tour ----
+# Einmalig nach der Installation, danach im Kontrollcenter mit Select.
+TOUR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tour")
+TOUR_DONE = "/storage/.config/retrodualstation/tour.done"
+# Je Seite: Titel, Bild (de, en) und Zeilen. Zeile = Überschrift (str) oder Tasten [(Taste, Erklärung)].
+TOUR = [
+    {"title": ("Willkommen bei RetroDualStation", "Welcome to RetroDualStation"),
+     "img": ("geraet-tasten.png", "geraet-tasten-en.png"),
+     "lines": [("Ein System, zwei Bildschirme.", "One system, two screens."),
+               ("Diese kurze Tour zeigt dir die wichtigsten Tasten und Menüs.",
+                "This short tour shows the most important buttons and menus."),
+               ("Du kannst sie später im Kontrollcenter mit Select erneut starten.",
+                "You can start it again later from the Control Center with Select.")]},
+    {"title": ("Die zwei Sondertasten", "The two special buttons"),
+     "img": ("geraet-tasten.png", "geraet-tasten-en.png"),
+     "keys": [("Anbernic", ("Kontrollcenter öffnen / schließen", "open / close the Control Center")),
+              (("Home kurz", "Home short"), ("im Spiel speichern, zurück zu ES", "in a game: save, back to ES")),
+              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten)", "Game switcher (hold 1.5 s)")),
+              (("Home 2×", "Home 2×"), ("im Spiel: direkt zum vorherigen Spiel", "in a game: jump to the previous game")),
+              (("Power kurz", "Power short"), ("Power-Menü", "Power menu")),
+              (("Power lang", "Power long"), ("sofort Ruhemodus", "sleep immediately"))]},
+    {"title": ("Kontrollcenter", "Control Center"),
+     "img": ("tour-kontrollcenter.png", "tour-kontrollcenter.png"),
+     "lines": [("Helligkeit oben und unten, Lautstärke und Leistung.",
+                "Top and bottom brightness, volume and performance."),
+               ("WLAN, Bluetooth, unteren Screen ausschalten und Ruhemodus.",
+                "Wi-Fi, Bluetooth, bottom screen off and sleep."),
+               ("Im Spiel pausiert das Spiel, solange das Kontrollcenter offen ist.",
+                "In a game, the game pauses while the Control Center is open.")],
+     "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
+    {"title": ("Gameswitcher", "Game switcher"),
+     "img": ("tour-gameswitcher.png", "tour-gameswitcher.png"),
+     "lines": [("Home 1,5 s halten: die zuletzt gespielten Spiele. Home 2× im Spiel: direkt zum vorherigen.",
+                "Hold Home for 1.5 s: your recent games. Home twice in a game: jump to the previous one."),
+               ("Der Spielstand wird beim Wechsel automatisch gesichert.",
+                "Your progress is saved automatically when you switch.")],
+     "keys": [("◀ ▶", ("wählen", "choose")), ("A", ("Weiterspielen", "Resume")), ("Y", ("Neu starten", "Restart")),
+              ("X", ("Entfernen", "Remove"))]},
+    {"title": ("Power-Menü", "Power menu"),
+     "img": ("tour-powermenue.png", "tour-powermenue.png"),
+     "lines": [("Power kurz drücken: Ruhemodus, Neu starten, Ausschalten, ES neu starten.",
+                "Press Power briefly: Sleep, Restart, Power off, Restart ES."),
+               ("Power gedrückt halten schickt das Gerät sofort in den Ruhemodus.",
+                "Holding Power sends the device to sleep immediately.")]},
+    {"title": ("Artwork Manager", "Artwork Manager"),
+     "img": ("tour-artwork-5.png", "tour-artwork-5.png"),
+     "lines": [("Unter Ports: Boxart, Cartridge und Image für deine Spiele – mit Icon-Editor",
+                "In Ports: boxart, cartridge and image for your games – with an icon editor"),
+               ("für 1:1-Bilder mit iiSU-Rahmen, eigenen Bildern und M3U für Mehr-CD-Spiele.",
+                "for 1:1 images with iiSU border, your own images and M3U for multi-disc games."),
+               ("Voraussetzung: eine Spieleliste – einmal im Single-Screen-Modus scrapen.",
+                "Requirement: a game list – scrape your games once in single-screen mode.")],
+     "keys": [("Start", ("Einzelsuche", "single search")), ("Select", ("Mehrfachsuche", "batch search")),
+              ("X", ("Icon-Editor: 1:1 mit iiSU-Rahmen", "icon editor: 1:1 with iiSU border")),
+              ("L3 / R3", ("Suche aktualisieren / Ansicht oben", "refresh search / top view")),
+              ("Y", ("Filter (Spieleliste) / Spiel suchen", "filter (game list) / search game"))]},
+]
 
 
 def card_aspect(item):
@@ -1591,8 +1669,8 @@ class SubMenu:
             P.text(f"{count} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
                    T["muted"], align="c")
         cc.hits.append((45, 195, 1170, self.LIST_H + 20, ("sublist",)))
-        P.text("A Auswählen", 17, 45, 835, T["muted"])
-        P.text("B Zurück", 17, 1215, 835, T["muted"], align="r")
+        P.hint([("A", "Auswählen")], 17, 45, 835, T["muted"], T["text"])
+        P.hint([("B", "Zurück")], 17, 1215, 835, T["muted"], T["text"], align="r")
 
 
 class WifiMenu(SubMenu):
@@ -1894,7 +1972,7 @@ class Keyboard:
     def _label(self, kind, val):
         if kind == "char":
             return val.upper() if self.shift and val.isalpha() and val != "ß" else val
-        return {"layer": "abc" if self.layer else "?123", "space": "Leerzeichen",
+        return {"layer": "abc" if self.layer else "?123", "space": tr("Leerzeichen"),
                 "ok": "OK", "shift": "", "back": ""}[kind]
 
     # -- Aktionen --
@@ -2186,9 +2264,10 @@ class Keyboard:
                 P.text(v, 32, bx + bw / 2, py + 67, "ffffff" if sel else T["text"], align="c")
                 pp["xs"].append(bx + bw / 2)
                 hits.insert(0, (bx, py + 9, bw, 92, ("kb_var", i)))
-        hint = ("Links/Rechts wählen · A einfügen · B schließen" if self.popup else
-                "A Taste (halten: ä, ö, ü …) · B Löschen · L1 Groß · R1 ?123 · Stick Cursor · Start OK")
-        P.text(hint, 17, 630, 835, T["muted"], align="c")
+        hint = ([("◄ ►", "wählen"), ("A", "einfügen"), ("B", "schließen")] if self.popup else
+                [("A", "Taste (halten: ä, ö, ü …)"), ("B", "Löschen"), ("L1", "Groß"), ("R1", "?123"),
+                 ("Stick", "Cursor"), ("Start", "OK")])
+        P.hint(hint, 17, 630, 835, T["muted"], T["text"], align="c")
 
 
 
@@ -2230,6 +2309,7 @@ class ControlCenter:
         self.sub = None         # geöffnetes Untermenü (WLAN/Bluetooth)
         self.kbd = None         # geöffnete Bildschirmtastatur
         self.changed = False    # Hintergrund-Abfrage hat neue Daten
+        self.tour_page = 0
         self.power_menu = PowerMenu(self)
         self.power_hits = []    # Touch-Ziele des Power-Menüs
 
@@ -2512,6 +2592,9 @@ class ControlCenter:
         T = self.T
         P.fill_all(T["bg"])
         self.hits, self.tracks = [], {}
+        if view == "tour":
+            self._draw_tour(P)
+            return
         if view == "power":
             self.power_hits = self.power_menu.draw(P, T, self.accent)
             return
@@ -2534,17 +2617,71 @@ class ControlCenter:
         if self.sub:
             self.sub.draw(P)
             return
-        left = "L1 / R1 Seite wechseln"
+        left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
-            left = "A Ein/Aus  ·  X / Y Details"
-        P.text(left, 17, 45, 835, T["muted"])
-        P.text("B Schließen", 17, 1215, 835, T["muted"], align="r")
+            left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        P.hint(left, 17, 45, 835, T["muted"], T["text"])
+        P.hint([("Select", "Tour"), ("B", "Schließen")], 17, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
             wdt = 34 if i == self.page else 12
             P.rrect(x, 823, wdt, 12, 6, T["on_bg"] if i == self.page else T["dot"])
             self.hits.append((x - 10, 805, wdt + 20, 48, ("page", i)))
             x += wdt + 12
+
+    def _draw_tour(self, P):
+        """Unterer Bildschirm der Tour: Titel, Text, Tasten und Weiter/Zurück."""
+        T, A = self.T, self.accent
+        en = LANG[0] != "de"
+        page = TOUR[self.tour_page]
+        P.text(f"{self.tour_page + 1} / {len(TOUR)}", 19, 1215, 70, T["muted"], align="r", raw=True)
+        P.text(page["title"][en], 40, 45, 110, T["text"], bold=True, raw=True)
+        y = 200
+        for de, eng in page.get("lines", []):
+            P.text(eng if en else de, 24, 45, y, T["muted"], raw=True)
+            y += 46
+        if page.get("keys"):
+            y += 40
+            P.rrect(40, y - 40, 1180, 58 * len(page["keys"]) + 30, 24, T["card"])
+            for key, (de, eng) in page["keys"]:
+                key = key[en] if isinstance(key, tuple) else key
+                P.text(key, 26, 75, y + 12, T["text"], bold=True, raw=True)
+                P.text(eng if en else de, 24, 330, y + 12, T["muted"], raw=True)
+                y += 58
+        # Fortschritt
+        x = 630 - (34 + 24 * (len(TOUR) - 1)) / 2
+        for i in range(len(TOUR)):
+            wdt = 34 if i == self.tour_page else 12
+            P.rrect(x, 760, wdt, 12, 6, A if i == self.tour_page else T["dot"])
+            x += wdt + 12
+        last = self.tour_page == len(TOUR) - 1
+        buttons = [("A", "Fertig" if last else "Weiter", "next", True)]
+        if self.tour_page:
+            buttons.append(("B", "Zurück", "back", False))
+        buttons.append(("Start", "Tour beenden", "end", False))
+        bw = (1180 - 20 * (len(buttons) - 1)) / len(buttons)
+        x = 40
+        for key, label, act, primary in buttons:
+            P.rrect(x, 800, bw, 90, 26, A if primary else T["tile"])
+            P.hint([(key, label)], 26, x + bw / 2, 855, "ffffff" if primary else T["text"],
+                   "ffffff" if primary else T["text"], align="c")
+            self.hits.append((x, 800, bw, 90, ("tour", act)))
+            x += bw + 20
+
+    def paint_tour_top(self, cr, w, h):
+        """Oberer Bildschirm der Tour: das Bild der Seite, eingepasst."""
+        P = Pen(cr, w, h)
+        P.fill_all("000000")
+        en = LANG[0] != "de"
+        path = os.path.join(TOUR_DIR, TOUR[self.tour_page]["img"][en])
+        size = png_size(path)
+        if not size:
+            P.text("RetroDualStation", 60, 630, 480, "ffffff", bold=True, align="c", raw=True)
+            return
+        iw, ih = size
+        k = min(1220 / iw, 911 / ih)
+        dw, dh = iw * k, ih * k
+        P.image(path, 630 - dw / 2, 475 - dh / 2, dw, dh, r=12, stretch=True)
 
     def _focus_ring(self, P, x, y, w, h, r):
         P.rrect(x - 5, y - 5, w + 10, h + 10, r + 5, self.accent, stroke=4)
@@ -2785,7 +2922,7 @@ class ControlCenter:
             return
         if not sw.items:
             P.text("Noch keine Spiele gespielt", 30, 630, 460, T["text"], bold=True, align="c")
-            P.text("Home oder B: schließen", 18, 630, 925, T["muted"], align="c")
+            P.hint([("Home / B", "schließen")], 18, 630, 925, T["muted"], T["text"], align="c")
             return
         it = sw.items[sw.sel]
         # Karussell: ausgewählte Karte fast bildschirmbreit mit Akzentrahmen, Nachbarn lugen am Rand hervor
@@ -3020,7 +3157,8 @@ class PowerMenu:
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
                        "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
-            P.text("◄ ► Auswahl  ·  A Bestätigen  ·  B Abbrechen", 17, W / 2, H - 36, T["muted"], align="c")
+            P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 17, W / 2, H - 36,
+                   T["muted"], T["text"], align="c")
 
         elif self.state == self.STATE_RESTART:
             # Neustart-Untermenü
@@ -3039,7 +3177,7 @@ class PowerMenu:
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
                        "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
-            P.text("B Zurück", 19, W / 2, H - 36, T["muted"], align="c")
+            P.hint([("B", "Zurück")], 19, W / 2, H - 36, T["muted"], T["text"], align="c")
 
         else:
             # Hauptliste
@@ -3064,7 +3202,7 @@ class PowerMenu:
                     P.circle(bx + bw - 52, by + bh / 2, 22, circ_fill)
                     P.chevron(bx + bw - 48, by + bh / 2, 9, tc)
                     hits.append((bx + bw - 90, by, 90, bh, ("more", i)))
-            P.text("B Abbrechen  ·  X Details", 19, W / 2, H - 36, T["muted"], align="c")
+            P.hint([("B", "Abbrechen"), ("X", "Details")], 19, W / 2, H - 36, T["muted"], T["text"], align="c")
 
         return hits
 
@@ -3505,6 +3643,15 @@ def main():
     def on_touch(kind, x, y):
         if ui.view == "loading":
             return
+        if ui.view == "tour":
+            if kind == "up" and cc.pen:
+                dx, dy = cc.pen.to_design(x, y)
+                hit = next((h[4] for h in reversed(cc.hits)
+                            if h[0] <= dx <= h[0] + h[2] and h[1] <= dy <= h[1] + h[3]), None)
+                if hit and hit[0] == "tour":
+                    tour_act(hit[1])
+                    state["dirty"] = True
+            return
         if ui.view == "switcher":
             if kind == "up" and cc.pen:
                 dx, dy = cc.pen.to_design(x, y)
@@ -3603,6 +3750,8 @@ def main():
             cc.redim = False
             cc.reset()
             cc.power_menu.state = cc.power_menu.STATE_MAIN   # Zustand zurücksetzen
+            if view == "tour":
+                ui.hide_top()
             ui.hide()
             set_grab(False)
             pauser.resume()
@@ -3632,8 +3781,32 @@ def main():
                         threading.Thread(target=work, daemon=True).start()
                         return
                 pauser.pause(cc.game)
+            if ui.view == "tour" and view != "tour":
+                ui.hide_top()
             ui.show(view)          # wechselt auch direkt zwischen den Ansichten
+            if view == "tour":
+                ui.show_top(cc.paint_tour_top)
             set_grab(True)
+
+    def tour_open():
+        cc.tour_page = 0
+        toggle("tour")
+
+    def tour_act(act):
+        """A weiter, B zurück, Start beenden. Am Ende wird die Tour als gesehen markiert."""
+        if act == "back":
+            cc.tour_page = max(0, cc.tour_page - 1)
+        elif act == "next" and cc.tour_page < len(TOUR) - 1:
+            cc.tour_page += 1
+        else:
+            try:
+                with open(TOUR_DONE, "w") as f:
+                    f.write(time.strftime("%Y-%m-%d %H:%M\n"))
+            except OSError as exc:
+                log("Tour: Merker nicht schreibbar:", exc)
+            toggle("tour")
+            return
+        ui.redraw_top()
 
     def gs_act(fresh):
         """A (fresh=False) weiterspielen, Y (fresh=True) neu starten."""
@@ -3681,7 +3854,7 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
-    home_down = {"t": None, "fired": False}
+    home_down = {"t": None, "fired": False, "pending": None}
 
     def home_short():
         """Home kurz: im Spiel speichern (Stand + Screenshot) und zurück zu ES."""
@@ -3737,6 +3910,18 @@ def main():
         if not ui.view:
             return
         if ui.view == "loading":
+            return
+        if ui.view == "tour":
+            if typ == EV_KEY and code == BTN_EAST:
+                tour_act("next")
+            elif typ == EV_KEY and code == BTN_SOUTH:
+                tour_act("back") if cc.tour_page else None
+            elif typ == EV_KEY and code == BTN_START:
+                tour_act("end")
+            elif (typ == EV_ABS and code == ABS_HAT0X and value) or (typ == EV_KEY and code in DPAD and DPAD[code][0]):
+                d = (1 if value > 0 else -1) if typ == EV_ABS else DPAD[code][0]
+                tour_act("next" if d > 0 else "back")
+            state["dirty"] = True
             return
         if ui.view == "switcher":
             sw = cc.switcher
@@ -3812,6 +3997,9 @@ def main():
                 cc.kbd.toggle_shift() if code == BTN_TL else cc.kbd.toggle_layer()
             else:
                 cc.turn_page(-1 if code == BTN_TL else 1)
+        elif typ == EV_KEY and code == BTN_SELECT and ui.view == "cc" and not cc.kbd and not cc.sub:
+            tour_open()                       # Tour erneut starten
+            return
         elif typ == EV_KEY and code == BTN_START and cc.kbd:
             cc.kbd.ok()
         elif typ == EV_KEY and code == BTN_SELECT and cc.kbd and cc.kbd.secret:
@@ -3842,6 +4030,7 @@ def main():
     signal.signal(signal.SIGUSR1, on_resume)
 
     log("bereit – Anbernic-Taste: Kontrollcenter, Home-Taste: Gameswitcher, Strg+C: Ende")
+    tour_at = time.monotonic() + 20 if not os.path.exists(TOUR_DONE) else None   # ES erst fertig laden lassen
     last_minute = time.strftime("%H:%M")
     next_pad_scan = 0.0
     exit_code = [0]
@@ -3849,6 +4038,12 @@ def main():
     last_game = {"pid": None}
     try:
         while True:
+            if tour_at and time.monotonic() >= tour_at:
+                tour_at = None
+                if not ui.view and not running_game():
+                    log("Tour: erster Start nach der Installation")
+                    tour_open()
+                    state["dirty"] = True
             if time.monotonic() >= next_pad_scan:
                 scan_pads()
                 next_pad_scan = time.monotonic() + 2
@@ -3870,7 +4065,8 @@ def main():
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
-                or (home_down["t"] is not None and not home_down["fired"])
+                or (home_down["t"] is not None and not home_down["fired"]) \
+                or home_down["pending"] is not None
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -3893,12 +4089,18 @@ def main():
                                 if ui.view:                       # offen → schließen
                                     toggle(ui.view)
                                     home_down["t"] = None
+                                elif home_down["pending"] is not None:
+                                    home_down["pending"] = None   # Doppelklick
+                                    home_down["t"] = None
+                                    # im Spiel: direkt zum vorherigen Spiel (wie Alt-Tab), in ES: Gameswitcher
+                                    cc.quick_switch = bool(running_game())
+                                    toggle("switcher")
                                 else:
                                     home_down["t"] = time.monotonic()
                                     home_down["fired"] = False
                             elif value == 0 and home_down["t"] is not None:
                                 if not home_down["fired"]:
-                                    home_short()                  # kurz: speichern und zurück zu ES
+                                    home_down["pending"] = time.monotonic()   # kurz: auf zweiten Druck warten
                                 home_down["t"] = None
                         elif fd == pwr:
                             KEY_POWER = 116
@@ -3955,6 +4157,10 @@ def main():
                     state["dirty"] = True
             if scrolling:
                 state["dirty"] = True
+            if home_down["pending"] is not None \
+                    and time.monotonic() - home_down["pending"] >= HOME_DOUBLE_S:
+                home_down["pending"] = None
+                home_short()                                      # kurz: speichern und zurück zu ES
             if home_down["t"] is not None and not home_down["fired"] \
                     and time.monotonic() - home_down["t"] >= HOME_LONG_S:
                 home_down["fired"] = True
@@ -3976,7 +4182,13 @@ def main():
                 sw.busy = None
                 sw.load()
                 sw.sel = 0
-                if ui.view == "switcher":
+                quick = getattr(cc, "quick_switch", False)
+                cc.quick_switch = False
+                if ui.view == "switcher" and quick and len(sw.items) > 1:
+                    sw.sel = 1                                    # Doppelklick: vorheriges Spiel
+                    log("Gameswitcher: Doppelklick → direkt zu", sw.items[1].get("name"))
+                    gs_act(False)
+                elif ui.view == "switcher":
                     pauser.pause(cc.game)
                     set_grab(True)
                 state["dirty"] = True
