@@ -229,7 +229,7 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
@@ -594,6 +594,19 @@ class Pen:
             cairo.cairo_stroke(cr)
             ax, ay = cx + 16 * math.cos(-math.pi * 0.35), cy + 16 * math.sin(-math.pi * 0.35)
             self.poly([(ax - 9, ay - 6), (ax + 7, ay - 9), (ax + 2, ay + 7)], c)
+        elif kind == "slow":                      # halber Vorspul-Pfeil mit Bremsstrich: „langsam“
+            self.rrect(cx - 18, cy - 15, 5, 30, 2.5, c)
+            self.poly([(cx - 7, cy - 15), (cx + 17, cy), (cx - 7, cy + 15)], c)
+            self.circle(cx + 1, cy, 4, "000000")
+        elif kind == "quit":
+            for a, b in (((-13, -13), (13, 13)), ((13, -13), (-13, 13))):
+                cairo.cairo_new_path(cr)
+                cairo.cairo_move_to(cr, self.X(cx + a[0]), self.Y(cy + a[1]))
+                cairo.cairo_line_to(cr, self.X(cx + b[0]), self.Y(cy + b[1]))
+                cairo.cairo_set_line_cap(cr, 1)
+                cairo.cairo_set_line_width(cr, 5 * s)
+                self.color(c)
+                cairo.cairo_stroke(cr)
         elif kind == "menu":
             for dy in (-11, 0, 11):
                 self.rrect(cx - 16, cy + dy - 2.5, 32, 5, 2.5, c)
@@ -1511,11 +1524,13 @@ PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 
 # Seite „Spiel“: Aktionen je Emulator (Schlüssel, Beschriftung)
 GAME_ACTIONS = {
-    "RetroArch": [("save", "Speichern"), ("load", "Laden"), ("ff", "Vorspulen"),
-                  ("shot", "Screenshot"), ("reset", "Neu starten"), ("menu", "Emulator-Menü")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot")],
+    "RetroArch": [("save", "Speichern"), ("load", "Laden"),
+                  ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
+                  ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("quit", "Beenden")],
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("quit", "Beenden")],
 }
-GAME_ACTIONS_OTHER = [("shot", "Screenshot")]
+GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
+# später: ("help", "Steuerung") – erklärt Tasten und Bedienung des jeweiligen Emulators
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
 SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
@@ -4283,9 +4298,12 @@ def main():
             cc.gmsg = (msg, time.monotonic())
             state["dirty"] = True
 
-        if emu == "RetroArch" and key in ("ff", "reset", "menu"):
+        if key == "quit":
+            do_quit()
+            return
+        if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
             toggle("cc")                     # erst schließen (Pause aufheben), dann auslösen
-            cmd = {"ff": "FAST_FORWARD", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
+            cmd = {"ff": "FAST_FORWARD", "slow": "SLOWMOTION", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
             def later():
                 time.sleep(0.3)
                 ra_command(cmd)
