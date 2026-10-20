@@ -5,7 +5,7 @@
 Dual-Screen-EmulationStation für das **Anbernic RG DS Plus**, aufgebaut auf **ROCKNIX**.
 *Früher „ROCKNIX DualStation“.*
 
-🇬🇧 [English version](README.md)
+🇬🇧 [English version](README.md) · 🧭 [Kurze Tour](docs/TOUR.de.md)
 
 <p align="center"><img src="docs/screenshots/canvas-system.png" alt="canvas-ds mit RetroDualStation: Systemansicht auf beiden Bildschirmen" width="360"></p>
 
