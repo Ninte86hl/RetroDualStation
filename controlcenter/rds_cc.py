@@ -2673,11 +2673,9 @@ class ControlCenter:
             name = name[:-2]
         P.text(name if name == it.get("name") else name.rstrip() + "…", 40, 630, 580,
                T["text"], bold=True, align="c", raw=True)
-        # einfache Fortschrittsanzeige (läuft, solange gezeichnet wird)
-        t = time.monotonic() * 2.2
+        # statische Punkte – keine Animation, damit ES/runemu die volle CPU haben
         for k in range(3):
-            a = 0.3 + 0.7 * max(0.0, math.sin(t - k * 0.7))
-            P.rrect(630 - 50 + k * 40 - 8, 640, 16, 16, 8, A, a=a)
+            P.rrect(630 - 50 + k * 40 - 8, 640, 16, 16, 8, A, a=0.4 + 0.3 * k)
 
     def paint_top_loading(self, cr, w, h):
         """Oberer Bildschirm während des Wechsels: Spiel-Icon groß, Name, Hinweis."""
@@ -3775,8 +3773,8 @@ def main():
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy or cc.loading
-            for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
+            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy
+            for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
@@ -3862,8 +3860,6 @@ def main():
                     if g and g["emu"] in AUTO_DIM_EMUS:
                         cc.screen_off()
                         cc.screen_auto = True
-                else:
-                    state["dirty"] = True
             sw = cc.switcher
             if sw.ready:
                 sw.ready = False
