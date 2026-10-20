@@ -460,3 +460,4 @@ wird bei jedem Öffnen frisch gewählt.
 | RA `savestate_file_compression` | true | kleinere Dateien, unkritisch |
 | RA Ordner | `/storage/roms/savestates/<System>/` (setzt ROCKNIX beim Start) | dort sucht das CC |
 | Gameswitcher | fester Slot 9 | im Slot-Menü nicht wählbar |
+| ROCKNIX beim Start (`/tmp/.retroarch.cfg`) | `state_slot` = nächster freier Slot (z. B. 10, weil Slot 9 belegt), `savestate_auto_index = true` | RetroArch-eigenes Speichern zählt hoch (10, 11 …). Das CC nutzt deshalb **`SAVE_STATE_SLOT n` / `LOAD_STATE_SLOT n`** mit ausdrücklichem Slot und ist davon unabhängig |
