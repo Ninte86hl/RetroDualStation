@@ -226,7 +226,7 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used",
+    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used", "leer": "empty",
     "übernehmen": "take", "zurück": "back",
     "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
     "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
@@ -1470,6 +1470,7 @@ GAME_ACTIONS = {
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot")]
+SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
 
 
@@ -2485,8 +2486,8 @@ class ControlCenter:
             self.sub.nav(dx, dy)
             return
         if self.page == 1 and self.slot_pick is not None:
-            n = self.slot_pick + dx + dy * 5
-            if 0 <= n < 10:
+            n = self.slot_pick + dx + dy * 3
+            if 0 <= n < SLOTS_USER:
                 self.slot_pick = n
             return
         if self.page == 1:
@@ -2527,7 +2528,7 @@ class ControlCenter:
             if acts and not self.gbusy:
                 key = acts[min(self.gsel, len(acts) - 1)][0]
                 if key == "slot":
-                    self.slot_pick = self.slot
+                    self.slot_pick = min(self.slot, SLOTS_USER - 1)
                     return
                 return ("game", key)
             return
@@ -2635,7 +2636,7 @@ class ControlCenter:
                 self.gsel = val
                 key = game_actions(self.game)[val][0]
                 if key == "slot":
-                    self.slot_pick = self.slot
+                    self.slot_pick = min(self.slot, SLOTS_USER - 1)
                     return
                 return ("game", key)
             elif kind == "slotpick":
@@ -2979,32 +2980,37 @@ class ControlCenter:
         elif g.get("emu") not in GAME_ACTIONS:
             P.text("Weitere Aktionen im Menü des Emulators.", 20, 630, y, T["muted"], align="c")
 
-    def _slot_used(self, n):
+    def _slot_file(self, n):
+        """Pfad des RetroArch-Savestates für Slot n (Slot 0 = .state)."""
         g = self.game or {}
         rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
         if not rom:
-            return False
-        base = os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
+            return None
+        return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
-        return os.path.exists(base)
 
     def _draw_slots(self, P):
-        """Slot-Menü: 10 Speicherplätze, belegte markiert."""
+        """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
         T, A = self.T, self.accent
-        P.text("Speicherplatz wählen", 26, 45, 215, T["text"], bold=True)
-        gap, tw, th = 22, (1170 - 22 * 4) / 5, 130
-        for n in range(10):
-            tx = 45 + (n % 5) * (tw + gap)
-            ty = 250 + (n // 5) * (th + gap)
+        P.text("Speicherplatz wählen", 26, 45, 200, T["text"], bold=True)
+        cols, gap = 3, 22
+        tw, th = (1170 - gap * (cols - 1)) / cols, 170
+        for n in range(SLOTS_USER):
+            tx = 45 + (n % cols) * (tw + gap)
+            ty = 225 + (n // cols) * (th + gap)
             cur = n == self.slot
-            fill = A if cur else mix(T["tile"], A, 0.22)
-            tc = "ffffff" if cur else T["text"]
-            P.rrect(tx, ty, tw, th, 24, fill)
-            P.text(str(n), 34, tx + tw / 2, ty + 70, tc, bold=True, align="c", raw=True)
-            if self._slot_used(n):
-                P.text("belegt", 16, tx + tw / 2, ty + 104, mix(tc, fill, 0.25), align="c")
+            P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22))
+            f = self._slot_file(n)
+            when = None
+            if f and os.path.exists(f):
+                when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(f)))
+                P.image(f + ".png", tx, ty, tw, th, 20)
+            # Beschriftung unten auf dunklem Band
+            P.rrect(tx, ty + th - 46, tw, 46, 20, A if cur else "000000", 1.0 if cur else 0.6)
+            label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
+            P.text(label, 18, tx + 18, ty + th - 16, "ffffff", bold=True, raw=True)
             if n == self.slot_pick:
-                self._focus_ring(P, tx, ty, tw, th, 24)
+                self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
 
     def _draw_placeholder(self, P):

@@ -442,7 +442,7 @@ wird bei jedem Öffnen frisch gewählt.
 
 ### Seite „Spiel“ – erste Fassung (20.10.2026)
 - Kacheln je Emulator (L1/R1 zur Seite, Steuerkreuz + A oder Touch):
-  - **RetroArch:** Speichern, Laden, Slot (Menü mit 10 Plätzen, belegte markiert), Vorspulen, Screenshot,
+  - **RetroArch:** Speichern, Laden, Slot (Menü mit Plätzen 0–8 und Vorschaubild/Zeit; Slot 9 = Gameswitcher), Vorspulen, Screenshot,
     Neu starten, Emulator-Menü (über die Steuerschnittstelle).
     Der Slot wird seit Spielstart mitgezählt (RetroArch meldet ihn nicht zurück).
   - **DraStic:** Speichern (R2), Laden (L2) – kurz auftauen, Taste einspeisen, wieder anhalten; Screenshot.
@@ -450,3 +450,13 @@ wird bei jedem Öffnen frisch gewählt.
 - Nach jeder Aktion schließt sich das CC (zurück ins Spiel) – außer bei der Slot-Wahl.
 - Screenshots außerhalb RetroArch: `grim` vom oberen Bildschirm nach `/storage/roms/screenshots/`.
 - Offen: Spickzettel, DSperate-Speichern über eigene (2)-Belegung, Schalter „Tastenkürzel erlauben“.
+
+### Savestates: ES, RetroArch und CC (Abgleich 20.10.2026)
+| Einstellung | Wert | Bedeutung für uns |
+|---|---|---|
+| ES `global.autosave` | 1 | RetroArch speichert beim Beenden automatisch und lädt beim Start (eigene Auto-Datei, kein Slot) |
+| ES `global.incrementalsavestates` | **2** „Nicht hochzählen“ | Spiel startet in Slot 0 → Slot-Zählung im CC stimmt. Bei „Pro Speichern hochzählen“ würde ES einen freien Slot wählen und die Anzeige wäre falsch → der Installer setzt 2 |
+| RA `savestate_thumbnail_enable` | true | Vorschaubild `…stateN.png` neben jedem Savestate → Slot-Menü und Gameswitcher |
+| RA `savestate_file_compression` | true | kleinere Dateien, unkritisch |
+| RA Ordner | `/storage/roms/savestates/<System>/` (setzt ROCKNIX beim Start) | dort sucht das CC |
+| Gameswitcher | fester Slot 9 | im Slot-Menü nicht wählbar |

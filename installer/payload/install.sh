@@ -206,6 +206,13 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
     ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements 0 ) >/dev/null 2>&1
     log "ES: RetroAchievements aus (vorher: $(cat "$DEST/retroachievements.before" 2>/dev/null))"
+    # Savestates: neues Spiel startet im aktuellen Slot (kein Hochzaehlen) – passt zur
+    # Slot-Anzeige im Kontrollcenter; Slot 9 bleibt dem Gameswitcher
+    INC="$( . /etc/profile >/dev/null 2>&1; get_setting global.incrementalsavestates )"
+    if [ "$INC" != "2" ]; then
+        ( . /etc/profile >/dev/null 2>&1; set_setting global.incrementalsavestates 2 ) >/dev/null 2>&1
+        log "ES: Savestates nicht hochzaehlen (vorher: ${INC:-Standard})"
+    fi
 
     MAKOCFG=/storage/.config/mako/config
     if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then
