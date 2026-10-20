@@ -525,3 +525,7 @@ Das CC schreibt ins Journal: `journalctl -u rds-controlcenter --no-pager | tail 
   Laden aus Slot n = `_n.dss` nach `_b.dss` kopieren, L2 drücken. Slot b wird vorher gesichert (`.rdsbak`) und danach zurückgelegt.
 - Die Dateien entsprechen DraStics eigenen Slots – sie erscheinen auch in seinem Menü.
 - Vorschaubild: Screenshot des oberen Bildschirms → `<ROM>_<n>.dss.png`.
+
+### Grundsatz Seite „Spiel“ (21.10.2026)
+Jede Emulator-Funktion ist auf zwei Wegen erreichbar: per **Kürzel** (Anbernic + Taste, einheitlich) **oder** per **Tipp im CC**.
+Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die das Gerät nicht hat (DraStic-Vorspulen auf R3).
