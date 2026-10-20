@@ -1,0 +1,88 @@
+diff --git a/es-app/src/FileData.cpp b/es-app/src/FileData.cpp
+index f391adb8..36ce5542 100644
+--- a/es-app/src/FileData.cpp
++++ b/es-app/src/FileData.cpp
+@@ -696,6 +696,39 @@ std::string FileData::getMessageFromExitCode(int exitCode)
+ 	return _("UKNOWN ERROR") + " : " + std::to_string(exitCode);
+ }
+ 
++// RetroDualStation: Gameswitcher-Kette
++// Das Kontrollcenter legt vor dem Beenden eines Spiels den ROM-Pfad des nächsten Spiels in
++// RDS_NEXT_LAUNCH ab. ES startet es dann direkt, ohne Grafik, Theme und Ansicht neu aufzubauen.
++#define RDS_NEXT_LAUNCH "/tmp/rds-next-launch"
++
++static FileData* rdsFindGame(const std::string& path)
++{
++	auto full = Utils::FileSystem::getAbsolutePath(path);
++	for (auto system : SystemData::sSystemVector)
++	{
++		if (system->isCollection() || !system->isGameSystem())
++			continue;
++		for (auto file : system->getRootFolder()->getFilesRecursive(GAME))
++			if (file->getFullPath() == full || file->getPath() == full)
++				return file;
++	}
++	return nullptr;
++}
++
++static void rdsUpdatePlayStats(FileData* game, int exitCode, time_t tstart)
++{
++	if (game == nullptr || exitCode != 0)
++		return;
++	int timesPlayed = game->getMetadata().getInt(MetaDataId::PlayCount) + 1;
++	game->setMetadata(MetaDataId::PlayCount, std::to_string(static_cast<long long>(timesPlayed)));
++	long elapsedSeconds = difftime(time(NULL), tstart);
++	long gameTime = game->getMetadata().getInt(MetaDataId::GameTime) + elapsedSeconds;
++	if (elapsedSeconds >= 10)
++		game->setMetadata(MetaDataId::GameTime, std::to_string(static_cast<long>(gameTime)));
++	game->setMetadata(MetaDataId::LastPlayed, Utils::Time::DateTime(Utils::Time::now()));
++	saveToGamelistRecovery(game);
++}
++
+ bool FileData::launchGame(Window* window, LaunchGameOptions options)
+ {
+ 	LOG(LogInfo) << "Attempting to launch game...";
+@@ -738,6 +771,43 @@ bool FileData::launchGame(Window* window, LaunchGameOptions options)
+ 	process.window = hideWindow ? NULL : window;
+ 	
+ 	int exitCode = process.run();
++
++	// RetroDualStation: Gameswitcher-Kette – nächstes Spiel sofort starten (ES bleibt im Spielmodus)
++	for (int chain = 0; chain < 50; chain++)
++	{
++		std::string nextPath = Utils::String::trim(Utils::FileSystem::readAllText(RDS_NEXT_LAUNCH));
++		Utils::FileSystem::removeFile(RDS_NEXT_LAUNCH);
++		if (nextPath.empty())
++			break;
++
++		FileData* next = rdsFindGame(nextPath);
++		if (next == nullptr || next->getSourceFileData() == nullptr)
++		{
++			LOG(LogWarning) << "RDS chain launch: game not found " << nextPath;
++			break;
++		}
++
++		LaunchGameOptions nextOptions;
++		std::string nextCommand = next->getlaunchCommand(nextOptions);
++		if (nextCommand.empty())
++			break;
++
++		rdsUpdatePlayStats(gameToUpdate, exitCode, tstart);
++		Scripting::fireEvent("game-end");
++
++		gameToUpdate = next->getSourceFileData();
++		system = gameToUpdate->getSystem();
++		Scripting::fireEvent("game-start", Utils::FileSystem::getEscapedPath(next->getPath()),
++			Utils::FileSystem::getStem(next->getPath()), next->getName());
++
++		LOG(LogInfo) << "RDS chain launch: " << nextCommand;
++		mRunningGame = gameToUpdate;
++		tstart = time(NULL);
++
++		ProcessStartInfo nextProcess(nextCommand);
++		nextProcess.window = hideWindow ? NULL : window;
++		exitCode = nextProcess.run();
++	}
+ 	
+ 	// Resume watchers when returning to ES
+ 	WatchersManager::resume();

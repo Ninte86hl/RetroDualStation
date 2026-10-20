@@ -986,6 +986,7 @@ def quit_game(game):
 GS_DIR = "/storage/.config/retrodualstation/switcher"
 GS_HISTORY = GS_DIR + "/history.json"
 GS_MAX = 12
+CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gameswitcher-chain.patch)
 SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
 
 
@@ -1194,36 +1195,53 @@ class Switcher:
                     perf_set(2)   # kurzzeitig volle Leistung für Beenden + Starten
                 except Exception:
                     pass
+                # vor dem Beenden: ES startet das nächste Spiel ggf. sofort
+                if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
+                    txt = rd(ini) or ""
+                    if "autoload = true" in txt:
+                        restore = txt
+                        wr(ini, txt.replace("autoload = true", "autoload = false"))
+                chained = False
                 if current:
+                    # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau)
+                    try:
+                        wr(CHAIN_FILE, item["rom"] + "\n")
+                    except OSError:
+                        pass
                     quit_game(current)
                     for _ in range(60):
                         if not running_game():
                             break
                         time.sleep(0.15)
                     log("Gameswitcher: altes Spiel beendet nach %.1f s" % (time.monotonic() - t0))
-                    # warten, bis ES wieder bereit ist (sonst wird der Start verzögert abgearbeitet)
-                    for _ in range(40):
-                        try:
-                            import urllib.request
-                            r = urllib.request.urlopen("http://127.0.0.1:1234/runningGame", timeout=1).read()
-                            if b"NO GAME" in r:
-                                break
-                        except Exception:
-                            pass
-                        time.sleep(0.15)
-                    log("Gameswitcher: ES bereit nach %.1f s" % (time.monotonic() - t0))
-                    for _ in range(100):          # Startskript des alten Spiels muss fertig sein
-                        if not run(["pgrep", "-f", "runemu.sh"]):
+                    # Hat ES den Auftrag übernommen? (Datei weg = gelesen)
+                    for _ in range(20):
+                        if not os.path.exists(CHAIN_FILE):
+                            chained = True
                             break
                         time.sleep(0.1)
-                    log("Gameswitcher: runemu beendet nach %.1f s" % (time.monotonic() - t0))
-                if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
-                    txt = rd(ini) or ""
-                    if "autoload = true" in txt:
-                        restore = txt
-                        wr(ini, txt.replace("autoload = true", "autoload = false"))
+                    if not chained:
+                        try:
+                            os.remove(CHAIN_FILE)   # ES ohne Patch → normaler Weg über /launch
+                        except OSError:
+                            pass
+                        for _ in range(40):
+                            try:
+                                import urllib.request
+                                r = urllib.request.urlopen("http://127.0.0.1:1234/runningGame", timeout=1).read()
+                                if b"NO GAME" in r:
+                                    break
+                            except Exception:
+                                pass
+                            time.sleep(0.15)
+                        for _ in range(100):
+                            if not run(["pgrep", "-f", "runemu.sh"]):
+                                break
+                            time.sleep(0.1)
+                    log("Gameswitcher: %s nach %.1f s" % ("ES-Kette uebernommen" if chained else "ES bereit",
+                                                          time.monotonic() - t0))
                 log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
-                if es_launch(item["rom"]):
+                if chained or es_launch(item["rom"]):
                     for _ in range(100):
                         if run(["pgrep", "-f", "runemu.sh"]):
                             log("Gameswitcher: runemu gestartet nach %.1f s" % (time.monotonic() - t0))
