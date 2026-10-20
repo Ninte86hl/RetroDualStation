@@ -66,9 +66,9 @@ Holding Power sends the device to sleep right away.
 
 ## 5. Artwork Manager
 
-| | |
-|---|---|
-| <img src="tour/tour-artwork-4.png" alt="System list"> | <img src="tour/tour-artwork-5.png" alt="Game view with mix preview"> |
+| | | |
+|---|---|---|
+| <img src="tour/tour-artwork-4.png" alt="System list"> | <img src="tour/tour-artwork-5.png" alt="Game view with mix preview"> | <img src="tour/tour-artwork-settings.png" alt="Settings"> |
 
 Start it from **Ports → Artwork Manager**. It adds **Boxart**, **Cartridge** (1:1 icon) and
 **Image** (hero) to your games – the top screen shows how the three look together.
@@ -81,7 +81,7 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | System list | **Start** | Single search: edit one game |
 | | **Select** | Batch search: all games with missing artwork, one after another |
 | | **Y** | Search a game across all systems |
-| | **X** | Settings (API key, backups, cache, quick guide) |
+| | **X** | Settings (API key, backups, merge multi-disc games as M3U, cache, quick guide) |
 | Game view | **◀ ▶** | Choose image |
 | | **L / R** | Artwork style |
 | | **A** | Take image |
