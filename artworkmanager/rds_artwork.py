@@ -331,9 +331,11 @@ def am_tr(text):
         return text
     if text in EN_AM:
         return EN_AM[text]
-    for pre in (" – ", "  ", "✓ "):                      # Hinweis-Teile, Haken
-        if text.startswith(pre) and text[len(pre):] in EN_AM:
-            return pre + EN_AM[text[len(pre):]]
+    for pre in (" – ", "  ", "✓ "):                      # Hinweis-Teile, Haken, Einrückung
+        if text.startswith(pre) and len(text) > len(pre):
+            rest = am_tr(text[len(pre):])
+            if rest != text[len(pre):]:
+                return pre + rest
     import re as _re
     for pat, fn in EN_AM_PATTERNS:
         m = _re.match(pat, text)

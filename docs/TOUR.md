@@ -66,9 +66,10 @@ Holding Power sends the device to sleep right away.
 
 ## 5. Artwork Manager
 
-| | | |
-|---|---|---|
-| <img src="tour/tour-artwork-4.png" alt="System list"> | <img src="tour/tour-artwork-5.png" alt="Game view with mix preview"> | <img src="tour/tour-artwork-settings.png" alt="Settings"> |
+| | |
+|---|---|
+| <img src="tour/tour-artwork-liste.png" alt="Game list with filter"> | <img src="tour/tour-artwork-settings.png" alt="Settings"> |
+| <img src="tour/tour-artwork-spiel.png" alt="Game view with mix preview"> | <img src="tour/tour-artwork-editor.png" alt="Icon editor"> |
 
 Start it from **Ports → Artwork Manager**. It adds **Boxart**, **Cartridge** (1:1 icon) and
 **Image** (hero) to your games – the top screen shows how the three look together.

@@ -67,9 +67,10 @@ Power gedrückt halten schickt das Gerät sofort in den Ruhemodus.
 
 ## 5. Artwork Manager
 
-| | | |
-|---|---|---|
-| <img src="tour/tour-artwork-4.png" alt="Systemliste"> | <img src="tour/tour-artwork-5.png" alt="Spielansicht mit Mix-Vorschau"> | <img src="tour/tour-artwork-settings.png" alt="Einstellungen"> |
+| | |
+|---|---|
+| <img src="tour/tour-artwork-liste.png" alt="Spieleliste mit Filter"> | <img src="tour/tour-artwork-settings.png" alt="Einstellungen"> |
+| <img src="tour/tour-artwork-spiel.png" alt="Spielansicht mit Mix-Vorschau"> | <img src="tour/tour-artwork-editor.png" alt="Icon-Editor"> |
 
 Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge** (1:1-Icon) und
 **Image** (Hero) – der obere Bildschirm zeigt, wie die drei zusammen wirken.
