@@ -1210,7 +1210,15 @@ class Switcher:
                         restore = txt
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
                 log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
+                # Fokus auf den oberen Bildschirm, sonst öffnet Sway das Spiel unten (z. B. nach Touch)
+                subprocess.run(["swaymsg", "focus output " + TOP_OUTPUT], capture_output=True, timeout=2,
+                               env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock"))
                 if es_launch(item["rom"]):
+                    for _ in range(100):
+                        if run(["pgrep", "-f", "runemu.sh"]):
+                            log("Gameswitcher: runemu gestartet nach %.1f s" % (time.monotonic() - t0))
+                            break
+                        time.sleep(0.1)
                     self.resume_steps(item, fresh)
                 log("Gameswitcher: Wechsel fertig nach %.1f s" % (time.monotonic() - t0))
             except Exception:
