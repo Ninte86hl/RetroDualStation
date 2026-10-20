@@ -195,6 +195,131 @@ def fade(P, x, y, w, h):
     _C.cairo_pattern_destroy(pat)
 
 
+# ------------------------------------------------------------- Sprache ----
+# Der Manager folgt wie das Kontrollcenter der Sprache von EmulationStation.
+# Übersetzt wird beim Zeichnen (AmPen), damit der übrige Code deutsch bleiben kann.
+EN_AM = {
+    "Artwork Manager": "Artwork Manager", "Willkommen": "Welcome", "Die Funktionen": "Features",
+    "Voraussetzung": "Requirement", "Sicherung": "Backup",
+    "Der Artwork Manager ergänzt Bilder in einer bestehenden Spieleliste.":
+        "The Artwork Manager adds images to an existing game list.",
+    "Jedes System braucht deshalb eine gamelist.xml in seinem ROM-Ordner.":
+        "Every system therefore needs a gamelist.xml in its ROM folder.",
+    "Systeme ohne Liste sind in der Systemliste markiert.": "Systems without a list are marked in the system list.",
+    "So entsteht die Spieleliste": "How to create the game list",
+    "Im Single-Screen-Modus (originale ROCKNIX-Oberfläche) mit dem Scraper":
+        "In single-screen mode (original ROCKNIX interface), use the scraper",
+    "die Spiele einmal scrapen. Die Liste gilt auch für RetroDualStation.":
+        "to scrape your games once. The list is also used by RetroDualStation.",
+    "Gespeichert wird in der gamelist.xml und im Ordner images des Systems.":
+        "Images are saved to the gamelist.xml and the system's images folder.",
+    "Systemliste": "System list", "Spielansicht": "Game view",
+    "Einzelsuche: ein Spiel aus der Spieleliste bearbeiten": "Single search: edit one game from the game list",
+    "Mehrfachsuche: alle Spiele mit fehlenden Artworks nacheinander":
+        "Batch search: all games with missing artwork, one after another",
+    "Spiel suchen über alle Systeme": "Search games across all systems", "Einstellungen": "Settings",
+    "Bild wählen": "Choose image", "Artwork-Stil": "Artwork style", "übernehmen": "take",
+    "speichern": "save", "anderes Spiel suchen": "search another game", "Ansicht oben": "top view",
+    "Vor dem ersten Speichern pro System automatisch eine": "Automatically create a backup before the first",
+    "Sicherung anlegen (gamelist.xml und vorhandene Artworks)?": "save per system (gamelist.xml and existing artwork)?",
+    "Empfohlen. Die Sicherung liegt danach unter": "Recommended. Backups are stored in",
+    "Ja, sichern": "Yes, back up", "Nein": "No", "Weiter": "Next",
+    "System wählen": "Choose system", "Einzelsuche": "Single search", "Mehrfachsuche": "Batch search",
+    "Spiel wählen": "Choose game", "Seite": "Page", "wählen": "choose", "ändern": "change",
+    "wiederherstellen": "restore", "überspringen": "skip",
+    "Öffnen": "Open", "Auswählen": "Select", "Ändern": "Change", "Wiederherstellen": "Restore",
+    "Beenden": "Quit", "Zurück": "Back", "Spiel suchen": "Search game", "Editor": "Editor",
+    "Übernehmen": "Take", "Abwählen": "Remove", "Batch beenden": "End batch",
+    "Spiel suchen (alle Systeme)": "Search game (all systems)", "SteamGridDB API-Key": "SteamGridDB API key",
+    "keine Spieleliste": "no game list", "gesetzt": "set", "fehlt": "missing", "an": "on", "aus": "off",
+    "Sicherung vor dem Speichern": "Backup before saving", "Kurzanleitung anzeigen": "Show quick guide",
+    "Sicherung wiederherstellen": "Restore backup", "Sicherungen aufräumen": "Clean up backups",
+    "Zwischenspeicher leeren": "Clear cache", "Log leeren": "Clear log",
+    "Sicherung ausschalten?": "Turn off backups?", "Trotzdem ausschalten": "Turn off anyway", "Abbrechen": "Cancel",
+    "Ohne Sicherung lässt sich ein Fehler nicht auf dem Gerät rückgängig machen.":
+        "Without a backup, mistakes cannot be undone on the device.",
+    "Geht etwas schief, wird ein PC benötigt, um gamelist.xml und":
+        "If something goes wrong, a PC is needed to restore",
+    "die Artworks wiederherzustellen.": "the gamelist.xml and the artwork.",
+    "gamelist.xml und die gesicherten Artworks dieses Systems werden":
+        "The gamelist.xml and backed-up artwork of this system will be",
+    "auf diesen Stand zurückgesetzt. Spätere Änderungen gehen verloren.":
+        "reset to this state. Later changes will be lost.",
+    "Artwork wird gespeichert": "Saving artwork", "Artwork-Stile": "Artwork styles",
+    "Wird vorbereitet …": "Preparing …", "Bilder werden zugeschnitten …": "Cropping images …",
+    "Sicherung wird erstellt …": "Creating backup …", "Wird gespeichert und geprüft …": "Saving and verifying …",
+    "Gespeichert": "Saved", "Artworks werden gesucht …": "Searching artwork …",
+    "Verbinde mit EmulationStation …": "Connecting to EmulationStation …",
+    "Suche läuft …": "Searching …", "Suche in allen Systemen …": "Searching all systems …",
+    "Sicherung wird wiederhergestellt …": "Restoring backup …",
+    "Keine Bilder für diesen Artwork-Stil": "No images for this artwork style",
+    "Nichts gefunden": "Nothing found", "Keine Bilder": "No images", "Lädt …": "Loading …",
+    "Vorschau nicht verfügbar": "Preview not available", "Vorschau": "Preview",
+    "✓ übernommen": "✓ taken", "– fehlt": "– missing", "– keine Bilder": "– no images",
+    "Image – lädt …": "Image – loading …", "Image – noch nicht gewählt": "Image – not chosen yet",
+    "Großansicht": "Large view", "Mix-Ansicht": "Mix view", "Speichern": "Save",
+    "alle Artworks": "all artwork", "teilweise": "partial", "keine": "none",
+    "Kein Spiel gefunden": "No game found", "Keine Treffer – anderen Namen probieren": "No results – try another name",
+    "Keine Artworks gefunden – mit Y anderes Spiel suchen": "No artwork found – press Y to search another game",
+    "Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen":
+        "No game list – create one with the scraper in single-screen mode",
+    "Erst mit A ein Bild übernehmen, dann mit Start speichern": "Take an image with A first, then save with Start",
+    "Alle Stile übernommen – mit Start speichern": "All styles taken – save with Start",
+    "Alle Spiele haben bereits alle Artworks": "All games already have all artwork",
+    "Noch keine Sicherungen vorhanden": "No backups yet", "Zwischenspeicher geleert": "Cache cleared",
+    "Log geleert": "Log cleared", "Spiel in diesem System nicht gefunden": "Game not found in this system",
+    "SteamGridDB-Key gespeichert": "SteamGridDB key saved", "SteamGridDB-Key entfernt": "SteamGridDB key removed",
+    "Sicherheitsprüfung fehlgeschlagen – nichts geschrieben": "Safety check failed – nothing was written",
+    "Speichern nicht vollständig bestätigt": "Saving could not be fully verified",
+}
+EN_AM_PATTERNS = [
+    (r"^(\d+) Spiele$", lambda m: f"{m[1]} games"),
+    (r"^Suche: (.*)$", lambda m: f"Search: {m[1]}"),
+    (r"^Vorschau (\d+ / \d+)$", lambda m: f"Preview {m[1]}"),
+    (r"^(\d+) vorhanden$", lambda m: f"{m[1]} available"),
+    (r"^(\d+) Artworks\.?$", lambda m: f"{m[1]} artworks"),
+    (r"^Start  Speichern \((\d+)\)$", lambda m: f"Start  Save ({m[1]})"),
+    (r"^(.*) wird geladen …$", lambda m: f"Loading {m[1]} …"),
+    (r"^(.*) wiederherstellen\?$", lambda m: f"Restore {m[1]}?"),
+    (r"^Stand vom (.*) · (\d+) Artworks\.$", lambda m: f"State of {m[1]} · {m[2]} artworks."),
+    (r"^(.*): Stand vom (.*) wiederhergestellt$", lambda m: f"{m[1]}: restored state of {m[2]}"),
+    (r"^(\d+) ältere Sicherung\(en\) gelöscht – die neueste je System bleibt$",
+     lambda m: f"{m[1]} older backup(s) deleted – the newest per system is kept"),
+    (r"^Sicherung vor dem Speichern: (an|aus)$", lambda m: "Backup before saving: " + ("on" if m[1] == "an" else "off")),
+    (r"^Batch beendet · (\d+) gespeichert · (\d+) übersprungen(?: · (\d+) offen)?$",
+     lambda m: f"Batch finished · {m[1]} saved · {m[2]} skipped" + (f" · {m[3]} open" if m[3] else "")),
+    (r"^(\d+ / \d+) · einmalige Frage$", lambda m: f"{m[1]} · asked once"),
+    (r"^Fehler: (.*)$", lambda m: f"Error: {m[1]}"),
+]
+
+
+def am_tr(text):
+    """Deutsch → Englisch für die Oberfläche (nur wenn ES nicht auf Deutsch steht)."""
+    if cc.LANG[0] == "de" or not isinstance(text, str) or not text:
+        return text
+    if text in EN_AM:
+        return EN_AM[text]
+    for pre in (" – ", "  ", "✓ "):                      # Hinweis-Teile, Haken
+        if text.startswith(pre) and text[len(pre):] in EN_AM:
+            return pre + EN_AM[text[len(pre):]]
+    import re as _re
+    for pat, fn in EN_AM_PATTERNS:
+        m = _re.match(pat, text)
+        if m:
+            return fn(m)
+    return text
+
+
+class AmPen(Pen):
+    """Pen, der Oberflächentexte des Artwork Managers übersetzt."""
+
+    def text(self, txt, size, x, y, c, bold=False, align="l", raw=False):
+        return super().text(am_tr(txt), size, x, y, c, bold=bold, align=align, raw=True)
+
+    def width(self, txt, size, bold=False, raw=False):
+        return super().width(am_tr(txt), size, bold=bold, raw=True)
+
+
 def has_gamelist(system):
     return os.path.isfile(f"/storage/roms/{system}/gamelist.xml")
 
@@ -260,6 +385,7 @@ def by_style(cands):
 class App:
     def __init__(self):
         self.cfg = load_config()                       # Theme/Akzent/Tastatur wie im Kontrollcenter
+        cc.LANG[0] = cc.ui_language()                  # Sprache wie EmulationStation
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.settings = load_settings()
@@ -1248,7 +1374,7 @@ class App:
             P.text(hint_right, 22, 1220, HINT_Y, T["muted"], align="r", raw=True)
 
     def draw(self, cr, w, h, _view):
-        P = self.pen = Pen(cr, w, h)
+        P = self.pen = AmPen(cr, w, h)
         T = self.T
         P.fill_all(T["bg"])
         self.hits = []
@@ -1529,7 +1655,7 @@ class App:
 
     def draw_top(self, cr, w, h):
         """Oben: Spielname und das gewählte Artwork, so groß wie möglich."""
-        P = Pen(cr, w, h)
+        P = AmPen(cr, w, h)
         if self.kbd:
             # Während der Eingabe: die Ansicht von unten wandert nach oben, unten hat die Tastatur Platz
             hits = self.hits
