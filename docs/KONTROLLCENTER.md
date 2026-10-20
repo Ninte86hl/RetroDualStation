@@ -404,3 +404,7 @@ wird bei jedem Öffnen frisch gewählt.
 - RetroAchievements-Hardcore aus (`global.retroachievements.hardcore=0`), sonst sperrt RetroArch Savestates.
 - Wichtig: Tasten nur einspeisen, wenn das CC das Joypad **nicht** exklusiv hält (EVIOCGRAB vorher lösen).
 - RetroAchievements **Hardcore** sperrt Savestates in RetroArch → im Gameswitcher erkennen und Hinweis zeigen.
+- RetroArch-interner Spielwechsel (getestet 20.10.2026): `CLOSE_CONTENT` und `LOAD_CORE` wirken,
+  `LOAD_FILES` wird über Netzwerkbefehle **nicht** angenommen (RetroArch bleibt `CONTENTLESS` im Menü).
+  Laden nur per blindem Menü-Durchklicken möglich → zu unsicher. Wechsel daher immer über ES (`/launch`)
+  mit Ladebildschirm; ROCKNIX richtet so jedes System korrekt ein.
