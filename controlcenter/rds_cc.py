@@ -226,7 +226,15 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used", "leer": "empty",
+    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
+        "Save and Load use RetroArch's save slots.",
+    "Die Slot-Anzeige geht davon aus, dass ein Spiel in Slot 0 startet.":
+        "The slot display assumes a game starts in slot 0.",
+    "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch":
+        "Your own settings in ES (e.g. incremental savestates) or RetroArch",
+    "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher.":
+        "can change this behaviour. Slot 9 is used by the Game switcher.",
     "übernehmen": "take", "zurück": "back",
     "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
     "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
@@ -1470,6 +1478,7 @@ GAME_ACTIONS = {
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot")]
+GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
 SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
 
@@ -2327,6 +2336,7 @@ class ControlCenter:
         self.gbusy = False
         self.slot = 0             # RetroArch-Speicherplatz (seit Spielstart gezählt)
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
+        self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
         self.tracks = {}        # Regler -> (x0, x1)
@@ -2521,6 +2531,9 @@ class ControlCenter:
         if self.sub:
             self.sub.confirm()
             return
+        if self.page == 1 and self.ghint and self.game:
+            self.hint_done()
+            return
         if self.page == 1 and self.slot_pick is not None:
             return ("game", "setslot")
         if self.page == 1:
@@ -2632,6 +2645,8 @@ class ControlCenter:
                 return "power"
             elif kind == "quit":
                 return "quit"
+            elif kind == "ghint":
+                self.hint_done()
             elif kind == "gact" and not self.gbusy:
                 self.gsel = val
                 key = game_actions(self.game)[val][0]
@@ -2689,6 +2704,8 @@ class ControlCenter:
         left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        elif self.page == 1 and self.ghint and self.game:
+            left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
             left = [("A", "übernehmen"), ("B", "zurück")]
         elif self.page == 1 and game_actions(self.game):
@@ -2958,6 +2975,9 @@ class ControlCenter:
         tw = (1170 - gap * (cols - 1)) / cols
         th = 150
         self.gsel = min(self.gsel, len(acts) - 1)
+        if self.ghint:
+            self._draw_ghint(P)
+            return
         if self.slot_pick is not None:
             self._draw_slots(P)
             return
@@ -2979,6 +2999,31 @@ class ControlCenter:
             P.text(self.gmsg[0], 24, 630, y, T["text"], bold=True, align="c")
         elif g.get("emu") not in GAME_ACTIONS:
             P.text("Weitere Aktionen im Menü des Emulators.", 20, 630, y, T["muted"], align="c")
+
+    def hint_done(self):
+        self.ghint = False
+        try:
+            with open(GAME_HINT_DONE, "w") as f:
+                f.write(time.strftime("%Y-%m-%d %H:%M\n"))
+        except OSError as exc:
+            log("Seite Spiel: Hinweis-Merker nicht schreibbar:", exc)
+
+    def _draw_ghint(self, P):
+        """Einmaliger Hinweis beim ersten Öffnen der Seite „Spiel“."""
+        T, A = self.T, self.accent
+        P.rrect(45, 200, 1170, 420, 24, T["card"])
+        P.text("Gut zu wissen", 30, 85, 270, T["text"], bold=True)
+        y = 330
+        for line in ("Speichern und Laden nutzen die Speicherplätze von RetroArch.",
+                     "Die Slot-Anzeige geht davon aus, dass ein Spiel in Slot 0 startet.",
+                     "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch",
+                     "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher."):
+            P.text(line, 21, 85, y, T["muted"])
+            y += 42
+        P.rrect(85, 530, 260, 64, 32, A)
+        P.text("Verstanden", 22, 215, 571, "ffffff", bold=True, align="c")
+        self._focus_ring(P, 85, 530, 260, 64, 32)
+        self.hits.append((45, 200, 1170, 420, ("ghint", None)))
 
     def _slot_file(self, n):
         """Pfad des RetroArch-Savestates für Slot n (Slot 0 = .state)."""

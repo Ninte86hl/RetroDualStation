@@ -455,7 +455,7 @@ wird bei jedem Öffnen frisch gewählt.
 | Einstellung | Wert | Bedeutung für uns |
 |---|---|---|
 | ES `global.autosave` | 1 | RetroArch speichert beim Beenden automatisch und lädt beim Start (eigene Auto-Datei, kein Slot) |
-| ES `global.incrementalsavestates` | **2** „Nicht hochzählen“ | Spiel startet in Slot 0 → Slot-Zählung im CC stimmt. Bei „Pro Speichern hochzählen“ würde ES einen freien Slot wählen und die Anzeige wäre falsch → der Installer setzt 2 |
+| ES `global.incrementalsavestates` | **2** „Nicht hochzählen“ | Spiel startet in Slot 0 → Slot-Zählung im CC stimmt. Bei „Pro Speichern hochzählen“ würde ES einen freien Slot wählen und die Anzeige wäre falsch → einmaliger Hinweis beim ersten Öffnen der Seite „Spiel“ (`spiel-hinweis.done`), keine Änderung durch den Installer |
 | RA `savestate_thumbnail_enable` | true | Vorschaubild `…stateN.png` neben jedem Savestate → Slot-Menü und Gameswitcher |
 | RA `savestate_file_compression` | true | kleinere Dateien, unkritisch |
 | RA Ordner | `/storage/roms/savestates/<System>/` (setzt ROCKNIX beim Start) | dort sucht das CC |
