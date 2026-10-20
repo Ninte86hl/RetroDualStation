@@ -175,9 +175,18 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     if [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
         sed -i -e 's/^confirm_reset = .*/confirm_reset = "false"/' \
                -e 's/^confirm_close = .*/confirm_close = "false"/' \
-               -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' "$RACFG"
-        log "RetroArch: Rueckfragen und Speicherstand-Meldungen aus"
+               -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' \
+               -e 's/^video_font_enable = .*/video_font_enable = "false"/' \
+               -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' \
+               -e 's/^cheevos_enable = .*/cheevos_enable = "false"/' "$RACFG"
+        log "RetroArch: Rueckfragen, Einblendungen und RetroAchievements aus"
     fi
+    # RetroAchievements vorerst aus (kommen später über das Kontrollcenter); alten Wert merken
+    if [ ! -f "$DEST/retroachievements.before" ]; then
+        ( . /etc/profile >/dev/null 2>&1; get_setting global.retroachievements ) > "$DEST/retroachievements.before" 2>/dev/null
+    fi
+    ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements 0 ) >/dev/null 2>&1
+    log "ES: RetroAchievements aus (vorher: $(cat "$DEST/retroachievements.before" 2>/dev/null))"
 
     MAKOCFG=/storage/.config/mako/config
     if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then

@@ -51,6 +51,8 @@ rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlc
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
 systemctl daemon-reload
 systemctl kill -s HUP systemd-logind 2>/dev/null
+RA="$(cat "$DEST/retroachievements.before" 2>/dev/null)"
+[ -n "$RA" ] && ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements "$RA" ) >/dev/null 2>&1
 BS="$(cat "$DEST/bottomscreen.before" 2>/dev/null)"
 ( . /etc/profile >/dev/null 2>&1; [ "$BS" = none ] && BS=vc; set_setting rocknix.bottomscreen.type "${BS:-vc}" ) >/dev/null 2>&1
 sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d' /storage/.config/sway/config 2>/dev/null
