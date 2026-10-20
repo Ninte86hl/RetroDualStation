@@ -1107,20 +1107,25 @@ class Switcher:
     def resume_steps(self, item, fresh):
         """Nach dem Start (im Hintergrund): Speicherstand laden bzw. Autoload unterdrücken."""
         emu = item["emu"]
+        t0 = time.monotonic()
         deadline = time.time() + 30
         if emu == "RetroArch":
             while time.time() < deadline:
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
+                    log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
                     time.sleep(1.5)
                     ra_command("RESET" if fresh else f"LOAD_STATE_SLOT {SLOT}")
+                    log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
                     break
-                time.sleep(0.5)
+                time.sleep(0.25)
         elif emu == "DraStic" and not fresh:
             while time.time() < deadline and not run(["pidof", "drastic"]):
-                time.sleep(0.5)
+                time.sleep(0.25)
+            log("Gameswitcher: DraStic gestartet nach %.1f s" % (time.monotonic() - t0))
             time.sleep(4)                       # DraStic braucht etwas, bis das Spiel läuft
             inject_keys([(312, 1), 0.15, (312, 0)])   # L2 = laden
+            log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         # DSperate lädt selbst (autoload); für „neu starten“ siehe launch()
 
     def launch(self, item, fresh, current=None):
