@@ -629,7 +629,7 @@ class App:
                 out.append(n)
         return out
 
-    def open_game(self, i, forced=None, name=None):
+    def open_game(self, i, forced=None, name=None, then=None):
         rom, title, _st = self.games[i]
         self.rom, self.title = rom, title
         self.last_rom = rom
@@ -691,7 +691,25 @@ class App:
                 self.say("Keine Artworks gefunden – mit Y anderes Spiel suchen")
             self.kind = next((n for n, (k, _) in enumerate(KINDS) if self.cands.get(k)), 0)
             self.want_previews()
-        self.work("Artworks werden gesucht …", go)
+        self.work("Artworks werden gesucht …", go, then=then)
+
+    def game_to_editor(self, i=None):
+        """X in der Spieleliste: Spiel öffnen und direkt in den Editor springen."""
+        i = self.sel if i is None else i
+        if not self.games:
+            return
+        self.origin = "games"
+
+        def then():
+            for n, (k, _l) in enumerate(KINDS):   # Quelle: erste Boxart, sonst ein anderes Bild
+                if self.cands.get(k):
+                    self.kind, self.idx[k] = n, 0
+                    break
+            if self.cand():
+                self.open_editor()
+            else:
+                self.say("Keine Bilder gefunden – mit Y anderes Spiel suchen")
+        self.open_game(i, then=then)
 
     def kind_key(self):
         return KINDS[self.kind][0]
@@ -1100,7 +1118,8 @@ class App:
                    "settings": "Ändern", "restore": "Wiederherstellen"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
                 ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
-                ("X", "Einstellungen", self.open_settings) if self.view == "systems" else ("X", "", None),
+                ("X", "Einstellungen", self.open_settings) if self.view == "systems" else
+                ("X", "Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
                 ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else ("Y", "", None)]
 
     # -- Spielsuche über alle Systeme --
