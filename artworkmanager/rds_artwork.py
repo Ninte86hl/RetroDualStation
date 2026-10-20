@@ -156,6 +156,33 @@ def to_png(data, path, limit=900):
     return img.size
 
 
+def by_style(cands):
+    """Jeder Tab zeigt nur Bilder seines Artwork-Stils.
+
+    Boxart:    echte Hüllen (iiDB Box Art, SteamGridDB-Grids 600×900)
+    Cartridge: nur 1:1-Bilder (iiSU-Box-Art mit Rahmen, iiDB-Icons, SteamGridDB-Icons und 1:1-Grids)
+    Image:     nur Hero-Bilder (SteamGridDB)
+    """
+    def style(item):
+        return item.get("style") or ""
+    def sgdb(item, word):
+        return word in str(item.get("source") or "")
+    out = {}
+    out["boxart"] = [c for c in cands.get("boxart", [])
+                     if style(c) == "boxart" or (not style(c) and sgdb(c, "boxart"))]
+    out["cartridge"] = [c for c in cands.get("cartridge", []) + cands.get("boxart", [])
+                        if style(c) in ("iisu_boxart", "icon")
+                        or (not style(c) and (sgdb(c, "cartridge") or sgdb(c, "1:1")))]
+    seen, uniq = set(), []
+    for c in out["cartridge"]:
+        if c.get("url") not in seen:
+            seen.add(c.get("url"))
+            uniq.append(c)
+    out["cartridge"] = uniq
+    out["image"] = [c for c in cands.get("image", []) if not style(c)]
+    return out
+
+
 # ---------------------------------------------------------------- Zustand ----
 
 class App:
@@ -339,7 +366,7 @@ class App:
             log(f"Suche: {search} · iiDB {(result.get('iidb') or {}).get('id')} · "
                 f"SteamGridDB {(result.get('steamgriddb') or {}).get('id')}")
             pages = iidb_asset_pages(result["iidb"]["id"]) if result.get("iidb") else {}
-            self.cands = artwork_candidates_for_games(result, pages, sgdb)
+            self.cands = by_style(artwork_candidates_for_games(result, pages, sgdb))
             self.query = search
             if not any(self.cands.values()):
                 self.say("Keine Artworks gefunden – mit Y anderes Spiel suchen")
