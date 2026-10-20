@@ -994,6 +994,35 @@ def quit_game(game):
 GS_DIR = "/storage/.config/retrodualstation/switcher"
 GS_HISTORY = GS_DIR + "/history.json"
 GS_MAX = 12
+# Bildformat je System (Breite/Höhe), für die Vorschaukarten im Gameswitcher
+ASPECT = {"gb": 10 / 9, "gbc": 10 / 9, "gbh": 10 / 9, "sgb": 10 / 9, "gamegear": 10 / 9,
+          "gba": 3 / 2, "nds": 4 / 3, "nes": 4 / 3, "fds": 4 / 3, "snes": 4 / 3, "sfc": 4 / 3,
+          "megadrive": 4 / 3, "genesis": 4 / 3, "mastersystem": 4 / 3, "segacd": 4 / 3, "sega32x": 4 / 3,
+          "psx": 4 / 3, "n64": 4 / 3, "pcengine": 4 / 3, "tg16": 4 / 3, "atari2600": 4 / 3,
+          "arcade": 4 / 3, "mame": 4 / 3, "fbneo": 4 / 3, "cps1": 4 / 3, "cps2": 4 / 3, "cps3": 4 / 3,
+          "neogeo": 4 / 3, "dreamcast": 4 / 3, "psp": 16 / 9, "ngp": 20 / 19, "ngpc": 20 / 19,
+          "wonderswan": 14 / 9, "wonderswancolor": 14 / 9, "virtualboy": 12 / 7, "pico-8": 1.0,
+          "pico8": 1.0, "lynx": 160 / 102, "pokemini": 4 / 3}
+
+
+def png_size(path):
+    """Breite/Höhe aus dem PNG-Kopf (ohne das Bild zu laden)."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(24)
+        if head[:8] == b"\x89PNG\r\n\x1a\n":
+            return struct.unpack(">II", head[16:24])
+    except OSError:
+        pass
+    return None
+
+
+def card_aspect(item):
+    system = os.path.basename(os.path.dirname(item.get("rom", ""))).lower()
+    if system in ASPECT:
+        return ASPECT[system]
+    size = png_size(item.get("shot") or "") if item.get("shot") else None
+    return size[0] / size[1] if size and size[1] else 4 / 3
 RA_PROXY = "/usr/share/lowerdeck/ra_proxy.py"
 CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gameswitcher-chain.patch)
 SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
@@ -2755,17 +2784,24 @@ class ControlCenter:
             return
         it = sw.items[sw.sel]
         # Karussell: ausgewählte Karte fast bildschirmbreit mit Akzentrahmen, Nachbarn lugen am Rand hervor
-        cw, ch = 1000, 520
+        maxw, maxh = 1000, 520
         cy = 150
+
+        def box(e, sc):
+            a = card_aspect(e)
+            w, h = (maxh * a, maxh) if maxh * a <= maxw else (maxw, maxw / a)
+            return w * sc, h * sc
+
+        cur_w, _ = box(it, 1.0)
         for k in (-1, 1, 0):
             i2 = sw.sel + k
             if not 0 <= i2 < len(sw.items):
                 continue
             e = sw.items[i2]
             sc = 1.0 if k == 0 else 0.82
-            w, h = cw * sc, ch * sc
-            x = 630 + k * (cw / 2 + 40 + w / 2) - w / 2
-            y = cy + (ch - h) / 2
+            w, h = box(e, sc)
+            x = 630 + k * (cur_w / 2 + 40 + w / 2) - w / 2
+            y = cy + (maxh - h) / 2
             P.rrect(x, y, w, h, 28, T["card"])
             es = e.get("shot")
             if not (es and os.path.exists(es) and P.image(es, x, y, w, h, 28)):
