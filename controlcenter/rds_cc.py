@@ -597,7 +597,6 @@ class Pen:
         elif kind == "slow":                      # halber Vorspul-Pfeil mit Bremsstrich: „langsam“
             self.rrect(cx - 18, cy - 15, 5, 30, 2.5, c)
             self.poly([(cx - 7, cy - 15), (cx + 17, cy), (cx - 7, cy + 15)], c)
-            self.circle(cx + 1, cy, 4, "000000")
         elif kind == "quit":
             for a, b in (((-13, -13), (13, 13)), ((13, -13), (-13, 13))):
                 cairo.cairo_new_path(cr)
