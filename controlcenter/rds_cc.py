@@ -986,6 +986,7 @@ def quit_game(game):
 GS_DIR = "/storage/.config/retrodualstation/switcher"
 GS_HISTORY = GS_DIR + "/history.json"
 GS_MAX = 12
+RA_PROXY = "/usr/share/lowerdeck/ra_proxy.py"
 CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gameswitcher-chain.patch)
 SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
 
@@ -3775,6 +3776,11 @@ def main():
             if time.monotonic() >= next_pad_scan:
                 scan_pads()
                 next_pad_scan = time.monotonic() + 2
+                # RetroAchievements-Proxy von ROCKNIX dauerhaft bereithalten: runemu.sh wartet sonst
+                # bei jedem RetroArch-Start bis zu 1 s auf seinen Start
+                if os.path.exists(RA_PROXY) and not run(["pgrep", "-f", "python3 .*/lowerdeck/ra_proxy\\.py"]):
+                    subprocess.Popen(["python3", RA_PROXY], stdout=subprocess.DEVNULL,
+                                     stderr=subprocess.DEVNULL, start_new_session=True)
                 if not ui.view:
                     g = running_game()
                     pid = g["pid"] if g else None
