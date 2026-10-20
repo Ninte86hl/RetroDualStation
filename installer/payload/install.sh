@@ -170,6 +170,15 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
     swaymsg seat seat0 attach "4660:22136:Fake_Keyboard" >/dev/null 2>&1   # sofort wirksam
 
+    # RetroArch: keine Rückfragen bei Neustart/Beenden, keine Speicherstand-Einblendung (Gameswitcher)
+    RACFG=/storage/.config/retroarch/retroarch.cfg
+    if [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
+        sed -i -e 's/^confirm_reset = .*/confirm_reset = "false"/' \
+               -e 's/^confirm_close = .*/confirm_close = "false"/' \
+               -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' "$RACFG"
+        log "RetroArch: Rueckfragen und Speicherstand-Meldungen aus"
+    fi
+
     MAKOCFG=/storage/.config/mako/config
     if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then
         printf '\n# RetroDualStation\n[summary~="^(Brightness|Volume):"]\ninvisible=1\n' >> "$MAKOCFG"
