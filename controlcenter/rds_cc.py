@@ -24,6 +24,7 @@ import ctypes
 import fcntl
 import glob
 import json
+import math
 import mmap
 import os
 import re
@@ -43,6 +44,7 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
 
 VERSION = "0.12.0"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
+TOP_OUTPUT = os.environ.get("RDS_CC_TOP_OUTPUT", "DSI-2")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
 HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
@@ -247,6 +249,7 @@ EN = {
     "Spielstand über das Spiel selbst": "Progress is saved by the game itself",
     "gerade eben": "just now", "Spiel wird gestartet …": "Starting game …",
     "Spiel wird gespeichert …": "Saving game …",
+    "Wird fortgesetzt …": "Resuming …", "Wird neu gestartet …": "Restarting …",
     "ES wirklich neu starten?": "Really restart ES?",
     "Laufendes Spiel geht verloren.": "The running game will be lost.",
     "Ja, neu starten": "Yes, restart",
@@ -1136,43 +1139,55 @@ class Switcher:
             time.sleep(1.2)
             inject_keys([(312, 1), 0.1, (312, 0)])   # zur Sicherheit erneut (gleicher Stand)
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
-        # DSperate lädt selbst (autoload); für „neu starten“ siehe launch()
+        else:
+            # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
+            while time.time() < deadline and not running_game():
+                time.sleep(0.25)
+            time.sleep(2.5)
+            log("Gameswitcher: %s bereit nach %.1f s" % (emu, time.monotonic() - t0))
 
     def launch(self, item, fresh, current=None):
-        """Laufendes Spiel beenden (speichert vorher), dann item starten."""
+        """Laufendes Spiel beenden (speichert vorher), dann item starten.
+        Setzt self.done, wenn das Spiel läuft und der Stand geladen ist (Ladebildschirm weg)."""
+        self.done = False
+        ini = "/storage/.config/dsperate/dsperate.ini"
+
         def work():
-            # Kurzzeitig volle Leistung für Beenden + Starten; danach zurück
             before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
-            try:
-                perf_set(2)
-            except Exception:
-                pass
-            t0 = time.monotonic()
-            if current:
-                quit_game(current)
-                for _ in range(60):
-                    if not running_game():
-                        break
-                    time.sleep(0.15)
-                time.sleep(0.3)
-            ini = "/storage/.config/dsperate/dsperate.ini"
             restore = None
-            if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
-                txt = rd(ini) or ""
-                if "autoload = true" in txt:
-                    restore = txt
-                    wr(ini, txt.replace("autoload = true", "autoload = false"))
-            log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
-            if es_launch(item["rom"]):
-                self.resume_steps(item, fresh)
-            log("Gameswitcher: Wechsel fertig nach %.1f s" % (time.monotonic() - t0))
-            # nur zurücksetzen, wenn ROCKNIX beim Start nichts Eigenes gesetzt hat
-            for path, old in before.items():
-                if old and rd(path) == "performance" and old != "performance":
-                    wr(path, old)
-            if restore:
-                time.sleep(10)
-                wr(ini, restore)
+            t0 = time.monotonic()
+            try:
+                try:
+                    perf_set(2)   # kurzzeitig volle Leistung für Beenden + Starten
+                except Exception:
+                    pass
+                if current:
+                    quit_game(current)
+                    for _ in range(60):
+                        if not running_game():
+                            break
+                        time.sleep(0.15)
+                    time.sleep(0.3)
+                if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
+                    txt = rd(ini) or ""
+                    if "autoload = true" in txt:
+                        restore = txt
+                        wr(ini, txt.replace("autoload = true", "autoload = false"))
+                log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
+                if es_launch(item["rom"]):
+                    self.resume_steps(item, fresh)
+                log("Gameswitcher: Wechsel fertig nach %.1f s" % (time.monotonic() - t0))
+            except Exception:
+                log("Gameswitcher: Fehler beim Wechsel:\n" + traceback.format_exc().rstrip())
+            finally:
+                self.done = True
+                # nur zurücksetzen, wenn ROCKNIX beim Start nichts Eigenes gesetzt hat
+                for path, old in before.items():
+                    if old and rd(path) == "performance" and old != "performance":
+                        wr(path, old)
+                if restore:
+                    time.sleep(10)
+                    wr(ini, restore)
         threading.Thread(target=work, daemon=True).start()
 
 
@@ -2080,6 +2095,7 @@ class ControlCenter:
         self.marquee = False
         self.marquee_t0 = 0.0
         self.switcher = Switcher()
+        self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
         self.tracks = {}        # Regler -> (x0, x1)
         self.touch = None
@@ -2377,6 +2393,8 @@ class ControlCenter:
             return
         if view == "switcher":
             self._draw_switcher(P)
+        elif view == "loading":
+            self._draw_loading(P)
             return
         if self.kbd:
             self.kbd.draw(P)
@@ -2588,6 +2606,40 @@ class ControlCenter:
         P.text(PAGES[self.page], 44, 630, 420, T["text"], bold=True, align="c")
         stage = "Etappe 2" if self.page == 1 else "Etappe 3"
         P.text(f"kommt in {stage}", 22, 630, 470, T["muted"], align="c")
+
+    def _draw_loading(self, P):
+        """Unterer Bildschirm während des Wechsels."""
+        T, A = self.T, self.accent
+        it, fresh = self.loading or ({"name": ""}, False)
+        P.logo(630 - 115 * 0.8, 260, 130 * 0.8, T["text"], T["bg"])
+        icon = it.get("icon")
+        if icon and P.image(icon, 630 - 80, 400, 160, 160, 24):
+            pass
+        P.text("Wird neu gestartet …" if fresh else "Wird fortgesetzt …", 30, 630, 640, T["muted"], align="c")
+        name = it.get("name", "")
+        while P.width(name, 40, bold=True, raw=True) > 1150 and len(name) > 4:
+            name = name[:-2]
+        P.text(name if name == it.get("name") else name.rstrip() + "…", 40, 630, 700,
+               T["text"], bold=True, align="c", raw=True)
+        # einfache Fortschrittsanzeige (läuft, solange gezeichnet wird)
+        t = time.monotonic() * 2.2
+        for k in range(3):
+            a = 0.3 + 0.7 * max(0.0, math.sin(t - k * 0.7))
+            P.rrect(630 - 50 + k * 40 - 8, 770, 16, 16, 8, A, a=a)
+
+    def paint_top_loading(self, cr, w, h):
+        """Oberer Bildschirm während des Wechsels: letzter Screenshot, abgedunkelt."""
+        T = self.T
+        P = Pen(cr, w, h)
+        P.fill_all("000000")
+        it, fresh = self.loading or ({}, False)
+        shot = it.get("shot")
+        if not fresh and shot and os.path.exists(shot):
+            # Bild auf den ganzen Bildschirm (Pen-Koordinaten decken 1260 x 951 ab)
+            P.image(shot, -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s, 0)
+            P.rrect(-P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s, 0, "000000", a=0.35)
+        P.rrect(630 - 260, 840, 520, 70, 35, "000000", a=0.6)
+        P.text("Wird neu gestartet …" if fresh else "Wird fortgesetzt …", 26, 630, 884, "ffffff", align="c")
 
     def _draw_switcher(self, P):
         T, A = self.T, self.accent
@@ -2899,6 +2951,7 @@ class Overlay:
         self.touch_id = None
         self.pending_view = None
         self._mm = None
+        self.top = None   # Fläche auf dem oberen Bildschirm (Ladebildschirm)
 
         self.registry = marshal(self.display, 1, IF_REGISTRY, ("n", None))
         G = CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_char_p, c_uint32)
@@ -3084,6 +3137,80 @@ class Overlay:
         if not quiet:
             log("verborgen")
 
+    # -- oberer Bildschirm (nur Anzeige, z. B. Ladebildschirm des Gameswitchers) --
+    def top_output(self):
+        return next((o for o, n in reversed(list(self.outputs.items())) if n == TOP_OUTPUT), None)
+
+    def show_top(self, painter):
+        self.hide_top()
+        out = self.top_output()
+        if not out:
+            return
+        t = {"painter": painter, "size": None, "buffer": None, "mm": None}
+        t["surface"] = marshal(self.compositor, 0, IF_SURFACE, ("n", None))
+        t["lsurf"] = marshal(self.layer_shell, 0, IF_LAYER_SURFACE, ("n", None),
+                             ("o", t["surface"]), ("o", out),
+                             ("u", LAYER_OVERLAY), ("s", b"rds-top"))
+
+        def configure(_d, lsurf, serial, w, h):
+            try:
+                marshal(lsurf, 6, None, ("u", serial))
+                t["size"] = (w or 1024, h or 768)
+                self.redraw_top()
+            except Exception as exc:
+                log("Fehler oben:", exc)
+        listen(t["lsurf"],
+               CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_uint32, c_uint32)(configure),
+               CFUNCTYPE(None, c_void_p, c_void_p)(lambda *a: None))
+        marshal(t["lsurf"], 1, None, ("u", ANCHOR_ALL))
+        marshal(t["lsurf"], 2, None, ("i", -1))
+        marshal(t["surface"], 6, None)
+        wl.wl_display_flush(self.display)
+        self.top = t
+
+    def redraw_top(self):
+        t = self.top
+        if not (t and t["size"]):
+            return
+        w, h = t["size"]
+        stride = w * 4
+        size = stride * h
+        fd = os.memfd_create("rds-top", 0)
+        os.ftruncate(fd, size)
+        mm = mmap.mmap(fd, size)
+        ptr = ctypes.addressof(c_char.from_buffer(mm))
+        surf = cairo.cairo_image_surface_create_for_data(ptr, 0, w, h, stride)
+        cr = cairo.cairo_create(surf)
+        try:
+            t["painter"](cr, w, h)
+        finally:
+            cairo.cairo_surface_flush(surf)
+            cairo.cairo_destroy(cr)
+            cairo.cairo_surface_destroy(surf)
+        pool = marshal(self.shm, 0, IF_SHM_POOL, ("n", None), ("h", fd), ("i", size))
+        old = t["buffer"]
+        t["buffer"] = marshal(pool, 0, IF_BUFFER, ("n", None), ("i", 0), ("i", w),
+                              ("i", h), ("i", stride), ("u", 0))
+        marshal(pool, 1, None, destroy=True)
+        os.close(fd)
+        marshal(t["surface"], 1, None, ("o", t["buffer"]), ("i", 0), ("i", 0))
+        marshal(t["surface"], 9, None, ("i", 0), ("i", 0), ("i", w), ("i", h))
+        marshal(t["surface"], 6, None)
+        if old:
+            marshal(old, 0, None, destroy=True)
+        t["mm"] = mm
+        wl.wl_display_flush(self.display)
+
+    def hide_top(self):
+        t, self.top = self.top, None
+        if not t:
+            return
+        marshal(t["lsurf"], 7, None, destroy=True)
+        marshal(t["surface"], 0, None, destroy=True)
+        if t["buffer"]:
+            marshal(t["buffer"], 0, None, destroy=True)
+        wl.wl_display_flush(self.display)
+
     # -- Ereignisschleife --
     def _check(self, result):
         """Bricht ab, wenn die Verbindung zum Compositor weg ist (z. B. Sway neu gestartet).
@@ -3240,6 +3367,8 @@ def main():
     state = {"dirty": False}
 
     def on_touch(kind, x, y):
+        if ui.view == "loading":
+            return
         if ui.view == "switcher":
             if kind == "up" and cc.pen:
                 dx, dy = cc.pen.to_design(x, y)
@@ -3392,6 +3521,13 @@ def main():
         toggle("switcher")                 # schließen, Pause aufheben
         if same and not fresh:
             return                          # einfach zurück ins laufende Spiel
+        # Ladebildschirm auf beiden Screens, bis das Spiel läuft und der Stand geladen ist
+        cc.loading = (item, fresh)
+        cc.loading_t0 = time.monotonic()
+        if cc.screen_bottom_off:
+            cc.screen_on()
+        ui.show("loading")
+        ui.show_top(cc.paint_top_loading)
         sw.launch(item, fresh, current=cur)
 
     stick = {"dir": 0, "next": 0.0}
@@ -3446,6 +3582,8 @@ def main():
             combo = True  # Teil einer Tastenkombination
             return
         if not ui.view:
+            return
+        if ui.view == "loading":
             return
         if ui.view == "switcher":
             sw = cc.switcher
@@ -3576,7 +3714,7 @@ def main():
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy
+            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy or cc.loading
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -3652,6 +3790,19 @@ def main():
                     state["dirty"] = True
             if scrolling:
                 state["dirty"] = True
+            if cc.loading:
+                sw = cc.switcher
+                if getattr(sw, "done", False) or time.monotonic() - cc.loading_t0 > 40:
+                    cc.loading = None
+                    ui.hide_top()
+                    if ui.view == "loading":
+                        ui.hide()
+                    g = running_game()   # RetroArch/PortMaster: unteren Screen wieder abdunkeln
+                    if g and g["emu"] in AUTO_DIM_EMUS:
+                        cc.screen_off()
+                        cc.screen_auto = True
+                else:
+                    state["dirty"] = True
             sw = cc.switcher
             if sw.ready:
                 sw.ready = False
