@@ -1080,9 +1080,10 @@ class Switcher:
             if os.path.exists(png):
                 shot = png
         else:
-            # Screenshot zuerst (oberer Bildschirm), dann speichern
-            subprocess.run(["grim", "-o", "DSI-2", shot], timeout=5,
-                           env=dict(os.environ), capture_output=True)
+            # Screenshot (oberer Bildschirm, kaum komprimiert = schnell) parallel zum Speichern
+            t0 = time.monotonic()
+            grim = subprocess.Popen(["grim", "-l", "1", "-o", "DSI-2", shot],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if emu == "DraStic":
                 dss = os.path.join("/storage/roms/savestates/nds",
                                    os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
@@ -1093,6 +1094,11 @@ class Switcher:
                     if os.path.exists(dss) and os.path.getmtime(dss) > before:
                         time.sleep(0.2)                    # Schreiben abschließen lassen
                         break
+            try:
+                grim.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                grim.kill()
+            log("Gameswitcher: Aufnahme + Speichern in %.1f s" % (time.monotonic() - t0))
         self.remember(game, shot if os.path.exists(shot) else None)
         log("Gameswitcher: gespeichert", emu, os.path.basename(rom))
 
