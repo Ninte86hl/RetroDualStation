@@ -452,6 +452,7 @@ wird bei jedem Öffnen frisch gewählt.
   darunter Symbole in dieser Reihenfolge: Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden
   (ohne RetroArch nur Screenshot und Beenden). Später: „Steuerung“ – erklärt Tasten und Bedienung des Emulators.
 - Slot-Auswahl: **X** auf einem belegten Slot, dann nochmal **X** → Savestate und Vorschaubild löschen.
+  Touch: ✕-Knopf oben rechts am Slot → Rückfrage „Löschen?“ → erneut auf den Slot tippen.
 - Nach jeder Aktion schließt sich das CC (zurück ins Spiel) – außer bei der Slot-Wahl.
 - Screenshots außerhalb RetroArch: `grim` vom oberen Bildschirm nach `/storage/roms/screenshots/`.
 - Offen: Spickzettel, DSperate-Speichern über eigene (2)-Belegung, Schalter „Tastenkürzel erlauben“.

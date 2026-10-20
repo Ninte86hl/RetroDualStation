@@ -227,7 +227,8 @@ LANG = ["de"]
 
 EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
-    "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete",
+    "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
+    "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
     "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
@@ -573,7 +574,7 @@ class Pen:
         self.color(c)
         cairo.cairo_fill(cr)
 
-    def game_icon(self, kind, cx, cy, c):
+    def game_icon(self, kind, cx, cy, c, scale=1.0):
         """Symbole der Seite „Spiel“: Vorspulen, Screenshot, Neu starten, Emulator-Menü."""
         import math
         cr, s = self.cr, self.s
@@ -598,12 +599,13 @@ class Pen:
             self.rrect(cx - 18, cy - 15, 5, 30, 2.5, c)
             self.poly([(cx - 7, cy - 15), (cx + 17, cy), (cx - 7, cy + 15)], c)
         elif kind == "quit":
-            for a, b in (((-13, -13), (13, 13)), ((13, -13), (-13, 13))):
+            k = 13 * scale
+            for a, b in (((-k, -k), (k, k)), ((k, -k), (-k, k))):
                 cairo.cairo_new_path(cr)
                 cairo.cairo_move_to(cr, self.X(cx + a[0]), self.Y(cy + a[1]))
                 cairo.cairo_line_to(cr, self.X(cx + b[0]), self.Y(cy + b[1]))
                 cairo.cairo_set_line_cap(cr, 1)
-                cairo.cairo_set_line_width(cr, 5 * s)
+                cairo.cairo_set_line_width(cr, max(3, 5 * scale) * s)
                 self.color(c)
                 cairo.cairo_stroke(cr)
         elif kind == "menu":
@@ -2502,14 +2504,7 @@ class ControlCenter:
             if self.del_confirm != n:
                 self.del_confirm = n          # erst beim zweiten X wirklich löschen
                 return
-            f = self._slot_file(n)
-            for path in (f, f + ".png"):
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
-            log("Seite Spiel: Slot", n, "gelöscht")
-            self.del_confirm = None
+            self.delete_slot(n)
             return
         if self.page == 0 and not self.sub and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             self.open_sub(self.tile)
@@ -2735,6 +2730,13 @@ class ControlCenter:
                 if self.open_slots(key):
                     return
                 return ("game", key)
+            elif kind == "slotdel":
+                self.slot_pick, self.del_confirm = val, val   # erste Berührung: nachfragen
+            elif kind == "slotpick" and self.del_confirm == val:
+                self.delete_slot(val)                          # zweite Berührung: löschen
+            elif kind == "slotpick" and self.del_confirm is not None:
+                self.del_confirm = None                        # woanders getippt: abbrechen
+                self.slot_pick = val
             elif kind == "slotpick":
                 if self.slot_mode == "load" and not self._slot_exists(val):
                     return
@@ -3235,6 +3237,16 @@ class ControlCenter:
         self.slot_pick = start
         return True
 
+    def delete_slot(self, n):
+        f = self._slot_file(n)
+        for path in (f, f + ".png"):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        log("Seite Spiel: Slot", n, "gelöscht")
+        self.del_confirm = None
+
     def _slot_exists(self, n):
         f = self._slot_file(n)
         return bool(f and os.path.exists(f))
@@ -3269,9 +3281,14 @@ class ControlCenter:
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
             label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
             P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            if when and n != self.del_confirm:          # Löschen-Knopf für Touch
+                P.circle(tx + tw - 32, ty + 32, 22, "000000")
+                P.game_icon("quit", tx + tw - 32, ty + 32, "ffffff", scale=0.55)
+                self.hits.append((tx + tw - 64, ty, 64, 64, ("slotdel", n)))
             if n == self.del_confirm:
-                P.rrect(tx, ty, tw, th, 20, "000000", 0.55)
-                P.text("X – " + tr("nochmal: löschen"), 22, tx + tw / 2, ty + th / 2, "ffffff", bold=True, align="c", raw=True)
+                P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
+                P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
+                P.text(tr("nochmal X oder tippen"), 16, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
