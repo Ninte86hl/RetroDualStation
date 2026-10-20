@@ -50,6 +50,7 @@ HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
+HOME_LONG_S = 0.5      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -3680,6 +3681,23 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
+    home_down = {"t": None, "fired": False}
+
+    def home_short():
+        """Home kurz: im Spiel speichern (Stand + Screenshot) und zurück zu ES; ohne Spiel Gameswitcher."""
+        game = running_game()
+        if not game:
+            toggle("switcher")
+            return
+        log("Home kurz: speichern und zurück zu ES –", game["name"])
+        def work():
+            try:
+                cc.switcher.capture(game)
+            except Exception:
+                log("Home kurz: Speichern fehlgeschlagen:\n" + traceback.format_exc().rstrip())
+            quit_game(game)
+        threading.Thread(target=work, daemon=True).start()
+
     def do_quit():
         game = cc.game
         if ui.view:
@@ -3852,7 +3870,8 @@ def main():
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy
+            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
+                or (home_down["t"] is not None and not home_down["fired"])
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -3870,9 +3889,18 @@ def main():
                         drop_pad(fd)
                         continue
                     for typ, code, value in events:
-                        if fd == home:
-                            if typ == EV_KEY and code == BTN_Z and value == 1:
-                                toggle("switcher")
+                        if fd == home and typ == EV_KEY and code == BTN_Z:
+                            if value == 1:
+                                if ui.view:                       # offen → schließen
+                                    toggle(ui.view)
+                                    home_down["t"] = None
+                                else:
+                                    home_down["t"] = time.monotonic()
+                                    home_down["fired"] = False
+                            elif value == 0 and home_down["t"] is not None:
+                                if not home_down["fired"]:
+                                    home_short()                  # kurz: speichern und zurück zu ES
+                                home_down["t"] = None
                         elif fd == pwr:
                             KEY_POWER = 116
                             if typ == EV_KEY and code == KEY_POWER:
@@ -3928,6 +3956,10 @@ def main():
                     state["dirty"] = True
             if scrolling:
                 state["dirty"] = True
+            if home_down["t"] is not None and not home_down["fired"] \
+                    and time.monotonic() - home_down["t"] >= HOME_LONG_S:
+                home_down["fired"] = True
+                toggle("switcher")                                # lang: Gameswitcher
             if cc.loading:
                 sw = cc.switcher
                 if getattr(sw, "done", False) or time.monotonic() - cc.loading_t0 > 40:
