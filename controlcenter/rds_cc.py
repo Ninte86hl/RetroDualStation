@@ -2393,6 +2393,7 @@ class ControlCenter:
             return
         if view == "switcher":
             self._draw_switcher(P)
+            return
         elif view == "loading":
             self._draw_loading(P)
             return
