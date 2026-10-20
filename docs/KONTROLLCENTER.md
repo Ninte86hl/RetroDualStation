@@ -418,3 +418,8 @@ wird bei jedem Öffnen frisch gewählt.
 - Offen: DSperate testen, Optik-Feintuning.
 - Achtung: `swaymsg focus output …` aus dem CC heraus hängt und störte Touch in ES → nicht verwenden.
   Nach `systemctl restart essway` besser das Gerät neu starten (sonst landen Spiele ggf. unten).
+- **ES-Ketten-Start** (Patch `002-rds-gameswitcher-chain.patch`, getestet 20.10.2026 03:41): CC schreibt den
+  ROM-Pfad nach `/tmp/rds-next-launch`, beendet das Spiel; ES startet das nächste Spiel direkt ohne Neuaufbau.
+  RetroArch→RetroArch: **10,9 s → 6,3 s**. Ohne Patch Rückfall auf `/launch`.
+- ES-Datei auf dem Gerät nie direkt per `scp` überschreiben (läuft → „Text file busy“): erst als
+  `.emulationstation-rgds.new` kopieren, dann `mv -f`.
