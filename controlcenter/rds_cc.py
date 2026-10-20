@@ -1547,7 +1547,8 @@ GAME_ACTIONS = {
     "RetroArch": [("save", "Speichern"), ("load", "Laden"),
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("shot", "Screenshot"),
+                ("help", "Tasten"), ("quit", "Beenden")],
     "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("shot", "Screenshot"),
                  ("help", "Tasten"), ("quit", "Beenden")],
 }
@@ -1631,6 +1632,9 @@ DSP_LABELS = {"quit": "Beenden", "pause": "Menü", "slot_next": "Slot +", "slot_
               "fast_forward": "Vorspulen (halten)", "fast_forward_toggle": "Vorspulen", "save_state": "Speichern",
               "load_state": "Laden", "fps": "FPS", "screenshot": "Screenshot", "swap_screens": "Bildschirme tauschen"}
 
+
+# Tastennummer (RetroArch/SDL/DraStic) → evdev-Code des eingebauten Joypads
+JOY_CODES = [304, 305, 307, 308, 310, 311, 312, 313, 314, 315, 316, 317, 318, 544, 545, 546, 547]
 
 # SDL-Namen (DSperate) → evdev-Code des eingebauten Joypads (Reihenfolge = retrogame_joypad.cfg)
 DSP_CODES = {"a": 304, "b": 305, "x": 307, "y": 308, "leftshoulder": 310, "rightshoulder": 311,
@@ -4601,6 +4605,18 @@ def main():
 
         if key == "quit":
             do_quit()
+            return
+        if emu == "DraStic" and key == "menu":
+            toggle("cc")
+            def later():
+                time.sleep(0.3)
+                m = re.search(r"controls_b\[CONTROL_INDEX_MENU\]\s*=\s*(\d+)",
+                              rd("/storage/.config/drastic/config/drastic.cfg") or "")
+                idx = int(m.group(1)) - 1024 if m and 1024 <= int(m.group(1)) < 1100 else 11
+                code = JOY_CODES[idx] if idx < len(JOY_CODES) else 317
+                inject_keys([(code, 1), 0.12, (code, 0)])
+                log("Seite Spiel: DraStic-Menü über Taste", idx)
+            threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key == "menu":
             toggle("cc")
