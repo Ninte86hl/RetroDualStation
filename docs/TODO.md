@@ -50,7 +50,7 @@ Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
    - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
      (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
      **X** aus der Liste entfernen (Speicherstand bleibt) · **B** schließen
-2. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
+2. ✅ **Etappe 2: Seite „Spiel“** im CC (fertig 20.10.2026; offen: Steuerung, DSperate)
 3. **Version für das normale RG DS** (640×480) – sobald 1 und 2 gebaut und getestet sind
 
 Danach abwägen, was als Nächstes ausgebaut wird.
@@ -73,7 +73,8 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
-- [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
+- [x] Etappe 2: Seite „Spiel“ – Infoansicht, Speichern/Laden mit Slot-Auswahl und Vorschau, Löschen (X X / Mülleimer), Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden (getestet 20.10.2026)
+- [ ] Seite „Spiel“: Steuerung (Tasten je Emulator erklären), DSperate Speichern/Laden über (2)-Belegung
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [x] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden) – 20.10.2026
 - [x] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) auf einen Bildschirm begrenzt – Patch 003 (20.10.2026)
