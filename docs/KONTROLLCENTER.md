@@ -478,7 +478,7 @@ wird bei jedem Öffnen frisch gewählt.
   - DSperate: `[padhotkeys]` in `dsperate.ini` (Modifier `guide` = Anbernic).
   - DraStic: `controls_b[...]` in `drastic.cfg` (Wert − 1024 = Tastennummer).
 - Kürzel mit der Anbernic-Taste sind in Akzentfarbe hervorgehoben.
-- Als Nächstes: RetroArch-Kürzel anpassen (Aktion wählen → Taste drücken → `retroarch.cfg`, mit Sicherung und Zurücksetzen).
+- Eigene Kürzel im CC anpassen: verworfen (21.10.2026) – das einheitliche Schema reicht.
 
 ### DSperate (21.10.2026)
 - Das CC liest die Kürzel aus `[padhotkeys]` der `dsperate.ini` und drückt genau diese Kombination
