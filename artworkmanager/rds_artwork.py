@@ -375,7 +375,14 @@ class App:
             log(f"Suche: {search} · iiDB {(result.get('iidb') or {}).get('id')} · "
                 f"SteamGridDB {(result.get('steamgriddb') or {}).get('id')}")
             pages = iidb_asset_pages(result["iidb"]["id"]) if result.get("iidb") else {}
-            self.cands = by_style(artwork_candidates_for_games(result, pages, sgdb))
+            raw = artwork_candidates_for_games(result, pages, sgdb)
+            self.cands = by_style(raw)
+            for k, _label in KINDS:   # Vergleich mit dem PC-Manager: gefunden → angezeigt
+                srcs = {}
+                for c in raw.get(k, []):
+                    key = c.get("style") or c.get("source") or "?"
+                    srcs[key] = srcs.get(key, 0) + 1
+                log(f"  {k}: gefunden {len(raw.get(k, []))} {srcs} → angezeigt {len(self.cands.get(k, []))}")
             self.query = search
             if not any(self.cands.values()):
                 self.say("Keine Artworks gefunden – mit Y anderes Spiel suchen")
