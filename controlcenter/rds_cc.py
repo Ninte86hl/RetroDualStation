@@ -229,7 +229,7 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Emulator": "Emulator", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
@@ -3035,12 +3035,6 @@ class ControlCenter:
             P.text("Kein Spiel läuft", 40, 630, 420, T["text"], bold=True, align="c")
             P.text("Starte ein Spiel, um es hier zu steuern.", 22, 630, 470, T["muted"], align="c")
             return
-        name = g.get("name") or ""
-        while P.width(name, 40, bold=True, raw=True) > 1000 and len(name) > 4:
-            name = name[:-2]
-        P.text(name, 40, 45, 110, T["text"], bold=True, raw=True)
-        sub = g.get("emu", "")
-        P.text(sub, 19, 45, 148, T["muted"], raw=True)
         cols, gap = 4, 22
         tw = (1170 - gap * (cols - 1)) / cols
         th = 150
@@ -3053,9 +3047,11 @@ class ControlCenter:
             return
         big = [(i, k, l) for i, (k, l) in enumerate(acts) if k in GAME_BIG]
         small = [(i, k, l) for i, (k, l) in enumerate(acts) if k not in GAME_BIG]
-        y = 200
+        self._draw_info(P, g, 70)
+        y = 520
         if big:
             self._draw_big(P, g, big)
+            y = 610
         if small:
             sp = 1170 / len(small) if len(small) > 1 else 1170
             for j, (i, key, label) in enumerate(small):
@@ -3067,7 +3063,6 @@ class ControlCenter:
                     self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
                 P.text(label, 18, cx, cy + 86, T["muted"], align="c")
                 self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
-        y += 30
         if self.gbusy:
             P.text("Bitte warten …", 24, 630, y, T["muted"], align="c")
         elif self.gmsg and time.monotonic() - self.gmsg[1] < 4:
@@ -3106,26 +3101,63 @@ class ControlCenter:
             self._focus_ring(P, x, y, w, h, 24)
         self.hits.append((x, y, w, h, ("gact", i)))
 
-    def _draw_big(self, P, g, big):
-        """Speichern/Laden. Layout „mitte“: nebeneinander, Laden mit Vorschaubild;
-        „links“: großes Vorschaubild links, Kacheln rechts untereinander."""
+    def _game_icon(self):
+        """Icon des laufenden Spiels (Artwork Manager: -icon, sonst Scraper-Bilder) oder None."""
+        g = self.game or {}
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
+        if not rom:
+            return None
+        stem = os.path.splitext(os.path.basename(rom))[0]
+        img = os.path.join(os.path.dirname(rom), "images")
+        for suf in ("-icon", "-thumb", "-box", "-image"):
+            p = os.path.join(img, stem + suf + ".png")
+            if os.path.exists(p):
+                return p
+        return None
+
+    def _session(self):
+        """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
+        g = self.game or {}
+        try:
+            start = int(rd(f"/proc/{g['pid']}/stat").rsplit(")", 1)[1].split()[19]) / os.sysconf("SC_CLK_TCK")
+            up = float(rd("/proc/uptime").split()[0])
+            m = int(max(0, up - start) // 60)
+            return "%d:%02d h" % (m // 60, m % 60)
+        except Exception:
+            return None
+
+    def _draw_info(self, P, g, top):
+        """Kleine Infoansicht: Icon links, Name und Angaben rechts."""
         T = self.T
-        shot = self._newest_shot()
-        gap = 22
-        if getattr(self, "glayout", "mitte") == "links":
-            iw, ih = 520, 390
-            P.rrect(45, 180, iw, ih, 24, T["card"])
-            if not (shot and P.image(shot, 45, 180, iw, ih, 24)):
-                P.text("Kein Spielstand", 20, 45 + iw / 2, 180 + ih / 2 + 8, T["muted"], align="c")
-            rx, rw = 45 + iw + gap, 1170 - iw - gap
-            th = (ih - gap * (len(big) - 1)) / len(big)
-            for j, (i, key, label) in enumerate(big):
-                self._big_tile(P, i, key, label, rx, 180 + j * (th + gap), rw, th)
-            return
-        th, y = 280, 205
+        P.rrect(45, top, 1170, 270, 28, T["card"])
+        icon = self._game_icon()
+        if not (icon and P.image(icon, 70, top + 25, 220, 220, 30)):
+            P.rrect(70, top + 25, 220, 220, 30, T["tile"])
+            P.logo(70 + 55, top + 85, 100, T["muted"], T["tile"])
+        x = 330
+        name = g.get("name") or ""
+        while P.width(name, 36, bold=True, raw=True) > 860 and len(name) > 4:
+            name = name[:-2]
+        P.text(name, 36, x, top + 75, T["text"], bold=True, raw=True)
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
+        system = os.path.basename(os.path.dirname(rom)).upper() if rom else ""
+        lines = [" · ".join(v for v in (system, g.get("emu", "")) if v)]
+        ses = self._session()
+        if ses:
+            lines.append(tr("Gespielt seit") + " " + ses)
+        if "load" in [k for k, _ in game_actions(g)]:
+            lines.append(tr("Letzter Spielstand") + ": " + self._big_detail("load"))
+        y = top + 125
+        for line in lines:
+            P.text(line, 20, x, y, T["muted"], raw=True)
+            y += 38
+
+    def _draw_big(self, P, g, big):
+        """Speichern/Laden nebeneinander unter der Infoansicht."""
+        gap, th, y = 22, 120, 470
         bw = (1170 - gap * (len(big) - 1)) / len(big)
         for j, (i, key, label) in enumerate(big):
-            self._big_tile(P, i, key, label, 45 + j * (bw + gap), y, bw, th, shot if key == "load" else None)
+            self._big_tile(P, i, key, label, 45 + j * (bw + gap), y, bw, th)
 
     def _big_detail(self, key):
         """Zweite Zeile der Kacheln Speichern/Laden (wie bei WLAN/Bluetooth)."""
