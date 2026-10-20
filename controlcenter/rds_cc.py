@@ -1547,7 +1547,7 @@ GAME_ACTIONS = {
     "RetroArch": [("save", "Speichern"), ("load", "Laden"),
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("shot", "Screenshot"),
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
                 ("help", "Tasten"), ("quit", "Beenden")],
     "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("shot", "Screenshot"),
                  ("help", "Tasten"), ("quit", "Beenden")],
@@ -4606,16 +4606,17 @@ def main():
         if key == "quit":
             do_quit()
             return
-        if emu == "DraStic" and key == "menu":
+        if emu == "DraStic" and key in ("menu", "ff"):
             toggle("cc")
             def later():
                 time.sleep(0.3)
-                m = re.search(r"controls_b\[CONTROL_INDEX_MENU\]\s*=\s*(\d+)",
+                name, dflt = ("MENU", 11) if key == "menu" else ("FAST_FORWARD", 12)
+                m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % name,
                               rd("/storage/.config/drastic/config/drastic.cfg") or "")
-                idx = int(m.group(1)) - 1024 if m and 1024 <= int(m.group(1)) < 1100 else 11
+                idx = int(m.group(1)) - 1024 if m and 1024 <= int(m.group(1)) < 1100 else dflt
                 code = JOY_CODES[idx] if idx < len(JOY_CODES) else 317
                 inject_keys([(code, 1), 0.12, (code, 0)])
-                log("Seite Spiel: DraStic-Menü über Taste", idx)
+                log("Seite Spiel: DraStic", key, "über Taste", idx)
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key == "menu":
