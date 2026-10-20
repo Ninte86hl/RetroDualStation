@@ -113,7 +113,7 @@ a loading screen covers both screens and the sound stays muted until you're back
 
 ## Installation
 
-1. Download **`rocknix-dualstation-v10.zip`** (includes canvas-ds) from the
+1. Download **`rocknix-dualstation-v11.zip`** (includes canvas-ds) from the
    [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
 3. In ES open **Ports** → **Install ROCKNIX DualStation**.
@@ -126,10 +126,10 @@ Updating works the same way.
 <summary>ROMs on an ext4 partition? Copy the ZIP over the network</summary>
 
 ```bash
-scp rocknix-dualstation-v10.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v11.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v10.zip && rm rocknix-dualstation-v10.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v11.zip && rm rocknix-dualstation-v11.zip"
 ```
 </details>
 

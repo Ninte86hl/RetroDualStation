@@ -113,7 +113,7 @@ ein Ladebildschirm liegt über beiden Screens, der Ton bleibt stumm, bis du wied
 
 ## Installation
 
-1. **`rocknix-dualstation-v10.zip`** (enthält canvas-ds) aus dem
+1. **`rocknix-dualstation-v11.zip`** (enthält canvas-ds) aus dem
    [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest) laden.
 2. In den Ordner **`ports`** bei den ROMs entpacken (`/storage/roms/ports`).
 3. In ES **Ports** → **Install ROCKNIX DualStation** starten.
@@ -126,10 +126,10 @@ Ein Update funktioniert genauso.
 <summary>ROMs auf einer ext4-Partition? ZIP über das Netzwerk kopieren</summary>
 
 ```bash
-scp rocknix-dualstation-v10.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v11.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v10.zip && rm rocknix-dualstation-v10.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v11.zip && rm rocknix-dualstation-v11.zip"
 ```
 </details>
 
