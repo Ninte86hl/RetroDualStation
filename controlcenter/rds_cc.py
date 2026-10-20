@@ -1085,14 +1085,15 @@ TOUR = [
                 "Holding Power sends the device to sleep immediately.")]},
     {"title": ("Artwork Manager", "Artwork Manager"),
      "img": ("tour-artwork-5.png", "tour-artwork-5.png"),
-     "lines": [("Unter Ports: Boxart, Cartridge und Image für deine Spiele – mit Editor",
-                "In Ports: boxart, cartridge and image for your games – with an editor"),
+     "lines": [("Unter Ports: Boxart, Cartridge und Image für deine Spiele – mit Icon-Editor",
+                "In Ports: boxart, cartridge and image for your games – with an icon editor"),
                ("für 1:1-Bilder mit iiSU-Rahmen, eigenen Bildern und M3U für Mehr-CD-Spiele.",
                 "for 1:1 images with iiSU border, your own images and M3U for multi-disc games."),
                ("Voraussetzung: eine Spieleliste – einmal im Single-Screen-Modus scrapen.",
                 "Requirement: a game list – scrape your games once in single-screen mode.")],
      "keys": [("Start", ("Einzelsuche", "single search")), ("Select", ("Mehrfachsuche", "batch search")),
-              ("X", ("Editor (Spieleliste und Spielansicht)", "editor (game list and game view)")),
+              ("X", ("Icon-Editor: 1:1 mit iiSU-Rahmen", "icon editor: 1:1 with iiSU border")),
+              ("L3 / R3", ("Suche aktualisieren / Ansicht oben", "refresh search / top view")),
               ("Y", ("Filter (Spieleliste) / Spiel suchen", "filter (game list) / search game"))]},
 ]
 

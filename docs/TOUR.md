@@ -82,7 +82,7 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **Select** | Batch search: all games with missing artwork, one after another |
 | | **Y** | Search a game across all systems |
 | | **X** | Settings (API key, backups, merge multi-disc games as M3U, cache, quick guide) |
-| Game list | **X** | Open the editor for this game directly |
+| Game list | **X** | Open the icon editor for this game directly |
 | | **Y** | Filter: all · missing · no artwork |
 | Game view | **◀ ▶** | Choose image |
 | | **L / R** | Artwork style |
@@ -91,7 +91,7 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **Y** | Search another game |
 | | **L3** | Refresh the artwork search |
 | | **R3** | Mix view / large view on top |
-| | **X** | Editor: turn the chosen image into a 1:1 cartridge image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border) |
+| | **X** | Icon editor: turn the chosen icon into a 1:1 image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border). Not needed – and greyed out – for icons that already have the iiSU border |
 
 Before the first save per system a backup is created (can be turned off in the settings).
 **Own images:** put PNG/JPG/WebP files into `ports/artworkmanager/eigene/` (or `eigene/<system>/`), named like the game – they appear first in every tab marked *Own image*. Everything in `eigene/alle/` appears for every game.

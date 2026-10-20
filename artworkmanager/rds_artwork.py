@@ -207,7 +207,8 @@ EN_AM = {
     "Eigenes Bild": "Own image",
     "Filter": "Filter", "Keine Spiele für diesen Filter": "No games for this filter",
     "Spieleliste": "Game list", "Filter: alle · fehlende · keine Artworks": "Filter: all · missing · no artwork",
-    "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
+    "Icon-Editor: 1:1 mit iiSU-Rahmen, nur für Icons ohne Rahmen": "Icon editor: 1:1 with iiSU border, only for icons without one",
+    "Icon-Editor für dieses Spiel": "Icon editor for this game",
     "Icon-Editor": "Icon editor", "Suche aktualisieren": "Refresh search", "Suche aktualisiert": "Search refreshed", "Keine Icon-Bilder ohne Rahmen gefunden": "No icon images without border found",
     "Das Ergebnis wird als Icon (Cartridge) übernommen.": "The result is taken as the icon (cartridge).",
     "iiSU-Rahmen werden geladen … (nur beim ersten Mal)": "Loading iiSU borders … (first time only)", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
@@ -216,7 +217,7 @@ EN_AM = {
     "Das Ergebnis wird als Cartridge übernommen.": "The result is taken as the cartridge image.",
     "Editor wird vorbereitet …": "Preparing editor …",
     "Für dieses System gibt es keinen iiSU-Rahmen": "There is no iiSU border for this system",
-    "Editor-Bild als Cartridge übernommen": "Editor image taken as cartridge",
+    "Icon aus dem Editor übernommen": "Icon from the editor taken",
     "Mehrteilige Spiele zusammenfassen (M3U)": "Merge multi-disc games (M3U)", "Zusammenfassen": "Merge",
     "Keine mehrteiligen Spiele ohne M3U gefunden": "No multi-disc games without M3U found",
     "M3U-Dateien werden erstellt …": "Creating M3U files …",
@@ -1109,7 +1110,7 @@ class App:
         self.editor = None
         self.view = "game"
         self.top_dirty = True
-        self.say("Editor-Bild als Cartridge übernommen")
+        self.say("Icon aus dem Editor übernommen")
 
     def open_search(self):
         self.kbd = Keyboard(self, "Spiel suchen", self.run_search, secret=False)
@@ -1251,7 +1252,7 @@ class App:
         return [("A", a_label, self.activate if self.list_len() else None),
                 ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else
-                ("X", "Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
+                ("X", "Icon-Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
                 ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else
                 ("Y", "Filter", self.next_filter) if self.view == "games" else ("Y", "", None)]
 
@@ -1760,12 +1761,11 @@ class App:
             ([("Select", "Mehrfachsuche: alle Spiele mit fehlenden Artworks nacheinander")], False),
             ([("Y", "Spiel suchen über alle Systeme"), ("X", "Einstellungen")], False),
             ("Spieleliste", True),
-            ([("X", "Editor"), ("Y", "Filter: alle · fehlende · keine Artworks")], False),
+            ([("X", "Icon-Editor für dieses Spiel"), ("Y", "Filter: alle · fehlende · keine Artworks")], False),
             ("Spielansicht", True),
             ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
             ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Suche aktualisieren")], False),
-            ([("R3", "Ansicht oben")], False),
-            ([("X", "Editor: 1:1-Bild mit iiSU-Rahmen gestalten")], False),
+            ([("R3", "Ansicht oben"), ("X", "Icon-Editor: 1:1 mit iiSU-Rahmen, nur für Icons ohne Rahmen")], False),
         ]),
     ]
 

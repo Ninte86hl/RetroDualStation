@@ -83,7 +83,7 @@ im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt d
 | | **Select** | Mehrfachsuche: alle Spiele mit fehlenden Artworks nacheinander |
 | | **Y** | Spiel über alle Systeme suchen |
 | | **X** | Einstellungen (API-Key, Sicherungen, mehrteilige Spiele per M3U zusammenfassen, Zwischenspeicher, Kurzanleitung) |
-| Spieleliste | **X** | Direkt in den Editor für dieses Spiel |
+| Spieleliste | **X** | Direkt in den Icon-Editor für dieses Spiel |
 | | **Y** | Filter: alle · fehlende · keine Artworks |
 | Spielansicht | **◀ ▶** | Bild wählen |
 | | **L / R** | Artwork-Stil |
@@ -92,7 +92,7 @@ im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt d
 | | **Y** | Anderes Spiel suchen |
 | | **L3** | Artwork-Suche aktualisieren |
 | | **R3** | Mix-Ansicht / Großansicht oben |
-| | **X** | Editor: aus dem gewählten Bild ein 1:1-Cartridge-Bild mit iiSU-Rahmen machen (◀ ▶ ▲ ▼ verschieben · L / R Zoom · Y Rahmen) |
+| | **X** | Icon-Editor: aus dem gewählten Icon ein 1:1-Bild mit iiSU-Rahmen machen (◀ ▶ ▲ ▼ verschieben · L / R Zoom · Y Rahmen). Bei Icons, die den iiSU-Rahmen schon haben, nicht nötig und ausgegraut |
 
 Vor dem ersten Speichern pro System wird eine Sicherung angelegt (in den Einstellungen abschaltbar).
 **Eigene Bilder:** PNG-, JPG- oder WebP-Dateien in `ports/artworkmanager/eigene/` (oder `eigene/<System>/`) legen und wie das Spiel benennen – sie erscheinen vorn in jedem Tab als *Eigenes Bild*. Alles in `eigene/alle/` erscheint bei jedem Spiel.
