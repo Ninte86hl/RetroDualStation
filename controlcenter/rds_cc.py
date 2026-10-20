@@ -1141,6 +1141,13 @@ class Switcher:
     def launch(self, item, fresh, current=None):
         """Laufendes Spiel beenden (speichert vorher), dann item starten."""
         def work():
+            # Kurzzeitig volle Leistung für Beenden + Starten; danach zurück
+            before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
+            try:
+                perf_set(2)
+            except Exception:
+                pass
+            t0 = time.monotonic()
             if current:
                 quit_game(current)
                 for _ in range(60):
@@ -1158,6 +1165,11 @@ class Switcher:
             log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
             if es_launch(item["rom"]):
                 self.resume_steps(item, fresh)
+            log("Gameswitcher: Wechsel fertig nach %.1f s" % (time.monotonic() - t0))
+            # nur zurücksetzen, wenn ROCKNIX beim Start nichts Eigenes gesetzt hat
+            for path, old in before.items():
+                if old and rd(path) == "performance" and old != "performance":
+                    wr(path, old)
             if restore:
                 time.sleep(10)
                 wr(ini, restore)
