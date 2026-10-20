@@ -488,3 +488,24 @@ wird bei jedem Öffnen frisch gewählt.
 - Beobachtung: Kürzel mit R2/L2 (`mod++righttrigger`) lösten bei uns kein Speichern aus, obwohl SDL R2 als Trigger meldet;
   mit der Werkseinstellung (R1/L1) tritt das nicht auf.
 - SDL-Namen → Gerät: a = B, b = A, x = X, y = Y (laut SDL-Zuordnung `retrogame_joypad`).
+
+### Einheitliche Kürzel (festgelegt 21.10.2026)
+Modifier ist überall die **Anbernic-Taste** (RetroArch Taste 10, DSperate `guide`).
+
+| Anbernic + | Aktion | RetroArch (`retroarch.cfg`) | DSperate (`[padhotkeys]`) |
+|---|---|---|---|
+| R1 | Vorspulen an/aus | `input_toggle_fast_forward_btn = 5` | `fast_forward_toggle = mod+rightshoulder` |
+| R2 | Speichern | `input_save_state_btn = 7` | `save_state = mod++righttrigger` |
+| L2 | Laden | `input_load_state_btn = 6` | `load_state = mod++lefttrigger` |
+| L1 | Zurückspulen | `input_rewind_btn = 4` | – |
+| X | Menü | `input_menu_toggle_btn = 2` | `pause = mod+x` |
+| Y | FPS | `input_fps_toggle_btn = 3` | `fps = mod+y` |
+| Start | Beenden | `input_exit_emulator_btn = 9` | `quit = mod+start` |
+| ◀ / ▶ | Slot − / + | `input_state_slot_decrease/increase_btn = 15/16` | `slot_prev/next = mod+dpleft/dpright` |
+| ▲ | Bildschirme tauschen | – | `screen_swap = mod+dpup` |
+| Select / ▼ | Layout vor / zurück | – | `layout_next = mod+back`, `layout_prev = mod+dpdown` |
+
+R1 ist am leichtesten erreichbar → Vorspulen; Speichern/Laden auf den Triggern verhindert versehentliches Auslösen.
+DraStic kennt keinen Modifier: Speichern R2, Laden L2 (ohne Anbernic), Vorspulen R3, Menü L3.
+Sicherungen vor jeder Änderung auf dem PC unter `~/RetroDualStation/backup/`.
+Später: Installer setzt dieses Schema optional (mit Sicherung).
