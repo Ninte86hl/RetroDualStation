@@ -1033,6 +1033,16 @@ def autosave_on(rom):
     return False
 
 
+def sway_cmd(cmd):
+    """swaymsg ohne Warten (aus dem CC heraus kann ein wartender Aufruf hängen bleiben)."""
+    try:
+        subprocess.Popen(["swaymsg", cmd], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True,
+                         env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock"))
+    except OSError as exc:
+        log("swaymsg fehlgeschlagen:", exc)
+
+
 def rom_of(pid):
     args = _cmdline(pid)
     return next((a for a in reversed(args) if "/roms/" in a), None)
@@ -1129,6 +1139,8 @@ class Switcher:
                 if not seen and run(["pidof", "retroarch"]):
                     seen = True
                     log("Gameswitcher: RetroArch-Prozess nach %.1f s" % (time.monotonic() - t0))
+                    # Sicherheitsnetz: falls Sway es unten geöffnet hat, nach oben holen
+                    sway_cmd('[app_id="retroarch"] move to output ' + TOP_OUTPUT)
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
                     log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
@@ -1211,8 +1223,7 @@ class Switcher:
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
                 log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
                 # Fokus auf den oberen Bildschirm, sonst öffnet Sway das Spiel unten (z. B. nach Touch)
-                subprocess.run(["swaymsg", "focus output " + TOP_OUTPUT], capture_output=True, timeout=2,
-                               env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock"))
+                sway_cmd("focus output " + TOP_OUTPUT)
                 if es_launch(item["rom"]):
                     for _ in range(100):
                         if run(["pgrep", "-f", "runemu.sh"]):
