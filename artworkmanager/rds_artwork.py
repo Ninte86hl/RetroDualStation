@@ -168,27 +168,33 @@ def to_png(data, path, limit=900):
 def by_style(cands):
     """Jeder Tab zeigt nur Bilder seines Artwork-Stils.
 
-    Boxart:    echte Hüllen (iiDB Box Art, SteamGridDB-Grids 600×900)
-    Cartridge: nur 1:1-Bilder (iiSU-Box-Art mit Rahmen, iiDB-Icons, SteamGridDB-Icons und 1:1-Grids)
-    Image:     nur Hero-Bilder (SteamGridDB)
+    Boxart:    iiDB „Box Art“ (echte Hüllen) und alle SteamGridDB-Hüllen (600×900)
+    Cartridge: iiDB iiSU-Box-Art (1:1 mit Rahmen) und Icons, alle SteamGridDB-Icons und 1:1-Grids
+    Image:     alle SteamGridDB-Heroes
+
+    Achtung: SteamGridDB hat ein eigenes Feld „style“ (alternate, official …);
+    iiDB-Bilder erkennt man an ihrer Kennung „iidb-…“.
     """
-    def style(item):
-        return item.get("style") or ""
-    def sgdb(item, word):
-        return word in str(item.get("source") or "")
-    out = {}
-    out["boxart"] = [c for c in cands.get("boxart", [])
-                     if style(c) == "boxart" or (not style(c) and sgdb(c, "boxart"))]
-    out["cartridge"] = [c for c in cands.get("cartridge", []) + cands.get("boxart", [])
-                        if style(c) in ("iisu_boxart", "icon")
-                        or (not style(c) and (sgdb(c, "cartridge") or sgdb(c, "1:1")))]
-    seen, uniq = set(), []
-    for c in out["cartridge"]:
-        if c.get("url") not in seen:
-            seen.add(c.get("url"))
-            uniq.append(c)
-    out["cartridge"] = uniq
-    out["image"] = [c for c in cands.get("image", []) if not style(c)]
+    def iidb(c):
+        return str(c.get("id") or "").startswith("iidb-")
+
+    def iidb_style(c):
+        return c.get("style") if iidb(c) else None
+
+    out = {
+        "boxart": [c for c in cands.get("boxart", []) if not iidb(c) or iidb_style(c) == "boxart"],
+        "cartridge": [c for c in cands.get("cartridge", []) + cands.get("boxart", [])
+                      if (iidb(c) and iidb_style(c) in ("iisu_boxart", "icon"))
+                      or (not iidb(c) and c in cands.get("cartridge", []))],
+        "image": [c for c in cands.get("image", []) if not iidb(c)],
+    }
+    for k, items in out.items():   # doppelte URLs entfernen, Reihenfolge behalten
+        seen, uniq = set(), []
+        for c in items:
+            if c.get("url") not in seen:
+                seen.add(c.get("url"))
+                uniq.append(c)
+        out[k] = uniq
     return out
 
 
