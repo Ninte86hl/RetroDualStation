@@ -608,6 +608,12 @@ class Pen:
                 cairo.cairo_set_line_width(cr, max(3, 5 * scale) * s)
                 self.color(c)
                 cairo.cairo_stroke(cr)
+        elif kind == "trash":                     # Mülleimer (klein, für den Slot-Knopf)
+            self.rrect(cx - 4, cy - 12, 8, 3, 1.5, c)              # Griff
+            self.rrect(cx - 10, cy - 9, 20, 3, 1.5, c)             # Deckel
+            self.poly([(cx - 8, cy - 4), (cx + 8, cy - 4), (cx + 6.5, cy + 11), (cx - 6.5, cy + 11)], c)
+            for dx in (-3, 0, 3):                                   # Rillen
+                self.rrect(cx + dx - 0.75, cy - 1, 1.5, 9, 0.75, "000000")
         elif kind == "menu":
             for dy in (-11, 0, 11):
                 self.rrect(cx - 16, cy + dy - 2.5, 32, 5, 2.5, c)
@@ -3283,7 +3289,7 @@ class ControlCenter:
             P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
-                P.game_icon("quit", tx + tw - 32, ty + 32, "ffffff", scale=0.55)
+                P.game_icon("trash", tx + tw - 32, ty + 32, "ffffff")
                 self.hits.append((tx + tw - 64, ty, 64, 64, ("slotdel", n)))
             if n == self.del_confirm:
                 P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
