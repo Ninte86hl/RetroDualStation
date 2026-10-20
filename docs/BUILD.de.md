@@ -17,7 +17,7 @@ vollständiges System-Image.
 ## Ablauf
 
 ```bash
-cp patches/001-rgds-menu-dualscreen.patch patches/002-rds-gameswitcher-chain.patch \
+cp patches/001-rgds-menu-dualscreen.patch patches/002-rds-gameswitcher-chain.patch patches/003-rds-bluetooth-systemcfg-navbar.patch \
    /pfad/zu/distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 ```
 
@@ -38,7 +38,7 @@ grep -n "Hunk\|FAILED\| error:" build.log | head
 Erwartet wird: keine Ausgabe. Die vielen `LC_CTYPE`-/Locale-Zeilen am Ende
 des Logs stammen aus dem Glibc-Locale-Build und sind harmlos.
 
-Im Ordner `patches/aarch64/` dürfen nur unsere Patches (`001-…`, `002-…`) liegen. Bis v8
+Im Ordner `patches/aarch64/` dürfen nur unsere Patches (`001-…`, `002-…`, `003-…`) liegen. Bis v8
 hieß der Patch `001-rgds-menu-dualscreen-v2.patch` – diese alte Datei
 vorher löschen, sonst wird sie zusätzlich angewendet und der Build schlägt fehl.
 
