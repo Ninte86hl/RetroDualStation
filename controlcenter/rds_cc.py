@@ -229,8 +229,8 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
-    "Die Slot-Anzeige geht davon aus, dass ein Spiel in Slot 0 startet.":
-        "The slot display assumes a game starts in slot 0.",
+    "Das Kontrollcenter speichert und lädt immer im angezeigten Slot.":
+        "The Control Center always saves and loads in the slot shown.",
     "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch":
         "Your own settings in ES (e.g. incremental savestates) or RetroArch",
     "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher.":
@@ -3015,7 +3015,7 @@ class ControlCenter:
         P.text("Gut zu wissen", 30, 85, 270, T["text"], bold=True)
         y = 330
         for line in ("Speichern und Laden nutzen die Speicherplätze von RetroArch.",
-                     "Die Slot-Anzeige geht davon aus, dass ein Spiel in Slot 0 startet.",
+                     "Das Kontrollcenter speichert und lädt immer im angezeigten Slot.",
                      "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch",
                      "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher."):
             P.text(line, 21, 85, y, T["muted"])
@@ -4091,15 +4091,14 @@ def main():
         if key == "setslot":
             target = cc.slot_pick if cc.slot_pick is not None else cc.slot
             cc.slot_pick = None
-            if emu == "RetroArch":
-                for _ in range(abs(target - cc.slot)):
-                    ra_command("STATE_SLOT_PLUS" if target > cc.slot else "STATE_SLOT_MINUS")
-                log("Seite Spiel: Slot", cc.slot, "→", target)
-                cc.slot = target
+            log("Seite Spiel: Slot", cc.slot, "→", target)
+            cc.slot = target                 # Speichern/Laden nennen den Slot ausdrücklich
             state["dirty"] = True
             return                           # CC bleibt offen
         if emu == "RetroArch":
-            cmd = {"save": "SAVE_STATE", "load": "LOAD_STATE", "shot": "SCREENSHOT"}[key]
+            # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
+            cmd = {"save": f"SAVE_STATE_SLOT {cc.slot}", "load": f"LOAD_STATE_SLOT {cc.slot}",
+                   "shot": "SCREENSHOT"}[key]
             ra_command(cmd)
             log("Seite Spiel:", cmd, "Slot", cc.slot)
             toggle("cc")                     # erledigt → zurück ins Spiel
