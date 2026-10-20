@@ -76,7 +76,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [x] Etappe 2: Seite „Spiel“ – Infoansicht, Speichern/Laden mit Slot-Auswahl und Vorschau, Löschen (X X / Mülleimer), Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden (getestet 20.10.2026)
 - [x] Seite „Spiel“: Tastenbelegung je System/Emulator, DSperate Speichern/Laden/Slots/Menü, einheitliche Kürzel (21.10.2026)
 - [x] DraStic: Slots 0–8 mit Vorschaubild und Emulator-Menü über das CC (getestet 21.10.2026); Kürzel-Kombinationen kennt DraStic nicht; Vorspulen über das CC (R3 fehlt am Gerät) getestet
-- [ ] DraStic-Kürzel nur über das CC: virtuelle Tastatur im CC + Menü/Vorspulen in drastic.cfg auf Tasten legen, die das Gerät nicht hat (L3 frei; R3 gibt es am RG DS Plus nicht, Vorspulen derzeit nur über das CC)
+- [x] DraStic: Menü (R3) und Vorspulen (Geister-Stick) nur über das CC, L3 frei – getestet 21.10.2026
 - [~] DraStic-Menü vergrößern: `librgdsmenu.so` auf dem RG DS Plus nicht vorhanden – zurückgestellt (21.10.2026)
 - [~] RetroArch-Kürzel im CC anpassen – verworfen (21.10.2026): einheitliches festes Schema reicht
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
