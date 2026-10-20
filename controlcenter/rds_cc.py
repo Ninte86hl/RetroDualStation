@@ -3057,9 +3057,10 @@ class ControlCenter:
             for j, (i, key, label) in enumerate(small):
                 cx = 45 + sp * (j + 0.5) if len(small) > 1 else 630
                 cy = 670                                  # Symbolreihe unten über der Fußzeile
-                P.circle(cx, cy, 50, mix(T["tile"], A, 0.22))
-                P.game_icon(key, cx, cy, T["text"])
-                if i == self.gsel:
+                sel = i == self.gsel
+                P.circle(cx, cy, 50, A if sel else mix(T["tile"], A, 0.22))
+                P.game_icon(key, cx, cy, "ffffff" if sel else T["text"])
+                if sel:
                     self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
                 P.text(label, 18, cx, cy + 86, T["muted"], align="c")
                 self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
@@ -3082,7 +3083,9 @@ class ControlCenter:
 
     def _big_tile(self, P, i, key, label, x, y, w, h, shot=None):
         T, A = self.T, self.accent
-        fill = mix(T["tile"], A, 0.22)
+        sel = i == self.gsel
+        fill = A if sel else mix(T["tile"], A, 0.22)      # angesteuert = Akzentfarbe wie im CC
+        tc, mc = ("ffffff", mix("ffffff", A, 0.25)) if sel else (T["text"], T["muted"])
         P.rrect(x, y, w, h, 24, fill)
         arrow = (self.game or {}).get("emu") == "RetroArch"
         if shot and P.image(shot, x, y, w, h, 24):
@@ -3091,11 +3094,11 @@ class ControlCenter:
             P.text(self._big_detail(key), 17, x + 28, y + h - 22, "dddddd", raw=True)
             cy, cc_ = y + h - 46, "ffffff"
         else:
-            P.text(label, 24, x + 28, y + h / 2 - 8, T["text"], bold=True)
-            P.text(self._big_detail(key), 17, x + 28, y + h / 2 + 26, T["muted"], raw=True)
-            cy, cc_ = y + h / 2, T["text"]
+            P.text(label, 24, x + 28, y + h / 2 - 8, tc, bold=True)
+            P.text(self._big_detail(key), 17, x + 28, y + h / 2 + 26, mc, raw=True)
+            cy, cc_ = y + h / 2, tc
         if arrow:
-            P.circle(x + w - 44, cy, 24, mix(fill, T["text"], 0.18) if not shot else "000000")
+            P.circle(x + w - 44, cy, 24, mix(fill, tc, 0.18) if not shot else "000000")
             P.chevron(x + w - 40, cy, 10, cc_)
         if i == self.gsel:
             self._focus_ring(P, x, y, w, h, 24)
@@ -3249,7 +3252,7 @@ class ControlCenter:
                 when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(f)))
                 P.image(f + ".png", tx, ty, tw, th, 20)
             # Beschriftung unten auf dunklem Band
-            P.rrect(tx, ty + th - 46, tw, 46, 20, A if cur else "000000", 1.0 if cur else 0.6)
+            P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
             label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
             P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
             if n == self.del_confirm:
