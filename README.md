@@ -97,7 +97,7 @@ DSperate and PortMaster. The game pauses and continues where you left off.
 
 ## Game switcher
 
-**Hold the Home button** (1.5 s) to see your recently played games – each with a picture of where
+**Hold the Home button** (1.5 s) or **press it twice** to see your recently played games – each with a picture of where
 you left off, in the shape of its console. **A** resumes exactly there, **Y** starts fresh,
 **X** removes it from the list. A **short press** saves and takes you back to ES.
 

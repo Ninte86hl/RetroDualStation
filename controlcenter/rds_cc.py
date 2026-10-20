@@ -51,6 +51,7 @@ TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
 HOME_LONG_S = 1.5      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
+HOME_DOUBLE_S = 0.35   # Home zweimal kurz hintereinander → Gameswitcher
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -1057,7 +1058,7 @@ TOUR = [
      "img": ("geraet-tasten.png", "geraet-tasten-en.png"),
      "keys": [("Anbernic", ("Kontrollcenter öffnen / schließen", "open / close the Control Center")),
               (("Home kurz", "Home short"), ("im Spiel speichern, zurück zu ES", "in a game: save, back to ES")),
-              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten)", "Game switcher (hold 1.5 s)")),
+              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten oder 2× drücken)", "Game switcher (hold 1.5 s or press twice)")),
               (("Power kurz", "Power short"), ("Power-Menü", "Power menu")),
               (("Power lang", "Power long"), ("sofort Ruhemodus", "sleep immediately"))]},
     {"title": ("Kontrollcenter", "Control Center"),
@@ -1071,8 +1072,8 @@ TOUR = [
      "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
     {"title": ("Gameswitcher", "Game switcher"),
      "img": ("tour-gameswitcher.png", "tour-gameswitcher.png"),
-     "lines": [("Home 1,5 s halten: die zuletzt gespielten Spiele als Karten.",
-                "Hold Home for 1.5 s: your recently played games as cards."),
+     "lines": [("Home 1,5 s halten oder zweimal drücken: die zuletzt gespielten Spiele.",
+                "Hold Home for 1.5 s or press it twice: your recently played games."),
                ("Der Spielstand wird beim Wechsel automatisch gesichert.",
                 "Your progress is saved automatically when you switch.")],
      "keys": [("◀ ▶", ("wählen", "choose")), ("A", ("Weiterspielen", "Resume")), ("Y", ("Neu starten", "Restart")),
@@ -3852,7 +3853,7 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
-    home_down = {"t": None, "fired": False}
+    home_down = {"t": None, "fired": False, "pending": None}
 
     def home_short():
         """Home kurz: im Spiel speichern (Stand + Screenshot) und zurück zu ES."""
@@ -4063,7 +4064,8 @@ def main():
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
-                or (home_down["t"] is not None and not home_down["fired"])
+                or (home_down["t"] is not None and not home_down["fired"]) \
+                or home_down["pending"] is not None
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -4086,12 +4088,16 @@ def main():
                                 if ui.view:                       # offen → schließen
                                     toggle(ui.view)
                                     home_down["t"] = None
+                                elif home_down["pending"] is not None:
+                                    home_down["pending"] = None   # Doppelklick → Gameswitcher
+                                    home_down["t"] = None
+                                    toggle("switcher")
                                 else:
                                     home_down["t"] = time.monotonic()
                                     home_down["fired"] = False
                             elif value == 0 and home_down["t"] is not None:
                                 if not home_down["fired"]:
-                                    home_short()                  # kurz: speichern und zurück zu ES
+                                    home_down["pending"] = time.monotonic()   # kurz: auf zweiten Druck warten
                                 home_down["t"] = None
                         elif fd == pwr:
                             KEY_POWER = 116
@@ -4148,6 +4154,10 @@ def main():
                     state["dirty"] = True
             if scrolling:
                 state["dirty"] = True
+            if home_down["pending"] is not None \
+                    and time.monotonic() - home_down["pending"] >= HOME_DOUBLE_S:
+                home_down["pending"] = None
+                home_short()                                      # kurz: speichern und zurück zu ES
             if home_down["t"] is not None and not home_down["fired"] \
                     and time.monotonic() - home_down["t"] >= HOME_LONG_S:
                 home_down["fired"] = True
