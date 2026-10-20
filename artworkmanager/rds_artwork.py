@@ -773,7 +773,7 @@ class App:
             return
         if self.view == "systems":
             if self.systems and not has_gamelist(self.systems[i]["key"]):
-                self.say("Keine gamelist.xml – Spiele zuerst in EmulationStation scrapen")
+                self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
             elif self.systems:
                 self.open_system(i)
         elif self.view == "settings":
@@ -1095,7 +1095,7 @@ class App:
             if has_gamelist(self.systems[self.sel]["key"]):
                 self.open_system(self.sel, batch=True)       # Mehrfachsuche
             else:
-                self.say("Keine gamelist.xml – Spiele zuerst in EmulationStation scrapen")
+                self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
         elif code == BTN_SELECT and self.view == "game" and self.batch:
             self.batch_next(False)                           # Spiel überspringen
 
@@ -1267,10 +1267,13 @@ class App:
             ("Voraussetzung", True),
             ("Der Artwork Manager ergänzt Bilder in einer bestehenden Spieleliste.", False),
             ("Jedes System braucht deshalb eine gamelist.xml in seinem ROM-Ordner.", False),
-            ("Sie entsteht, wenn EmulationStation die Spiele einmal gescrapt hat", False),
-            ("oder Spieldaten gespeichert wurden. Systeme ohne Liste sind markiert.", False),
+            ("Systeme ohne Liste sind in der Systemliste markiert.", False),
             ("", False),
-            ("Gespeichert wird in deiner gamelist.xml und im Ordner images des Systems.", False),
+            ("So entsteht die Spieleliste", True),
+            ("Im Single-Screen-Modus (originale ROCKNIX-Oberfläche) mit dem Scraper", False),
+            ("die Spiele einmal scrapen. Die Liste gilt auch für RetroDualStation.", False),
+            ("", False),
+            ("Gespeichert wird in der gamelist.xml und im Ordner images des Systems.", False),
         ]),
         ("Die Funktionen", [
             ("Systemliste", True),
