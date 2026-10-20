@@ -427,3 +427,6 @@ wird bei jedem Öffnen frisch gewählt.
 - `ra_proxy.py` (RetroAchievements-Proxy von ROCKNIX) hält das CC dauerhaft am Laufen → runemu wartet nicht,
   RetroArch meldet sich sofort an. RetroArch→RetroArch **4,8 s**, RetroArch→DraStic **4,5 s** (Start: 12,6 s).
 - Offen: DSperate im Gameswitcher, Optik-Feintuning, Release v11 (neues ES mit 002-Patch + CC + Installer).
+- `ra_proxy` dauerhaft am Leben halten **zurückgenommen** (20.10.2026): führte zu „RetroAchievements login
+  failed to respond“ – der Proxy hält Benutzer/Token/Warteschlange im Speicher und ist für einen frischen
+  Start pro Spiel gedacht. Nicht wieder einbauen.
