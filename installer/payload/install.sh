@@ -224,6 +224,17 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
         log "Kuerzel: einheitliches Schema gesetzt (Sicherungen *.vor-rds-kuerzel)"
     fi
+    # DraStic: Menü und Vorspulen auf Tasten, die das RG DS Plus nicht hat (R3 und den fehlenden rechten Stick)
+    # → nur über das Kontrollcenter erreichbar, L3 bleibt frei. Einmalig, mit Sicherung.
+    DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
+    DCFG=/storage/.config/drastic/config/drastic.cfg
+    if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        cp "$DCFG" "$DCFG.vor-rds-kuerzel"
+        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
+                  -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 1154/' "$DCFG"
+        date > "$DMARK"
+        log "DraStic: Menue auf R3, Vorspulen auf rechten Stick (nur ueber das CC)"
+    fi
     # RetroAchievements vorerst aus (kommen später über das Kontrollcenter); alten Wert merken
     if [ ! -f "$DEST/retroachievements.before" ]; then
         ( . /etc/profile >/dev/null 2>&1; get_setting global.retroachievements ) > "$DEST/retroachievements.before" 2>/dev/null

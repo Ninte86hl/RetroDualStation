@@ -529,3 +529,13 @@ Das CC schreibt ins Journal: `journalctl -u rds-controlcenter --no-pager | tail 
 ### Grundsatz Seite „Spiel“ (21.10.2026)
 Jede Emulator-Funktion ist auf zwei Wegen erreichbar: per **Kürzel** (Anbernic + Taste, einheitlich) **oder** per **Tipp im CC**.
 Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die das Gerät nicht hat (DraStic-Vorspulen auf R3).
+
+### DraStic: Menü und Vorspulen nur über das CC (21.10.2026)
+- Das RG DS Plus meldet 17 Tasten (A B X Y L1 R1 L2 R2 Select Start Anbernic L3 R3 + Steuerkreuz) und vier Achsen,
+  hat aber **kein R3** und **keinen rechten Stick**. Diese „Geister“ nutzen wir:
+  - `controls_a/b[CONTROL_INDEX_MENU] = 1036` (R3)
+  - `controls_a/b[CONTROL_INDEX_FAST_FORWARD] = 1154` (Achse 2 positiv = rechter Stick nach rechts)
+- DraStic-Kodierung: Taste n = 1024+n, Achse n positiv = 1152+n, negativ = 1216+n.
+- L3 ist damit frei; Menü/Vorspulen gibt es nur über das CC. Installer setzt das einmalig (`drastic-kuerzel.done`, Sicherung `.vor-rds-kuerzel`).
+- Normales RG DS hat zwei Sticks → dort andere Lösung nötig.
+- Menü-Vergrößerung: `librgdsmenu.so` gibt es auf dem RG DS Plus nicht (nur `libdrastouch.so`) → zurückgestellt.
