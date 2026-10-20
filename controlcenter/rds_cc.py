@@ -1022,6 +1022,17 @@ def es_launch(rom):
         return False
 
 
+def autosave_on(rom):
+    """Auto-Speichern/Laden laut ES (system.cfg): <system>.autosave hat Vorrang vor global.autosave."""
+    cfg = rd("/storage/.config/system/configs/system.cfg") or ""
+    system = os.path.basename(os.path.dirname(rom or ""))
+    for key in (f"{system}.autosave", "global.autosave"):
+        m = re.search(rf"^{re.escape(key)}=(\S+)", cfg, re.M)
+        if m:
+            return m.group(1) == "1"
+    return False
+
+
 def rom_of(pid):
     args = _cmdline(pid)
     return next((a for a in reversed(args) if "/roms/" in a), None)
@@ -1117,9 +1128,14 @@ class Switcher:
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
                     log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
-                    time.sleep(1.5)
-                    ra_command("RESET" if fresh else f"LOAD_STATE_SLOT {SLOT}")
-                    log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
+                    if fresh:
+                        time.sleep(0.5)
+                        ra_command("RESET")      # Auto-Laden übergehen (Ladebildschirm verdeckt es)
+                    elif not autosave_on(item["rom"]):
+                        time.sleep(1.5)          # ohne Auto-Laden: unseren Slot nachladen
+                        ra_command(f"LOAD_STATE_SLOT {SLOT}")
+                    # sonst hat RetroArch den Auto-Stand schon beim Start geladen (wie bei Onion)
+                    log("Gameswitcher: Stand bereit nach %.1f s" % (time.monotonic() - t0))
                     break
                 time.sleep(0.25)
         elif emu == "DraStic" and not fresh:
