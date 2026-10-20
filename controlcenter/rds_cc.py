@@ -237,7 +237,7 @@ EN = {
     "Sticks": "Sticks", "Touchscreen": "Touchscreen", "unterer Bildschirm": "bottom screen", "Stick": "Stick",
     "Tasten 1–6": "Buttons 1–6", "Kreuz": "Cross", "Kreis": "Circle", "Quadrat": "Square",
     "Dreieck": "Triangle", "Menü (Kombination)": "Menu (combo)", "Alle Tasten wie am Gerät beschriftet.": "All buttons as labelled on the device.",
-    "Keine Kürzel gefunden.": "No shortcuts found.", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Keine Kürzel gefunden.": "No shortcuts found.", "nur über das CC": "Control Center only", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
@@ -1742,8 +1742,14 @@ def drastic_shortcuts():
     rows = []
     for k, label in names.items():
         m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % k, cfg)
-        if m and 1024 <= int(m.group(1)) < 1100:
-            rows.append((label, RA_BTN.get(str(int(m.group(1)) - 1024), "Taste %d" % (int(m.group(1)) - 1024))))
+        if not m:
+            continue
+        v = int(m.group(1))
+        if 1024 <= v < 1100:
+            name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
+            rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
+        elif 1152 <= v < 1280:
+            rows.append((label, tr("nur über das CC")))
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
