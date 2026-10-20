@@ -47,6 +47,7 @@ from rocknixds_artwork_manager.artwork_cache import cached_download         # no
 from rocknixds_artwork_manager.artwork_sources import (search_artwork_games, artwork_candidates_for_games,  # noqa: E402
                                                        manual_search_rows)
 from rocknixds_artwork_manager.settings import steamgriddb_key  # noqa: E402
+from rocknixds_artwork_manager.nointro import normalize_name  # noqa: E402
 
 VERSION = "0.1.0"
 # Programm und alle Daten liegen im Ports-Ordner (am PC leicht erreichbar, z. B. per Netzwerkfreigabe)
@@ -60,8 +61,14 @@ CFG_TEMPLATE = """# RetroDualStation Artwork Manager – Einstellungen
 steamgriddb_api_key=
 """
 PREVIEW_DIR = Path("/tmp/rds-artwork")
-KINDS = [("boxart", "Boxart"), ("cartridge", "Cartridge / Icon"), ("image", "Image")]
-ROWS = 8            # sichtbare Zeilen in Listen
+KINDS = [("boxart", "Boxart"), ("cartridge", "Cartridge"), ("image", "Image")]
+# Raster des unteren Bildschirms (Entwurfskoordinaten 1260 × 951, wie im Kontrollcenter)
+LIST_Y, ROW_H, ROWS = 100, 74, 9            # Listen: 9 sichtbare Zeilen
+TABS_Y, TABS_H = 100, 78                    # Artwork-Stile
+GAL_Y = 196                                 # Bildleiste
+TILE_W, TILE_STEP, TILES = 300, 320, 4      # Kachelbreite, Abstand, voll sichtbare Kacheln
+BAR_Y, BAR_H = 800, 86                      # A/B/X/Y-Leiste
+HINT_Y = 930                                # Hinweiszeile
 
 
 # ------------------------------------------------------------- Gerät lokal ----
@@ -187,6 +194,9 @@ class App:
         self.kind = 0
         self.current = {}                             # kind -> PNG-Pfad des vorhandenen Artworks
         self.previews = {}                            # url -> PNG-Pfad | None (Fehler) | "…" (lädt)
+        self.gscroll = {}                             # kind -> erste sichtbare Kachel
+        self.sizes = {}                               # PNG-Pfad -> (Breite, Höhe)
+        self.loader = threading.Semaphore(3)
         self.results = []                             # Trefferliste der Suche
         self.query = ""
 
@@ -289,6 +299,7 @@ class App:
         self.rom, self.title = rom, title
         self.cands = {k: [] for k, _ in KINDS}
         self.idx = {k: 0 for k, _ in KINDS}
+        self.gscroll = {}
         self.chosen = {}
         self.kind = 0
         self.view = "game"
@@ -343,13 +354,12 @@ class App:
         return items[self.idx[kind]] if items else None
 
     def want_previews(self):
-        """Aktuellen Kandidaten und Nachbarn im Hintergrund laden."""
+        """Vorschaubilder der sichtbaren Kacheln im Hintergrund laden."""
         kind = self.kind_key()
         items = self.cands.get(kind) or []
-        i = self.idx[kind]
-        for j in (i, i + 1, i - 1):
-            if 0 <= j < len(items):
-                self._load_preview(items[j])
+        first = self.gscroll.get(kind, 0)
+        for j in range(max(0, first - 1), min(len(items), first + TILES + 2)):
+            self._load_preview(items[j])
 
     def _load_preview(self, item):
         url = item.get("preview_url") or item.get("thumb") or item.get("url")
@@ -358,14 +368,15 @@ class App:
         self.previews[url] = "…"
 
         def go():
-            try:
-                data = cached_download(WORK / "data" / "cache", url, download_artwork)
-                path = PREVIEW_DIR / "cand" / (str(abs(hash(url))) + ".png")
-                to_png(data, path)
-                self.previews[url] = str(path)
-            except Exception as exc:
-                log("Vorschau nicht ladbar:", url, exc)
-                self.previews[url] = None
+            with self.loader:          # höchstens drei Downloads gleichzeitig
+                try:
+                    data = cached_download(WORK / "data" / "cache", url, download_artwork)
+                    path = PREVIEW_DIR / "cand" / (str(abs(hash(url))) + ".png")
+                    to_png(data, path)
+                    self.previews[url] = str(path)
+                except Exception as exc:
+                    log("Vorschau nicht ladbar:", url, exc)
+                    self.previews[url] = None
             self.top_dirty = self.dirty = True
         threading.Thread(target=go, daemon=True).start()
 
@@ -374,13 +385,31 @@ class App:
             return None
         return self.previews.get(item.get("preview_url") or item.get("thumb") or item.get("url"))
 
-    def step(self, d):
+    def select(self, i):
+        """Kachel i des aktuellen Artwork-Stils wählen und sichtbar halten."""
         kind = self.kind_key()
         n = len(self.cands.get(kind) or [])
-        if n:
-            self.idx[kind] = (self.idx[kind] + d) % n
-            self.want_previews()
-            self.top_dirty = True
+        if not n:
+            return
+        i = max(0, min(n - 1, i))
+        self.idx[kind] = i
+        first = self.gscroll.get(kind, 0)
+        if i < first:
+            first = i
+        elif i >= first + TILES:
+            first = i - TILES + 1
+        self.gscroll[kind] = first
+        self.want_previews()
+        self.top_dirty = True
+
+    def step(self, d):
+        self.select(self.idx[self.kind_key()] + d)
+
+    def scroll_gallery(self, d):
+        kind = self.kind_key()
+        n = len(self.cands.get(kind) or [])
+        self.gscroll[kind] = max(0, min(max(0, n - TILES), self.gscroll.get(kind, 0) + d))
+        self.want_previews()
 
     def switch_kind(self, d):
         self.kind = (self.kind + d) % len(KINDS)
@@ -388,6 +417,7 @@ class App:
         self.top_dirty = True
 
     def toggle_choice(self):
+        """A: Bild übernehmen (oder wieder abwählen) und zum nächsten Artwork-Stil mit Bildern springen."""
         kind, c = self.kind_key(), self.cand()
         if not c:
             return
@@ -395,6 +425,14 @@ class App:
             del self.chosen[kind]
         else:
             self.chosen[kind] = c
+            for d in range(1, len(KINDS)):
+                k = (self.kind + d) % len(KINDS)
+                if self.cands.get(KINDS[k][0]) and KINDS[k][0] not in self.chosen:
+                    self.kind = k
+                    self.want_previews()
+                    break
+            else:
+                self.say("Alle Stile übernommen – mit X speichern")
         self.top_dirty = True
 
     def transfer(self):
@@ -452,7 +490,22 @@ class App:
 
         def go():
             api = steamgriddb_key()
-            self.results = manual_search_rows(text, iidb_request, sgdb_request(api) if api else None)
+            rows = manual_search_rows(text, iidb_request, sgdb_request(api) if api else None)
+            # gleiches Spiel aus beiden Quellen nur einmal zeigen
+            merged = {}
+            for r in rows:
+                key = normalize_name(r["name"]).replace(" ", "")
+                m = merged.setdefault(key, {"name": r["name"], "console": "", "year": "", "forced": {}})
+                provider = "iidb" if r["source"] == "iiDB" else "steamgriddb"
+                if provider in m["forced"]:          # zweiter Treffer derselben Quelle → eigene Zeile
+                    key += "#" + str(len(merged))
+                    m = merged.setdefault(key, {"name": r["name"], "console": "", "year": "", "forced": {}})
+                m["forced"][provider] = r["item"]
+                if r["console"] != "–" and not m["console"]:
+                    m["console"] = r["console"]
+                if r["year"] != "–" and not m["year"]:
+                    m["year"] = str(r["year"])
+            self.results = list(merged.values())
             self.view, self.sel, self.scroll = "search", 0, 0
             if not self.results:
                 self.say("Keine Treffer – anderen Namen probieren")
@@ -460,9 +513,8 @@ class App:
 
     def pick_result(self, i):
         row = self.results[i]
-        forced = {"iidb" if row["source"] == "iiDB" else "steamgriddb": row["item"]}
         gi = next((n for n, g in enumerate(self.games) if g[0] == self.rom), 0)
-        self.open_game(gi, forced=forced, name=row["name"])
+        self.open_game(gi, forced=dict(row["forced"]), name=row["name"])
 
     def edit_key(self):
         def done(text=None):
@@ -521,6 +573,20 @@ class App:
             self.quit = True
         self.top_dirty = True
 
+    def buttons(self):
+        """Belegung der festen A/B/X/Y-Leiste je Ansicht: (Taste, Text, Aktion | None)."""
+        if self.view == "game":
+            kind, c = self.kind_key(), self.cand()
+            taken = c is not None and self.chosen.get(kind) is c
+            return [("A", "Abwählen" if taken else "Übernehmen", self.toggle_choice if c else None),
+                    ("B", "Zurück", self.back),
+                    ("X", "Speichern", self.transfer if self.chosen else None),
+                    ("Y", "Spiel suchen", self.open_search)]
+        a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen"}.get(self.view, "")
+        return [("A", a_label, self.activate if self.list_len() else None),
+                ("B", "Beenden" if self.view == "systems" else "Zurück", self.back),
+                ("X", "", None), ("Y", "", None)]
+
     def on_key(self, code):
         if self.view == "setup":
             if code == BTN_EAST:
@@ -533,16 +599,20 @@ class App:
             return
         if self.busy:
             return
-        if self.view == "game":
-            {BTN_EAST: self.toggle_choice, BTN_NORTH: self.transfer, BTN_WEST: self.open_search,
-             BTN_START: self.transfer,
-             BTN_TL: lambda: self.switch_kind(-1), BTN_TR: lambda: self.switch_kind(1)}.get(code, lambda: None)()
-        elif code == BTN_EAST:
-            self.activate()
+        keys = {BTN_EAST: "A", BTN_NORTH: "X", BTN_WEST: "Y"}
+        if code in keys:
+            act = next((b[2] for b in self.buttons() if b[0] == keys[code]), None)
+            if act:
+                act()
         elif code in (BTN_TL, BTN_TR):
-            self.move(-ROWS if code == BTN_TL else ROWS)
+            d = -1 if code == BTN_TL else 1
+            self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
+        elif code == BTN_START and self.view == "game" and self.chosen:
+            self.transfer()
 
     def on_dir(self, dx, dy):
+        if self.busy:
+            return
         if self.view == "game":
             if dx:
                 self.step(dx)
@@ -553,7 +623,7 @@ class App:
 
     def on_tap(self, x, y):
         hit = self._hit(x, y)
-        if not hit:
+        if not hit or self.busy:
             return
         kind, val = hit
         if kind == "row":
@@ -563,10 +633,13 @@ class App:
                 self.sel = val
         elif kind == "setup":
             self.answer_setup(val)
-        elif kind == "btn":
-            {"back": self.back, "choose": self.toggle_choice, "save": self.transfer,
-             "search": self.open_search, "prev": lambda: self.step(-1), "next": lambda: self.step(1),
-             "up": lambda: self.move(-ROWS), "down": lambda: self.move(ROWS)}.get(val, lambda: None)()
+        elif kind == "btn" and val:
+            val()
+        elif kind == "tile":
+            if self.idx[self.kind_key()] == val:
+                self.toggle_choice()            # zweites Antippen übernimmt
+            else:
+                self.select(val)
         elif kind == "kind":
             self.kind = val
             self.want_previews()
@@ -597,28 +670,48 @@ class App:
         if self.kbd:
             self.kbd.touch_up(x0, y0, x1, y1)
             return
-        dy = y1 - y0
-        if abs(dy) > 60 and self.view in ("games", "search", "systems"):   # wischen = blättern
-            self.move(-round(dy / 85))
+        dx, dy = x1 - x0, y1 - y0
+        if abs(dy) > 60 and abs(dy) > abs(dx) and self.view in ("games", "search", "systems"):
+            self.move(-round(dy / ROW_H))                 # senkrecht wischen = Liste blättern
             return
-        if self.view == "game" and abs(x1 - x0) > 80 and abs(dy) < 60:   # wischen = Kandidat
-            self.step(-1 if x1 > x0 else 1)
+        if self.view == "game" and abs(dx) > 60 and abs(dx) > abs(dy):
+            self.scroll_gallery(-round(dx / TILE_STEP))  # waagerecht wischen = Bildleiste blättern
             return
         self.on_tap(x0, y0)
 
     # ---------------------------------------------------------- Zeichnen ----
-    def button(self, P, x, y, w, label, action, primary=False, key=None):
-        T, A = self.T, self.accent
-        P.rrect(x, y, w, 78, 22, A if primary else T["tile"])
-        txt = (f"{key}  " if key else "") + label
-        P.text(txt, 28, x + w / 2, y + 50, "ffffff" if primary else T["text"], bold=True, align="c", raw=True)
-        self.hits.append((x, y, w, 78, ("btn", action)))
-
-    def header(self, P, title, sub=None):
+    def header(self, P, title, right=None):
         T = self.T
-        P.text(title, 44, 50, 85, T["text"], bold=True, raw=True)
-        if sub:
-            P.text(sub, 26, 50, 125, T["muted"], raw=True)
+        rw = P.width(right, 24, raw=True) + 30 if right else 0
+        P.clip(40, 20, 1180 - rw, 70)
+        P.text(title, 38, 40, 68, T["text"], bold=True, raw=True)
+        P.unclip()
+        if right:
+            P.text(right, 24, 1220, 66, T["muted"], align="r", raw=True)
+
+    def bar(self, P, hint_left, hint_right=""):
+        """Feste A/B/X/Y-Leiste und Hinweiszeile ganz unten."""
+        T, A = self.T, self.accent
+        w, gap, x = (1180 - 3 * 14) / 4, 14, 40
+        for n, (key, label, act) in enumerate(self.buttons()):
+            on = act is not None
+            primary = on and n == 0
+            P.rrect(x, BAR_Y, w, BAR_H, 22, A if primary else T["tile"], a=1.0 if on else 0.35)
+            cx = x + w / 2
+            tw = P.width(label, 27, bold=True, raw=True) if label else 0
+            kx = cx - (tw + 52) / 2 + 21 if label else cx
+            P.circle(kx, BAR_Y + BAR_H / 2, 21, "ffffff" if primary else T["card"])
+            P.text(key, 22, kx, BAR_Y + BAR_H / 2 + 8, A if primary else (T["text"] if on else T["muted"]),
+                   bold=True, align="c", raw=True)
+            if label:
+                P.text(label, 27, kx + 31, BAR_Y + BAR_H / 2 + 10, "ffffff" if primary else
+                       (T["text"] if on else T["muted"]), bold=True, raw=True)
+            if on:
+                self.hits.append((x, BAR_Y, w, BAR_H, ("btn", act)))
+            x += w + gap
+        P.text(hint_left, 22, 40, HINT_Y, T["muted"], raw=True)
+        if hint_right:
+            P.text(hint_right, 22, 1220, HINT_Y, T["muted"], align="r", raw=True)
 
     def draw(self, cr, w, h, _view):
         P = self.pen = Pen(cr, w, h)
@@ -638,11 +731,11 @@ class App:
             self.header(P, "Artwork Manager")
         busy, message = self.busy, self.message   # Hintergrund-Threads ändern das jederzeit
         if busy:
-            P.rrect(230, 400, 800, 150, 30, T["card"])
-            P.text(str(busy), 32, 630, 488, T["text"], bold=True, align="c", raw=True)
+            P.rrect(230, 380, 800, 150, 30, T["card"])
+            P.text(str(busy), 32, 630, 468, T["text"], bold=True, align="c", raw=True)
         elif message and time.monotonic() - message[1] < 4:
-            P.rrect(130, 800, 1000, 90, 26, T["card"])
-            P.text(str(message[0]), 28, 630, 856, T["text"], align="c", raw=True)
+            P.rrect(130, BAR_Y - 110, 1000, 90, 26, T["card"])
+            P.text(str(message[0]), 28, 630, BAR_Y - 54, T["text"], align="c", raw=True)
 
     def draw_setup(self, P):
         T = self.T
@@ -664,123 +757,138 @@ class App:
 
     def draw_list(self, P):
         T, A = self.T, self.accent
+        legend = None
         if self.view == "systems":
-            self.header(P, "Artwork Manager", "System wählen")
+            title, hint = "Artwork Manager", "▲ ▼ System wählen"
             rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
-            key = "gesetzt" if steamgriddb_key() else "fehlt"
-            rows.append(("SteamGridDB API-Key", key, None))
+            rows.append(("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", None))
         elif self.view == "games":
-            self.header(P, self.system["name"], f"{len(self.games)} Spiele · Ampel: vorhandene Artworks")
+            title, hint = self.system["name"], "▲ ▼ Spiel wählen · L / R Seite"
             rows = [(name, None, st) for _rom, name, st in self.games]
+            legend = True
         else:
-            self.header(P, "Suchergebnisse", f"„{self.query}“ · Spiel wählen")
-            rows = [(r["name"], f"{r['console']} · {r['year']} · {r['source']}", None) for r in self.results]
-        y0, rh = 160, 78
+            title, hint = f"Suche: {self.query}", "▲ ▼ Spiel wählen · L / R Seite"
+            rows = [(r["name"], " · ".join(x for x in (r["console"], r["year"]) if x) or None, None)
+                    for r in self.results]
+        self.header(P, title, f"{self.sel + 1} / {len(rows)}" if rows else None)
         for n in range(self.scroll, min(len(rows), self.scroll + ROWS)):
             name, right, st = rows[n]
-            y = y0 + (n - self.scroll) * rh
+            y = LIST_Y + (n - self.scroll) * ROW_H
             focus = n == self.sel
-            P.rrect(40, y, 1180, rh - 8, 20, T["focus"] if focus else T["card"])
+            P.rrect(30, y, 1200, ROW_H - 8, 18, T["focus"] if focus else T["card"])
             if focus:
-                P.rrect(40, y, 8, rh - 8, 4, A)
-            x = 70
+                P.rrect(30, y, 8, ROW_H - 8, 4, A)
+            x = 62
             if st is not None:
                 col = {0: "e5383b", 1: "f08c00", 2: "f08c00"}.get(st, "2bb673")
-                P.circle(85, y + (rh - 8) / 2, 12, col)
-                x = 115
-            P.clip(x, y, 1180 - x - (330 if right else 20), rh)
-            P.text(name, 30, x, y + 47, T["text"], bold=focus, raw=True)
+                P.circle(72, y + (ROW_H - 8) / 2, 10, col)
+                x = 98
+            rw = P.width(right, 22, raw=True) + 40 if right else 20
+            P.clip(x, y, 1215 - x - rw, ROW_H)
+            P.text(name, 28, x, y + (ROW_H - 8) / 2 + 10, T["text"], bold=focus, raw=True)
             P.unclip()
             if right:
-                P.text(right, 24, 1195, y + 46, T["muted"], align="r", raw=True)
-            self.hits.append((40, y, 1180, rh - 8, ("row", n)))
+                P.text(right, 22, 1205, y + (ROW_H - 8) / 2 + 8, T["muted"], align="r", raw=True)
+            self.hits.append((30, y, 1200, ROW_H - 8, ("row", n)))
         if not rows:
             P.text("Nichts gefunden", 30, 630, 400, T["muted"], align="c", raw=True)
-        if len(rows) > ROWS:
-            P.text(f"{self.sel + 1}/{len(rows)}", 24, 1220, 125, T["muted"], align="r", raw=True)
-        self.button(P, 40, 840, 280, "Zurück" if self.view != "systems" else "Beenden", "back", key="B")
-        if len(rows) > ROWS:
-            self.button(P, 680, 840, 260, "Seite hoch", "up", key="L")
-            self.button(P, 960, 840, 260, "Seite runter", "down", key="R")
+        self.bar(P, hint)
+        if legend:   # Ampel-Erklärung rechts in der Hinweiszeile
+            x = 1220
+            for label, col in (("keine", "e5383b"), ("teilweise", "f08c00"), ("alle Artworks", "2bb673")):
+                w = P.width(label, 22, raw=True)
+                P.text(label, 22, x, HINT_Y, T["muted"], align="r", raw=True)
+                P.circle(x - w - 16, HINT_Y - 7, 8, col)
+                x -= w + 50
 
     def draw_game(self, P):
         T, A = self.T, self.accent
-        self.header(P, self.title, self.system["name"])
-        x = 40
+        self.header(P, self.title)
+        x, w = 30, (1200 - 2 * 14) / 3
         for n, (kind, label) in enumerate(KINDS):
-            cnt = len(self.cands.get(kind) or [])
             on = n == self.kind
-            w = 380
-            P.rrect(x, 160, w, 90, 24, A if on else T["tile"])
-            tick = "✓ " if kind in self.chosen else ""
-            P.text(f"{tick}{label}", 28, x + w / 2, 202, "ffffff" if on else T["text"], bold=True, align="c", raw=True)
-            P.text(f"{cnt} Kandidaten", 22, x + w / 2, 235, "ffffff" if on else T["muted"], align="c", raw=True)
-            self.hits.append((x, 160, w, 90, ("kind", n)))
-            x += w + 20
+            P.rrect(x, TABS_Y, w, TABS_H, 20, A if on else T["tile"])
+            txt = ("✓ " if kind in self.chosen else "") + label
+            cnt = str(len(self.cands.get(kind) or []))
+            tw = P.width(txt, 26, bold=True, raw=True) + 12 + P.width(cnt, 20, raw=True)
+            tx = x + (w - tw) / 2
+            P.text(txt, 26, tx, TABS_Y + TABS_H / 2 + 9, "ffffff" if on else T["text"], bold=True, raw=True)
+            P.text(cnt, 20, tx + tw, TABS_Y + TABS_H / 2 + 9, "ffffff" if on else T["muted"], align="r", raw=True)
+            self.hits.append((x, TABS_Y, w, TABS_H, ("kind", n)))
+            x += w + 14
         kind = self.kind_key()
         items = self.cands.get(kind) or []
-        P.rrect(40, 280, 1180, 300, 28, T["card"])
-        if items:
-            c = items[self.idx[kind]]
-            P.text(f"Kandidat {self.idx[kind] + 1} von {len(items)}", 34, 630, 350, T["text"], bold=True, align="c", raw=True)
-            P.text(str(c.get("source") or ""), 26, 630, 395, T["muted"], align="c", raw=True)
-            chosen = self.chosen.get(kind) is c
-            P.text("✓ ausgewählt" if chosen else "A = auswählen", 28, 630, 450, A if chosen else T["muted"],
-                   bold=chosen, align="c", raw=True)
-            P.text(f"Ausgewählt: {len(self.chosen)} von 3 Arten", 24, 630, 530, T["muted"], align="c", raw=True)
-            self.button(P, 60, 450, 140, "◀", "prev")
-            self.button(P, 1060, 450, 140, "▶", "next")
-        else:
-            P.text("Keine Kandidaten für diese Art", 30, 630, 440, T["muted"], align="c", raw=True)
-        self.button(P, 40, 620, 370, "Auswählen", "choose", key="A")
-        self.button(P, 445, 620, 370, "Spiel suchen", "search", key="Y")
-        self.button(P, 850, 620, 370, "Speichern", "save", primary=bool(self.chosen), key="X")
-        self.button(P, 40, 840, 280, "Zurück", "back", key="B")
-        P.text("◀ ▶ blättern · L / R Art wechseln", 24, 1220, 890, T["muted"], align="r", raw=True)
+        cur = self.idx[kind]
+        first = self.gscroll.get(kind, 0)
+        gy, gh = GAL_Y, BAR_Y - 20 - GAL_Y
+        th = gh - 40
+        if not items:
+            P.text("Keine Bilder für diesen Artwork-Stil", 30, 630, gy + gh / 2, T["muted"], align="c", raw=True)
+        for j in range(first, min(len(items), first + TILES + 1)):
+            tx = 34 + (j - first) * TILE_STEP
+            ty = gy + 20
+            sel = j == cur
+            if sel:
+                P.rrect(tx - 9, ty - 9, TILE_W + 18, th + 18, 24, A)
+            P.rrect(tx, ty, TILE_W, th, 18, T["card"])
+            path = self.preview_of(items[j])
+            if path and path != "…":
+                self.fit(P, path, tx + 8, ty + 8, TILE_W - 16, th - 16)
+            else:
+                P.text("…" if path == "…" or path is None and items[j] else "–", 30, tx + TILE_W / 2, ty + th / 2,
+                       T["muted"], align="c", raw=True)
+            if self.chosen.get(kind) is items[j]:
+                P.circle(tx + TILE_W - 28, ty + 28, 22, "2bb673")
+                P.text("✓", 26, tx + TILE_W - 28, ty + 37, "ffffff", bold=True, align="c", raw=True)
+            self.hits.append((tx, ty, TILE_W, th, ("tile", j)))
+        if len(items) > first + TILES:   # Hinweis: es geht weiter
+            P.rrect(1180, gy + 20, 80, th, 0, T["bg"], a=0.6)
+        pos = f"{cur + 1} / {len(items)} · " if items else ""
+        self.bar(P, "◀ ▶ Bild wählen · Wischen blättert", f"{pos}{len(self.chosen)} von 3 Stilen übernommen")
 
     # oberer Bildschirm
     def fit(self, P, path, x, y, w, h):
         """Bild vollständig einpassen (nicht beschneiden)."""
-        try:
-            img = Image.open(path)
-            iw, ih = img.size
-        except Exception:
-            return False
+        size = self.sizes.get(path)
+        if size is None:
+            try:
+                size = self.sizes[path] = Image.open(path).size
+            except Exception:
+                return False
+        iw, ih = size
         k = min(w / iw, h / ih)
         dw, dh = iw * k, ih * k
-        return P.image(path, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, r=12, stretch=True)
+        return P.image(path, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, r=10, stretch=True)
 
     def draw_top(self, cr, w, h):
         P = Pen(cr, w, h)
-        T, A = self.T, self.accent
+        A = self.accent
         P.fill_all("000000")
-        if self.view != "game" or not self.rom:
+        if self.view not in ("game", "search") or not self.rom:
             P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
             P.text("RetroDualStation", 32, 630, 490, "bdbdbd", align="c", raw=True)
             return
         kind = self.kind_key()
-        label = KINDS[self.kind][1]
+        items = self.cands.get(kind) or []
         c = self.cand()
+        lw = P.text(KINDS[self.kind][1], 34, 40, 58, "ffffff", bold=True, raw=True)
+        P.text("▲ ▼ / L R Artwork-Stil wechseln", 22, 40 + lw + 24, 56, "bdbdbd", raw=True)
+        if items:
+            P.text(f"{self.idx[kind] + 1} / {len(items)}", 28, 1220, 58, "ffffff", bold=True, align="r", raw=True)
         path = self.preview_of(c)
         if path and path != "…":
-            self.fit(P, path, 40, 70, 860, 840)
-        elif c:
-            P.text("Lädt …" if path == "…" else "Vorschau nicht verfügbar", 34, 470, 480, "bdbdbd",
-                   align="c", raw=True)
+            self.fit(P, path, 40, 90, 820, 820)
         else:
-            P.text("Keine Kandidaten", 34, 470, 480, "bdbdbd", align="c", raw=True)
+            P.text("Lädt …" if path == "…" else "Keine Bilder" if not c else "Vorschau nicht verfügbar",
+                   34, 450, 500, "bdbdbd", align="c", raw=True)
         if c and self.chosen.get(kind) is c:
-            P.rrect(40, 70, 860, 840, 16, A, stroke=6)
-        P.text(label, 34, 40, 50, "ffffff", bold=True, raw=True)
-        # rechts: vorhandenes Artwork zum Vergleich
-        P.text("Aktuell", 28, 1080, 110, "bdbdbd", align="c", raw=True)
+            P.rrect(1000, 860, 220, 56, 28, "2bb673")
+            P.text("✓ übernommen", 24, 1110, 896, "ffffff", bold=True, align="c", raw=True)
+        P.text("Aktuell", 24, 1060, 120, "bdbdbd", align="c", raw=True)
         cur = self.current.get(kind)
-        P.rrect(940, 130, 280, 280, 16, "262626")
-        if not (cur and self.fit(P, cur, 950, 140, 260, 260)):
-            P.text("keins", 26, 1080, 280, "8a8a8a", align="c", raw=True)
-        if c:
-            P.text(f"{self.idx[kind] + 1} / {len(self.cands.get(kind) or [])}", 30, 1080, 480, "ffffff",
-                   bold=True, align="c", raw=True)
+        P.rrect(900, 140, 320, 320, 16, "262626")
+        if not (cur and self.fit(P, cur, 912, 152, 296, 296)):
+            P.text("keins", 24, 1060, 308, "8a8a8a", align="c", raw=True)
 
 
 # ------------------------------------------------------------------ main ----
