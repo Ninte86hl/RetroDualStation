@@ -14,6 +14,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 > zu nutzen – Bedienung wie vom Smartphone gewohnt, schnell, mit Touch und Tasten. Sicherheit
 > vor Funktionsumfang: stabile ROCKNIX-Basis, jederzeit mit einem Tipp zurück.
 
+## Bedienregeln (gelten für alle Oberflächen)
+
+- **Hinweiszeilen:** Taste/Bedienelement **fett**, danach „– Erklärung“, mehrere Einträge mit „·“ getrennt.
+  Beispiel: **▲ ▼** – System wählen · **Start** – Einzelsuche · **Select** – Mehrfachsuche.
+- Umgesetzt im Artwork Manager (Gerät). **Offen:** Gameswitcher und Kontrollcenter auf dieselbe Schreibweise umstellen.
+
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
 1. ✅ **Etappe 5: Gameswitcher** (fertig 20.10.2026: RetroArch, DraStic, DSperate, Ports; ES-Ketten-Start, Ladebildschirm; Release v11 offen) (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü

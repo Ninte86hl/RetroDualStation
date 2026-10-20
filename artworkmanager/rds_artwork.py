@@ -171,6 +171,17 @@ def to_png(data, path, limit=900):
     return img.size
 
 
+def hint_parts(*pairs):
+    """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“.
+    hint_parts("▲ ▼", "wählen", "Start", "Einzelsuche") → ▲ ▼ – wählen · Start – Einzelsuche"""
+    out = []
+    for n in range(0, len(pairs), 2):
+        if n:
+            out.append(("  ·  ", False))
+        out += [(pairs[n], True), (" – " + pairs[n + 1], False)]
+    return out
+
+
 def is_2x3(w, h):
     """True bei Hochformat 2:3 (mit Toleranz), False sonst, None wenn die Größe unbekannt ist."""
     try:
@@ -1059,18 +1070,17 @@ class App:
         legend = None
         if self.view == "systems":
             title = "Artwork Manager"
-            hint = [("▲ ▼ System wählen  ·  ", False), ("Start", True), (" – Einzelsuche  ·  ", False),
-                    ("Select", True), (" – Mehrfachsuche", False)]
+            hint = hint_parts("▲ ▼", "System wählen", "Start", "Einzelsuche", "Select", "Mehrfachsuche")
             rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
         elif self.view == "settings":
-            title, hint = "Einstellungen", "▲ ▼ wählen · A ändern"
+            title, hint = "Einstellungen", hint_parts("▲ ▼", "wählen", "A", "ändern")
             rows = [(name, value, None) for name, value, _act in self.setting_rows()]
         elif self.view == "games":
-            title, hint = self.system["name"], "▲ ▼ Spiel wählen · L / R Seite"
+            title, hint = self.system["name"], hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
             rows = [(name, None, st) for _rom, name, st in self.games]
             legend = True
         else:
-            title, hint = f"Suche: {self.query}", "▲ ▼ Spiel wählen · L / R Seite"
+            title, hint = f"Suche: {self.query}", hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
             rows = [(r["name"], " · ".join(x for x in (r["console"], r["year"]) if x) or None, None)
                     for r in self.results]
         self.header(P, title, f"{self.sel + 1} / {len(rows)}" if rows else None)
@@ -1163,8 +1173,8 @@ class App:
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, ("▲ ▼" if vertical else "◀ ▶") + " Bild wählen · L / R Artwork-Stil"
-                 + (" · Select überspringen" if self.batch else ""), "")
+        self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil",
+                               *(("Select", "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
         label = f"Start  Speichern ({len(self.chosen)})"
         w = P.width(label, 22, bold=True, raw=True) + 36
