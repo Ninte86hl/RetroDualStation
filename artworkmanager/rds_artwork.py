@@ -8,6 +8,7 @@ Such-, Erkennungs- und Schreiblogik kommen unverändert aus dem Paket
 rocknixds_artwork_manager; nur der Gerätezugriff läuft lokal statt über SSH.
 Zeichnen, Bildschirme, Eingabe und Bildschirmtastatur kommen vom Kontrollcenter.
 """
+import ctypes
 import json
 import os
 import subprocess
@@ -19,6 +20,7 @@ from io import BytesIO
 from pathlib import Path
 
 BASE = "/storage/.config/retrodualstation"
+BTN_THUMBL = 317                                # linker Stick drücken
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (HERE, BASE + "/lib", BASE + "/controlcenter",
           os.path.join(os.path.dirname(HERE), "controlcenter")):
@@ -171,6 +173,28 @@ def to_png(data, path, limit=900):
     return img.size
 
 
+_C = cc.cairo
+for _fn, _args, _res in (("cairo_pattern_create_linear", [ctypes.c_double] * 4, ctypes.c_void_p),
+                         ("cairo_pattern_add_color_stop_rgba", [ctypes.c_void_p] + [ctypes.c_double] * 5, None),
+                         ("cairo_set_source", [ctypes.c_void_p, ctypes.c_void_p], None),
+                         ("cairo_pattern_destroy", [ctypes.c_void_p], None),
+                         ("cairo_rectangle", [ctypes.c_void_p] + [ctypes.c_double] * 4, None),
+                         ("cairo_fill", [ctypes.c_void_p], None)):
+    getattr(_C, _fn).argtypes, getattr(_C, _fn).restype = _args, _res
+
+
+def fade(P, x, y, w, h):
+    """Senkrechter Verlauf von durchsichtig nach Schwarz."""
+    X, Y, W, H = P.X(x), P.Y(y), w * P.s, h * P.s
+    pat = _C.cairo_pattern_create_linear(0.0, Y, 0.0, Y + H)
+    _C.cairo_pattern_add_color_stop_rgba(pat, 0.0, 0.0, 0.0, 0.0, 0.0)
+    _C.cairo_pattern_add_color_stop_rgba(pat, 1.0, 0.0, 0.0, 0.0, 1.0)
+    _C.cairo_rectangle(P.cr, X, Y, W, H)
+    _C.cairo_set_source(P.cr, pat)
+    _C.cairo_fill(P.cr)
+    _C.cairo_pattern_destroy(pat)
+
+
 def hint_parts(*pairs):
     """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“.
     hint_parts("▲ ▼", "wählen", "Start", "Einzelsuche") → ▲ ▼ – wählen · Start – Einzelsuche"""
@@ -271,6 +295,7 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self.top_mode = "mix"                         # oben: "mix" (alle Stile) oder "single" (Großansicht)
         self.gquery = ""
         self.gresults = []                            # Spielsuche über alle Systeme
         self.backups = []                             # Liste zum Wiederherstellen
@@ -1010,6 +1035,9 @@ class App:
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
         elif code == BTN_START and self.view == "game":
             self.transfer()
+        elif code == BTN_THUMBL and self.view == "game":
+            self.top_mode = "single" if self.top_mode == "mix" else "mix"
+            self.top_dirty = True
         elif code == BTN_START and self.view == "systems" and self.systems:
             self.open_system(self.sel)                       # Einzelmodus
         elif code == BTN_SELECT and self.view == "systems" and self.systems:
@@ -1404,6 +1432,11 @@ class App:
         kind = self.kind_key()
         c = self.cand()
         b = self.batch
+        if self.top_mode == "mix":
+            self.draw_mix(P)
+            if b:
+                P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "ffffff", align="r", raw=True)
+            return
         if b:
             P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "bdbdbd", align="r", raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
@@ -1418,6 +1451,99 @@ class App:
         if c and self.chosen.get(kind) is c:
             P.rrect(1000, 870, 220, 56, 28, "2bb673")
             P.text("✓ übernommen", 24, 1110, 906, "ffffff", bold=True, align="c", raw=True)
+        P.hint([("L3", "Mix-Ansicht")], 18, 40, 925, "8a8a8a", "bdbdbd")
+
+
+    def cover(self, P, path, x, y, w, h):
+        """Bild füllend (beschnitten) zeichnen."""
+        return P.image(path, x, y, w, h, r=0, stretch=False)
+
+    def draw_mix(self, P):
+        """Mix-Ansicht: Hero als Hintergrund, Boxart links, Cartridge unter dem Namen.
+        Übernommene Bilder tragen ✓, das gerade unten gewählte Bild steht als „Vorschau“ an seinem Platz."""
+        A = self.accent
+        cur_kind, cur = self.kind_key(), self.cand()
+
+        def slot(kind):
+            """(Pfad, Zustand): Zustand "ok" (übernommen), "pv" (Vorschau) oder None (fehlt)."""
+            if kind == cur_kind and cur is not None and self.chosen.get(kind) is not cur:
+                return self.preview_of(cur), "pv"
+            if kind in self.chosen:
+                return self.preview_of(self.chosen[kind]), "ok"
+            return None, None
+
+        def tag(text, x, y, ok):
+            w = P.width(text, 18, bold=True, raw=True) + 26
+            P.rrect(x, y, w, 36, 18, "2bb673" if ok else A)
+            P.text(text, 18, x + 13, y + 25, "ffffff", bold=True, raw=True)
+
+        def empty(x, y, w, h, label):
+            P.rrect(x, y, w, h, 16, "151515")
+            P.rrect(x, y, w, h, 16, "5a5a5a", stroke=3)
+            P.text(label, 22, x + w / 2, y + h / 2 + 8, "8a8a8a", align="c", raw=True)
+
+        # Image (Hero) oben über die ganze Breite, unten ins Schwarz auslaufend
+        hp, hs = slot("image")
+        HY, HH = 0, 430
+        if hp and hp != "…":
+            self.cover(P, hp, 0, HY, 1260, HH)
+            fade(P, 0, HY + HH * 0.4, 1260, HH * 0.6 + 2)   # Verlauf nach unten ins Schwarz
+            if hs == "pv":
+                P.rrect(4, 4, 1252, HH - 8, 0, A, stroke=6)
+            tag("✓ Image" if hs == "ok" else "Vorschau", 1080, 20, hs == "ok")
+        else:
+            P.rrect(0, HY, 1260, HH, 0, "151515")
+            P.text("Image – lädt …" if hp == "…" else "Image – noch nicht gewählt", 22, 630, 200, "8a8a8a",
+                   align="c", raw=True)
+
+        # Boxart links
+        bp, bs = slot("boxart")
+        BX, BY, BW, BH = 45, 250, 330, 495
+        if bp and bp != "…":
+            P.rrect(BX, BY, BW, BH, 16, "000000")
+            self.fit(P, bp, BX, BY, BW, BH)
+            if bs == "pv":
+                P.rrect(BX - 6, BY - 6, BW + 12, BH + 12, 20, A, stroke=6)
+            tag("✓ Boxart" if bs == "ok" else "Vorschau", BX + 12, BY + 12, bs == "ok")
+        else:
+            empty(BX, BY, BW, BH, "Boxart")
+
+        # Name und System
+        size = 40
+        while size > 24 and P.width(self.title, size, bold=True, raw=True) > 820:
+            size -= 2                        # lange Namen verkleinern statt abschneiden
+        P.clip(415, 430, 820, 70)
+        P.text(self.title, size, 415, 480, "ffffff", bold=True, raw=True)
+        P.unclip()
+        P.text(self.system["name"] if self.system else "", 24, 415, 522, "bdbdbd", raw=True)
+
+        # Cartridge unter dem Namen
+        cp, cs = slot("cartridge")
+        CX, CY, CS = 415, 560, 240
+        if cp and cp != "…":
+            self.fit(P, cp, CX, CY, CS, CS)
+            if cs == "pv":
+                P.rrect(CX - 6, CY - 6, CS + 12, CS + 12, 20, A, stroke=6)
+            tag("✓ Cartridge" if cs == "ok" else "Vorschau", CX + 10, CY + 10, cs == "ok")
+        else:
+            empty(CX, CY, CS, CS, "Cartridge")
+
+        # Übersicht rechts
+        y = 600
+        for kind, label in KINDS:
+            items = self.cands.get(kind) or []
+            if kind in self.chosen:
+                state = "✓ übernommen"
+            elif kind == cur_kind and items:
+                state = f"Vorschau {self.idx[kind] + 1} / {len(items)}"
+            else:
+                state = "– fehlt" if items else "– keine Bilder"
+            w = P.text(label, 24, 700, y, "ffffff", bold=True, raw=True)
+            P.text("  " + state, 24, 700 + w, y, "bdbdbd", raw=True)
+            y += 46
+        if self.chosen:
+            P.hint([("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
+        P.hint([("L3", "Großansicht")], 18, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
 # ------------------------------------------------------------------ main ----
