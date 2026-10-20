@@ -197,6 +197,8 @@ class App:
         self.gscroll = {}                             # kind -> erste sichtbare Kachel
         self.sizes = {}                               # PNG-Pfad -> (Breite, Höhe)
         self.loader = threading.Semaphore(3)
+        self.saving = None                            # Ladebildschirm beim Speichern
+        self.saving_until = 0.0
         self.results = []                             # Trefferliste der Suche
         self.query = ""
 
@@ -432,23 +434,26 @@ class App:
                     self.want_previews()
                     break
             else:
-                self.say("Alle Stile übernommen – mit X speichern")
+                self.say("Alle Stile übernommen – mit Start speichern")
         self.top_dirty = True
 
     def transfer(self):
         if not self.chosen:
-            self.say("Erst mit A ein Artwork auswählen")
+            self.say("Erst mit A ein Bild übernehmen, dann mit Start speichern")
             return
         rom, chosen, system = self.rom, dict(self.chosen), self.system["key"]
+        self.saving = {"title": self.title,
+                       "kinds": [label for k, label in KINDS if k in chosen],
+                       "step": "Wird vorbereitet …", "done": False}
 
         def go():
             if self.settings.get("backup") and system not in self.backed_up:
-                self.busy = "Sicherung wird erstellt …"
+                self.saving["step"] = "Sicherung wird erstellt …"
                 self.dirty = True
                 b = self.app.backup_artwork()
                 self.backed_up.add(system)
                 log("Sicherung:", b.get("path"))
-            self.busy = "Artwork wird vorbereitet …"
+            self.saving["step"] = "Bilder werden zugeschnitten …"
             self.dirty = True
             self.app.stage_scraper_artwork(rom, chosen,
                                            lambda url: cached_download(WORK / "data" / "cache", url, download_artwork))
@@ -456,7 +461,7 @@ class App:
             media = preview.get("media") or []
             if not media or (preview.get("set") or {}).get("rom") != rom or (preview.get("xml") or {}).get("games_changed") != 1:
                 raise RuntimeError("Sicherheitsprüfung fehlgeschlagen – nichts geschrieben")
-            self.busy = "Artwork wird gespeichert …"
+            self.saving["step"] = "Wird gespeichert und geprüft …"
             self.dirty = True
             r = self.app.commit()
             n = len(media)
@@ -473,8 +478,16 @@ class App:
                     path = PREVIEW_DIR / "current" / f"{kind}.png"
                     to_png(info["data"], path, 400)
                     self.current[kind] = str(path)
-            self.say(f"{n} Artwork(s) gespeichert")
-        self.work("Wird gespeichert …", go)
+            self.saving.update(step="Gespeichert", done=True)
+            self.saving_until = time.monotonic() + 1.2      # kurz „Gespeichert“ zeigen
+
+        def run():
+            try:
+                go()
+            except Exception:
+                self.saving = None
+                raise
+        self.work("saving", run)
 
     def open_search(self):
         self.kbd = Keyboard(self, "Spiel suchen", self.run_search, secret=False)
@@ -580,7 +593,8 @@ class App:
             taken = c is not None and self.chosen.get(kind) is c
             return [("A", "Abwählen" if taken else "Übernehmen", self.toggle_choice if c else None),
                     ("B", "Zurück", self.back),
-                    ("X", "Speichern", self.transfer if self.chosen else None),
+                    ("X", "Editor", None),          # vorgemerkt: 1:1-Bild mit iiSU-Rahmen
+
                     ("Y", "Spiel suchen", self.open_search)]
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
@@ -594,10 +608,10 @@ class App:
             elif code == BTN_SOUTH:
                 self.answer_setup(False)
             return
+        if self.busy or self.saving:
+            return
         if code == BTN_SOUTH:
             self.back()
-            return
-        if self.busy:
             return
         keys = {BTN_EAST: "A", BTN_NORTH: "X", BTN_WEST: "Y"}
         if code in keys:
@@ -607,7 +621,7 @@ class App:
         elif code in (BTN_TL, BTN_TR):
             d = -1 if code == BTN_TL else 1
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
-        elif code == BTN_START and self.view == "game" and self.chosen:
+        elif code == BTN_START and self.view == "game":
             self.transfer()
 
     def on_dir(self, dx, dy):
@@ -721,6 +735,10 @@ class App:
         if self.kbd:
             self.kbd.draw(P)
             return
+        saving = self.saving
+        if saving:
+            self.draw_saving(P, saving)
+            return
         if self.view == "setup":
             self.draw_setup(P)
         elif self.view in ("systems", "games", "search"):
@@ -754,6 +772,28 @@ class App:
         P.rrect(650, 600, 560, 110, 30, T["tile"])
         P.text("B  Nein", 34, 930, 668, T["text"], bold=True, align="c", raw=True)
         self.hits.append((650, 600, 560, 110, ("setup", False)))
+
+    def draw_saving(self, P, sv):
+        """Kleiner Ladebildschirm: welches Spiel, welche Artwork-Stile."""
+        T, A = self.T, self.accent
+        self.hits = []
+        P.text("Artwork wird gespeichert", 24, 630, 150, T["muted"], align="c", raw=True)
+        P.rrect(150, 210, 960, 520, 34, T["card"])
+        P.clip(190, 240, 880, 80)
+        P.text(sv["title"], 36, 630, 300, T["text"], bold=True, align="c", raw=True)
+        P.unclip()
+        P.text("Artwork-Stile", 24, 630, 370, T["muted"], align="c", raw=True)
+        y = 430
+        for label in sv["kinds"]:
+            P.text(("✓ " if sv["done"] else "• ") + label, 30, 630, y, "2bb673" if sv["done"] else T["text"],
+                   bold=True, align="c", raw=True)
+            y += 52
+        if not sv["done"]:   # einfacher Fortschrittsbalken (läuft hin und her)
+            t = (time.monotonic() * 0.8) % 2
+            pos = t if t <= 1 else 2 - t
+            P.rrect(300, 640, 660, 14, 7, T["tile"])
+            P.rrect(300 + pos * 500, 640, 160, 14, 7, A)
+        P.text(sv["step"], 24, 630, 700, T["muted"], align="c", raw=True)
 
     def draw_list(self, P):
         T, A = self.T, self.accent
@@ -844,7 +884,16 @@ class App:
         if len(items) > first + TILES:   # Hinweis: es geht weiter
             P.rrect(1180, gy + 20, 80, th, 0, T["bg"], a=0.6)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, "◀ ▶ Bild wählen · Wischen blättert", f"{pos}{len(self.chosen)} von 3 Stilen übernommen")
+        self.bar(P, "◀ ▶ Bild wählen · Wischen blättert", "")
+        # rechts: Start = Speichern (auch antippbar), daneben der Stand
+        label = f"Start  Speichern ({len(self.chosen)})"
+        w = P.width(label, 22, bold=True, raw=True) + 36
+        on = bool(self.chosen)
+        P.rrect(1220 - w, HINT_Y - 30, w, 42, 21, A if on else T["tile"], a=1.0 if on else 0.35)
+        P.text(label, 22, 1220 - w / 2, HINT_Y - 2, "ffffff" if on else T["muted"], bold=True, align="c", raw=True)
+        if on:
+            self.hits.append((1220 - w, HINT_Y - 34, w, 50, ("btn", self.transfer)))
+        P.text(pos.rstrip(" ·"), 22, 1220 - w - 20, HINT_Y, T["muted"], align="r", raw=True)
 
     # oberer Bildschirm
     def fit(self, P, path, x, y, w, h):
@@ -918,7 +967,7 @@ def main():
     try:
         while not a.quit:
             fds = [fd for fd in grabbed]
-            busy = a.busy or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
+            busy = a.busy or a.saving or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
             for fd in ui.pump(0.1 if busy else 0.5, fds):
                 try:
                     if fd == tfd:
@@ -966,10 +1015,13 @@ def main():
                     a.dirty = True
             if a.kbd and a.kbd.tick():
                 a.dirty = True
+            if a.saving and a.saving.get("done") and time.monotonic() > a.saving_until:
+                a.saving = None
+                a.dirty = a.top_dirty = True
             if a.message and time.monotonic() - a.message[1] > 4:
                 a.message = None
                 a.dirty = True
-            if a.busy or a.dirty:
+            if a.busy or a.saving or a.dirty:
                 a.dirty = False
                 ui.redraw()
             if a.top_dirty:
