@@ -50,7 +50,7 @@ HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
-HOME_LONG_S = 0.5      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
+HOME_LONG_S = 2.0      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
