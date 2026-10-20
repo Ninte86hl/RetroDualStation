@@ -118,7 +118,8 @@ f = sys.argv[1]
 root = ET.parse(f).getroot() if os.path.exists(f) and os.path.getsize(f) else ET.Element("gameList")
 entries = {"RGDS Dual-Screen ES.sh": ("Dual-Screen ES", "rds-dual.png"),
            "RGDS Single-Screen ES.sh": ("Single-Screen ES", "rds-single.png"),
-           "Uninstall ROCKNIX DualStation.sh": ("Uninstall ROCKNIX DualStation", "rds-uninstall.png")}
+           "Uninstall ROCKNIX DualStation.sh": ("Uninstall ROCKNIX DualStation", "rds-uninstall.png"),
+           "Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png")}
 for script, (name, img) in entries.items():
     path = "./" + script
     g = next((g for g in root.findall("game") if g.findtext("path") == path), None)
