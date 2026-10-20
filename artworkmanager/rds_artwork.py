@@ -1191,16 +1191,25 @@ class App:
             P.text(right, 24, 1220, 66, T["muted"], align="r", raw=True)
 
     def home_icon(self, P, cx, cy, c):
-        """Kleines Haus für die Home-Taste (Dach + Körper)."""
-        cr, sc = P.cr, P.s
-        cc.cairo.cairo_new_path(cr)
-        cc.cairo.cairo_move_to(cr, P.X(cx - 11), P.Y(cy - 1))
-        cc.cairo.cairo_line_to(cr, P.X(cx), P.Y(cy - 11))
-        cc.cairo.cairo_line_to(cr, P.X(cx + 11), P.Y(cy - 1))
-        cc.cairo.cairo_close_path(cr)
+        """Home-/Zurück-Taste: geschwungener Zurückpfeil wie auf dem Gerät."""
+        C, cr = cc.cairo, P.cr
+        C.cairo_save(cr)
+        C.cairo_new_path(cr)
+        # Bogen von unten rechts nach oben links
+        C.cairo_arc(cr, P.X(cx + 1), P.Y(cy + 1), 9 * P.s, -PI / 2, PI / 2)
+        C.cairo_move_to(cr, P.X(cx + 1), P.Y(cy - 8))
+        C.cairo_line_to(cr, P.X(cx - 8), P.Y(cy - 8))
         P.color(c)
-        cc.cairo.cairo_fill(cr)
-        P.rrect(cx - 7, cy - 2, 14, 12, 2, c)
+        C.cairo_set_line_width(cr, 3.2 * P.s)
+        C.cairo_stroke(cr)
+        # Pfeilspitze nach links
+        C.cairo_new_path(cr)
+        C.cairo_move_to(cr, P.X(cx - 12), P.Y(cy - 8))
+        C.cairo_line_to(cr, P.X(cx - 5), P.Y(cy - 14))
+        C.cairo_line_to(cr, P.X(cx - 5), P.Y(cy - 2))
+        C.cairo_close_path(cr)
+        C.cairo_fill(cr)
+        C.cairo_restore(cr)
 
     def bar(self, P, hint_left, hint_right=""):
         """Feste A/B/X/Y-Leiste und Hinweiszeile ganz unten."""
