@@ -3684,11 +3684,10 @@ def main():
     home_down = {"t": None, "fired": False}
 
     def home_short():
-        """Home kurz: im Spiel speichern (Stand + Screenshot) und zurück zu ES; ohne Spiel Gameswitcher."""
+        """Home kurz: im Spiel speichern (Stand + Screenshot) und zurück zu ES."""
         game = running_game()
         if not game:
-            toggle("switcher")
-            return
+            return          # in ES: kurz drücken tut nichts (Gameswitcher nur durch 2 s Halten)
         log("Home kurz: speichern und zurück zu ES –", game["name"])
         def work():
             try:
