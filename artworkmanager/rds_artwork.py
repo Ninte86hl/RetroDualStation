@@ -259,6 +259,7 @@ class App:
         self.loader = threading.Semaphore(3)
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
+        self.settings_from = 0
         self.results = []                             # Trefferliste der Suche
         self.query = ""
 
@@ -629,8 +630,8 @@ class App:
 
     # -- Bedienung --
     def list_len(self):
-        return {"systems": len(self.systems) + 1, "games": len(self.games),
-                "search": len(self.results)}.get(self.view, 0)
+        return {"systems": len(self.systems), "games": len(self.games),
+                "search": len(self.results), "settings": len(self.setting_rows())}.get(self.view, 0)
 
     def move(self, d):
         n = self.list_len()
@@ -647,10 +648,12 @@ class App:
         if self.busy:
             return
         if self.view == "systems":
-            if i == len(self.systems):
-                self.edit_key()
-            elif self.systems:
+            if self.systems:
                 self.open_system(i)
+        elif self.view == "settings":
+            rows = self.setting_rows()
+            if 0 <= i < len(rows):
+                rows[i][2]()
         elif self.view == "games" and self.games:
             self.open_game(i)
         elif self.view == "search" and self.results:
@@ -664,6 +667,8 @@ class App:
             return
         if self.view == "search":
             self.view = "game"
+        elif self.view == "settings":
+            self.view, self.sel, self.scroll = "systems", self.settings_from, 0
         elif self.view == "game":
             self.sel = next((n for n, g in enumerate(self.games) if g[0] == self.rom), self.sel)
             self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
@@ -686,10 +691,86 @@ class App:
                     ("X", "Editor", None),          # vorgemerkt: 1:1-Bild mit iiSU-Rahmen
 
                     ("Y", "Spiel suchen", self.open_search)]
-        a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen"}.get(self.view, "")
+        a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen",
+                   "settings": "Ändern"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
                 ("B", "Beenden" if self.view == "systems" else "Zurück", self.back),
-                ("X", "", None), ("Y", "", None)]
+                ("X", "Einstellungen", self.open_settings) if self.view == "systems" else ("X", "", None),
+                ("Y", "", None)]
+
+    # -- Einstellungen --
+    def open_settings(self):
+        self.settings_from = self.sel
+        self.view, self.sel, self.scroll = "settings", 0, 0
+
+    def setting_rows(self):
+        """(Name, Wert, Aktion) der Einstellungsliste."""
+        def size(path):
+            total = 0
+            for root, _d, files in os.walk(path):
+                for f in files:
+                    try:
+                        total += os.path.getsize(os.path.join(root, f))
+                    except OSError:
+                        pass
+            return total
+
+        def human(n):
+            for unit in ("B", "KB", "MB", "GB"):
+                if n < 1024 or unit == "GB":
+                    return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+                n /= 1024
+
+        backups = sorted((WORK / "data" / "backups").glob("*.zip")) if (WORK / "data" / "backups").is_dir() else []
+        log_file = WORK / "manager.log"
+        cache = size(WORK / "data" / "cache") + size(PREVIEW_DIR)
+        return [
+            ("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", self.edit_key),
+            ("Sicherung vor dem Speichern", "an" if self.settings.get("backup") else "aus", self.toggle_backup),
+            ("Sicherungen aufräumen", f"{len(backups)} · {human(sum(b.stat().st_size for b in backups))}",
+             self.prune_backups),
+            ("Zwischenspeicher leeren", human(cache), self.clear_cache),
+            ("Log leeren", human(log_file.stat().st_size) if log_file.exists() else "–", self.clear_log),
+        ]
+
+    def toggle_backup(self):
+        self.settings["backup"] = not self.settings.get("backup")
+        save_settings(self.settings)
+        self.say("Sicherung vor dem Speichern: " + ("an" if self.settings["backup"] else "aus"))
+
+    def prune_backups(self):
+        """Je System nur die neueste Sicherung behalten."""
+        folder = WORK / "data" / "backups"
+        newest, removed = {}, 0
+        for b in sorted(folder.glob("*.zip"), key=lambda f: f.stat().st_mtime, reverse=True) if folder.is_dir() else []:
+            try:   # das System steht in der manifest.json der Sicherung
+                import zipfile
+                with zipfile.ZipFile(b) as z:
+                    system = json.loads(z.read("manifest.json")).get("system") or b.name
+            except Exception:
+                continue   # unlesbare Datei nicht anfassen
+            if system in newest:
+                b.unlink()
+                removed += 1
+            else:
+                newest[system] = b
+        self.say(f"{removed} ältere Sicherung(en) gelöscht – die neueste je System bleibt")
+
+    def clear_cache(self):
+        import shutil
+        for path in (WORK / "data" / "cache", PREVIEW_DIR):
+            shutil.rmtree(path, ignore_errors=True)
+        PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+        self.previews.clear()
+        self.sizes.clear()
+        self.say("Zwischenspeicher geleert")
+
+    def clear_log(self):
+        try:
+            os.truncate(WORK / "manager.log", 0)
+        except OSError:
+            pass
+        self.say("Log geleert")
 
     def on_key(self, code):
         if self.view == "setup":
@@ -776,7 +857,7 @@ class App:
             self.kbd.touch_up(x0, y0, x1, y1)
             return
         dx, dy = x1 - x0, y1 - y0
-        if abs(dy) > 60 and abs(dy) > abs(dx) and self.view in ("games", "search", "systems"):
+        if abs(dy) > 60 and abs(dy) > abs(dx) and self.view in ("games", "search", "systems", "settings"):
             self.move(-round(dy / ROW_H))                 # senkrecht wischen = Liste blättern
             return
         if self.view == "game":
@@ -835,7 +916,7 @@ class App:
             return
         if self.view == "setup":
             self.draw_setup(P)
-        elif self.view in ("systems", "games", "search"):
+        elif self.view in ("systems", "games", "search", "settings"):
             self.draw_list(P)
         elif self.view == "game":
             self.draw_game(P)
@@ -895,7 +976,9 @@ class App:
         if self.view == "systems":
             title, hint = "Artwork Manager", "▲ ▼ System wählen"
             rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
-            rows.append(("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", None))
+        elif self.view == "settings":
+            title, hint = "Einstellungen", "▲ ▼ wählen · A ändern"
+            rows = [(name, value, None) for name, value, _act in self.setting_rows()]
         elif self.view == "games":
             title, hint = self.system["name"], "▲ ▼ Spiel wählen · L / R Seite"
             rows = [(name, None, st) for _rom, name, st in self.games]
@@ -941,7 +1024,7 @@ class App:
         for n, (kind, label) in enumerate(KINDS):
             on = n == self.kind
             P.rrect(x, TABS_Y, w, TABS_H, 20, A if on else T["tile"])
-            txt = ("✓ " if kind in self.chosen else "") + label
+            txt = label
             cnt = str(len(self.cands.get(kind) or []))
             tw = P.width(txt, 26, bold=True, raw=True) + 12 + P.width(cnt, 20, raw=True)
             tx = x + (w - tw) / 2
