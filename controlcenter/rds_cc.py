@@ -244,7 +244,7 @@ EN = {
     "Ausgewogen": "Balanced", "Unterer Screen aus": "Bottom screen off", "Ruhemodus": "Sleep",
     "Neu starten": "Restart", "Ausschalten": "Power off", "ES neu starten": "Restart ES",
     "Neu starten + Logs sichern": "Restart + save logs",
-    "Weiterspielen": "Resume", "Optionen (bald)": "Options (soon)", "Schließen": "Close",
+    "Weiterspielen": "Resume", "Entfernen": "Remove", "Schließen": "Close",
     "Noch keine Spiele gespielt": "No games played yet", "Home oder B: schließen": "Home or B: close",
     "Spielstand über das Spiel selbst": "Progress is saved by the game itself",
     "gerade eben": "just now", "Spiel wird gestartet …": "Starting game …",
@@ -1086,6 +1086,14 @@ class Switcher:
         self.items = [entry] + [i for i in self.items if i["rom"] != rom]
         self.items = self.items[:GS_MAX]
         self.save()
+
+    def remove(self, i):
+        """Eintrag aus der Liste nehmen (Speicherstand bleibt erhalten)."""
+        if 0 <= i < len(self.items):
+            log("Gameswitcher: aus der Liste entfernt", self.items[i]["name"])
+            del self.items[i]
+            self.save()
+            self.sel = max(0, min(self.sel, len(self.items) - 1))
 
     def capture(self, game):
         """Beim Öffnen im Spiel: Speicherstand anlegen + Screenshot. Läuft VOR Pause und Grab."""
@@ -2777,11 +2785,11 @@ class ControlCenter:
         for i in range(n):
             P.circle(630 + (i - (n - 1) / 2) * 22, 745, 6 if i == sw.sel else 4, A if i == sw.sel else T["dot"])
         # Tasten
-        btns = [("A", "Weiterspielen"), ("Y", "Neu starten"), ("X", "Optionen (bald)"), ("B", "Schließen")]
+        btns = [("A", "Weiterspielen"), ("Y", "Neu starten"), ("X", "Entfernen"), ("B", "Schließen")]
         bx = 630 - 4 * 270 / 2
         for j, (key, label) in enumerate(btns):
             x = bx + j * 270
-            P.rrect(x + 10, 790, 250, 70, 35, A if j == 0 else T["card"], a=1.0 if j != 2 else 0.5)
+            P.rrect(x + 10, 790, 250, 70, 35, A if j == 0 else T["card"])
             P.text(f"{key}  {tr(label)}", 20, x + 135, 832, "ffffff" if j == 0 else T["text"], bold=j == 0, align="c", raw=True)
             self.hits.append((x + 10, 790, 250, 70, ("gs_btn", key)))
         if it.get("emu") in ("PortMaster",):
@@ -3460,6 +3468,7 @@ def main():
                         cc.switcher.sel = hit[1]
                 elif hit and hit[0] == "gs_btn":
                     {"A": lambda: gs_act(False), "Y": lambda: gs_act(True),
+                     "X": lambda: cc.switcher.remove(cc.switcher.sel),
                      "B": lambda: toggle("switcher")}.get(hit[1], lambda: None)()
                 state["dirty"] = True
             return
@@ -3681,6 +3690,8 @@ def main():
                 gs_act(False)
             elif typ == EV_KEY and code == BTN_WEST:      # Y
                 gs_act(True)
+            elif typ == EV_KEY and code == BTN_NORTH:     # X: aus der Liste entfernen
+                sw.remove(sw.sel)
             elif typ == EV_KEY and code == BTN_SOUTH:     # B
                 toggle("switcher")
             state["dirty"] = True

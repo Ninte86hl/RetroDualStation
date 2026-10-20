@@ -20,7 +20,7 @@ Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
    - Liste der zuletzt gespielten Spiele mit **Screenshot vom letzten Zeitpunkt** (beim Auto-Speichern)
    - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
      (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
-     **X** Spiel-Einstellungen (später, mit dem Overlay „Spiel-Einstellungen“) · **B** schließen
+     **X** aus der Liste entfernen (Speicherstand bleibt) · **B** schließen
 2. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
 3. **Version für das normale RG DS** (640×480) – sobald 1 und 2 gebaut und getestet sind
 
