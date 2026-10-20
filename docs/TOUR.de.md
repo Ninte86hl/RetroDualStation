@@ -90,7 +90,8 @@ im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt d
 | | **A** | Bild übernehmen |
 | | **Start** | Speichern |
 | | **Y** | Anderes Spiel suchen |
-| | **L3** | Mix-Ansicht / Großansicht oben |
+| | **L3** | Artwork-Suche aktualisieren |
+| | **R3** | Mix-Ansicht / Großansicht oben |
 | | **X** | Editor: aus dem gewählten Bild ein 1:1-Cartridge-Bild mit iiSU-Rahmen machen (◀ ▶ ▲ ▼ verschieben · L / R Zoom · Y Rahmen) |
 
 Vor dem ersten Speichern pro System wird eine Sicherung angelegt (in den Einstellungen abschaltbar).

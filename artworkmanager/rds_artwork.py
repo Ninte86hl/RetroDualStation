@@ -20,7 +20,8 @@ from io import BytesIO
 from pathlib import Path
 
 BASE = "/storage/.config/retrodualstation"
-BTN_THUMBL = 317                                # linker Stick drücken
+BTN_THUMBL = 317                                # linker Stick drücken: Suche aktualisieren
+BTN_THUMBR = 318                                # rechter Stick drücken: Mix-/Großansicht oben
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (HERE, BASE + "/lib", BASE + "/controlcenter",
           os.path.join(os.path.dirname(HERE), "controlcenter")):
@@ -207,7 +208,7 @@ EN_AM = {
     "Filter": "Filter", "Keine Spiele für diesen Filter": "No games for this filter",
     "Spieleliste": "Game list", "Filter: alle · fehlende · keine Artworks": "Filter: all · missing · no artwork",
     "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
-    "Icon-Editor": "Icon editor", "Keine Icon-Bilder ohne Rahmen gefunden": "No icon images without border found",
+    "Icon-Editor": "Icon editor", "Suche aktualisieren": "Refresh search", "Suche aktualisiert": "Search refreshed", "Keine Icon-Bilder ohne Rahmen gefunden": "No icon images without border found",
     "Das Ergebnis wird als Icon (Cartridge) übernommen.": "The result is taken as the icon (cartridge).",
     "iiSU-Rahmen werden geladen … (nur beim ersten Mal)": "Loading iiSU borders … (first time only)", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
     "Rahmen": "Border", "Zoom": "Zoom", "Position": "Position", "Größe": "Size", "Zurücksetzen": "Reset",
@@ -960,8 +961,7 @@ class App:
     def editor_source(self):
         """Quelle für den Icon-Editor – immer aus dem Icon/Cartridge-Tab (der Typ mit iiSU-Rahmen):
         das dort gewählte Bild, sonst das übernommene, sonst das erste ohne eingebauten Rahmen."""
-        def framed(c):            # iiSU-Box-Art hat den Rahmen schon – nicht doppelt rahmen
-            return str(c.get("id") or "").startswith("iidb-iisu_boxart") or c.get("_png")
+        framed = self.framed
         items = self.cands.get("cartridge") or []
         cur = items[self.idx["cartridge"]] if items else None
         if cur and not framed(cur):
@@ -970,6 +970,44 @@ class App:
         if chosen and not framed(chosen):
             return chosen
         return next((c for c in items if not framed(c)), None)
+
+    def editor_useful(self):
+        """Editor nur, wenn das gewählte Icon noch keinen iiSU-Rahmen hat."""
+        items = self.cands.get("cartridge") or []
+        if not items:
+            return False
+        cur = items[self.idx["cartridge"]]
+        if self.kind_key() == "cartridge":
+            return not self.framed(cur)
+        chosen = self.chosen.get("cartridge")
+        return not (chosen and self.framed(chosen)) and self.editor_source() is not None
+
+    @staticmethod
+    def framed(c):
+        """iiSU-Box-Art (und im Editor erzeugte Bilder) haben den Rahmen schon."""
+        return str(c.get("id") or "").startswith("iidb-iisu_boxart") or bool(c.get("_png"))
+
+    def refresh_search(self):
+        """L3: Artwork-Suche für das Spiel neu ausführen; nicht geladene Vorschauen neu holen."""
+        for url in [u for u, v in self.previews.items() if v is None]:
+            del self.previews[url]
+        gi = next((n for n, g in enumerate(self.games) if g[0] == self.rom), None)
+        if gi is None:
+            return
+        keep_kind, keep_query, keep_chosen = self.kind, self.query, dict(self.chosen)
+        def then():
+            self.kind = keep_kind
+            for k, old in keep_chosen.items():        # übernommene Bilder behalten
+                if old.get("_png"):
+                    self.cands[k] = [old] + list(self.cands.get(k) or [])
+                    self.chosen[k] = old
+                    continue
+                match = next((c for c in self.cands.get(k) or [] if c.get("url") == old.get("url")), None)
+                if match:
+                    self.chosen[k] = match
+            self.want_previews()
+            self.say("Suche aktualisiert")
+        self.open_game(gi, name=keep_query or None, then=then)
 
     def open_editor(self):
         """Icon-Editor: ein 1:1-Bild mit iiSU-Rahmen für den Cartridge/Icon-Platz."""
@@ -1205,7 +1243,7 @@ class App:
             taken = c is not None and self.chosen.get(kind) is c
             return [("A", "Abwählen" if taken else "Übernehmen", self.toggle_choice if c else None),
                     ("B", "Batch beenden" if self.batch else "Zurück", self.back),
-                    ("X", "Icon-Editor", self.open_editor if self.cands.get("cartridge") else None),
+                    ("X", "Icon-Editor", self.open_editor if self.editor_useful() else None),
 
                     ("Y", "Spiel suchen", self.open_search)]
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen", "gsearch": "Öffnen",
@@ -1514,6 +1552,8 @@ class App:
         elif code == BTN_START and self.view == "game":
             self.transfer()
         elif code == BTN_THUMBL and self.view == "game":
+            self.refresh_search()
+        elif code == BTN_THUMBR and self.view == "game":
             self.top_mode = "single" if self.top_mode == "mix" else "mix"
             self.top_dirty = True
         elif code == BTN_START and self.view == "systems" and self.systems:
@@ -1723,7 +1763,8 @@ class App:
             ([("X", "Editor"), ("Y", "Filter: alle · fehlende · keine Artworks")], False),
             ("Spielansicht", True),
             ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
-            ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Ansicht oben")], False),
+            ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Suche aktualisieren")], False),
+            ([("R3", "Ansicht oben")], False),
             ([("X", "Editor: 1:1-Bild mit iiSU-Rahmen gestalten")], False),
         ]),
     ]
@@ -2032,7 +2073,7 @@ class App:
         if c and self.chosen.get(kind) is c:
             P.rrect(1000, 870, 220, 56, 28, "2bb673")
             P.text("✓ übernommen", 24, 1110, 906, "ffffff", bold=True, align="c", raw=True)
-        P.hint([("L3", "Mix-Ansicht")], 18, 40, 925, "8a8a8a", "bdbdbd")
+        P.hint([("R3", "Mix-Ansicht")], 18, 40, 925, "8a8a8a", "bdbdbd")
 
 
     def cover(self, P, path, x, y, w, h):
@@ -2124,7 +2165,7 @@ class App:
             y += 46
         if self.chosen:
             P.hint([("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
-        P.hint([("L3", "Großansicht")], 18, 1225, 925, "8a8a8a", "bdbdbd", align="r")
+        P.hint([("L3", "Suche aktualisieren"), ("R3", "Großansicht")], 18, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
 # ------------------------------------------------------------------ main ----
