@@ -439,3 +439,13 @@ wird bei jedem Öffnen frisch gewählt.
 - Bedienung: **A** / **▶** weiter · **B** / **◀** zurück · **Start** beenden.
 - Gleicher Inhalt als Anleitung: [TOUR.de.md](TOUR.de.md) / [TOUR.md](TOUR.md).
 
+
+### Seite „Spiel“ – erste Fassung (20.10.2026)
+- Kacheln je Emulator (L1/R1 zur Seite, Steuerkreuz + A oder Touch):
+  - **RetroArch:** Speichern, Laden, Slot −/+, Vorspulen, Screenshot, Neu starten, Emulator-Menü
+    (über die Steuerschnittstelle; Vorspulen/Neu starten/Menü schließen erst das CC).
+    Der Slot wird seit Spielstart mitgezählt (RetroArch meldet ihn nicht zurück).
+  - **DraStic:** Speichern (R2), Laden (L2) – kurz auftauen, Taste einspeisen, wieder anhalten; Screenshot.
+  - **Andere (DSperate, Ports …):** Screenshot; Hinweis auf das Emulator-Menü.
+- Screenshots außerhalb RetroArch: `grim` vom oberen Bildschirm nach `/storage/roms/screenshots/`.
+- Offen: Spickzettel, DSperate-Speichern über eigene (2)-Belegung, Schalter „Tastenkürzel erlauben“.
