@@ -271,6 +271,10 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self.gquery = ""
+        self.gresults = []                            # Spielsuche über alle Systeme
+        self.backups = []                             # Liste zum Wiederherstellen
+        self.confirm = None                           # Rückfrage (A ja / B nein)
         self.batch = None                             # laufender Batch
         self.pending = None                           # Folgeaktion nach Hintergrundarbeit
         self.after_saving = None                      # Folgeaktion nach dem Ladebildschirm
@@ -327,7 +331,7 @@ class App:
             self.view, self.sel, self.scroll = "systems", 0, 0
         self.work("Verbinde mit EmulationStation …", go)
 
-    def open_system(self, i, batch=False):
+    def open_system(self, i, batch=False, then=None):
         s = self.systems[i]
 
         def go():
@@ -345,7 +349,7 @@ class App:
                 self.games.append((base, name, status.get(base, 0)))
             self.games.sort(key=lambda g: g[1].casefold())
             self.view, self.sel, self.scroll = "games", 0, 0
-        self.work(f"{s['name']} wird geladen …", go, then=self.start_batch if batch else None)
+        self.work(f"{s['name']} wird geladen …", go, then=self.start_batch if batch else then)
 
     # -- Batch: alle Spiele mit fehlenden Artworks nacheinander --
     def start_batch(self):
@@ -690,8 +694,9 @@ class App:
 
     # -- Bedienung --
     def list_len(self):
-        return {"systems": len(self.systems), "games": len(self.games),
-                "search": len(self.results), "settings": len(self.setting_rows())}.get(self.view, 0)
+        return {"systems": len(self.systems), "games": len(self.games), "search": len(self.results),
+                "settings": len(self.setting_rows()), "gsearch": len(self.gresults),
+                "restore": len(self.backups)}.get(self.view, 0)
 
     def move(self, d):
         n = self.list_len()
@@ -714,6 +719,10 @@ class App:
             rows = self.setting_rows()
             if 0 <= i < len(rows):
                 rows[i][2]()
+        elif self.view == "gsearch" and self.gresults:
+            self.pick_global(i)
+        elif self.view == "restore" and self.backups:
+            self.ask_restore(i)
         elif self.view == "games" and self.games:
             self.open_game(i)
         elif self.view == "search" and self.results:
@@ -732,6 +741,10 @@ class App:
             self.view = "game"
         elif self.view == "settings":
             self.view, self.sel, self.scroll = "systems", self.settings_from, 0
+        elif self.view == "gsearch":
+            self.view, self.sel, self.scroll = "systems", 0, 0
+        elif self.view == "restore":
+            self.view, self.sel, self.scroll = "settings", 2, 0
         elif self.view == "game":
             self.sel = next((n for n, g in enumerate(self.games) if g[0] == self.rom), self.sel)
             self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
@@ -754,12 +767,70 @@ class App:
                     ("X", "Editor", None),          # vorgemerkt: 1:1-Bild mit iiSU-Rahmen
 
                     ("Y", "Spiel suchen", self.open_search)]
-        a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen",
-                   "settings": "Ändern"}.get(self.view, "")
+        a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen", "gsearch": "Öffnen",
+                   "settings": "Ändern", "restore": "Wiederherstellen"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
                 ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else ("X", "", None),
-                ("Y", "", None)]
+                ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else ("Y", "", None)]
+
+    # -- Spielsuche über alle Systeme --
+    def open_global_search(self):
+        self.kbd = Keyboard(self, "Spiel suchen (alle Systeme)", self.run_global_search, secret=False)
+        self.kbd.text = self.gquery
+        self.kbd.cur = len(self.kbd.text)
+
+    def run_global_search(self, text=None):
+        text = (text if isinstance(text, str) else self.kbd.text if self.kbd else "").strip()
+        self.kbd = None
+        if not text:
+            return
+        self.gquery = text
+        words = normalize_name(text).split()
+
+        def go():
+            hits = []
+            for si, sysd in enumerate(self.systems):
+                try:
+                    games = self.app.device.games(sysd["key"])   # Spieleliste von EmulationStation
+                except Exception as exc:
+                    log("Spieleliste nicht lesbar:", sysd["key"], exc)
+                    continue
+                for g in games:
+                    name = (g.get("name") or "").strip()
+                    rom = Path(str(g.get("path") or "").replace("\\", "/")).name
+                    hay = normalize_name(name + " " + rom)
+                    if rom and all(w in hay for w in words):
+                        hits.append({"name": name or display_name_from_rom(rom), "system": sysd["name"],
+                                     "si": si, "rom": rom})
+            hits.sort(key=lambda h: (h["name"].casefold(), h["system"]))
+            self.gresults = hits
+            self.view, self.sel, self.scroll = "gsearch", 0, 0
+            if not hits:
+                self.say("Kein Spiel gefunden")
+        self.work("Suche in allen Systemen …", go)
+
+    def pick_global(self, i):
+        h = self.gresults[i]
+
+        def then():
+            gi = next((n for n, g in enumerate(self.games) if g[0].casefold() == h["rom"].casefold()), None)
+            if gi is None:
+                self.say("Spiel in diesem System nicht gefunden")
+                return
+            self.sel = gi
+            self.scroll = max(0, gi - ROWS + 1)
+            self.open_game(gi)
+        self.open_system(h["si"], then=then)
+
+    # -- Rückfrage (A = ja, B = nein) --
+    def ask(self, title, lines, yes_label, on_yes):
+        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes}
+
+    def answer(self, yes):
+        c, self.confirm = self.confirm, None
+        if yes and c:
+            c["on_yes"]()
 
     # -- Einstellungen --
     def open_settings(self):
@@ -790,6 +861,7 @@ class App:
         return [
             ("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", self.edit_key),
             ("Sicherung vor dem Speichern", "an" if self.settings.get("backup") else "aus", self.toggle_backup),
+            ("Sicherung wiederherstellen", f"{len(backups)} vorhanden", self.open_restore),
             ("Sicherungen aufräumen", f"{len(backups)} · {human(sum(b.stat().st_size for b in backups))}",
              self.prune_backups),
             ("Zwischenspeicher leeren", human(cache), self.clear_cache),
@@ -797,9 +869,78 @@ class App:
         ]
 
     def toggle_backup(self):
-        self.settings["backup"] = not self.settings.get("backup")
-        save_settings(self.settings)
-        self.say("Sicherung vor dem Speichern: " + ("an" if self.settings["backup"] else "aus"))
+        def set_backup(on):
+            self.settings["backup"] = on
+            save_settings(self.settings)
+            self.say("Sicherung vor dem Speichern: " + ("an" if on else "aus"))
+        if not self.settings.get("backup"):
+            set_backup(True)
+            return
+        self.ask("Sicherung ausschalten?",
+                 ["Ohne Sicherung lässt sich ein Fehler nicht auf dem Gerät rückgängig machen.",
+                  "Geht etwas schief, wird ein PC benötigt, um gamelist.xml und",
+                  "die Artworks wiederherzustellen."],
+                 "Trotzdem ausschalten", lambda: set_backup(False))
+
+    def open_restore(self):
+        """Alle Sicherungen, neueste zuerst."""
+        import zipfile
+        folder = WORK / "data" / "backups"
+        found = []
+        for b in sorted(folder.glob("*.zip"), key=lambda f: f.stat().st_mtime, reverse=True) if folder.is_dir() else []:
+            try:
+                with zipfile.ZipFile(b) as z:
+                    m = json.loads(z.read("manifest.json"))
+                key = m.get("system") or "?"
+                stamp = str(m.get("created") or "")
+                try:
+                    when = time.strftime("%d.%m.%Y %H:%M", time.strptime(stamp, "%Y-%m-%d_%H-%M-%S"))
+                except ValueError:
+                    when = stamp
+                name = next((x["name"] for x in self.systems if x["key"] == key),
+                            SYSTEMS[key].name if key in SYSTEMS else key)
+                found.append({"path": b, "system": key, "name": name, "when": when,
+                              "files": max(0, len(m.get("files") or []) - 1)})
+            except Exception as exc:
+                log("Sicherung nicht lesbar:", b, exc)
+        self.backups = found
+        if not found:
+            self.say("Noch keine Sicherungen vorhanden")
+            return
+        self.view, self.sel, self.scroll = "restore", 0, 0
+
+    def ask_restore(self, i):
+        b = self.backups[i]
+        self.ask(f"{b['name']} wiederherstellen?",
+                 [f"Stand vom {b['when']} · {b['files']} Artworks.",
+                  "gamelist.xml und die gesicherten Artworks dieses Systems werden",
+                  "auf diesen Stand zurückgesetzt. Spätere Änderungen gehen verloren."],
+                 "Wiederherstellen", lambda: self.restore(b))
+
+    def restore(self, b):
+        import zipfile
+
+        def go():
+            root = Path("/storage/roms") / b["system"]
+            with zipfile.ZipFile(b["path"]) as z:
+                names = [n for n in z.namelist() if n != "manifest.json"]
+                gl = f"{b['system']}/gamelist.xml"
+                for n in sorted(names, key=lambda n: n == gl):        # gamelist.xml zuletzt
+                    target = (Path("/storage/roms") / n).resolve()
+                    if root.resolve() not in target.parents:
+                        raise RuntimeError(f"Ungültiger Pfad in der Sicherung: {n}")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    if n == gl and target.exists():
+                        target.with_name("gamelist.xml.vor-wiederherstellung").write_bytes(target.read_bytes())
+                    tmp = target.with_name(target.name + ".rds-tmp")
+                    tmp.write_bytes(z.read(n))
+                    tmp.replace(target)
+            self.changed = True
+            if self.system and self.system["key"] == b["system"]:
+                self.system = None          # Spieleliste beim nächsten Öffnen neu einlesen
+            self.say(f"{b['name']}: Stand vom {b['when']} wiederhergestellt")
+            log("Wiederhergestellt:", b["path"])
+        self.work("Sicherung wird wiederhergestellt …", go)
 
     def prune_backups(self):
         """Je System nur die neueste Sicherung behalten."""
@@ -846,6 +987,10 @@ class App:
             return
         if self.busy or self.saving:
             return
+        if self.confirm:
+            if code in (BTN_EAST, BTN_SOUTH):
+                self.answer(code == BTN_EAST)
+            return
         if code == BTN_SOUTH:
             self.back()
             return
@@ -867,7 +1012,7 @@ class App:
             self.batch_next(False)                           # Spiel überspringen
 
     def on_dir(self, dx, dy):
-        if self.busy:
+        if self.busy or self.confirm:
             return
         if self.view == "game":
             if self.kind_key() in VERTICAL:
@@ -880,6 +1025,8 @@ class App:
 
     def on_tap(self, x, y):
         hit = self._hit(x, y)
+        if self.confirm and (not hit or hit[0] != "confirm"):
+            return
         if not hit or self.busy:
             return
         kind, val = hit
@@ -888,6 +1035,8 @@ class App:
                 self.activate(val)
             else:
                 self.sel = val
+        elif kind == "confirm":
+            self.answer(val)
         elif kind == "setup":
             self.answer_setup(val)
         elif kind == "btn" and val:
@@ -928,7 +1077,7 @@ class App:
             self.kbd.touch_up(x0, y0, x1, y1)
             return
         dx, dy = x1 - x0, y1 - y0
-        if abs(dy) > 60 and abs(dy) > abs(dx) and self.view in ("games", "search", "systems", "settings"):
+        if abs(dy) > 60 and abs(dy) > abs(dx) and self.view in ("games", "search", "systems", "settings", "gsearch", "restore"):
             self.move(-round(dy / ROW_H))                 # senkrecht wischen = Liste blättern
             return
         if self.view == "game":
@@ -1011,12 +1160,15 @@ class App:
             return
         if self.view == "setup":
             self.draw_setup(P)
-        elif self.view in ("systems", "games", "search", "settings"):
+        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore"):
             self.draw_list(P)
         elif self.view == "game":
             self.draw_game(P)
         else:
             self.header(P, "Artwork Manager")
+        if self.confirm:
+            self.draw_confirm(P, self.confirm)
+            return
         busy, message = self.busy, self.message   # Hintergrund-Threads ändern das jederzeit
         if busy:
             P.rrect(230, 380, 800, 150, 30, T["card"])
@@ -1042,6 +1194,22 @@ class App:
         P.rrect(650, 600, 560, 110, 30, T["tile"])
         P.text("B  Nein", 34, 930, 668, T["text"], bold=True, align="c", raw=True)
         self.hits.append((650, 600, 560, 110, ("setup", False)))
+
+    def draw_confirm(self, P, c):
+        """Rückfrage über der aktuellen Ansicht: A = ja, B = nein."""
+        T, A = self.T, self.accent
+        self.hits = []
+        P.rrect(0, 0, 1260, 951, 0, "000000", a=0.55)
+        P.rrect(110, 200, 1040, 470, 34, T["card"])
+        P.text(c["title"], 36, 630, 280, T["text"], bold=True, align="c", raw=True)
+        for n, line in enumerate(c["lines"]):
+            P.text(line, 25, 630, 350 + n * 42, T["muted"], align="c", raw=True)
+        P.rrect(160, 540, 450, 90, 26, A)
+        P.hint([("A", c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
+        self.hits.append((160, 540, 450, 90, ("confirm", True)))
+        P.rrect(650, 540, 450, 90, 26, T["tile"])
+        P.hint([("B", "Abbrechen")], 27, 875, 597, T["text"], T["text"], align="c")
+        self.hits.append((650, 540, 450, 90, ("confirm", False)))
 
     def draw_saving(self, P, sv):
         """Kleiner Ladebildschirm: welches Spiel, welche Artwork-Stile."""
@@ -1075,6 +1243,12 @@ class App:
         elif self.view == "settings":
             title, hint = "Einstellungen", hint_parts("▲ ▼", "wählen", "A", "ändern")
             rows = [(name, value, None) for name, value, _act in self.setting_rows()]
+        elif self.view == "gsearch":
+            title, hint = f"Suche: {self.gquery}", hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
+            rows = [(h["name"], h["system"], None) for h in self.gresults]
+        elif self.view == "restore":
+            title, hint = "Sicherung wiederherstellen", hint_parts("▲ ▼", "wählen", "A", "wiederherstellen")
+            rows = [(f"{b['name']} · {b['when']}", f"{b['files']} Artworks", None) for b in self.backups]
         elif self.view == "games":
             title, hint = self.system["name"], hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
             rows = [(name, None, st) for _rom, name, st in self.games]
