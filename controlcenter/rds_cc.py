@@ -1211,6 +1211,11 @@ def inject_keys(seq):
             if isinstance(item, float):
                 time.sleep(item)
                 continue
+            if len(item) == 3:                     # ("abs", Achse, Wert)
+                _, code, val = item
+                os.write(fd, EVENT.pack(0, 0, 3, code, val))
+                os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
+                continue
             code, val = item
             os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
             os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
@@ -1635,6 +1640,31 @@ DSP_LABELS = {"quit": "Beenden", "pause": "Menü", "slot_next": "Slot +", "slot_
 
 # Tastennummer (RetroArch/SDL/DraStic) → evdev-Code des eingebauten Joypads
 JOY_CODES = [304, 305, 307, 308, 310, 311, 312, 313, 314, 315, 316, 317, 318, 544, 545, 546, 547]
+
+# SDL-Achsennummer → evdev-ABS-Code (Gerät meldet ABS_X, ABS_Y, ABS_RX, ABS_RY; den rechten Stick gibt es nicht)
+JOY_AXES = [0, 1, 3, 4]
+
+
+def drastic_press(name, dflt=None):
+    """DraStic-Steuerung auslösen, wie in drastic.cfg belegt (controls_b): Taste (1024+n) oder
+    Stick-Richtung (1152+n = Achse n positiv, 1216+n = negativ). Liefert die Beschreibung oder None."""
+    m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % name,
+                  rd("/storage/.config/drastic/config/drastic.cfg") or "")
+    v = int(m.group(1)) if m else dflt
+    if v is None:
+        return None
+    if 1024 <= v < 1024 + len(JOY_CODES):
+        code = JOY_CODES[v - 1024]
+        inject_keys([(code, 1), 0.12, (code, 0)])
+        return "Taste %d" % (v - 1024)
+    for base, sign in ((1152, 1), (1216, -1)):
+        n = v - base
+        if 0 <= n < len(JOY_AXES):
+            ax = JOY_AXES[n]
+            inject_keys([("abs", ax, 32767 * sign), 0.15, ("abs", ax, 0)])
+            return "Achse %d%s" % (n, "+" if sign > 0 else "−")
+    return None
+
 
 # SDL-Namen (DSperate) → evdev-Code des eingebauten Joypads (Reihenfolge = retrogame_joypad.cfg)
 DSP_CODES = {"a": 304, "b": 305, "x": 307, "y": 308, "leftshoulder": 310, "rightshoulder": 311,
@@ -4610,13 +4640,8 @@ def main():
             toggle("cc")
             def later():
                 time.sleep(0.3)
-                name, dflt = ("MENU", 11) if key == "menu" else ("FAST_FORWARD", 12)
-                m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % name,
-                              rd("/storage/.config/drastic/config/drastic.cfg") or "")
-                idx = int(m.group(1)) - 1024 if m and 1024 <= int(m.group(1)) < 1100 else dflt
-                code = JOY_CODES[idx] if idx < len(JOY_CODES) else 317
-                inject_keys([(code, 1), 0.12, (code, 0)])
-                log("Seite Spiel: DraStic", key, "über Taste", idx)
+                how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
+                log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key in ("menu", "ff"):
