@@ -20,7 +20,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
   Beispiel: **▲ ▼** – System wählen · **Start** – Einzelsuche · **Select** – Mehrfachsuche.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
-## Erledigt 20.10.2026 (Release v12)
+## Erledigt 20.10.2026 – Release v12 veröffentlicht (20.10.2026)
 - [x] **Artwork Manager am Gerät** (Ports): zwei Bildschirme (oben Mix-Vorschau, unten Listen), Tabs Boxart/Cartridge/Image,
       Einzel- und Mehrfachsuche, globale Spielesuche, Filter, Icon-Editor mit iiSU-Rahmen, eigene Bilder (`eigene/`),
       Einstellungen (API-Key, Sicherung, M3U, Wiederherstellen, Cache, Log), Englisch, Pillow im Installer
@@ -30,6 +30,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [x] **Tour** am Gerät (einmalig, erneut mit Select im CC) + `docs/TOUR.md`/`TOUR.de.md` mit Screenshots
 - [x] Hinweiszeilen mit fetten Tasten überall (`Pen.hint`)
 - [x] README EN/DE: Artwork Manager statt „DualStation Sync“
+- [x] Home 2× im Spiel: direkt zum vorherigen Spiel (wie OnionOS)
+- [x] ES-Patch 003: Bluetooth auf einem Screen, system.cfg neu laden, B ohne Navigationsleiste, Y-Spielesuche
 
 ### Offen nach v12
 - [ ] Artwork Manager: SGDB-Wiederholung bei Zeitüberschreitung, M3U in Unterordnern
