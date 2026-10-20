@@ -3072,15 +3072,14 @@ class ControlCenter:
         if small:
             sp = 1170 / len(small) if len(small) > 1 else 1170
             for j, (i, key, label) in enumerate(small):
-                cx = 45 + sp * (j + 0.5) if len(small) > 1 else 45 + 60
-                cy = y + 50
+                cx = 45 + sp * (j + 0.5) if len(small) > 1 else 630
+                cy = 670                                  # Symbolreihe unten über der Fußzeile
                 P.circle(cx, cy, 50, mix(T["tile"], A, 0.22))
                 P.game_icon(key, cx, cy, T["text"])
                 if i == self.gsel:
                     self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
                 P.text(label, 18, cx, cy + 86, T["muted"], align="c")
                 self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
-            y += 190
         y += 30
         if self.gbusy:
             P.text("Bitte warten …", 24, 630, y, T["muted"], align="c")
