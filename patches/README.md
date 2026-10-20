@@ -8,7 +8,9 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
   current one ends, without rebuilding ES (request file `/tmp/rds-next-launch`)
 - `003-rds-bluetooth-systemcfg-navbar.patch` – Bluetooth pairing window on one screen; ES re-reads
   `system.cfg` when the main menu opens and the file was changed (e.g. by the Control Center);
-  B in the system list no longer opens the navigation bar ("Go to manufacturer").
+  B in the system list no longer opens the navigation bar ("Go to manufacturer");
+  Y in the system list searches games across all systems (result list, A jumps to the game) –
+  no "All games" collection needed.
 
 ## Usage
 

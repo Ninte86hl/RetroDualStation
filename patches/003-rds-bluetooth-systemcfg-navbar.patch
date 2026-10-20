@@ -32,10 +32,90 @@ index 39d3a7dee..0b1b740be 100644
  	bool isFullUI = !UIModeController::getInstance()->isUIModeKid() && !UIModeController::getInstance()->isUIModeKiosk();
  
 diff --git a/es-app/src/views/SystemView.cpp b/es-app/src/views/SystemView.cpp
-index a7eafe497..d13feb912 100644
+index a7eafe497..e7b47b223 100644
 --- a/es-app/src/views/SystemView.cpp
 +++ b/es-app/src/views/SystemView.cpp
-@@ -490,11 +490,7 @@ bool SystemView::input(InputConfig* config, Input input)
+@@ -24,6 +24,9 @@
+ #include "resources/TextureDataManager.h"
+ #include "guis/GuiTextEditPopup.h"
+ #include "guis/GuiTextEditPopupKeyboard.h"
++#include "guis/GuiSettings.h"
++#include "utils/StringUtil.h"
++#include <algorithm>
+ #include "TextToSpeech.h"
+ #include "BindingManager.h"
+ #include "guis/GuiRetroAchievements.h"
+@@ -335,25 +338,55 @@ int SystemView::moveCursorFast(bool forward)
+ 
+ void SystemView::showQuickSearch()
+ {
+-	SystemData* all = SystemData::getSystem("all");
+-	if (all != nullptr)
++	// RDS: eigene Spielesuche über alle Systeme (ohne Sammlung "Alle Spiele")
++	Window* window = mWindow;
++	auto doSearch = [window](const std::string& newVal)
+ 	{
+-		auto updateVal = [this, all](const std::string& newVal)
++		std::string q = Utils::String::toLower(Utils::String::trim(newVal));
++		if (q.empty())
++			return;
++
++		std::vector<FileData*> hits;
++		for (auto sys : SystemData::sSystemVector)
+ 		{
+-			auto index = all->getIndex(true);
++			if (sys->isCollection() || !sys->isGameSystem())
++				continue;
++			for (auto game : sys->getRootFolder()->getFilesRecursive(GAME, true))
++				if (Utils::String::toLower(game->getName()).find(q) != std::string::npos)
++					hits.push_back(game);
++		}
+ 
+-			index->resetFilters();
+-			index->setTextFilter(newVal);
++		if (hits.empty())
++		{
++			window->pushGui(new GuiMsgBox(window, _("NO GAMES FOUND"), _("OK"), nullptr));
++			return;
++		}
+ 
+-			ViewController::get()->reloadGameListView(all);
+-			ViewController::get()->goToGameList(all, false);
+-		};
++		std::sort(hits.begin(), hits.end(), [](FileData* x, FileData* y) { return Utils::String::toLower(x->getName()) < Utils::String::toLower(y->getName()); });
++		if (hits.size() > 150)
++			hits.resize(150);
+ 
+-		if (Settings::getInstance()->getBool("UseOSK"))
+-			mWindow->pushGui(new GuiTextEditPopupKeyboard(mWindow, _("QUICK SEARCH"), "", updateVal, false));
+-		else
+-			mWindow->pushGui(new GuiTextEditPopup(mWindow, _("QUICK SEARCH"), "", updateVal, false));
+-	}
++		auto gui = new GuiSettings(window, _("SEARCH") + " – " + newVal);
++		for (auto game : hits)
++		{
++			FileData* g = game;
++			gui->addEntry(g->getName() + "  ·  " + g->getSourceFileData()->getSystem()->getFullName(), true, [window, gui, g]
++			{
++				SystemData* sys = g->getSourceFileData()->getSystem();
++				delete gui;
++				ViewController::get()->goToGameList(sys, true);
++				auto view = ViewController::get()->getGameListView(sys);
++				if (view)
++					view->setCursor(g);
++			});
++		}
++		window->pushGui(gui);
++	};
++
++	if (Settings::getInstance()->getBool("UseOSK"))
++		mWindow->pushGui(new GuiTextEditPopupKeyboard(mWindow, _("QUICK SEARCH"), "", doSearch, false));
++	else
++		mWindow->pushGui(new GuiTextEditPopup(mWindow, _("QUICK SEARCH"), "", doSearch, false));
+ }
+ 
+ void SystemView::showNetplay()
+@@ -490,11 +523,7 @@ bool SystemView::input(InputConfig* config, Input input)
  			return true;
  		}
  
@@ -48,8 +128,13 @@ index a7eafe497..d13feb912 100644
  
  		if (config->isMappedTo("x", input))
  		{
-@@ -907,8 +903,6 @@ std::vector<HelpPrompt> SystemView::getHelpPrompts()
- 			prompts.push_back(HelpPrompt("y", _("SEARCH"), [&] { showQuickSearch(); })); // QUICK 
+@@ -903,12 +932,9 @@ std::vector<HelpPrompt> SystemView::getHelpPrompts()
+ 	else
+ 	{
+ 		prompts.push_back(HelpPrompt("x", _("RANDOM")));
+-		if (SystemData::getSystem("all") != nullptr)
+-			prompts.push_back(HelpPrompt("y", _("SEARCH"), [&] { showQuickSearch(); })); // QUICK 
++		prompts.push_back(HelpPrompt("y", _("SEARCH"), [&] { showQuickSearch(); })); // RDS
  	}
  
 -	if (SystemData::IsManufacturerSupported)
