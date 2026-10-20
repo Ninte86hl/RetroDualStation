@@ -448,6 +448,9 @@ wird bei jedem Öffnen frisch gewählt.
     Der Slot wird seit Spielstart mitgezählt (RetroArch meldet ihn nicht zurück).
   - **DraStic:** Speichern (R2), Laden (L2) – kurz auftauen, Taste einspeisen, wieder anhalten; Screenshot.
   - **Andere (DSperate, Ports …):** Screenshot; Hinweis auf das Emulator-Menü.
+- Aufbau: **Speichern** und **Laden** als große Kacheln mit zweiter Zeile (zuletzt genutzter / neuester Slot mit Zeit),
+  darunter Vorspulen, Screenshot, Neu starten und Emulator-Menü als Symbole.
+- Slot-Auswahl: **X** auf einem belegten Slot, dann nochmal **X** → Savestate und Vorschaubild löschen.
 - Nach jeder Aktion schließt sich das CC (zurück ins Spiel) – außer bei der Slot-Wahl.
 - Screenshots außerhalb RetroArch: `grim` vom oberen Bildschirm nach `/storage/roms/screenshots/`.
 - Offen: Spickzettel, DSperate-Speichern über eigene (2)-Belegung, Schalter „Tastenkürzel erlauben“.

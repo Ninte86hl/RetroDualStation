@@ -227,7 +227,9 @@ LANG = ["de"]
 
 EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
-    "speichern": "save", "laden": "load", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete",
+    "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
+    "Emulator": "Emulator", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
@@ -560,6 +562,41 @@ class Pen:
         cairo.cairo_set_line_width(cr, width * self.s)
         self.color(c)
         cairo.cairo_stroke(cr)
+
+    def poly(self, pts, c):
+        cr = self.cr
+        cairo.cairo_new_path(cr)
+        cairo.cairo_move_to(cr, self.X(pts[0][0]), self.Y(pts[0][1]))
+        for x, y in pts[1:]:
+            cairo.cairo_line_to(cr, self.X(x), self.Y(y))
+        cairo.cairo_close_path(cr)
+        self.color(c)
+        cairo.cairo_fill(cr)
+
+    def game_icon(self, kind, cx, cy, c):
+        """Symbole der Seite „Spiel“: Vorspulen, Screenshot, Neu starten, Emulator-Menü."""
+        import math
+        cr, s = self.cr, self.s
+        if kind == "ff":
+            for dx in (-14, 6):
+                self.poly([(cx + dx - 6, cy - 14), (cx + dx + 14, cy), (cx + dx - 6, cy + 14)], c)
+        elif kind == "shot":
+            self.rrect(cx - 22, cy - 13, 44, 30, 6, c)
+            self.rrect(cx - 8, cy - 19, 16, 8, 3, c)
+            self.circle(cx, cy + 2, 10, "000000")
+            self.circle(cx, cy + 2, 6, c)
+        elif kind == "reset":
+            cairo.cairo_new_path(cr)
+            cairo.cairo_arc(cr, self.X(cx), self.Y(cy), 16 * s, -math.pi * 0.35, math.pi * 1.45)
+            cairo.cairo_set_line_cap(cr, 1)
+            cairo.cairo_set_line_width(cr, 4 * s)
+            self.color(c)
+            cairo.cairo_stroke(cr)
+            ax, ay = cx + 16 * math.cos(-math.pi * 0.35), cy + 16 * math.sin(-math.pi * 0.35)
+            self.poly([(ax - 9, ay - 6), (ax + 7, ay - 9), (ax + 2, ay + 7)], c)
+        elif kind == "menu":
+            for dy in (-11, 0, 11):
+                self.rrect(cx - 16, cy + dy - 2.5, 32, 5, 2.5, c)
 
     def logo(self, x, y, h, fg, knockout, red="e5383b", blue="3d7bff"):
         """RDS-Monogramm „Verwoben“ (Logo-Entwurf Variante 3), Höhe h, oben links bei (x, y)."""
@@ -1479,6 +1516,7 @@ GAME_ACTIONS = {
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot")]
+GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
 SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
@@ -2338,6 +2376,7 @@ class ControlCenter:
         self.slot = 0             # RetroArch-Speicherplatz (seit Spielstart gezählt)
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
         self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
+        self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
         self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -2417,6 +2456,7 @@ class ControlCenter:
         """Beim Schließen des Overlays: Tastatur und Untermenü verlassen."""
         self.kbd = None
         self.slot_pick = None
+        self.del_confirm = None
         self.back()
 
     def back(self):
@@ -2430,6 +2470,7 @@ class ControlCenter:
             return True
         if self.slot_pick is not None:
             self.slot_pick = None
+            self.del_confirm = None
             return True
         return False
 
@@ -2440,6 +2481,22 @@ class ControlCenter:
             self.sub.tick()
 
     def details(self):
+        if self.page == 1 and self.slot_pick is not None:
+            n = self.slot_pick
+            if not self._slot_exists(n):
+                return
+            if self.del_confirm != n:
+                self.del_confirm = n          # erst beim zweiten X wirklich löschen
+                return
+            f = self._slot_file(n)
+            for path in (f, f + ".png"):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+            log("Seite Spiel: Slot", n, "gelöscht")
+            self.del_confirm = None
+            return
         if self.page == 0 and not self.sub and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             self.open_sub(self.tile)
 
@@ -2501,14 +2558,22 @@ class ControlCenter:
             n = self.slot_pick + dx + dy * 3
             if 0 <= n < SLOTS_USER:
                 self.slot_pick = n
+                self.del_confirm = None
             return
         if self.page == 1:
             acts = game_actions(self.game)
             if acts:
-                cols = 4
-                n = self.gsel + dx + dy * cols
-                if 0 <= n < len(acts):
-                    self.gsel = n
+                big = [i for i, a in enumerate(acts) if a[0] in GAME_BIG]
+                small = [i for i, a in enumerate(acts) if a[0] not in GAME_BIG]
+                row = big if self.gsel in big else small
+                if dx:
+                    k = row.index(self.gsel) + dx
+                    if 0 <= k < len(row):
+                        self.gsel = row[k]
+                elif dy > 0 and self.gsel in big and small:
+                    self.gsel = small[min(big.index(self.gsel) * 2, len(small) - 1)]
+                elif dy < 0 and self.gsel in small and big:
+                    self.gsel = big[min(small.index(self.gsel) // 2, len(big) - 1)]
             return
         if self.page != 0:
             return
@@ -2711,7 +2776,10 @@ class ControlCenter:
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
-            left = [("A", "speichern" if self.slot_mode == "save" else "laden"), ("B", "zurück")]
+            left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
+            if self._slot_exists(self.slot_pick):
+                left.append(("X", "nochmal: löschen" if self.del_confirm == self.slot_pick else "löschen"))
+            left.append(("B", "zurück"))
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
         P.hint(left, 17, 45, 835, T["muted"], T["text"])
@@ -2983,22 +3051,64 @@ class ControlCenter:
         if self.slot_pick is not None:
             self._draw_slots(P)
             return
-        for i, (key, label) in enumerate(acts):
-            tx = 45 + (i % cols) * (tw + gap)
-            ty = 200 + (i // cols) * (th + gap)
-            fill = mix(T["tile"], A, 0.22)
-            P.rrect(tx, ty, tw, th, 24, fill)
-            P.text(label, 22, tx + tw / 2, ty + th / 2 + 8, T["text"], bold=True, align="c")
-            if i == self.gsel:
-                self._focus_ring(P, tx, ty, tw, th, 24)
-            self.hits.append((tx, ty, tw, th, ("gact", i)))
-        y = 200 + ((len(acts) - 1) // cols + 1) * (th + gap) + 40
+        big = [(i, k, l) for i, (k, l) in enumerate(acts) if k in GAME_BIG]
+        small = [(i, k, l) for i, (k, l) in enumerate(acts) if k not in GAME_BIG]
+        y = 200
+        if big:
+            bw = (1170 - gap * (len(big) - 1)) / len(big)
+            for j, (i, key, label) in enumerate(big):
+                tx = 45 + j * (bw + gap)
+                fill = mix(T["tile"], A, 0.22)
+                P.rrect(tx, y, bw, th, 24, fill)
+                P.text(label, 24, tx + 28, y + 66, T["text"], bold=True)
+                P.text(self._big_detail(key), 17, tx + 28, y + 100, T["muted"], raw=True)
+                if g.get("emu") == "RetroArch":   # öffnet die Slot-Auswahl
+                    P.circle(tx + bw - 44, y + th / 2, 24, mix(fill, T["text"], 0.18))
+                    P.chevron(tx + bw - 40, y + th / 2, 10, T["text"])
+                if i == self.gsel:
+                    self._focus_ring(P, tx, y, bw, th, 24)
+                self.hits.append((tx, y, bw, th, ("gact", i)))
+            y += th + 50
+        if small:
+            sp = 1170 / len(small) if len(small) > 1 else 1170
+            for j, (i, key, label) in enumerate(small):
+                cx = 45 + sp * (j + 0.5) if len(small) > 1 else 45 + 60
+                cy = y + 50
+                P.circle(cx, cy, 50, mix(T["tile"], A, 0.22))
+                P.game_icon(key, cx, cy, T["text"])
+                if i == self.gsel:
+                    self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
+                P.text(label, 18, cx, cy + 86, T["muted"], align="c")
+                self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
+            y += 190
+        y += 30
         if self.gbusy:
             P.text("Bitte warten …", 24, 630, y, T["muted"], align="c")
         elif self.gmsg and time.monotonic() - self.gmsg[1] < 4:
             P.text(self.gmsg[0], 24, 630, y, T["text"], bold=True, align="c")
         elif g.get("emu") not in GAME_ACTIONS:
             P.text("Weitere Aktionen im Menü des Emulators.", 20, 630, y, T["muted"], align="c")
+
+    def _big_detail(self, key):
+        """Zweite Zeile der Kacheln Speichern/Laden (wie bei WLAN/Bluetooth)."""
+        g = self.game or {}
+        def when(path):
+            return time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(path)))
+        if g.get("emu") == "RetroArch":
+            used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
+            if key == "save":
+                return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % self.slot if used else tr("Slot wählen")
+            if not used:
+                return tr("Kein Spielstand")
+            n = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
+            return "Slot %d  ·  %s" % (n, when(self._slot_file(n)))
+        if g.get("emu") == "DraStic":
+            rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
+            dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
+            if os.path.exists(dss):
+                return "Slot 0  ·  " + when(dss)
+            return "Slot 0" if key == "save" else tr("Kein Spielstand")
+        return ""
 
     def hint_done(self):
         self.ghint = False
@@ -3072,6 +3182,9 @@ class ControlCenter:
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if cur else "000000", 1.0 if cur else 0.6)
             label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
             P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            if n == self.del_confirm:
+                P.rrect(tx, ty, tw, th, 20, "000000", 0.55)
+                P.text("X – " + tr("nochmal: löschen"), 22, tx + tw / 2, ty + th / 2, "ffffff", bold=True, align="c", raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
