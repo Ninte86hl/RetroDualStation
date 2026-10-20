@@ -6,6 +6,9 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `001-rgds-menu-dualscreen.patch` – menus, popups and keyboard on the right screen
 - `002-rds-gameswitcher-chain.patch` – Game switcher: start the next game right after the
   current one ends, without rebuilding ES (request file `/tmp/rds-next-launch`)
+- `003-rds-bluetooth-systemcfg-navbar.patch` – Bluetooth pairing window on one screen; ES re-reads
+  `system.cfg` when the main menu opens and the file was changed (e.g. by the Control Center);
+  B in the system list no longer opens the navigation bar ("Go to manufacturer").
 
 ## Usage
 
@@ -17,7 +20,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **both** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all three** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating

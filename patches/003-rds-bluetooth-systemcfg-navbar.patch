@@ -1,0 +1,137 @@
+diff --git a/es-app/src/guis/GuiBluetoothPair.cpp b/es-app/src/guis/GuiBluetoothPair.cpp
+index c852f9916..a84e3afe4 100644
+--- a/es-app/src/guis/GuiBluetoothPair.cpp
++++ b/es-app/src/guis/GuiBluetoothPair.cpp
+@@ -24,12 +24,13 @@ GuiBluetoothPair::GuiBluetoothPair(Window* window)
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+ 	{
+-		setPosition((Renderer::getScreenWidth() - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+-		setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++		float rdsW = (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth();
++		setSize(rdsW, Renderer::getScreenHeight());
++		setPosition((rdsW - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ 	}
+ 	else
+ 	{
+-		setPosition((Renderer::getScreenWidth() - getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ 		setSize(getSize().x(), Renderer::getScreenHeight() * 0.60f);
+ 	}
+ 
+diff --git a/es-app/src/guis/GuiMenu.cpp b/es-app/src/guis/GuiMenu.cpp
+index 39d3a7dee..0b1b740be 100644
+--- a/es-app/src/guis/GuiMenu.cpp
++++ b/es-app/src/guis/GuiMenu.cpp
+@@ -132,6 +132,7 @@
+ 
+ GuiMenu::GuiMenu(Window *window, bool animate) : GuiComponent(window), mMenu(window, _("MAIN MENU").c_str())
+ {
++	SystemConf::getInstance()->reloadIfChanged(); // RDS
+ 	// MAIN MENU
+ 	bool isFullUI = !UIModeController::getInstance()->isUIModeKid() && !UIModeController::getInstance()->isUIModeKiosk();
+ 
+diff --git a/es-app/src/views/SystemView.cpp b/es-app/src/views/SystemView.cpp
+index a7eafe497..d13feb912 100644
+--- a/es-app/src/views/SystemView.cpp
++++ b/es-app/src/views/SystemView.cpp
+@@ -490,11 +490,7 @@ bool SystemView::input(InputConfig* config, Input input)
+ 			return true;
+ 		}
+ 
+-		if (config->isMappedTo(BUTTON_BACK, input))
+-		{
+-			if (showNavigationBar())
+-				return true;
+-		}
++		// RDS: B in der Systemliste ohne Navigationsleiste
+ 
+ 		if (config->isMappedTo("x", input))
+ 		{
+@@ -907,8 +903,6 @@ std::vector<HelpPrompt> SystemView::getHelpPrompts()
+ 			prompts.push_back(HelpPrompt("y", _("SEARCH"), [&] { showQuickSearch(); })); // QUICK 
+ 	}
+ 
+-	if (SystemData::IsManufacturerSupported)
+-		prompts.push_back(HelpPrompt("b", _("NAVIGATION BAR"), [&] { showNavigationBar(); }));
+ 
+ #ifdef _ENABLE_FILEMANAGER_
+ 	if (UIModeController::getInstance()->isUIModeFull()) {
+diff --git a/es-core/src/SystemConf.cpp b/es-core/src/SystemConf.cpp
+index 029b0cff6..b8cfa3c87 100644
+--- a/es-core/src/SystemConf.cpp
++++ b/es-core/src/SystemConf.cpp
+@@ -12,6 +12,14 @@
+ #include <string>
+ #include <iostream>
+ #include <SDL_timer.h>
++#include <sys/stat.h>
++
++static long long rdsMtime(const std::string& f)
++{
++	struct stat st;
++	if (f.empty() || stat(f.c_str(), &st) != 0) return 0;
++	return (long long)st.st_mtime * 1000000000LL + st.st_mtim.tv_nsec;
++}
+ 
+ static std::string mapSettingsName(const std::string& name)
+ {
+@@ -71,6 +79,7 @@ bool SystemConf::loadSystemConf()
+ 		return true;
+ 
+ 	changedConf.clear();
++	mSystemConfMtime = rdsMtime(mSystemConfFile);
+ 
+ 	std::string line;
+ 	std::ifstream systemConf(mSystemConfFile);
+@@ -100,6 +109,18 @@ bool SystemConf::loadSystemConf()
+ 	return true;
+ }
+ 
++void SystemConf::reloadIfChanged()
++{
++	if (mSystemConfFile.empty() || !changedConf.empty())
++		return;
++	long long m = rdsMtime(mSystemConfFile);
++	if (m != 0 && m != mSystemConfMtime)
++	{
++		LOG(LogInfo) << "RDS: system.cfg changed externally, reloading";
++		loadSystemConf();
++	}
++}
++
+ bool SystemConf::saveSystemConf()
+ {
+ 	if (mSystemConfFile.empty())
+@@ -202,9 +223,11 @@ bool SystemConf::saveSystemConf()
+ 	std::ifstream  src(mSystemConfFileTmp, std::ios::binary);
+ 	std::ofstream  dst(mSystemConfFile, std::ios::binary);
+ 	dst << src.rdbuf();
++	dst.close();
+ 
+ 	remove(mSystemConfFileTmp.c_str());
+ 	changedConf.clear();
++	mSystemConfMtime = rdsMtime(mSystemConfFile);
+ 
+ 	return true;
+ }
+diff --git a/es-core/src/SystemConf.h b/es-core/src/SystemConf.h
+index 0c937bc7b..6f01fe63b 100644
+--- a/es-core/src/SystemConf.h
++++ b/es-core/src/SystemConf.h
+@@ -16,6 +16,7 @@ public:
+ 
+     bool loadSystemConf();
+     bool saveSystemConf();
++    void reloadIfChanged(); // RDS: system.cfg von außen geändert (Kontrollcenter)
+ 
+     std::string get(const std::string &name);
+     bool set(const std::string &name, const std::string &value);
+@@ -33,6 +34,7 @@ private:
+ 
+ 	std::string mSystemConfFile;
+ 	std::string mSystemConfFileTmp;
++	long long mSystemConfMtime = 0;
+ };
+ 
+ 
