@@ -3055,20 +3055,7 @@ class ControlCenter:
         small = [(i, k, l) for i, (k, l) in enumerate(acts) if k not in GAME_BIG]
         y = 200
         if big:
-            bw = (1170 - gap * (len(big) - 1)) / len(big)
-            for j, (i, key, label) in enumerate(big):
-                tx = 45 + j * (bw + gap)
-                fill = mix(T["tile"], A, 0.22)
-                P.rrect(tx, y, bw, th, 24, fill)
-                P.text(label, 24, tx + 28, y + 66, T["text"], bold=True)
-                P.text(self._big_detail(key), 17, tx + 28, y + 100, T["muted"], raw=True)
-                if g.get("emu") == "RetroArch":   # öffnet die Slot-Auswahl
-                    P.circle(tx + bw - 44, y + th / 2, 24, mix(fill, T["text"], 0.18))
-                    P.chevron(tx + bw - 40, y + th / 2, 10, T["text"])
-                if i == self.gsel:
-                    self._focus_ring(P, tx, y, bw, th, 24)
-                self.hits.append((tx, y, bw, th, ("gact", i)))
-            y += th + 50
+            self._draw_big(P, g, big)
         if small:
             sp = 1170 / len(small) if len(small) > 1 else 1170
             for j, (i, key, label) in enumerate(small):
@@ -3087,6 +3074,58 @@ class ControlCenter:
             P.text(self.gmsg[0], 24, 630, y, T["text"], bold=True, align="c")
         elif g.get("emu") not in GAME_ACTIONS:
             P.text("Weitere Aktionen im Menü des Emulators.", 20, 630, y, T["muted"], align="c")
+
+    def _newest_shot(self):
+        """Vorschaubild des neuesten RetroArch-Spielstands (Slot 0–8) oder None."""
+        if (self.game or {}).get("emu") != "RetroArch":
+            return None
+        used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
+        if not used:
+            return None
+        png = self._slot_file(max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))) + ".png"
+        return png if os.path.exists(png) else None
+
+    def _big_tile(self, P, i, key, label, x, y, w, h, shot=None):
+        T, A = self.T, self.accent
+        fill = mix(T["tile"], A, 0.22)
+        P.rrect(x, y, w, h, 24, fill)
+        arrow = (self.game or {}).get("emu") == "RetroArch"
+        if shot and P.image(shot, x, y, w, h, 24):
+            P.rrect(x, y + h - 92, w, 92, 24, "000000", 0.62)
+            P.text(label, 24, x + 28, y + h - 52, "ffffff", bold=True)
+            P.text(self._big_detail(key), 17, x + 28, y + h - 22, "dddddd", raw=True)
+            cy, cc_ = y + h - 46, "ffffff"
+        else:
+            P.text(label, 24, x + 28, y + h / 2 - 8, T["text"], bold=True)
+            P.text(self._big_detail(key), 17, x + 28, y + h / 2 + 26, T["muted"], raw=True)
+            cy, cc_ = y + h / 2, T["text"]
+        if arrow:
+            P.circle(x + w - 44, cy, 24, mix(fill, T["text"], 0.18) if not shot else "000000")
+            P.chevron(x + w - 40, cy, 10, cc_)
+        if i == self.gsel:
+            self._focus_ring(P, x, y, w, h, 24)
+        self.hits.append((x, y, w, h, ("gact", i)))
+
+    def _draw_big(self, P, g, big):
+        """Speichern/Laden. Layout „mitte“: nebeneinander, Laden mit Vorschaubild;
+        „links“: großes Vorschaubild links, Kacheln rechts untereinander."""
+        T = self.T
+        shot = self._newest_shot()
+        gap = 22
+        if getattr(self, "glayout", "mitte") == "links":
+            iw, ih = 520, 390
+            P.rrect(45, 180, iw, ih, 24, T["card"])
+            if not (shot and P.image(shot, 45, 180, iw, ih, 24)):
+                P.text("Kein Spielstand", 20, 45 + iw / 2, 180 + ih / 2 + 8, T["muted"], align="c")
+            rx, rw = 45 + iw + gap, 1170 - iw - gap
+            th = (ih - gap * (len(big) - 1)) / len(big)
+            for j, (i, key, label) in enumerate(big):
+                self._big_tile(P, i, key, label, rx, 180 + j * (th + gap), rw, th)
+            return
+        th, y = 280, 205
+        bw = (1170 - gap * (len(big) - 1)) / len(big)
+        for j, (i, key, label) in enumerate(big):
+            self._big_tile(P, i, key, label, 45 + j * (bw + gap), y, bw, th, shot if key == "load" else None)
 
     def _big_detail(self, key):
         """Zweite Zeile der Kacheln Speichern/Laden (wie bei WLAN/Bluetooth)."""
