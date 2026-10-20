@@ -801,8 +801,10 @@ class App:
                     rom = Path(str(g.get("path") or "").replace("\\", "/")).name
                     hay = normalize_name(name + " " + rom)
                     if rom and all(w in hay for w in words):
+                        rd = str(g.get("releasedate") or g.get("releaseDate") or "")
+                        year = rd[:4] if rd[:4].isdigit() and rd[:4] != "1970" else ""
                         hits.append({"name": name or display_name_from_rom(rom), "system": sysd["name"],
-                                     "si": si, "rom": rom})
+                                     "year": year, "si": si, "rom": rom})
             hits.sort(key=lambda h: (h["name"].casefold(), h["system"]))
             self.gresults = hits
             self.view, self.sel, self.scroll = "gsearch", 0, 0
@@ -1245,7 +1247,7 @@ class App:
             rows = [(name, value, None) for name, value, _act in self.setting_rows()]
         elif self.view == "gsearch":
             title, hint = f"Suche: {self.gquery}", hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
-            rows = [(h["name"], h["system"], None) for h in self.gresults]
+            rows = [(h["name"], " · ".join(x for x in (h["system"], h["year"]) if x), None) for h in self.gresults]
         elif self.view == "restore":
             title, hint = "Sicherung wiederherstellen", hint_parts("▲ ▼", "wählen", "A", "wiederherstellen")
             rows = [(f"{b['name']} · {b['when']}", f"{b['files']} Artworks", None) for b in self.backups]
