@@ -246,6 +246,7 @@ EN = {
     "Noch keine Spiele gespielt": "No games played yet", "Home oder B: schließen": "Home or B: close",
     "Spielstand über das Spiel selbst": "Progress is saved by the game itself",
     "gerade eben": "just now", "Spiel wird gestartet …": "Starting game …",
+    "Spiel wird gespeichert …": "Saving game …",
     "ES wirklich neu starten?": "Really restart ES?",
     "Laufendes Spiel geht verloren.": "The running game will be lost.",
     "Ja, neu starten": "Yes, restart",
@@ -1030,6 +1031,7 @@ class Switcher:
         self.items = []
         self.sel = 0
         self.busy = None   # Text während einer Aktion
+        self.ready = False # Hintergrund-Speichern fertig → Hauptschleife pausiert und übernimmt
         self.load()
 
     def load(self):
@@ -3318,9 +3320,24 @@ def main():
                     cc.redim = True
                 cc.refresh(full=True)
                 if view == "switcher":
-                    cc.switcher.load()
-                    cc.switcher.capture(cc.game)   # speichern + Screenshot, vor Pause und Grab
-                    cc.switcher.sel = 0
+                    sw = cc.switcher
+                    sw.load()
+                    sw.sel = 0
+                    if cc.game:
+                        # sofort anzeigen, speichern im Hintergrund; Pause + Grab erst danach
+                        # (eingespeiste Tasten erreichen den Emulator nur ohne Grab)
+                        sw.busy = tr("Spiel wird gespeichert …")
+                        ui.show(view)
+                        state["dirty"] = True
+                        game = cc.game
+                        def work():
+                            try:
+                                sw.capture(game)
+                            except Exception:
+                                log("Gameswitcher: Speichern fehlgeschlagen:\n" + traceback.format_exc().rstrip())
+                            sw.ready = True
+                        threading.Thread(target=work, daemon=True).start()
+                        return
                 pauser.pause(cc.game)
             ui.show(view)          # wechselt auch direkt zwischen den Ansichten
             set_grab(True)
@@ -3405,6 +3422,8 @@ def main():
             return
         if ui.view == "switcher":
             sw = cc.switcher
+            if sw.busy:
+                return            # speichert noch – Tasten gehen ans Spiel, hier ignorieren
             dx = 0
             if typ == EV_ABS and code == ABS_HAT0X and value != 0:
                 dx = 1 if value > 0 else -1
@@ -3530,7 +3549,7 @@ def main():
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling
+            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy
             for fd in ui.pump(0.05 if busy else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -3605,6 +3624,16 @@ def main():
                     last_minute = time.strftime("%H:%M")
                     state["dirty"] = True
             if scrolling:
+                state["dirty"] = True
+            sw = cc.switcher
+            if sw.ready:
+                sw.ready = False
+                sw.busy = None
+                sw.load()
+                sw.sel = 0
+                if ui.view == "switcher":
+                    pauser.pause(cc.game)
+                    set_grab(True)
                 state["dirty"] = True
             if state["dirty"]:
                 state["dirty"] = False
