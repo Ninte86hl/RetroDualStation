@@ -200,6 +200,17 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
 fi
 
+# --- PS1: funktionierenden Standard-Emulator sicherstellen ---
+# Manche ROCKNIX-Versionen wählen pcsx_rearmed32, das nicht installiert ist (RetroArch bricht ab).
+# Nur korrigieren, wenn kein Core gesetzt ist oder der gesetzte fehlt – eine gültige Wahl bleibt.
+PSXCORE=$( ( . /etc/profile >/dev/null 2>&1; get_setting psx.core ) 2>/dev/null )
+if [ -z "$PSXCORE" ] || [ ! -f "/usr/lib/libretro/${PSXCORE}_libretro.so" ]; then
+    if [ -f /usr/lib/libretro/pcsx_rearmed_libretro.so ]; then
+        ( . /etc/profile >/dev/null 2>&1; set_setting psx.emulator retroarch; set_setting psx.core pcsx_rearmed ) >/dev/null 2>&1
+        log "PS1: Emulator auf pcsx_rearmed gesetzt (vorher: ${PSXCORE:-Standard})"
+    fi
+fi
+
 # --- 3. Installer entfernen und auf Dual umschalten ---
 rm -f "$PORTS/Install ROCKNIX DualStation.sh"
 rm -rf "$SRC"
