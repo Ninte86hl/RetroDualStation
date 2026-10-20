@@ -226,11 +226,12 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
+    "speichern": "save", "laden": "load", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
-    "Das Kontrollcenter speichert und lädt immer im angezeigten Slot.":
-        "The Control Center always saves and loads in the slot shown.",
+    "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
+        "When saving or loading you pick the slot (0–8).",
     "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch":
         "Your own settings in ES (e.g. incremental savestates) or RetroArch",
     "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher.":
@@ -1473,7 +1474,7 @@ PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 
 # Seite „Spiel“: Aktionen je Emulator (Schlüssel, Beschriftung)
 GAME_ACTIONS = {
-    "RetroArch": [("save", "Speichern"), ("load", "Laden"), ("slot", "Slot"), ("ff", "Vorspulen"),
+    "RetroArch": [("save", "Speichern"), ("load", "Laden"), ("ff", "Vorspulen"),
                   ("shot", "Screenshot"), ("reset", "Neu starten"), ("menu", "Emulator-Menü")],
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot")],
 }
@@ -2336,6 +2337,7 @@ class ControlCenter:
         self.gbusy = False
         self.slot = 0             # RetroArch-Speicherplatz (seit Spielstart gezählt)
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
+        self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
         self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -2535,13 +2537,14 @@ class ControlCenter:
             self.hint_done()
             return
         if self.page == 1 and self.slot_pick is not None:
+            if self.slot_mode == "load" and not self._slot_exists(self.slot_pick):
+                return
             return ("game", "setslot")
         if self.page == 1:
             acts = game_actions(self.game)
             if acts and not self.gbusy:
                 key = acts[min(self.gsel, len(acts) - 1)][0]
-                if key == "slot":
-                    self.slot_pick = min(self.slot, SLOTS_USER - 1)
+                if self.open_slots(key):
                     return
                 return ("game", key)
             return
@@ -2650,11 +2653,12 @@ class ControlCenter:
             elif kind == "gact" and not self.gbusy:
                 self.gsel = val
                 key = game_actions(self.game)[val][0]
-                if key == "slot":
-                    self.slot_pick = min(self.slot, SLOTS_USER - 1)
+                if self.open_slots(key):
                     return
                 return ("game", key)
             elif kind == "slotpick":
+                if self.slot_mode == "load" and not self._slot_exists(val):
+                    return
                 self.slot_pick = val
                 return ("game", "setslot")
 
@@ -2707,7 +2711,7 @@ class ControlCenter:
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
-            left = [("A", "übernehmen"), ("B", "zurück")]
+            left = [("A", "speichern" if self.slot_mode == "save" else "laden"), ("B", "zurück")]
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
         P.hint(left, 17, 45, 835, T["muted"], T["text"])
@@ -2968,8 +2972,6 @@ class ControlCenter:
             name = name[:-2]
         P.text(name, 40, 45, 110, T["text"], bold=True, raw=True)
         sub = g.get("emu", "")
-        if g.get("emu") == "RetroArch":
-            sub += "  ·  Slot %d" % self.slot
         P.text(sub, 19, 45, 148, T["muted"], raw=True)
         cols, gap = 4, 22
         tw = (1170 - gap * (cols - 1)) / cols
@@ -2982,13 +2984,11 @@ class ControlCenter:
             self._draw_slots(P)
             return
         for i, (key, label) in enumerate(acts):
-            if key == "slot":
-                label = tr("Slot") + " %d" % self.slot
             tx = 45 + (i % cols) * (tw + gap)
             ty = 200 + (i // cols) * (th + gap)
             fill = mix(T["tile"], A, 0.22)
             P.rrect(tx, ty, tw, th, 24, fill)
-            P.text(label, 22, tx + tw / 2, ty + th / 2 + 8, T["text"], bold=True, align="c", raw=key == "slot")
+            P.text(label, 22, tx + tw / 2, ty + th / 2 + 8, T["text"], bold=True, align="c")
             if i == self.gsel:
                 self._focus_ring(P, tx, ty, tw, th, 24)
             self.hits.append((tx, ty, tw, th, ("gact", i)))
@@ -3015,7 +3015,7 @@ class ControlCenter:
         P.text("Gut zu wissen", 30, 85, 270, T["text"], bold=True)
         y = 330
         for line in ("Speichern und Laden nutzen die Speicherplätze von RetroArch.",
-                     "Das Kontrollcenter speichert und lädt immer im angezeigten Slot.",
+                     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.",
                      "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch",
                      "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher."):
             P.text(line, 21, 85, y, T["muted"])
@@ -3024,6 +3024,23 @@ class ControlCenter:
         P.text("Verstanden", 22, 215, 571, "ffffff", bold=True, align="c")
         self._focus_ring(P, 85, 530, 260, 64, 32)
         self.hits.append((45, 200, 1170, 420, ("ghint", None)))
+
+    def open_slots(self, key):
+        """RetroArch: Speichern/Laden öffnet erst die Slot-Auswahl. True, wenn geöffnet."""
+        if (self.game or {}).get("emu") != "RetroArch" or key not in ("save", "load"):
+            return False
+        self.slot_mode = key
+        start = min(self.slot, SLOTS_USER - 1)
+        if key == "load" and not self._slot_exists(start):   # auf den neuesten belegten Slot
+            used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
+            if used:
+                start = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
+        self.slot_pick = start
+        return True
+
+    def _slot_exists(self, n):
+        f = self._slot_file(n)
+        return bool(f and os.path.exists(f))
 
     def _slot_file(self, n):
         """Pfad des RetroArch-Savestates für Slot n (Slot 0 = .state)."""
@@ -3037,14 +3054,15 @@ class ControlCenter:
     def _draw_slots(self, P):
         """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
         T, A = self.T, self.accent
-        P.text("Speicherplatz wählen", 26, 45, 200, T["text"], bold=True)
+        P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 200, T["text"], bold=True)
         cols, gap = 3, 22
         tw, th = (1170 - gap * (cols - 1)) / cols, 170
         for n in range(SLOTS_USER):
             tx = 45 + (n % cols) * (tw + gap)
             ty = 225 + (n // cols) * (th + gap)
             cur = n == self.slot
-            P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22))
+            usable = self.slot_mode == "save" or self._slot_exists(n)
+            P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
             f = self._slot_file(n)
             when = None
             if f and os.path.exists(f):
@@ -3053,7 +3071,7 @@ class ControlCenter:
             # Beschriftung unten auf dunklem Band
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if cur else "000000", 1.0 if cur else 0.6)
             label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
-            P.text(label, 18, tx + 18, ty + th - 16, "ffffff", bold=True, raw=True)
+            P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
@@ -4091,10 +4109,8 @@ def main():
         if key == "setslot":
             target = cc.slot_pick if cc.slot_pick is not None else cc.slot
             cc.slot_pick = None
-            log("Seite Spiel: Slot", cc.slot, "→", target)
-            cc.slot = target                 # Speichern/Laden nennen den Slot ausdrücklich
-            state["dirty"] = True
-            return                           # CC bleibt offen
+            cc.slot = target                 # zuletzt genutzter Slot = Vorauswahl beim nächsten Mal
+            key = cc.slot_mode
         if emu == "RetroArch":
             # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
             cmd = {"save": f"SAVE_STATE_SLOT {cc.slot}", "load": f"LOAD_STATE_SLOT {cc.slot}",

@@ -442,7 +442,8 @@ wird bei jedem Öffnen frisch gewählt.
 
 ### Seite „Spiel“ – erste Fassung (20.10.2026)
 - Kacheln je Emulator (L1/R1 zur Seite, Steuerkreuz + A oder Touch):
-  - **RetroArch:** Speichern, Laden, Slot (Menü mit Plätzen 0–8 und Vorschaubild/Zeit; Slot 9 = Gameswitcher), Vorspulen, Screenshot,
+  - **RetroArch:** Speichern und Laden öffnen die Slot-Auswahl (0–8, Vorschaubild und Zeit; Laden nur belegte,
+    vorausgewählt der neueste; Slot 9 = Gameswitcher), Vorspulen, Screenshot,
     Neu starten, Emulator-Menü (über die Steuerschnittstelle).
     Der Slot wird seit Spielstart mitgezählt (RetroArch meldet ihn nicht zurück).
   - **DraStic:** Speichern (R2), Laden (L2) – kurz auftauen, Taste einspeisen, wieder anhalten; Screenshot.
