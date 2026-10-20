@@ -1168,10 +1168,9 @@ class Switcher:
             while time.time() < deadline and not window():   # sobald das Fenster da ist
                 time.sleep(0.15)
             log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
-            time.sleep(0.4)
-            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden
-            time.sleep(1.2)
-            inject_keys([(312, 1), 0.1, (312, 0)])   # zur Sicherheit erneut (gleicher Stand)
+            time.sleep(0.7)
+            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden (einmal – doppelt ließ die Musik springen)
+            time.sleep(0.5)                          # Laden abschließen, bevor der Ton zurückkommt
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
@@ -1187,6 +1186,7 @@ class Switcher:
         ini = "/storage/.config/dsperate/dsperate.ini"
 
         def work():
+            spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])   # Startton/Musik nicht hören
             before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
             restore = None
             t0 = time.monotonic()
@@ -1252,6 +1252,7 @@ class Switcher:
             except Exception:
                 log("Gameswitcher: Fehler beim Wechsel:\n" + traceback.format_exc().rstrip())
             finally:
+                spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"])
                 self.done = True
                 # nur zurücksetzen, wenn ROCKNIX beim Start nichts Eigenes gesetzt hat
                 for path, old in before.items():
