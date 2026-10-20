@@ -7,7 +7,7 @@ Dual-Screen-EmulationStation für das **Anbernic RG DS Plus**, aufgebaut auf **R
 
 🇬🇧 [English version](README.md)
 
-![canvas-ds mit RetroDualStation: Systemansicht über beide Bildschirme](docs/screenshots/canvas-system.png)
+<p align="center"><img src="docs/screenshots/canvas-system.png" alt="canvas-ds mit RetroDualStation: Systemansicht auf beiden Bildschirmen" width="360"></p>
 
 ---
 
@@ -43,14 +43,12 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 [canvas-ds](https://github.com/toniremi/canvas-ds) von toniremi, angepasst über ein kleines Overlay
 (mit seiner Erlaubnis, CC BY-NC-SA). Oben: Hero-Bild, nach 5 Sekunden blendet das Video ein.
 
-| | |
-|---|---|
-| ![Gamecarousel](docs/screenshots/canvas-view-gamecarousel.png) | ![Detailliert](docs/screenshots/canvas-view-detailed.png) |
-| **Gamecarousel** – Icons nebeneinander | **Detailliert** – Cover, Beschreibung und Infos |
-| ![Raster](docs/screenshots/canvas-view-grid.png) | ![Showcase](docs/screenshots/canvas-view-showcase.png) |
-| **Raster** – Cover füllen den unteren Bildschirm | **Showcase** – Cover und Spieleliste |
-| ![Spotlight](docs/screenshots/canvas-view-spotlight.png) | |
-| **Spotlight** – eine große Karte, die hereingleitet | |
+| | | |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/canvas-view-gamecarousel.png" alt="Gamecarousel"> | <img src="docs/screenshots/canvas-view-detailed.png" alt="Detailliert"> | <img src="docs/screenshots/canvas-view-grid.png" alt="Raster"> |
+| **Gamecarousel** – Icons nebeneinander | **Detailliert** – Cover, Beschreibung und Infos | **Raster** – Cover füllen den unteren Bildschirm |
+| <img src="docs/screenshots/canvas-view-showcase.png" alt="Showcase"> | <img src="docs/screenshots/canvas-view-spotlight.png" alt="Spotlight"> |  |
+| **Showcase** – Cover und Spieleliste | **Spotlight** – eine große Karte, die hereingleitet |  |
 
 Artwork: `romname-hero.png`, `romname-icon.png`, `romname-box.png` und das Scraper-Logo –
 die ersten drei erstellt DualStation Sync für dich; fehlende Bilder ersetzt ES durch Scraper-Medien.
@@ -74,14 +72,12 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
   Log-Sicherung), Ausschalten, ES neu starten
 - Deutsch oder Englisch, je nach ES-Sprache
 
-| | |
-|---|---|
-| ![Kontrollcenter](docs/screenshots/control-center-main.png) | ![WLAN](docs/screenshots/control-center-wifi.png) |
-| **Kontrollcenter** über einem pausierten Spiel | **WLAN** – gespeicherte Netze oben |
-| ![Bluetooth](docs/screenshots/control-center-bluetooth.png) | ![Tastatur](docs/screenshots/control-center-keyboard.png) |
-| **Bluetooth** – Controller direkt koppeln | **Bildschirmtastatur** für Passwörter |
-| ![Power-Menü](docs/screenshots/control-center-power.png) | |
-| **Power-Menü** – kurz auf die Ein/Aus-Taste | |
+| | | |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/control-center-main.png" alt="Kontrollcenter"> | <img src="docs/screenshots/control-center-wifi.png" alt="WLAN"> | <img src="docs/screenshots/control-center-bluetooth.png" alt="Bluetooth"> |
+| **Kontrollcenter** über einem pausierten Spiel | **WLAN** – gespeicherte Netze oben | **Bluetooth** – Controller direkt koppeln |
+| <img src="docs/screenshots/control-center-keyboard.png" alt="Tastatur"> | <img src="docs/screenshots/control-center-power.png" alt="Power-Menü"> |  |
+| **Bildschirmtastatur** für Passwörter | **Power-Menü** – kurz auf die Ein/Aus-Taste |  |
 
 ## Gameswitcher
 
@@ -92,7 +88,7 @@ der Liste. **Kurz drücken** speichert und kehrt zu ES zurück.
 Funktioniert mit RetroArch, DraStic, DSperate und PortMaster. Ein Wechsel dauert etwa 5 Sekunden –
 ein Ladebildschirm liegt über beiden Screens, der Ton bleibt stumm, bis du wieder im Spiel bist.
 
-![Gameswitcher](docs/screenshots/game-switcher.png)
+<p align="center"><img src="docs/screenshots/game-switcher.png" alt="Gameswitcher" width="360"></p>
 
 ## Roadmap
 

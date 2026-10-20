@@ -7,7 +7,7 @@ Dual-screen EmulationStation for the **Anbernic RG DS Plus**, built on **ROCKNIX
 
 🇩🇪 [Deutsche Version](README.de.md)
 
-![canvas-ds on RetroDualStation: system view across both screens](docs/screenshots/canvas-system.png)
+<p align="center"><img src="docs/screenshots/canvas-system.png" alt="canvas-ds on RetroDualStation: system view on both screens" width="360"></p>
 
 ---
 
@@ -43,14 +43,12 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 [canvas-ds](https://github.com/toniremi/canvas-ds) by toniremi, adapted with a small overlay
 (shared with his permission, CC BY-NC-SA). Top screen: hero image, the video fades in after 5 seconds.
 
-| | |
-|---|---|
-| ![Gamecarousel](docs/screenshots/canvas-view-gamecarousel.png) | ![Detailed](docs/screenshots/canvas-view-detailed.png) |
-| **Gamecarousel** – icons side by side | **Detailed** – cover, description and info |
-| ![Grid](docs/screenshots/canvas-view-grid.png) | ![Showcase](docs/screenshots/canvas-view-showcase.png) |
-| **Grid** – covers fill the bottom screen | **Showcase** – cover and game list |
-| ![Spotlight](docs/screenshots/canvas-view-spotlight.png) | |
-| **Spotlight** – one large card that slides in | |
+| | | |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/canvas-view-gamecarousel.png" alt="Gamecarousel"> | <img src="docs/screenshots/canvas-view-detailed.png" alt="Detailed"> | <img src="docs/screenshots/canvas-view-grid.png" alt="Grid"> |
+| **Gamecarousel** – icons side by side | **Detailed** – cover, description and info | **Grid** – covers fill the bottom screen |
+| <img src="docs/screenshots/canvas-view-showcase.png" alt="Showcase"> | <img src="docs/screenshots/canvas-view-spotlight.png" alt="Spotlight"> |  |
+| **Showcase** – cover and game list | **Spotlight** – one large card that slides in |  |
 
 Artwork: `romname-hero.png`, `romname-icon.png`, `romname-box.png` and the scraper logo –
 DualStation Sync creates the first three for you; missing images fall back to scraper media.
@@ -74,14 +72,12 @@ DSperate and PortMaster. The game pauses and continues where you left off.
   power off, restart ES
 - English or German, following the ES language
 
-| | |
-|---|---|
-| ![Control Center](docs/screenshots/control-center-main.png) | ![Wi-Fi](docs/screenshots/control-center-wifi.png) |
-| **Control Center** over a paused game | **Wi-Fi** – saved networks on top |
-| ![Bluetooth](docs/screenshots/control-center-bluetooth.png) | ![Keyboard](docs/screenshots/control-center-keyboard.png) |
-| **Bluetooth** – pair controllers directly | **On-screen keyboard** for passwords |
-| ![Power menu](docs/screenshots/control-center-power.png) | |
-| **Power menu** – short press on the power button | |
+| | | |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/control-center-main.png" alt="Control Center"> | <img src="docs/screenshots/control-center-wifi.png" alt="Wi-Fi"> | <img src="docs/screenshots/control-center-bluetooth.png" alt="Bluetooth"> |
+| **Control Center** over a paused game | **Wi-Fi** – saved networks on top | **Bluetooth** – pair controllers directly |
+| <img src="docs/screenshots/control-center-keyboard.png" alt="Keyboard"> | <img src="docs/screenshots/control-center-power.png" alt="Power menu"> |  |
+| **On-screen keyboard** for passwords | **Power menu** – short press on the power button |  |
 
 ## Game switcher
 
@@ -92,7 +88,7 @@ you left off, in the shape of its console. **A** resumes exactly there, **Y** st
 Works with RetroArch, DraStic, DSperate and PortMaster. Switching takes about 5 seconds –
 a loading screen covers both screens and the sound stays muted until you're back in the game.
 
-![Game switcher](docs/screenshots/game-switcher.png)
+<p align="center"><img src="docs/screenshots/game-switcher.png" alt="Game switcher" width="360"></p>
 
 ## Roadmap
 
