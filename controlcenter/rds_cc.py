@@ -431,13 +431,21 @@ class Pen:
 
     def image(self, path, x, y, w, h, r=0):
         """PNG eingepasst (cover) mit abgerundeten Ecken zeichnen. False, wenn nicht ladbar."""
-        surf = Pen._png.get(path)
+        try:
+            key = (path, os.path.getmtime(path))   # neues Bild bei geänderter Datei (Screenshots)
+        except OSError:
+            return False
+        surf = Pen._png.get(key)
         if surf is None:
+            for old in [k for k in Pen._png if k[0] == path]:   # alte Fassung freigeben
+                if Pen._png[old]:
+                    cairo.cairo_surface_destroy(Pen._png[old])
+                del Pen._png[old]
             surf = cairo.cairo_image_surface_create_from_png(path.encode())
             if not surf or cairo.cairo_surface_status(surf) != 0:
-                Pen._png[path] = False
+                Pen._png[key] = False
                 return False
-            Pen._png[path] = surf
+            Pen._png[key] = surf
         if surf is False:
             return False
         iw, ih = cairo.cairo_image_surface_get_width(surf), cairo.cairo_image_surface_get_height(surf)
