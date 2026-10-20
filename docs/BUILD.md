@@ -16,7 +16,7 @@ not a full system image.
 ## Steps
 
 ```bash
-cp patches/001-rgds-menu-dualscreen.patch \
+cp patches/001-rgds-menu-dualscreen.patch patches/002-rds-gameswitcher-chain.patch \
    /path/to/distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 ```
 
@@ -37,8 +37,8 @@ grep -n "Hunk\|FAILED\| error:" build.log | head
 Expected: no output. The many `LC_CTYPE`/locale lines at the end of the log
 come from the glibc locale build and are harmless.
 
-Only **one** patch file may be in the `patches/aarch64/` folder. A second
-file would be applied as well and fail. The patch was called
+Only our patches (`001-…`, `002-…`) may be in the `patches/aarch64/` folder –
+every file there is applied. The patch was called
 `001-rgds-menu-dualscreen-v2.patch` up to v8 – delete that old file first.
 
 ## Result

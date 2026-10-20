@@ -17,7 +17,7 @@ vollständiges System-Image.
 ## Ablauf
 
 ```bash
-cp patches/001-rgds-menu-dualscreen.patch \
+cp patches/001-rgds-menu-dualscreen.patch patches/002-rds-gameswitcher-chain.patch \
    /pfad/zu/distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 ```
 
