@@ -1911,7 +1911,7 @@ class Keyboard:
     def _label(self, kind, val):
         if kind == "char":
             return val.upper() if self.shift and val.isalpha() and val != "ß" else val
-        return {"layer": "abc" if self.layer else "?123", "space": "Leerzeichen",
+        return {"layer": "abc" if self.layer else "?123", "space": tr("Leerzeichen"),
                 "ok": "OK", "shift": "", "back": ""}[kind]
 
     # -- Aktionen --

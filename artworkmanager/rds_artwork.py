@@ -199,6 +199,7 @@ def fade(P, x, y, w, h):
 # Der Manager folgt wie das Kontrollcenter der Sprache von EmulationStation.
 # Übersetzt wird beim Zeichnen (AmPen), damit der übrige Code deutsch bleiben kann.
 EN_AM = {
+    "Leerzeichen": "Space", "Abbrechen": "Cancel",
     "Artwork Manager": "Artwork Manager", "Willkommen": "Welcome", "Die Funktionen": "Features",
     "Voraussetzung": "Requirement", "Sicherung": "Backup",
     "Der Artwork Manager ergänzt Bilder in einer bestehenden Spieleliste.":
