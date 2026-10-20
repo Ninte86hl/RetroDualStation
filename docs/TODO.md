@@ -75,7 +75,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
 - [x] Etappe 2: Seite „Spiel“ – Infoansicht, Speichern/Laden mit Slot-Auswahl und Vorschau, Löschen (X X / Mülleimer), Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden (getestet 20.10.2026)
 - [x] Seite „Spiel“: Tastenbelegung je System/Emulator, DSperate Speichern/Laden/Slots/Menü, einheitliche Kürzel (21.10.2026)
-- [ ] DraStic: Slots (savestate_number) und Kürzel-Kombinationen prüfen
+- [x] DraStic: Slots 0–8 mit Vorschaubild über das CC (getestet 21.10.2026); Kürzel-Kombinationen kennt DraStic nicht
 - [ ] RetroArch-Kürzel im CC anpassen (Aktion wählen → Taste drücken)
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [x] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden) – 20.10.2026
