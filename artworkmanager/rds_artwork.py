@@ -1059,8 +1059,8 @@ class App:
         legend = None
         if self.view == "systems":
             title = "Artwork Manager"
-            hint = [("▲ ▼ System wählen  ·  ", False), ("Start", True), (" – Einzelsuche (Single)  ·  ", False),
-                    ("Select", True), (" – Mehrfachsuche (Batch)", False)]
+            hint = [("▲ ▼ System wählen  ·  ", False), ("Start", True), (" – Einzelsuche  ·  ", False),
+                    ("Select", True), (" – Mehrfachsuche", False)]
             rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
         elif self.view == "settings":
             title, hint = "Einstellungen", "▲ ▼ wählen · A ändern"
