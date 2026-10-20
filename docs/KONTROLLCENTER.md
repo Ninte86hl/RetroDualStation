@@ -408,3 +408,13 @@ wird bei jedem Öffnen frisch gewählt.
   `LOAD_FILES` wird über Netzwerkbefehle **nicht** angenommen (RetroArch bleibt `CONTENTLESS` im Menü).
   Laden nur per blindem Menü-Durchklicken möglich → zu unsicher. Wechsel daher immer über ES (`/launch`)
   mit Ladebildschirm; ROCKNIX richtet so jedes System korrekt ein.
+
+### Gameswitcher – Stand 20.10.2026 (03:15)
+- Läuft mit RetroArch (A/Y/B, Auto-Laden beim Start wie Onion/spruceOS) und DraStic (R2/L2 eingespeist),
+  Ladebildschirm oben/unten, sofortige Anzeige beim Öffnen, Sicherheitsnetz `[title="^RetroArch"] move to output DSI-2`.
+- Messung RetroArch→RetroArch-Wechsel: Beenden 1,2 s · **ES bis runemu 3,8 s** · **runemu bis RetroArch 5,9 s** ·
+  Laden 1,7 s = 12,6 s. Aus ruhendem ES startet RetroArch in ~2 s → nach einem Spielende ist ES/runemu langsamer.
+  **Nächster Schritt:** runemu.sh-Ablauf zeitlich durchleuchten.
+- Offen: DSperate testen, Optik-Feintuning.
+- Achtung: `swaymsg focus output …` aus dem CC heraus hängt und störte Touch in ES → nicht verwenden.
+  Nach `systemctl restart essway` besser das Gerät neu starten (sonst landen Spiele ggf. unten).
