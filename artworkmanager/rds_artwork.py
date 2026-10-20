@@ -46,11 +46,18 @@ from rocknixds_artwork_manager.artwork_http import iidb_request, iidb_asset_page
 from rocknixds_artwork_manager.artwork_cache import cached_download         # noqa: E402
 from rocknixds_artwork_manager.artwork_sources import (search_artwork_games, artwork_candidates_for_games,  # noqa: E402
                                                        manual_search_rows)
-from rocknixds_artwork_manager.settings import steamgriddb_key, save_steamgriddb_key  # noqa: E402
+from rocknixds_artwork_manager.settings import steamgriddb_key  # noqa: E402
 
 VERSION = "0.1.0"
 WORK = Path(BASE) / "artwork"
-SETTINGS = WORK / "settings.json"
+SETTINGS = WORK / "settings.json"          # interne Einstellungen (Sicherungsfrage)
+CFG = WORK / "settings.cfg"                 # vom Nutzer bearbeitbar, z. B. am PC
+CFG_TEMPLATE = """# RetroDualStation Artwork Manager – Einstellungen
+# Diese Datei kann am PC bearbeitet werden. Leere Werte = nicht gesetzt.
+
+# SteamGridDB API-Key (kostenlos: https://www.steamgriddb.com/profile/preferences/api)
+steamgriddb_api_key=
+"""
 PREVIEW_DIR = Path("/tmp/rds-artwork")
 KINDS = [("boxart", "Boxart"), ("cartridge", "Cartridge / Icon"), ("image", "Image")]
 ROWS = 8            # sichtbare Zeilen in Listen
@@ -79,6 +86,39 @@ class LocalDevice(Device):
 
     def close(self):
         pass
+
+
+def read_cfg():
+    """settings.cfg lesen (anlegen, falls sie fehlt) und den API-Key bereitstellen."""
+    WORK.mkdir(parents=True, exist_ok=True)
+    if not CFG.exists():
+        CFG.write_text(CFG_TEMPLATE)
+    values = {}
+    for line in CFG.read_text(errors="replace").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            values[k.strip()] = v.strip().strip('"')
+    key = values.get("steamgriddb_api_key", "")
+    if key:
+        os.environ["STEAMGRIDDB_API_KEY"] = key
+    else:
+        os.environ.pop("STEAMGRIDDB_API_KEY", None)
+    return values
+
+
+def write_cfg_key(value):
+    """Eingabe am Gerät in settings.cfg übernehmen (übrige Zeilen bleiben)."""
+    text = CFG.read_text(errors="replace") if CFG.exists() else CFG_TEMPLATE
+    lines, done = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("steamgriddb_api_key"):
+            line, done = f"steamgriddb_api_key={value}", True
+        lines.append(line)
+    if not done:
+        lines.append(f"steamgriddb_api_key={value}")
+    CFG.write_text("\n".join(lines) + "\n")
+    read_cfg()
 
 
 def load_settings():
@@ -116,6 +156,7 @@ class App:
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.settings = load_settings()
+        read_cfg()
         self.pen = None
         self.hits = []
         self.kbd = None
@@ -426,7 +467,7 @@ class App:
         def done(text=None):
             value = (text if isinstance(text, str) else self.kbd.text if self.kbd else "").strip()
             self.kbd = None
-            save_steamgriddb_key(value)
+            write_cfg_key(value)
             self.say("SteamGridDB-Key gespeichert" if value else "SteamGridDB-Key entfernt")
         self.kbd = Keyboard(self, "SteamGridDB API-Key", done, secret=True)
 
