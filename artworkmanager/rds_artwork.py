@@ -195,6 +195,10 @@ def fade(P, x, y, w, h):
     _C.cairo_pattern_destroy(pat)
 
 
+def has_gamelist(system):
+    return os.path.isfile(f"/storage/roms/{system}/gamelist.xml")
+
+
 def hint_parts(*pairs):
     """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“.
     hint_parts("▲ ▼", "wählen", "Start", "Einzelsuche") → ▲ ▼ – wählen · Start – Einzelsuche"""
@@ -295,6 +299,7 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self.intro = 0                                # Seite der Einführung beim ersten Start
         self.origin = "games"                         # wohin die Spielansicht zurückführt
         self.last_rom = None
         self.gsel = 0
@@ -767,7 +772,9 @@ class App:
         if self.busy:
             return
         if self.view == "systems":
-            if self.systems:
+            if self.systems and not has_gamelist(self.systems[i]["key"]):
+                self.say("Keine gamelist.xml – Spiele zuerst in EmulationStation scrapen")
+            elif self.systems:
                 self.open_system(i)
         elif self.view == "settings":
             rows = self.setting_rows()
@@ -799,7 +806,7 @@ class App:
         elif self.view == "gsearch":
             self.view, self.sel, self.scroll = "systems", 0, 0
         elif self.view == "restore":
-            self.view, self.sel, self.scroll = "settings", 2, 0
+            self.view, self.sel, self.scroll = "settings", 3, 0
         elif self.view == "game":
             self.leave_game()
         elif self.view == "games":
@@ -918,12 +925,18 @@ class App:
         return [
             ("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", self.edit_key),
             ("Sicherung vor dem Speichern", "an" if self.settings.get("backup") else "aus", self.toggle_backup),
+            ("Kurzanleitung anzeigen", "", self.show_intro),
             ("Sicherung wiederherstellen", f"{len(backups)} vorhanden", self.open_restore),
             ("Sicherungen aufräumen", f"{len(backups)} · {human(sum(b.stat().st_size for b in backups))}",
              self.prune_backups),
             ("Zwischenspeicher leeren", human(cache), self.clear_cache),
             ("Log leeren", human(log_file.stat().st_size) if log_file.exists() else "–", self.clear_log),
         ]
+
+    def show_intro(self):
+        """Einführung erneut zeigen; die Sicherungsfrage bleibt beantwortet."""
+        self.intro = 0
+        self.view = "intro"
 
     def toggle_backup(self):
         def set_backup(on):
@@ -1036,6 +1049,18 @@ class App:
         self.say("Log geleert")
 
     def on_key(self, code):
+        if self.view == "intro":
+            if code == BTN_EAST:
+                self.intro += 1
+            if code == BTN_SOUTH or self.intro >= len(self.INTRO):
+                self.view, self.sel, self.scroll = "settings", 2, 0
+            return
+        if self.view == "setup" and self.intro < len(self.INTRO):
+            if code == BTN_EAST:
+                self.intro += 1
+            elif code == BTN_SOUTH and self.intro:
+                self.intro -= 1
+            return
         if self.view == "setup":
             if code == BTN_EAST:
                 self.answer_setup(True)
@@ -1065,9 +1090,12 @@ class App:
             self.top_mode = "single" if self.top_mode == "mix" else "mix"
             self.top_dirty = True
         elif code == BTN_START and self.view == "systems" and self.systems:
-            self.open_system(self.sel)                       # Einzelmodus
+            self.activate()                                  # Einzelsuche (prüft die Spieleliste)
         elif code == BTN_SELECT and self.view == "systems" and self.systems:
-            self.open_system(self.sel, batch=True)           # Batch
+            if has_gamelist(self.systems[self.sel]["key"]):
+                self.open_system(self.sel, batch=True)       # Mehrfachsuche
+            else:
+                self.say("Keine gamelist.xml – Spiele zuerst in EmulationStation scrapen")
         elif code == BTN_SELECT and self.view == "game" and self.batch:
             self.batch_next(False)                           # Spiel überspringen
 
@@ -1097,6 +1125,10 @@ class App:
                 self.sel = val
         elif kind == "confirm":
             self.answer(val)
+        elif kind == "intro":
+            self.intro += 1
+            if self.view == "intro" and self.intro >= len(self.INTRO):
+                self.view, self.sel, self.scroll = "settings", 2, 0
         elif kind == "setup":
             self.answer_setup(val)
         elif kind == "btn" and val:
@@ -1230,9 +1262,51 @@ class App:
             P.rrect(130, BAR_Y - 110, 1000, 90, 26, T["card"])
             P.text(str(message[0]), 28, 630, BAR_Y - 54, T["text"], align="c", raw=True)
 
+    INTRO = [
+        ("Willkommen", [
+            ("Voraussetzung", True),
+            ("Der Artwork Manager ergänzt Bilder in einer bestehenden Spieleliste.", False),
+            ("Jedes System braucht deshalb eine gamelist.xml in seinem ROM-Ordner.", False),
+            ("Sie entsteht, wenn EmulationStation die Spiele einmal gescrapt hat", False),
+            ("oder Spieldaten gespeichert wurden. Systeme ohne Liste sind markiert.", False),
+            ("", False),
+            ("Gespeichert wird in deiner gamelist.xml und im Ordner images des Systems.", False),
+        ]),
+        ("Die Funktionen", [
+            ("Systemliste", True),
+            ([("Start", "Einzelsuche: ein Spiel aus der Spieleliste bearbeiten")], False),
+            ([("Select", "Mehrfachsuche: alle Spiele mit fehlenden Artworks nacheinander")], False),
+            ([("Y", "Spiel suchen über alle Systeme"), ("X", "Einstellungen")], False),
+            ("", False),
+            ("Spielansicht", True),
+            ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
+            ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Ansicht oben")], False),
+        ]),
+    ]
+
+    def draw_intro(self, P, page):
+        T, A = self.T, self.accent
+        title, lines = self.INTRO[page]
+        total = len(self.INTRO) + (1 if self.view == "setup" else 0)
+        self.header(P, title, f"{page + 1} / {total}")
+        P.rrect(40, 110, 1180, 620, 30, T["card"])
+        y = 180
+        for text, head in lines:
+            if isinstance(text, list):          # Tasten nach der Regel: fett, dann „– Erklärung“
+                P.hint(text, 26, 80, y, T["muted"], T["text"])
+            elif text:
+                P.text(text, 30 if head else 26, 80, y, T["text"] if head else T["muted"], bold=head, raw=True)
+            y += 66 if head else 52
+        P.rrect(40, BAR_Y, 1180, BAR_H, 22, A)
+        P.hint([("A", "Weiter")], 30, 630, BAR_Y + BAR_H / 2 + 11, "ffffff", "ffffff", align="c")
+        self.hits.append((40, BAR_Y, 1180, BAR_H, ("intro", None)))
+
     def draw_setup(self, P):
         T = self.T
-        self.header(P, "Artwork Manager", "Einmalige Frage – gilt ab jetzt immer")
+        if self.intro < len(self.INTRO):
+            self.draw_intro(P, self.intro)
+            return
+        self.header(P, "Sicherung", f"{len(self.INTRO) + 1} / {len(self.INTRO) + 1} · einmalige Frage")
         P.rrect(50, 170, 1160, 380, 30, T["card"])
         lines = ["Vor dem ersten Speichern pro System automatisch eine",
                  "Sicherung anlegen (gamelist.xml und vorhandene Artworks)?",
@@ -1242,14 +1316,17 @@ class App:
         for n, line in enumerate(lines):
             P.text(line, 30, 90, 240 + n * 52, T["text"] if n < 2 else T["muted"], raw=True)
         P.rrect(50, 600, 560, 110, 30, self.accent)
-        P.text("A  Ja, sichern", 34, 330, 668, "ffffff", bold=True, align="c", raw=True)
+        P.hint([("A", "Ja, sichern")], 34, 330, 668, "ffffff", "ffffff", align="c")
         self.hits.append((50, 600, 560, 110, ("setup", True)))
         P.rrect(650, 600, 560, 110, 30, T["tile"])
-        P.text("B  Nein", 34, 930, 668, T["text"], bold=True, align="c", raw=True)
+        P.hint([("B", "Nein")], 34, 930, 668, T["text"], T["text"], align="c")
         self.hits.append((650, 600, 560, 110, ("setup", False)))
 
     def draw_view(self, P):
         """Die eigentliche Ansicht (ohne Tastatur, Ladebildschirm und Meldungen)."""
+        if self.view == "intro":
+            self.draw_intro(P, min(self.intro, len(self.INTRO) - 1))
+            return
         if self.view == "setup":
             self.draw_setup(P)
         elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore"):
@@ -1303,7 +1380,8 @@ class App:
         if self.view == "systems":
             title = "Artwork Manager"
             hint = hint_parts("▲ ▼", "System wählen", "Start", "Einzelsuche", "Select", "Mehrfachsuche")
-            rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
+            rows = [(s["name"], f"{s['rom_count']} Spiele" if has_gamelist(s["key"]) else "keine Spieleliste", None)
+                    for s in self.systems]
         elif self.view == "settings":
             title, hint = "Einstellungen", hint_parts("▲ ▼", "wählen", "A", "ändern")
             rows = [(name, value, None) for name, value, _act in self.setting_rows()]
