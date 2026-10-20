@@ -19,7 +19,8 @@ Kontrollcenter mit **Select** erneut starten.
 |---|---|---|
 | **Anbernic** | kurz | **Kontrollcenter** öffnen / schließen |
 | **Home** | kurz | Im Spiel: **speichern** und zurück zu EmulationStation |
-| **Home** | lang (1,5 s) oder 2× | **Gameswitcher** öffnen |
+| **Home** | lang (1,5 s) | **Gameswitcher** öffnen |
+| **Home** | 2× | Im Spiel: direkt zum **vorherigen Spiel** (in ES: Gameswitcher) |
 | **Power** | kurz | **Power-Menü** öffnen |
 | **Power** | lang (0,8 s) | Sofort **Ruhemodus** |
 
@@ -46,7 +47,7 @@ Kontrollcenter mit **Select** erneut starten.
 
 <p align="center"><img src="tour/tour-gameswitcher.png" alt="Gameswitcher" width="480"></p>
 
-**Home** 1,5 Sekunden halten oder zweimal kurz drücken. Die zuletzt gespielten Spiele erscheinen als Karten mit ihrem letzten Bild.
+**Home** 1,5 Sekunden halten. Im Spiel bringt dich **Home zweimal** direkt zum vorherigen Spiel. Die zuletzt gespielten Spiele erscheinen als Karten mit ihrem letzten Bild.
 Beim Wechseln wird das laufende Spiel automatisch gesichert und das nächste dort fortgesetzt,
 wo du aufgehört hast.
 

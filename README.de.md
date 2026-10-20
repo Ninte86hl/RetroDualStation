@@ -97,9 +97,9 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 
 ## Gameswitcher
 
-**Home-Taste halten** (1,5 s) oder **zweimal drücken** zeigt die zuletzt gespielten Spiele – jedes mit einem Bild vom letzten
+**Home-Taste halten** (1,5 s) zeigt die zuletzt gespielten Spiele – jedes mit einem Bild vom letzten
 Stand im Format seiner Konsole. **A** setzt genau dort fort, **Y** startet neu, **X** entfernt es aus
-der Liste. **Kurz drücken** speichert und kehrt zu ES zurück.
+der Liste. **Kurz drücken** speichert und kehrt zu ES zurück, **zweimal drücken** wechselt direkt zum vorherigen Spiel.
 
 Funktioniert mit RetroArch, DraStic, DSperate und PortMaster. Ein Wechsel dauert etwa 5 Sekunden –
 ein Ladebildschirm liegt über beiden Screens, der Ton bleibt stumm, bis du wieder im Spiel bist.

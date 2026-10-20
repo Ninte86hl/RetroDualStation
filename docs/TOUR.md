@@ -19,7 +19,8 @@ from the Control Center with **Select**.
 |---|---|---|
 | **Anbernic** | short | Open / close the **Control Center** |
 | **Home** | short | In a game: **save** and return to EmulationStation |
-| **Home** | long (1.5 s) or twice | Open the **Game switcher** |
+| **Home** | long (1.5 s) | Open the **Game switcher** |
+| **Home** | twice | In a game: jump to the **previous game** (in ES: Game switcher) |
 | **Power** | short | Open the **Power menu** |
 | **Power** | long (0.8 s) | **Sleep** immediately |
 
@@ -46,7 +47,7 @@ Open it with the **Anbernic** button – in EmulationStation and in every game (
 
 <p align="center"><img src="tour/tour-gameswitcher.png" alt="Game switcher" width="480"></p>
 
-Hold **Home** for 1.5 seconds or press it twice. Your recently played games appear as cards with their last screen.
+Hold **Home** for 1.5 seconds. In a game, **Home twice** jumps straight to the previous game. Your recently played games appear as cards with their last screen.
 Switching saves the running game automatically and continues the next one where you left off.
 
 **◀ ▶** – choose · **A** – Resume · **Y** – Restart · **X** – Remove from list · **B** – Close

@@ -1058,7 +1058,8 @@ TOUR = [
      "img": ("geraet-tasten.png", "geraet-tasten-en.png"),
      "keys": [("Anbernic", ("Kontrollcenter öffnen / schließen", "open / close the Control Center")),
               (("Home kurz", "Home short"), ("im Spiel speichern, zurück zu ES", "in a game: save, back to ES")),
-              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten oder 2× drücken)", "Game switcher (hold 1.5 s or press twice)")),
+              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten)", "Game switcher (hold 1.5 s)")),
+              (("Home 2×", "Home 2×"), ("im Spiel: direkt zum vorherigen Spiel", "in a game: jump to the previous game")),
               (("Power kurz", "Power short"), ("Power-Menü", "Power menu")),
               (("Power lang", "Power long"), ("sofort Ruhemodus", "sleep immediately"))]},
     {"title": ("Kontrollcenter", "Control Center"),
@@ -1072,8 +1073,8 @@ TOUR = [
      "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
     {"title": ("Gameswitcher", "Game switcher"),
      "img": ("tour-gameswitcher.png", "tour-gameswitcher.png"),
-     "lines": [("Home 1,5 s halten oder zweimal drücken: die zuletzt gespielten Spiele.",
-                "Hold Home for 1.5 s or press it twice: your recently played games."),
+     "lines": [("Home 1,5 s halten: die zuletzt gespielten Spiele. Home 2× im Spiel: direkt zum vorherigen.",
+                "Hold Home for 1.5 s: your recent games. Home twice in a game: jump to the previous one."),
                ("Der Spielstand wird beim Wechsel automatisch gesichert.",
                 "Your progress is saved automatically when you switch.")],
      "keys": [("◀ ▶", ("wählen", "choose")), ("A", ("Weiterspielen", "Resume")), ("Y", ("Neu starten", "Restart")),
@@ -4089,8 +4090,10 @@ def main():
                                     toggle(ui.view)
                                     home_down["t"] = None
                                 elif home_down["pending"] is not None:
-                                    home_down["pending"] = None   # Doppelklick → Gameswitcher
+                                    home_down["pending"] = None   # Doppelklick
                                     home_down["t"] = None
+                                    # im Spiel: direkt zum vorherigen Spiel (wie Alt-Tab), in ES: Gameswitcher
+                                    cc.quick_switch = bool(running_game())
                                     toggle("switcher")
                                 else:
                                     home_down["t"] = time.monotonic()
@@ -4179,7 +4182,13 @@ def main():
                 sw.busy = None
                 sw.load()
                 sw.sel = 0
-                if ui.view == "switcher":
+                quick = getattr(cc, "quick_switch", False)
+                cc.quick_switch = False
+                if ui.view == "switcher" and quick and len(sw.items) > 1:
+                    sw.sel = 1                                    # Doppelklick: vorheriges Spiel
+                    log("Gameswitcher: Doppelklick → direkt zu", sw.items[1].get("name"))
+                    gs_act(False)
+                elif ui.view == "switcher":
                     pauser.pause(cc.game)
                     set_grab(True)
                 state["dirty"] = True
