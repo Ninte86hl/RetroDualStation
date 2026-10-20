@@ -442,10 +442,11 @@ wird bei jedem Öffnen frisch gewählt.
 
 ### Seite „Spiel“ – erste Fassung (20.10.2026)
 - Kacheln je Emulator (L1/R1 zur Seite, Steuerkreuz + A oder Touch):
-  - **RetroArch:** Speichern, Laden, Slot −/+, Vorspulen, Screenshot, Neu starten, Emulator-Menü
-    (über die Steuerschnittstelle; Vorspulen/Neu starten/Menü schließen erst das CC).
+  - **RetroArch:** Speichern, Laden, Slot (Menü mit 10 Plätzen, belegte markiert), Vorspulen, Screenshot,
+    Neu starten, Emulator-Menü (über die Steuerschnittstelle).
     Der Slot wird seit Spielstart mitgezählt (RetroArch meldet ihn nicht zurück).
   - **DraStic:** Speichern (R2), Laden (L2) – kurz auftauen, Taste einspeisen, wieder anhalten; Screenshot.
   - **Andere (DSperate, Ports …):** Screenshot; Hinweis auf das Emulator-Menü.
+- Nach jeder Aktion schließt sich das CC (zurück ins Spiel) – außer bei der Slot-Wahl.
 - Screenshots außerhalb RetroArch: `grim` vom oberen Bildschirm nach `/storage/roms/screenshots/`.
 - Offen: Spickzettel, DSperate-Speichern über eigene (2)-Belegung, Schalter „Tastenkürzel erlauben“.

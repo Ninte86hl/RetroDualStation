@@ -226,7 +226,8 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Speichern": "Save", "Laden": "Load", "Slot −": "Slot −", "Slot +": "Slot +",
+    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "belegt": "used",
+    "übernehmen": "take", "zurück": "back",
     "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
     "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
     "Starte ein Spiel, um es hier zu steuern.": "Start a game to control it here.",
@@ -1464,8 +1465,8 @@ PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 
 # Seite „Spiel“: Aktionen je Emulator (Schlüssel, Beschriftung)
 GAME_ACTIONS = {
-    "RetroArch": [("save", "Speichern"), ("load", "Laden"), ("slot-", "Slot −"), ("slot+", "Slot +"),
-                  ("ff", "Vorspulen"), ("shot", "Screenshot"), ("reset", "Neu starten"), ("menu", "Emulator-Menü")],
+    "RetroArch": [("save", "Speichern"), ("load", "Laden"), ("slot", "Slot"), ("ff", "Vorspulen"),
+                  ("shot", "Screenshot"), ("reset", "Neu starten"), ("menu", "Emulator-Menü")],
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot")]
@@ -2324,6 +2325,7 @@ class ControlCenter:
         self.gmsg = None          # (Text, Zeitpunkt) – Rückmeldung nach einer Aktion
         self.gbusy = False
         self.slot = 0             # RetroArch-Speicherplatz (seit Spielstart gezählt)
+        self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
         self.tracks = {}        # Regler -> (x0, x1)
@@ -2401,6 +2403,7 @@ class ControlCenter:
     def reset(self):
         """Beim Schließen des Overlays: Tastatur und Untermenü verlassen."""
         self.kbd = None
+        self.slot_pick = None
         self.back()
 
     def back(self):
@@ -2411,6 +2414,9 @@ class ControlCenter:
         if self.sub:
             self.sub.close()
             self.sub = None
+            return True
+        if self.slot_pick is not None:
+            self.slot_pick = None
             return True
         return False
 
@@ -2478,6 +2484,11 @@ class ControlCenter:
         if self.sub:
             self.sub.nav(dx, dy)
             return
+        if self.page == 1 and self.slot_pick is not None:
+            n = self.slot_pick + dx + dy * 5
+            if 0 <= n < 10:
+                self.slot_pick = n
+            return
         if self.page == 1:
             acts = game_actions(self.game)
             if acts:
@@ -2509,10 +2520,16 @@ class ControlCenter:
         if self.sub:
             self.sub.confirm()
             return
+        if self.page == 1 and self.slot_pick is not None:
+            return ("game", "setslot")
         if self.page == 1:
             acts = game_actions(self.game)
             if acts and not self.gbusy:
-                return ("game", acts[min(self.gsel, len(acts) - 1)][0])
+                key = acts[min(self.gsel, len(acts) - 1)][0]
+                if key == "slot":
+                    self.slot_pick = self.slot
+                    return
+                return ("game", key)
             return
         if self.page != 0:
             return
@@ -2616,7 +2633,14 @@ class ControlCenter:
                 return "quit"
             elif kind == "gact" and not self.gbusy:
                 self.gsel = val
-                return ("game", game_actions(self.game)[val][0])
+                key = game_actions(self.game)[val][0]
+                if key == "slot":
+                    self.slot_pick = self.slot
+                    return
+                return ("game", key)
+            elif kind == "slotpick":
+                self.slot_pick = val
+                return ("game", "setslot")
 
     def _hit(self, x, y):
         for hx, hy, hw, hh, action in self.hits:
@@ -2664,10 +2688,13 @@ class ControlCenter:
         left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        elif self.page == 1 and self.slot_pick is not None:
+            left = [("A", "übernehmen"), ("B", "zurück")]
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
         P.hint(left, 17, 45, 835, T["muted"], T["text"])
-        P.hint([("Select", "Tour"), ("B", "Schließen")], 17, 1215, 835, T["muted"], T["text"], align="r")
+        right = [("Select", "Tour")] if self.slot_pick is not None else [("Select", "Tour"), ("B", "Schließen")]
+        P.hint(right, 17, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
             wdt = 34 if i == self.page else 12
@@ -2930,12 +2957,17 @@ class ControlCenter:
         tw = (1170 - gap * (cols - 1)) / cols
         th = 150
         self.gsel = min(self.gsel, len(acts) - 1)
+        if self.slot_pick is not None:
+            self._draw_slots(P)
+            return
         for i, (key, label) in enumerate(acts):
+            if key == "slot":
+                label = tr("Slot") + " %d" % self.slot
             tx = 45 + (i % cols) * (tw + gap)
             ty = 200 + (i // cols) * (th + gap)
             fill = mix(T["tile"], A, 0.22)
             P.rrect(tx, ty, tw, th, 24, fill)
-            P.text(label, 22, tx + tw / 2, ty + th / 2 + 8, T["text"], bold=True, align="c")
+            P.text(label, 22, tx + tw / 2, ty + th / 2 + 8, T["text"], bold=True, align="c", raw=key == "slot")
             if i == self.gsel:
                 self._focus_ring(P, tx, ty, tw, th, 24)
             self.hits.append((tx, ty, tw, th, ("gact", i)))
@@ -2946,6 +2978,34 @@ class ControlCenter:
             P.text(self.gmsg[0], 24, 630, y, T["text"], bold=True, align="c")
         elif g.get("emu") not in GAME_ACTIONS:
             P.text("Weitere Aktionen im Menü des Emulators.", 20, 630, y, T["muted"], align="c")
+
+    def _slot_used(self, n):
+        g = self.game or {}
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
+        if not rom:
+            return False
+        base = os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
+                            os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
+        return os.path.exists(base)
+
+    def _draw_slots(self, P):
+        """Slot-Menü: 10 Speicherplätze, belegte markiert."""
+        T, A = self.T, self.accent
+        P.text("Speicherplatz wählen", 26, 45, 215, T["text"], bold=True)
+        gap, tw, th = 22, (1170 - 22 * 4) / 5, 130
+        for n in range(10):
+            tx = 45 + (n % 5) * (tw + gap)
+            ty = 250 + (n // 5) * (th + gap)
+            cur = n == self.slot
+            fill = A if cur else mix(T["tile"], A, 0.22)
+            tc = "ffffff" if cur else T["text"]
+            P.rrect(tx, ty, tw, th, 24, fill)
+            P.text(str(n), 34, tx + tw / 2, ty + 70, tc, bold=True, align="c", raw=True)
+            if self._slot_used(n):
+                P.text("belegt", 16, tx + tw / 2, ty + 104, mix(tc, fill, 0.25), align="c")
+            if n == self.slot_pick:
+                self._focus_ring(P, tx, ty, tw, th, 24)
+            self.hits.append((tx, ty, tw, th, ("slotpick", n)))
 
     def _draw_placeholder(self, P):
         T = self.T
@@ -3977,28 +4037,29 @@ def main():
                 log("Seite Spiel:", cmd)
             threading.Thread(target=later, daemon=True).start()
             return
+        if key == "setslot":
+            target = cc.slot_pick if cc.slot_pick is not None else cc.slot
+            cc.slot_pick = None
+            if emu == "RetroArch":
+                for _ in range(abs(target - cc.slot)):
+                    ra_command("STATE_SLOT_PLUS" if target > cc.slot else "STATE_SLOT_MINUS")
+                log("Seite Spiel: Slot", cc.slot, "→", target)
+                cc.slot = target
+            state["dirty"] = True
+            return                           # CC bleibt offen
         if emu == "RetroArch":
-            if key == "slot-":
-                cc.slot = max(0, cc.slot - 1)
-                ra_command("STATE_SLOT_MINUS")
-                return
-            if key == "slot+":
-                cc.slot = min(99, cc.slot + 1)
-                ra_command("STATE_SLOT_PLUS")
-                return
             cmd = {"save": "SAVE_STATE", "load": "LOAD_STATE", "shot": "SCREENSHOT"}[key]
             ra_command(cmd)
             log("Seite Spiel:", cmd, "Slot", cc.slot)
-            finish({"save": "Gespeichert", "load": "Geladen", "shot": "Screenshot gespeichert"}[key]
-                   + (" · Slot %d" % cc.slot if key != "shot" else ""))
+            toggle("cc")                     # erledigt → zurück ins Spiel
             return
 
-        cc.gbusy = True
-        state["dirty"] = True
+        toggle("cc")                         # schließen: Pause und Grab aufheben, dann auslösen
 
         def work():
             msg = "Fehlgeschlagen"
             try:
+                time.sleep(0.3)
                 if key == "shot":
                     os.makedirs(SHOT_DIR, exist_ok=True)
                     rom = g.get("rom") or rom_of(g["pid"]) or g.get("name", "spiel")
@@ -4012,9 +4073,6 @@ def main():
                     dss = os.path.join("/storage/roms/savestates/nds",
                                        os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
                     before = os.path.getmtime(dss) if os.path.exists(dss) else 0
-                    pauser.resume()
-                    set_grab(False)
-                    time.sleep(0.2)
                     code = 313 if key == "save" else 312     # R2 speichern, L2 laden
                     inject_keys([(code, 1), 0.1, (code, 0)])
                     for _ in range(25):
@@ -4028,9 +4086,6 @@ def main():
                         time.sleep(0.5)
                     ok = key == "load" or (os.path.exists(dss) and os.path.getmtime(dss) > before)
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
-                    if ui.view:                          # CC noch offen → wieder anhalten
-                        pauser.pause(g)
-                        set_grab(True)
                 log("Seite Spiel:", emu, key, "→", msg)
             except Exception:
                 log("Seite Spiel: Fehler\n" + traceback.format_exc().rstrip())
