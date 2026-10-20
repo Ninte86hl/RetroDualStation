@@ -309,6 +309,10 @@ class App:
                 self.dirty = self.top_dirty = True
         threading.Thread(target=run, daemon=True).start()
 
+    def _focus_ring(self, P, x, y, w, h, r):
+        """Wie im Kontrollcenter – wird von der Bildschirmtastatur benutzt."""
+        P.rrect(x - 5, y - 5, w + 10, h + 10, r + 5, self.accent, stroke=4)
+
     def _hit(self, x, y):
         for hx, hy, hw, hh, action in reversed(self.hits):
             if hx <= x <= hx + hw and hy <= y <= hy + hh:
@@ -1160,14 +1164,7 @@ class App:
         if saving:
             self.draw_saving(P, saving)
             return
-        if self.view == "setup":
-            self.draw_setup(P)
-        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore"):
-            self.draw_list(P)
-        elif self.view == "game":
-            self.draw_game(P)
-        else:
-            self.header(P, "Artwork Manager")
+        self.draw_view(P)
         if self.confirm:
             self.draw_confirm(P, self.confirm)
             return
@@ -1196,6 +1193,17 @@ class App:
         P.rrect(650, 600, 560, 110, 30, T["tile"])
         P.text("B  Nein", 34, 930, 668, T["text"], bold=True, align="c", raw=True)
         self.hits.append((650, 600, 560, 110, ("setup", False)))
+
+    def draw_view(self, P):
+        """Die eigentliche Ansicht (ohne Tastatur, Ladebildschirm und Meldungen)."""
+        if self.view == "setup":
+            self.draw_setup(P)
+        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore"):
+            self.draw_list(P)
+        elif self.view == "game":
+            self.draw_game(P)
+        else:
+            self.header(P, "Artwork Manager")
 
     def draw_confirm(self, P, c):
         """Rückfrage über der aktuellen Ansicht: A = ja, B = nein."""
@@ -1378,6 +1386,16 @@ class App:
     def draw_top(self, cr, w, h):
         """Oben: Spielname und das gewählte Artwork, so groß wie möglich."""
         P = Pen(cr, w, h)
+        if self.kbd:
+            # Während der Eingabe: die Ansicht von unten wandert nach oben, unten hat die Tastatur Platz
+            hits = self.hits
+            P.fill_all(self.T["bg"])
+            try:
+                self.draw_view(P)
+            finally:
+                self.hits = hits                       # Touch-Ziele gehören weiter zum unteren Bildschirm
+            P.rrect(0, 0, 1260, 951, 0, "000000", a=0.25)
+            return
         P.fill_all("000000")
         if self.view not in ("game", "search") or not self.rom:
             P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
@@ -1426,6 +1444,7 @@ def main():
     grabbed = [fd for fd in (joy, home, tfd) if fd is not None]
     for fd in grabbed:
         grab(fd, True)          # Eingaben gehören nur dem Manager (ES und Kontrollcenter ruhen)
+    kbd_open = [False]
     try:
         while not a.quit:
             fds = [fd for fd in grabbed]
@@ -1492,6 +1511,9 @@ def main():
             if a.busy or a.saving or a.dirty:
                 a.dirty = False
                 ui.redraw()
+            if (a.kbd is not None) != kbd_open[0]:   # Tastatur auf/zu → oberen Bildschirm umschalten
+                kbd_open[0] = a.kbd is not None
+                a.top_dirty = True
             if a.top_dirty:
                 a.top_dirty = False
                 ui.redraw_top()
