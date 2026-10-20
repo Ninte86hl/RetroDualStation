@@ -207,7 +207,7 @@ EN_AM = {
     "Filter": "Filter", "Keine Spiele für diesen Filter": "No games for this filter",
     "Spieleliste": "Game list", "Filter: alle · fehlende · keine Artworks": "Filter: all · missing · no artwork",
     "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
-    "Icon-Editor": "Icon editor",
+    "Icon-Editor": "Icon editor", "Keine Icon-Bilder ohne Rahmen gefunden": "No icon images without border found",
     "Das Ergebnis wird als Icon (Cartridge) übernommen.": "The result is taken as the icon (cartridge).",
     "iiSU-Rahmen werden geladen … (nur beim ersten Mal)": "Loading iiSU borders … (first time only)", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
     "Rahmen": "Border", "Zoom": "Zoom", "Position": "Position", "Größe": "Size", "Zurücksetzen": "Reset",
@@ -776,7 +776,7 @@ class App:
         self.origin = "games"
 
         def then():
-            self.kind = next(n for n, (k, _l) in enumerate(KINDS) if k == "cartridge")
+            self.kind = self.CART
             if self.editor_source():
                 self.open_editor()
             else:
@@ -955,25 +955,29 @@ class App:
         self.work("saving", run)
 
     # -- Editor: 1:1-Bild mit iiSU-Rahmen --
+    CART = next(n for n, (k, _l) in enumerate(KINDS) if k == "cartridge")
+
     def editor_source(self):
-        """Quelle für den Icon-Editor: im Cartridge-Tab das gewählte Bild, sonst das übernommene Icon,
-        sonst das erste 1:1-Bild ohne eingebauten iiSU-Rahmen, zuletzt das gerade gewählte Bild."""
+        """Quelle für den Icon-Editor – immer aus dem Icon/Cartridge-Tab (der Typ mit iiSU-Rahmen):
+        das dort gewählte Bild, sonst das übernommene, sonst das erste ohne eingebauten Rahmen."""
         def framed(c):            # iiSU-Box-Art hat den Rahmen schon – nicht doppelt rahmen
             return str(c.get("id") or "").startswith("iidb-iisu_boxart") or c.get("_png")
-        if self.kind_key() == "cartridge" and self.cand() and not framed(self.cand()):
-            return self.cand()
+        items = self.cands.get("cartridge") or []
+        cur = items[self.idx["cartridge"]] if items else None
+        if cur and not framed(cur):
+            return cur
         chosen = self.chosen.get("cartridge")
         if chosen and not framed(chosen):
             return chosen
-        for c in self.cands.get("cartridge") or []:
-            if not framed(c):
-                return c
-        return self.cand()
+        return next((c for c in items if not framed(c)), None)
 
     def open_editor(self):
         """Icon-Editor: ein 1:1-Bild mit iiSU-Rahmen für den Cartridge/Icon-Platz."""
+        self.kind = self.CART                  # Editor gehört immer zum Icon/Cartridge-Typ
+        self.top_dirty = True
         c = self.editor_source()
         if not c:
+            self.say("Keine Icon-Bilder ohne Rahmen gefunden")
             return
         system = self.system["key"]
 
@@ -1201,7 +1205,7 @@ class App:
             taken = c is not None and self.chosen.get(kind) is c
             return [("A", "Abwählen" if taken else "Übernehmen", self.toggle_choice if c else None),
                     ("B", "Batch beenden" if self.batch else "Zurück", self.back),
-                    ("X", "Editor", self.open_editor if c else None),   # 1:1-Bild mit iiSU-Rahmen
+                    ("X", "Icon-Editor", self.open_editor if self.cands.get("cartridge") else None),
 
                     ("Y", "Spiel suchen", self.open_search)]
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen", "gsearch": "Öffnen",
