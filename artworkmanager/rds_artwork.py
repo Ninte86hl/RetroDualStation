@@ -165,6 +165,17 @@ def to_png(data, path, limit=900):
     return img.size
 
 
+def is_2x3(w, h):
+    """True bei Hochformat 2:3 (mit Toleranz), False sonst, None wenn die Größe unbekannt ist."""
+    try:
+        w, h = int(w or 0), int(h or 0)
+    except (TypeError, ValueError):
+        return None
+    if w <= 0 or h <= 0:
+        return None
+    return abs(w / h - 2 / 3) <= 0.08
+
+
 def by_style(cands):
     """Jeder Tab zeigt nur Bilder seines Artwork-Stils.
 
@@ -182,7 +193,8 @@ def by_style(cands):
         return c.get("style") if iidb(c) else None
 
     out = {
-        "boxart": [c for c in cands.get("boxart", []) if not iidb(c) or iidb_style(c) == "boxart"],
+        "boxart": [c for c in cands.get("boxart", [])
+                   if (not iidb(c) or iidb_style(c) == "boxart") and is_2x3(c.get("width"), c.get("height")) is not False],
         "cartridge": [c for c in cands.get("cartridge", []) + cands.get("boxart", [])
                       if (iidb(c) and iidb_style(c) in ("iisu_boxart", "icon"))
                       or (not iidb(c) and c in cands.get("cartridge", []))],
@@ -383,6 +395,9 @@ class App:
             pages = iidb_asset_pages(result["iidb"]["id"]) if result.get("iidb") else {}
             raw = artwork_candidates_for_games(result, pages, sgdb)
             self.cands = by_style(raw)
+            for c in list(self.cands["boxart"]):   # Größe unbekannt (iiDB): gleich laden und prüfen
+                if is_2x3(c.get("width"), c.get("height")) is None:
+                    self._load_preview(c)
             for k, _label in KINDS:   # Vergleich mit dem PC-Manager: gefunden → angezeigt
                 srcs = {}
                 for c in raw.get(k, []):
@@ -424,13 +439,32 @@ class App:
                 try:
                     data = cached_download(WORK / "data" / "cache", url, download_artwork)
                     path = PREVIEW_DIR / "cand" / (str(abs(hash(url))) + ".png")
-                    to_png(data, path)
+                    size = to_png(data, path)
                     self.previews[url] = str(path)
+                    if item in (self.cands.get("boxart") or []) and is_2x3(*size) is False:
+                        self.drop_boxart(item)
                 except Exception as exc:
                     log("Vorschau nicht ladbar:", url, exc)
                     self.previews[url] = None
             self.top_dirty = self.dirty = True
         threading.Thread(target=go, daemon=True).start()
+
+    def drop_boxart(self, item):
+        """Kein 2:3-Format: aus dem Boxart-Tab entfernen, Auswahl stabil halten."""
+        items = self.cands.get("boxart") or []
+        if item not in items:
+            return
+        i = items.index(item)
+        cur = self.idx["boxart"]
+        self.cands["boxart"] = items[:i] + items[i + 1:]
+        if i < cur or cur >= len(self.cands["boxart"]):
+            self.idx["boxart"] = max(0, cur - 1)
+        if self.chosen.get("boxart") is item:
+            del self.chosen["boxart"]
+        self.gscroll["boxart"] = min(self.gscroll.get("boxart", 0), max(0, len(self.cands["boxart"]) - TILES))
+        log("Boxart ausgeblendet (kein 2:3):", item.get("url"))
+        if self.kind_key() == "boxart":
+            self.want_previews()
 
     def preview_of(self, item):
         if not item:
