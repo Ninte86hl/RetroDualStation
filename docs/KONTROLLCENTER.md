@@ -539,3 +539,11 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
 - L3 ist damit frei; Menü/Vorspulen gibt es nur über das CC. Installer setzt das einmalig (`drastic-kuerzel.done`, Sicherung `.vor-rds-kuerzel`).
 - Normales RG DS hat zwei Sticks → dort andere Lösung nötig.
 - Menü-Vergrößerung: `librgdsmenu.so` gibt es auf dem RG DS Plus nicht (nur `libdrastouch.so`) → zurückgestellt.
+
+### RetroAchievements – Entwurf (21.10.2026)
+- **CC-Seite 3:** Kopf mit Konto (Name, Punkte, Rang) und Hardcore-Anzeige; Spielkarte (Icon, „12 von 48 Erfolgen · Punkte“,
+  Fortschrittsbalken); Liste „Als Nächstes“ (Abzeichen, Titel, Beschreibung, Punkte). A = Details, Y = alle Erfolge.
+- **Freischalt-Meldung:** einige Sekunden **oben über dem Spiel** (Abzeichen, „Erfolg freigeschaltet!“, Titel, Punkte, Stand),
+  ersetzt die abgeschaltete RetroArch-Einblendung.
+- **Farben:** an die Akzentfarbe des CC gekoppelt (kein eigenes Gold).
+- Datenquellen: RetroAchievements-Web-API (Konto + API-Key) für Abzeichen/Texte; Freischalten aus RetroArch (Ausgabe bzw. `ra_proxy`) – zu klären.
