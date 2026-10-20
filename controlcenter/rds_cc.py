@@ -1626,7 +1626,8 @@ DSP_NAMES = {"guide": "Anbernic", "start": "Start", "back": "Select", "a": "B", 
              "rightshoulder": "R1", "leftshoulder": "L1", "righttrigger": "R2", "lefttrigger": "L2",
              "leftstick": "L3", "rightstick": "R3"}
 DSP_LABELS = {"quit": "Beenden", "pause": "Menü", "slot_next": "Slot +", "slot_prev": "Slot −",
-              "layout_next": "Layout +", "layout_prev": "Layout −", "screen_swap": "Bildschirme tauschen", "mic": "Mikrofon",
+              "layout_next": "Layout +", "layout_prev": "Layout −", "fast_forward_toggle": "Vorspulen", "volume_up": "Lauter",
+              "volume_down": "Leiser", "mute": "Stumm", "fullscreen": "Vollbild", "lid": "Deckel", "pip_corner_next": "Bild-im-Bild-Ecke", "screen_swap": "Bildschirme tauschen", "mic": "Mikrofon",
               "fast_forward": "Vorspulen (halten)", "fast_forward_toggle": "Vorspulen", "save_state": "Speichern",
               "load_state": "Laden", "fps": "FPS", "screenshot": "Screenshot", "swap_screens": "Bildschirme tauschen"}
 
@@ -1694,7 +1695,9 @@ def dsperate_shortcuts():
         if not v or v.lower() == "none":
             continue
         parts = [p for p in v.split("+") if p]
-        rows.append((DSP_LABELS.get(k, k), " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)))
+        base, alt = (k[:-4], True) if k.endswith(".alt") else (k, False)
+        label = DSP_LABELS.get(base, base) + (" (2)" if alt else "")
+        rows.append((label, " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)))
     return rows
 
 
