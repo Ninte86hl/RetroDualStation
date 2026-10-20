@@ -509,3 +509,12 @@ R1 ist am leichtesten erreichbar → Vorspulen; Speichern/Laden auf den Triggern
 DraStic kennt keinen Modifier: Speichern R2, Laden L2 (ohne Anbernic), Vorspulen R3, Menü L3.
 Sicherungen vor jeder Änderung auf dem PC unter `~/RetroDualStation/backup/`.
 Später: Installer setzt dieses Schema optional (mit Sicherung).
+
+### DSperate-Slots (getestet 21.10.2026)
+- Spielstände heißen `<Spielcode>.<Slot>.dss` (Spielcode aus dem NDS-Header, Offset 0x0C, z. B. `AMCP.3.dss`), Auto: `<Code>.auto.dss`.
+- Das CC steuert den Slot mit Anbernic + ◀/▶ an (zählt ab Spielstart von 0 mit), speichert/lädt dann mit dem Kürzel.
+- Vorschaubild: Screenshot des oberen Bildschirms direkt vor dem Speichern → `<Code>.<Slot>.dss.png`.
+- Speichern, Laden, Bilder und Emulator-Menü per CC getestet.
+
+### Log des Kontrollcenters
+Das CC schreibt ins Journal: `journalctl -u rds-controlcenter --no-pager | tail -40`

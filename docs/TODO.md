@@ -74,7 +74,9 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
 - [x] Etappe 2: Seite „Spiel“ – Infoansicht, Speichern/Laden mit Slot-Auswahl und Vorschau, Löschen (X X / Mülleimer), Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden (getestet 20.10.2026)
-- [ ] Seite „Spiel“: Steuerung (Tasten je Emulator erklären), DSperate Speichern/Laden über (2)-Belegung
+- [x] Seite „Spiel“: Tastenbelegung je System/Emulator, DSperate Speichern/Laden/Slots/Menü, einheitliche Kürzel (21.10.2026)
+- [ ] DraStic: Slots (savestate_number) und Kürzel-Kombinationen prüfen
+- [ ] RetroArch-Kürzel im CC anpassen (Aktion wählen → Taste drücken)
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [x] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden) – 20.10.2026
 - [x] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) auf einen Bildschirm begrenzt – Patch 003 (20.10.2026)
