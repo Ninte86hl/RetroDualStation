@@ -74,8 +74,14 @@ TILE_GAP = 22
 
 def tile_geom(kind):
     """Breite, Höhe, Schrittweite und Anzahl voll sichtbarer Kacheln."""
+    if kind in VERTICAL:
+        w, h = VERTICAL[kind]
+        return w, h, h + TILE_GAP, 2
     w, h = TILE_SIZE[kind]
     return w, h, w + TILE_GAP, TILES
+
+
+VERTICAL = {"image": (900, 290)}           # Hero-Bilder: zwei untereinander
 BAR_Y, BAR_H = 800, 86                      # A/B/X/Y-Leiste
 HINT_Y = 930                                # Hinweiszeile
 
@@ -712,7 +718,10 @@ class App:
         if self.busy:
             return
         if self.view == "game":
-            if dx:
+            if self.kind_key() in VERTICAL:
+                if dy or dx:
+                    self.step(dy or dx)     # Hero: ▲ ▼ (◀ ▶ geht auch)
+            elif dx:
                 self.step(dx)           # Stil wechselt nur mit L/R oder Antippen
         elif dy:
             self.move(dy)
@@ -770,9 +779,12 @@ class App:
         if abs(dy) > 60 and abs(dy) > abs(dx) and self.view in ("games", "search", "systems"):
             self.move(-round(dy / ROW_H))                 # senkrecht wischen = Liste blättern
             return
-        if self.view == "game" and abs(dx) > 60 and abs(dx) > abs(dy):
-            self.scroll_gallery(-round(dx / tile_geom(self.kind_key())[2]))  # waagerecht wischen = Bildleiste blättern
-            return
+        if self.view == "game":
+            vertical = self.kind_key() in VERTICAL
+            d = dy if vertical else dx
+            if abs(d) > 60 and abs(d) > abs(dx if vertical else dy):
+                self.scroll_gallery(-round(d / tile_geom(self.kind_key())[2]))  # wischen = Bilder blättern
+                return
         self.on_tap(x0, y0)
 
     # ---------------------------------------------------------- Zeichnen ----
@@ -945,11 +957,15 @@ class App:
         tw_, th, step, tiles = tile_geom(kind)
         if not items:
             P.text("Keine Bilder für diesen Artwork-Stil", 30, 630, gy + gh / 2, T["muted"], align="c", raw=True)
-        shown = min(tiles, len(items) - first)
+        vertical = kind in VERTICAL
+        shown = max(0, min(tiles, len(items) - first))
         x0 = 630 - (shown * step - TILE_GAP) / 2           # Gruppe mittig
+        y0 = gy + (gh - (shown * step - TILE_GAP)) / 2
         for j in range(first, first + shown):
-            tx = x0 + (j - first) * step
-            ty = gy + (gh - th) / 2
+            if vertical:                                     # Hero: untereinander
+                tx, ty = 630 - tw_ / 2 - 50, y0 + (j - first) * step
+            else:
+                tx, ty = x0 + (j - first) * step, gy + (gh - th) / 2
             sel = j == cur
             if sel:
                 P.rrect(tx - 9, ty - 9, tw_ + 18, th + 18, 24, A)
@@ -964,12 +980,21 @@ class App:
                 P.circle(tx + tw_ - 28, ty + 28, 22, "2bb673")
                 P.text("✓", 26, tx + tw_ - 28, ty + 37, "ffffff", bold=True, align="c", raw=True)
             self.hits.append((tx, ty, tw_, th, ("tile", j)))
-        if first > 0:                    # Hinweis: links/rechts geht es weiter
-            P.text("‹", 60, 14, gy + gh / 2 + 20, T["muted"], raw=True)
-        if len(items) > first + tiles:
-            P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
+        if vertical and items:           # Pfeile zum Antippen rechts daneben
+            ax = 630 + tw_ / 2 - 50 + 40
+            for d, sym, ay in ((-1, "▲", gy + 60), (1, "▼", gy + gh - 160)):
+                on = 0 <= cur + d < len(items)
+                P.rrect(ax, ay, 100, 100, 24, T["tile"], a=1.0 if on else 0.35)
+                P.text(sym, 40, ax + 50, ay + 64, T["text"] if on else T["muted"], align="c", raw=True)
+                if on:
+                    self.hits.append((ax, ay, 100, 100, ("btn", (lambda dd: lambda: self.step(dd))(d))))
+        elif not vertical:
+            if first > 0:                # Hinweis: links/rechts geht es weiter
+                P.text("‹", 60, 14, gy + gh / 2 + 20, T["muted"], raw=True)
+            if len(items) > first + tiles:
+                P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, "◀ ▶ Bild wählen · L / R Artwork-Stil", "")
+        self.bar(P, ("▲ ▼" if vertical else "◀ ▶") + " Bild wählen · L / R Artwork-Stil", "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
         label = f"Start  Speichern ({len(self.chosen)})"
         w = P.width(label, 22, bold=True, raw=True) + 36
