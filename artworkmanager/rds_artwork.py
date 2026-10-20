@@ -207,7 +207,9 @@ EN_AM = {
     "Filter": "Filter", "Keine Spiele für diesen Filter": "No games for this filter",
     "Spieleliste": "Game list", "Filter: alle · fehlende · keine Artworks": "Filter: all · missing · no artwork",
     "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
-    "Editor – Cartridge": "Editor – Cartridge", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
+    "Icon-Editor": "Icon editor",
+    "Das Ergebnis wird als Icon (Cartridge) übernommen.": "The result is taken as the icon (cartridge).",
+    "iiSU-Rahmen werden geladen … (nur beim ersten Mal)": "Loading iiSU borders … (first time only)", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
     "Rahmen": "Border", "Zoom": "Zoom", "Position": "Position", "Größe": "Size", "Zurücksetzen": "Reset",
     "verschieben": "move", "Kein Rahmen": "No border", "Editor-Vorschau": "Editor preview",
     "Das Ergebnis wird als Cartridge übernommen.": "The result is taken as the cartridge image.",
@@ -774,11 +776,8 @@ class App:
         self.origin = "games"
 
         def then():
-            for n, (k, _l) in enumerate(KINDS):   # Quelle: erste Boxart, sonst ein anderes Bild
-                if self.cands.get(k):
-                    self.kind, self.idx[k] = n, 0
-                    break
-            if self.cand():
+            self.kind = next(n for n, (k, _l) in enumerate(KINDS) if k == "cartridge")
+            if self.editor_source():
                 self.open_editor()
             else:
                 self.say("Keine Bilder gefunden – mit Y anderes Spiel suchen")
@@ -956,9 +955,24 @@ class App:
         self.work("saving", run)
 
     # -- Editor: 1:1-Bild mit iiSU-Rahmen --
+    def editor_source(self):
+        """Quelle für den Icon-Editor: im Cartridge-Tab das gewählte Bild, sonst das übernommene Icon,
+        sonst das erste 1:1-Bild ohne eingebauten iiSU-Rahmen, zuletzt das gerade gewählte Bild."""
+        def framed(c):            # iiSU-Box-Art hat den Rahmen schon – nicht doppelt rahmen
+            return str(c.get("id") or "").startswith("iidb-iisu_boxart") or c.get("_png")
+        if self.kind_key() == "cartridge" and self.cand() and not framed(self.cand()):
+            return self.cand()
+        chosen = self.chosen.get("cartridge")
+        if chosen and not framed(chosen):
+            return chosen
+        for c in self.cands.get("cartridge") or []:
+            if not framed(c):
+                return c
+        return self.cand()
+
     def open_editor(self):
-        """Das gewählte Bild (beliebiger Stil) als Quelle für ein 1:1-Cartridge-Bild mit Rahmen."""
-        c = self.cand()
+        """Icon-Editor: ein 1:1-Bild mit iiSU-Rahmen für den Cartridge/Icon-Platz."""
+        c = self.editor_source()
         if not c:
             return
         system = self.system["key"]
@@ -966,6 +980,9 @@ class App:
         def go():
             data = fetch(c.get("url") or c.get("preview_url"))
             try:
+                if not border_candidates(WORK / "data", system):
+                    self.busy = "iiSU-Rahmen werden geladen … (nur beim ersten Mal)"
+                    self.dirty = True
                 prepare_iisu_borders(WORK / "data", system)
             except Exception as exc:
                 log("Rahmen nicht ladbar:", exc)
@@ -1764,7 +1781,7 @@ class App:
     def draw_editor(self, P):
         T, A = self.T, self.accent
         ed = self.editor or {}
-        self.header(P, "Editor – Cartridge", "1:1 mit iiSU-Rahmen")
+        self.header(P, "Icon-Editor", "1:1 mit iiSU-Rahmen")
         P.rrect(30, 100, 460, 460, 24, T["card"])
         if ed.get("path"):
             self.fit(P, ed["path"], 50, 120, 420, 420)
@@ -1781,7 +1798,7 @@ class App:
             P.text(label, 28, 550, y, T["text"], bold=True, raw=True)
             P.text(value, 26, 1195, y, T["muted"], align="r", raw=True)
             y += 90
-        P.text("Das Ergebnis wird als Cartridge übernommen.", 24, 520, y + 20, T["muted"], raw=True)
+        P.text("Das Ergebnis wird als Icon (Cartridge) übernommen.", 24, 520, y + 20, T["muted"], raw=True)
         self.bar(P, hint_parts("◀ ▶ ▲ ▼", "verschieben", "L / R", "Zoom"))
 
     def draw_confirm(self, P, c):
