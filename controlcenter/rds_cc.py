@@ -3320,13 +3320,21 @@ def main():
         item = sw.items[sw.sel]
         cur = cc.game
         same = cur and (cur.get("rom") or rom_of(cur["pid"])) == item["rom"]
+        if same and fresh and cur["emu"] == "RetroArch":
+            ra_command("RESET")             # im laufenden RetroArch neu starten, ohne Beenden
+            time.sleep(0.3)
+            toggle("switcher")              # danach Pause aufheben
+            def unpause():                  # Sicherheitsnetz: RetroArch nie pausiert zurücklassen
+                time.sleep(0.8)
+                st = ra_command("GET_STATUS", reply=True) or ""
+                if "PAUSED" in st:
+                    ra_command("PAUSE_TOGGLE")
+            threading.Thread(target=unpause, daemon=True).start()
+            log("Gameswitcher: RetroArch zurückgesetzt", item["name"])
+            return
         toggle("switcher")                 # schließen, Pause aufheben
         if same and not fresh:
             return                          # einfach zurück ins laufende Spiel
-        if same and fresh and cur["emu"] == "RetroArch":
-            ra_command("RESET")             # im laufenden RetroArch neu starten, ohne Beenden
-            log("Gameswitcher: RetroArch zurückgesetzt", item["name"])
-            return
         sw.launch(item, fresh, current=cur)
 
     stick = {"dir": 0, "next": 0.0}
