@@ -225,6 +225,10 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
+    "Seite wechseln": "switch page", "Ein/Aus": "on/off", "Details": "details",
+    "Auswählen": "Select", "wählen": "choose", "einfügen": "insert", "schließen": "close",
+    "Taste (halten: ä, ö, ü …)": "key (hold for ä, é, ñ …)", "Löschen": "delete", "Groß": "shift",
+    "Cursor": "cursor", "Auswahl": "Select", "Bestätigen": "Confirm", "Zurück": "Back",
     "Aktualisieren": "Refresh", "Suchen": "Search", "Sucht …": "Searching …", "Zurück": "Back",
     "An": "On", "Aus": "Off", "Verbinden": "Connect", "Trennen": "Disconnect",
     "Vergessen": "Forget", "Passwort …": "Password …", "Koppeln": "Pair", "Entfernen": "Remove",
@@ -605,6 +609,19 @@ class Pen:
         cairo.cairo_move_to(cr, px, self.Y(y))
         cairo.cairo_show_text(cr, data)
         return ext.x_advance / self.s
+
+    def hint(self, items, size, x, y, c, key_c=None, align="l"):
+        """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“, mit „·“ getrennt.
+        items: [("A", "Auswählen"), ("B", "Zurück")] – Erklärungen werden übersetzt, Tasten nicht."""
+        parts = []
+        for n, (key, text) in enumerate(items):
+            if n:
+                parts.append(("  ·  ", False))
+            parts += [(key, True), ((" – " + tr(text)) if text else "", False)]
+        total = sum(self.width(t, size, bold=b, raw=True) for t, b in parts)
+        x = x - total / 2 if align == "c" else x - total if align == "r" else x
+        for t, b in parts:
+            x += self.text(t, size, x, y, (key_c or c) if b else c, bold=b, raw=True)
 
     def width(self, txt, size, bold=False, raw=False):
         if not raw:
@@ -1591,8 +1608,8 @@ class SubMenu:
             P.text(f"{count} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
                    T["muted"], align="c")
         cc.hits.append((45, 195, 1170, self.LIST_H + 20, ("sublist",)))
-        P.text("A Auswählen", 17, 45, 835, T["muted"])
-        P.text("B Zurück", 17, 1215, 835, T["muted"], align="r")
+        P.hint([("A", "Auswählen")], 17, 45, 835, T["muted"], T["text"])
+        P.hint([("B", "Zurück")], 17, 1215, 835, T["muted"], T["text"], align="r")
 
 
 class WifiMenu(SubMenu):
@@ -2186,9 +2203,10 @@ class Keyboard:
                 P.text(v, 32, bx + bw / 2, py + 67, "ffffff" if sel else T["text"], align="c")
                 pp["xs"].append(bx + bw / 2)
                 hits.insert(0, (bx, py + 9, bw, 92, ("kb_var", i)))
-        hint = ("Links/Rechts wählen · A einfügen · B schließen" if self.popup else
-                "A Taste (halten: ä, ö, ü …) · B Löschen · L1 Groß · R1 ?123 · Stick Cursor · Start OK")
-        P.text(hint, 17, 630, 835, T["muted"], align="c")
+        hint = ([("◄ ►", "wählen"), ("A", "einfügen"), ("B", "schließen")] if self.popup else
+                [("A", "Taste (halten: ä, ö, ü …)"), ("B", "Löschen"), ("L1", "Groß"), ("R1", "?123"),
+                 ("Stick", "Cursor"), ("Start", "OK")])
+        P.hint(hint, 17, 630, 835, T["muted"], T["text"], align="c")
 
 
 
@@ -2534,11 +2552,11 @@ class ControlCenter:
         if self.sub:
             self.sub.draw(P)
             return
-        left = "L1 / R1 Seite wechseln"
+        left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
-            left = "A Ein/Aus  ·  X / Y Details"
-        P.text(left, 17, 45, 835, T["muted"])
-        P.text("B Schließen", 17, 1215, 835, T["muted"], align="r")
+            left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        P.hint(left, 17, 45, 835, T["muted"], T["text"])
+        P.hint([("B", "Schließen")], 17, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
             wdt = 34 if i == self.page else 12
@@ -2785,7 +2803,7 @@ class ControlCenter:
             return
         if not sw.items:
             P.text("Noch keine Spiele gespielt", 30, 630, 460, T["text"], bold=True, align="c")
-            P.text("Home oder B: schließen", 18, 630, 925, T["muted"], align="c")
+            P.hint([("Home / B", "schließen")], 18, 630, 925, T["muted"], T["text"], align="c")
             return
         it = sw.items[sw.sel]
         # Karussell: ausgewählte Karte fast bildschirmbreit mit Akzentrahmen, Nachbarn lugen am Rand hervor
@@ -3020,7 +3038,8 @@ class PowerMenu:
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
                        "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
-            P.text("◄ ► Auswahl  ·  A Bestätigen  ·  B Abbrechen", 17, W / 2, H - 36, T["muted"], align="c")
+            P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 17, W / 2, H - 36,
+                   T["muted"], T["text"], align="c")
 
         elif self.state == self.STATE_RESTART:
             # Neustart-Untermenü
@@ -3039,7 +3058,7 @@ class PowerMenu:
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
                        "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
-            P.text("B Zurück", 19, W / 2, H - 36, T["muted"], align="c")
+            P.hint([("B", "Zurück")], 19, W / 2, H - 36, T["muted"], T["text"], align="c")
 
         else:
             # Hauptliste
@@ -3064,7 +3083,7 @@ class PowerMenu:
                     P.circle(bx + bw - 52, by + bh / 2, 22, circ_fill)
                     P.chevron(bx + bw - 48, by + bh / 2, 9, tc)
                     hits.append((bx + bw - 90, by, 90, bh, ("more", i)))
-            P.text("B Abbrechen  ·  X Details", 19, W / 2, H - 36, T["muted"], align="c")
+            P.hint([("B", "Abbrechen"), ("X", "Details")], 19, W / 2, H - 36, T["muted"], T["text"], align="c")
 
         return hits
 

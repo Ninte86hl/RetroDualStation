@@ -18,7 +18,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 - **Hinweiszeilen:** Taste/Bedienelement **fett**, danach „– Erklärung“, mehrere Einträge mit „·“ getrennt.
   Beispiel: **▲ ▼** – System wählen · **Start** – Einzelsuche · **Select** – Mehrfachsuche.
-- Umgesetzt im Artwork Manager (Gerät). **Offen:** Gameswitcher und Kontrollcenter auf dieselbe Schreibweise umstellen.
+- Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
