@@ -52,7 +52,7 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 | <img src="docs/screenshots/canvas-view-showcase.png" alt="Showcase"> | <img src="docs/screenshots/canvas-view-spotlight.png" alt="Spotlight"> |  |
 | **Showcase** – Cover und Spieleliste | **Spotlight** – eine große Karte, die hereingleitet |  |
 
-Artwork: `romname-hero.png`, `romname-icon.png`, `romname-box.png` und das Scraper-Logo –
+Artwork nach dem [RetroDualStation-Artwork-Standard](docs/ARTWORK.de.md): `romname-hero.png`, `romname-icon.png`, `romname-box.png` und das Scraper-Logo –
 die ersten drei erstellt der Artwork Manager für dich; fehlende Bilder ersetzt ES durch Scraper-Medien.
 
 ## Artwork Manager
