@@ -16,7 +16,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
-1. **Etappe 5: Gameswitcher** (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
+1. ✅ **Etappe 5: Gameswitcher** (fertig 20.10.2026: RetroArch, DraStic, DSperate, Ports; ES-Ketten-Start, Ladebildschirm; Release v11 offen) (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
    - Liste der zuletzt gespielten Spiele mit **Screenshot vom letzten Zeitpunkt** (beim Auto-Speichern)
    - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
      (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
@@ -46,7 +46,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
 - [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
-- [ ] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden)
+- [x] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden) – 20.10.2026
 - [ ] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) erstreckt sich über beide Bildschirme – auf einen Bildschirm begrenzen (gefunden 19.10.2026)
 - [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
 - [x] Kontrollcenter: Pause in RetroArch, DraStic und DSperate getestet (19.10.2026)

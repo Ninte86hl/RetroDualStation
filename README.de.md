@@ -90,8 +90,8 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 | ✅ | canvas-ds mit fünf Spielelisten-Ansichten |
 | ✅ | DualStation Sync: Dual-Screen-Artwork |
 | ✅ | Kontrollcenter: Schnelleinstellungen, WLAN, Bluetooth, Tastatur, Power-Menü, Spiel beenden, unterer Screen aus |
-| 🔜 **als Nächstes** | Gameswitcher – zuletzt gespielte Spiele mit Screenshot vom letzten Stand; **A** weiterspielen, **Y** neu starten |
-| 🔜 | Kontrollcenter: Seite „Spiel“ – Speicherstände und Tastenkürzel |
+| ✅ | Gameswitcher – zuletzt gespielte Spiele mit Screenshot vom letzten Stand; **A** weiterspielen, **Y** neu starten *(ab v11)* |
+| 🔜 **als Nächstes** | Kontrollcenter: Seite „Spiel“ – Speicherstände und Tastenkürzel |
 | 🔜 | Unterstützung für das normale RG DS |
 | 💭 vielleicht | Einstellungsmenü wie am Smartphone, aufgerufen aus dem Kontrollcenter |
 | 💭 vielleicht | RetroAchievements – Benachrichtigung und Übersicht |
