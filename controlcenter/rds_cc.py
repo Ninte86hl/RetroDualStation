@@ -1717,6 +1717,26 @@ SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLO
 SHOT_DIR = "/storage/roms/screenshots"
 
 
+SLOT_EMUS = ("RetroArch", "DSperate")    # Emulatoren mit Slot-Auswahl
+
+
+def nds_gamecode(rom):
+    """4-stelliger Spielcode aus dem NDS-Header (Offset 0x0C) – DSperate benennt Spielstände danach."""
+    try:
+        if rom.lower().endswith(".zip"):
+            import zipfile
+            with zipfile.ZipFile(rom) as z:
+                name = next((n for n in z.namelist() if n.lower().endswith(".nds")), None)
+                head = z.open(name).read(16) if name else b""
+        else:
+            with open(rom, "rb") as f:
+                head = f.read(16)
+        code = head[12:16].decode("ascii", "ignore")
+        return code if len(code) == 4 and code.isalnum() else None
+    except Exception:
+        return None
+
+
 def nds_state_newest(game):
     """Neuester Spielstand eines NDS-Spiels in /storage/roms/savestates/nds (DSperate/DraStic)."""
     rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
@@ -2579,7 +2599,8 @@ class ControlCenter:
         self.gsel = 0             # Auswahl auf der Seite „Spiel“
         self.gmsg = None          # (Text, Zeitpunkt) – Rückmeldung nach einer Aktion
         self.gbusy = False
-        self.slot = 0             # RetroArch-Speicherplatz (seit Spielstart gezählt)
+        self.slot = 0             # zuletzt im CC genutzter Slot (Vorauswahl)
+        self.dsp_slot = 0         # aktueller Slot in DSperate (startet mit 0, das CC zählt mit)
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
         self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
         self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
@@ -3307,7 +3328,7 @@ class ControlCenter:
         fill = A if sel else mix(T["tile"], A, 0.22)      # angesteuert = Akzentfarbe wie im CC
         tc, mc = ("ffffff", mix("ffffff", A, 0.25)) if sel else (T["text"], T["muted"])
         P.rrect(x, y, w, h, 24, fill)
-        arrow = (self.game or {}).get("emu") == "RetroArch"
+        arrow = (self.game or {}).get("emu") in SLOT_EMUS
         if shot and P.image(shot, x, y, w, h, 24):
             P.rrect(x, y + h - 92, w, 92, 24, "000000", 0.62)
             P.text(label, 24, x + 28, y + h - 52, "ffffff", bold=True)
@@ -3422,7 +3443,7 @@ class ControlCenter:
         g = self.game or {}
         def when(path):
             return time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(path)))
-        if g.get("emu") == "RetroArch":
+        if g.get("emu") in SLOT_EMUS:
             used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
             if key == "save":
                 return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % self.slot if used else tr("Slot wählen")
@@ -3473,7 +3494,7 @@ class ControlCenter:
         if key == "help":
             self.ghelp = True
             return True
-        if (self.game or {}).get("emu") != "RetroArch" or key not in ("save", "load"):
+        if (self.game or {}).get("emu") not in SLOT_EMUS or key not in ("save", "load"):
             return False
         self.slot_mode = key
         start = min(self.slot, SLOTS_USER - 1)
@@ -3499,11 +3520,15 @@ class ControlCenter:
         return bool(f and os.path.exists(f))
 
     def _slot_file(self, n):
-        """Pfad des RetroArch-Savestates für Slot n (Slot 0 = .state)."""
+        """Pfad des Spielstands für Slot n (RetroArch: …stateN, DSperate: CODE.N.dss)."""
         g = self.game or {}
         rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
         if not rom:
             return None
+        if g.get("emu") == "DSperate":
+            if g.get("_code") is None:
+                g["_code"] = nds_gamecode(rom) or ""
+            return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n)) if g["_code"] else None
         return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
 
@@ -4609,18 +4634,34 @@ def main():
                     if subprocess.run(["grim", "-o", TOP_OUTPUT, out], timeout=10).returncode == 0:
                         msg = "Screenshot gespeichert"
                 elif emu == "DSperate":
-                    # DSperate-Kürzel: Modifier „guide“ (Anbernic-Taste) + R2 speichern / + L2 laden
-                    st = nds_state_newest(g)
-                    before = os.path.getmtime(st) if st else 0
+                    # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
+                    n = cc.slot
+                    step = "slot_next" if n > cc.dsp_slot else "slot_prev"
+                    for _ in range(abs(n - cc.dsp_slot)):
+                        if not dsperate_press(step):
+                            raise RuntimeError("DSperate: Slot-Kürzel nicht belegt")
+                        time.sleep(0.12)
+                    cc.dsp_slot = n
+                    f = cc._slot_file(n)
+                    before = os.path.getmtime(f) if f and os.path.exists(f) else 0
+                    shot = None
+                    if key == "save" and f:     # Vorschaubild vom oberen Bildschirm (DSperate legt keins an)
+                        shot = f + ".png"
+                        subprocess.run(["grim", "-l", "1", "-o", TOP_OUTPUT, shot + ".tmp"], timeout=5,
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     if not dsperate_press("save_state" if key == "save" else "load_state"):
                         raise RuntimeError("DSperate: Kürzel nicht belegt")
                     ok = key == "load"
-                    for _ in range(25):
+                    for _ in range(30):
                         time.sleep(0.1)
-                        st = nds_state_newest(g)
-                        if key == "save" and st and os.path.getmtime(st) > before:
+                        if key == "save" and f and os.path.exists(f) and os.path.getmtime(f) > before:
                             ok = True
                             break
+                    if shot and os.path.exists(shot + ".tmp"):
+                        if ok:
+                            os.replace(shot + ".tmp", shot)
+                        else:
+                            os.remove(shot + ".tmp")
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 elif emu == "DraStic":
                     # kurz auftauen und Taste einspeisen (ohne Grab erreicht sie den Emulator)
@@ -4841,7 +4882,7 @@ def main():
                             cc.screen_auto = True
                         elif not g and cc.screen_auto:
                             cc.screen_on()
-                        cc.slot, cc.gsel, cc.gmsg = 0, 0, None   # Seite „Spiel“ neu beginnen
+                        cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
