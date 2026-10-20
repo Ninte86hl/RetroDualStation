@@ -115,8 +115,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       - Idee: **Bildschirmwahl** je System/Spiel (auf welchem Screen gespielt wird);
         CC/Menüs folgen dann dem jeweils freien Bildschirm (Tastatur QWERTZ/QWERTY, Haltezeit, Kürzel erlauben …)
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
-- [ ] (vielleicht) DraStic: großes Pausemenü vom RG DS übernehmen (`librgdsmenu.so`)
-- [ ] (vielleicht) DraStic: eigene Einstellungsoberfläche (`drastic.cfg`)
+- ~~DraStic: großes Pausemenü / eigene DraStic-UI~~ – verworfen 20.10.2026 (Reverse Engineering, Lizenz, Aufwand)
 
 ### Themes & Geräte
 - [ ] dii-ess-aye: eigene Ansichten wie bei canvas-ds
