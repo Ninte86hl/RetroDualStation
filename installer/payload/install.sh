@@ -143,6 +143,10 @@ SYSD=/storage/.config/system.d
 if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     mkdir -p "$CCDIR" "$SYSD/essway.service.wants" /storage/.config/logind.conf.d
     cp "$SRC/controlcenter/rds_cc.py" "$CCDIR/rds_cc.py" || fail "Could not copy the control center."
+    if [ -d "$SRC/controlcenter/tour" ]; then   # Bilder der Tour (läuft einmal nach der Installation)
+        mkdir -p "$CCDIR/tour" && cp "$SRC"/controlcenter/tour/*.png "$CCDIR/tour/"
+        rm -f /storage/.config/retrodualstation/tour.done
+    fi
     rm -rf "$CCDIR/__pycache__" /storage/.config/rds-controlcenter   # alter Testordner
     cp "$SRC/controlcenter/rds-controlcenter.service" "$SYSD/"
     cp "$SRC/controlcenter/rds-resume.service" "$SYSD/"

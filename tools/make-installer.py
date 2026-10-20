@@ -57,6 +57,9 @@ with zipfile.ZipFile(out, "w") as z:
     for f, mode in (("rds_cc.py", EXEC), ("rds-controlcenter.service", FILE),
                     ("rds-resume.service", FILE), ("rds-logind-powerkey.conf", FILE)):
         add(z, os.path.join(repo, "controlcenter", f), p + "controlcenter/" + f, mode)
+    tour = os.path.join(repo, "controlcenter", "tour")      # Bilder der Tour
+    for f in sorted(os.listdir(tour)):
+        add(z, os.path.join(tour, f), p + "controlcenter/tour/" + f, FILE)
     for f in sorted(os.listdir(os.path.join(repo, "installer", "payload", "images"))):
         add(z, os.path.join(repo, "installer", "payload", "images", f), p + "images/" + f, FILE)
     if canvas:   # canvas-ds aus dessen Installer-ZIP übernehmen
