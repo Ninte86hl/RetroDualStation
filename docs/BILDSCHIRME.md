@@ -36,7 +36,7 @@ auf einen Bereich statt auf feste Zahlen. Ein neues Gerät = eine neue Konfigura
 - Stand Patch 004: Breiten und X-Positionen kommen aus den Bereichen; Höhen/Y nutzen noch die
   Fensterhöhe (reicht für gleich hohe Bildschirme, z. B. RG DS). `screens.cfg` schreibt der Installer noch nicht.
 
-## Stufe B – Themes bekommen die Bereiche
+## Stufe B – Themes bekommen die Bereiche – Variablen umgesetzt: Patch 005 ([THEMES.md](THEMES.md))
 
 - Neue Theme-Variablen (ES kennt schon `${screen.width}`/`${screen.height}`):
   `${screen.top.x}`, `${screen.top.y}`, `${screen.top.width}`, `${screen.top.height}`,

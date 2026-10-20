@@ -14,6 +14,8 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `004-rds-screens.patch` – screen areas: replaces the fixed 2048 × 768 / 1024 values with
   `RdsScreens` (`es-core/src/RdsScreens.h`), read from `/storage/.config/retrodualstation/screens.cfg`.
   Without the file the RG DS Plus layout is used – same behaviour as before.
+- `005-rds-theme-screen-vars.patch` – theme variables for the screen areas
+  (`${screen.top.relx}`, `${screen.bottom.relwidth}`, … – see [docs/THEMES.md](../docs/THEMES.md)).
 
 ## Usage
 
@@ -25,7 +27,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all four** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all five** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating
