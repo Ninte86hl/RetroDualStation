@@ -2745,55 +2745,64 @@ class ControlCenter:
             P.text("Noch keine Spiele gespielt", 30, 630, 460, T["text"], bold=True, align="c")
             P.text("Home oder B: schließen", 18, 630, 925, T["muted"], align="c")
             return
-        # Karussell: ausgewählte Karte groß in der Mitte, Nachbarn links/rechts
-        cw, ch = 560, 420
-        cy = 170
-        for k in (-2, -1, 1, 2, 0):           # Mitte zuletzt (oben drauf)
-            i = sw.sel + k
-            if not 0 <= i < len(sw.items):
-                continue
-            it = sw.items[i]
-            sc = 1.0 if k == 0 else 0.6
-            w, h = cw * sc, ch * sc
-            x = 630 + k * 430 - w / 2
-            y = cy + (ch - h) / 2
-            P.rrect(x, y, w, h, 26, T["card"])
-            shot = it.get("shot")
-            if not (shot and os.path.exists(shot) and P.image(shot, x, y, w, h, 26)):
-                icon = it.get("icon")
-                if not (icon and P.image(icon, x + w / 2 - 70 * sc, y + h / 2 - 70 * sc, 140 * sc, 140 * sc, 20)):
-                    P.text(it["name"][:1].upper(), 90 * sc, x + w / 2, y + h / 2 + 30 * sc, T["muted"], bold=True, align="c", raw=True)
-            if k == 0:
-                P.rrect(x - 6, y - 6, w + 12, h + 12, 32, A, stroke=5)
-            else:
-                P.rrect(x, y, w, h, 26, T["bg"], a=0.45)
-            self.hits.append((x, y, w, h, ("gs", i)))
         it = sw.items[sw.sel]
+        # Hintergrund: Screenshot des ausgewählten Spiels über den ganzen Bildschirm
+        X0, Y0, W, H = -P.ox / P.s, -P.oy / P.s, P.w / P.s, P.h / P.s
+        shot = it.get("shot")
+        if shot and os.path.exists(shot) and P.image(shot, X0, Y0, W, H, 0):
+            P.rrect(X0, Y0, W, H, 0, "000000", a=0.25)
+        P.rrect(X0, Y0, W, 150 - Y0, 0, "000000", a=0.45)            # oben dunkler (Uhr, Titel)
+        P.rrect(X0, 540, W, H - 540 + Y0, 0, "000000", a=0.72)       # unten dunkler (Infos, Karussell, Tasten)
+        # Kopf über dem Bild neu (gut lesbar)
+        P.text(time.strftime("%H:%M"), 52, 45, 90, "ffffff", bold=True)
+        lw = 230 * 52 / 130
+        tw = P.width("Gameswitcher", 38, bold=True)
+        lx = (1260 - lw - 16 - tw) / 2
+        P.logo(lx, 97 - 26, 52, "ffffff", "000000")
+        P.text("Gameswitcher", 38, lx + lw + 16, 97 + 38 * 0.36, "ffffff", bold=True)
+        # Name und Infos
         name = it["name"]
-        while P.width(name, 32, bold=True, raw=True) > 1100 and len(name) > 4:
+        while P.width(name, 34, bold=True, raw=True) > 1150 and len(name) > 4:
             name = name[:-2]
         if name != it["name"]:
             name = name.rstrip() + "…"
-        P.text(name, 32, 630, 660, T["text"], bold=True, align="c", raw=True)
+        P.text(name, 34, 630, 590, "ffffff", bold=True, align="c", raw=True)
         mins = int((time.time() - it.get("time", time.time())) // 60)
         ago = ("gerade eben" if mins < 1 else f"vor {mins} min" if mins < 60
                else f"vor {mins // 60} h" if mins < 1440 else f"vor {mins // 1440} Tagen")
         sub = " · ".join(p for p in (it.get("system"), it.get("emu"), tr(ago)) if p)
-        P.text(sub, 20, 630, 700, T["muted"], align="c", raw=True)
-        # Seitenpunkte
-        n = len(sw.items)
-        for i in range(n):
-            P.circle(630 + (i - (n - 1) / 2) * 22, 745, 6 if i == sw.sel else 4, A if i == sw.sel else T["dot"])
+        P.text(sub, 20, 630, 625, "dddddd", align="c", raw=True)
+        # Karussell mit Icons (wie das Gamecarousel in canvas-ds)
+        cy = 725
+        for k in range(-4, 5):
+            i2 = sw.sel + k
+            if not 0 <= i2 < len(sw.items):
+                continue
+            e = sw.items[i2]
+            sz = 140 if k == 0 else 100
+            cx = 630 + k * 150 + (0 if k == 0 else (20 if k > 0 else -20))
+            x, y = cx - sz / 2, cy - sz / 2
+            icon = e.get("icon")
+            if not (icon and os.path.exists(icon) and P.image(icon, x, y, sz, sz, 20)):
+                es = e.get("shot")
+                if not (es and os.path.exists(es) and P.image(es, x, y, sz, sz, 20)):
+                    P.rrect(x, y, sz, sz, 20, T["tile"])
+                    P.text(e["name"][:1].upper(), sz * 0.5, cx, cy + sz * 0.18, T["muted"], bold=True, align="c", raw=True)
+            if k == 0:
+                P.rrect(x - 6, y - 6, sz + 12, sz + 12, 26, A, stroke=5)
+            else:
+                P.rrect(x, y, sz, sz, 20, "000000", a=0.35)
+            self.hits.append((x, y, sz, sz, ("gs", i2)))
         # Tasten
         btns = [("A", "Weiterspielen"), ("Y", "Neu starten"), ("X", "Entfernen"), ("B", "Schließen")]
-        bx = 630 - 4 * 270 / 2
-        for j, (key, label) in enumerate(btns):
-            x = bx + j * 270
-            P.rrect(x + 10, 790, 250, 70, 35, A if j == 0 else T["card"])
-            P.text(f"{key}  {tr(label)}", 20, x + 135, 832, "ffffff" if j == 0 else T["text"], bold=j == 0, align="c", raw=True)
-            self.hits.append((x + 10, 790, 250, 70, ("gs_btn", key)))
+        bx = 630 - 4 * 280 / 2
+        for j2, (key, label) in enumerate(btns):
+            x = bx + j2 * 280
+            P.rrect(x + 10, 830, 260, 72, 36, A if j2 == 0 else "ffffff", a=1.0 if j2 == 0 else 0.14)
+            P.text(f"{key}  {tr(label)}", 21, x + 140, 874, "ffffff", bold=j2 == 0, align="c", raw=True)
+            self.hits.append((x + 10, 826, 260, 80, ("gs_btn", key)))
         if it.get("emu") in ("PortMaster",):
-            P.text("Spielstand über das Spiel selbst", 17, 630, 905, T["muted"], align="c")
+            P.text("Spielstand über das Spiel selbst", 16, 630, 930, "bbbbbb", align="c")
 
 
 # ------------------------------------------------------------ Power-Menü ----
