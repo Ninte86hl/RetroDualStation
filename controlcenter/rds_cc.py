@@ -4814,7 +4814,7 @@ def main():
     last_minute = time.strftime("%H:%M")
     next_pad_scan = 0.0
     exit_code = [0]
-    wake = {"swallow": False}
+    wake = {"swallow": False, "combo": False}
     last_game = {"pid": None}
     try:
         while True:
@@ -4902,16 +4902,23 @@ def main():
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
                             # Nur Anbernic-Taste weckt unteren Screen auf
+                            # Erst beim LOSLASSEN entscheiden: allein gedrückt → wecken/CC,
+                            # als Teil einer Kombination (Emulator-Kürzel, z. B. Anbernic + R2) → nichts tun,
+                            # sonst würde das CC beim Drücken öffnen und dem Emulator die zweite Taste wegnehmen.
                             if typ == EV_KEY and code == BTN_MODE and (cc.screen_bottom_off or wake["swallow"]):
                                 if value == 1 and cc.screen_bottom_off:
-                                    auto = cc.screen_auto
-                                    cc.screen_on()
-                                    if auto:   # RetroArch: direkt das CC zeigen
-                                        toggle("cc")
-                                        cc.redim = True
-                                    wake["swallow"] = True   # Loslassen nicht als CC-Aufruf werten
-                                elif value == 0:
+                                    wake["swallow"], wake["combo"] = True, False
+                                elif value == 0 and wake["swallow"]:
                                     wake["swallow"] = False
+                                    if not wake.get("combo") and cc.screen_bottom_off:
+                                        auto = cc.screen_auto
+                                        cc.screen_on()
+                                        if auto:   # RetroArch: direkt das CC zeigen
+                                            toggle("cc")
+                                            cc.redim = True
+                                continue
+                            if wake["swallow"] and value == 1 and typ == EV_KEY:
+                                wake["combo"] = True   # zweite Taste während Anbernic gehalten
                                 continue
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
