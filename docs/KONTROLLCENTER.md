@@ -547,3 +547,15 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
   ersetzt die abgeschaltete RetroArch-Einblendung.
 - **Farben:** an die Akzentfarbe des CC gekoppelt (kein eigenes Gold).
 - Datenquellen: RetroAchievements-Web-API (Konto + API-Key) für Abzeichen/Texte; Freischalten aus RetroArch (Ausgabe bzw. `ra_proxy`) – zu klären.
+
+### RetroAchievements – Datenquelle und Unterstützung (21.10.2026)
+- **ROCKNIX-Proxy** `/usr/share/lowerdeck/ra_proxy.py` (aus lowerdeck, GPL – nur Daten lesen, keinen Code übernehmen):
+  sitzt zwischen RetroArch und retroachievements.org, `GET http://127.0.0.1:4874/_ui/state` liefert
+  `user`, `game`, `achievements` (Titel, Beschreibung, Punkte, Abzeichen), `unlocks` (ID → Zeit, Hardcore), `login_status`.
+  Abzeichen: `/storage/thumbnails/cheevos/badges/<badge>.png` bzw. `_lock.png`. Beendet sich 3 s nach RetroArch.
+- **Freischalt-Meldung:** CC fragt während RetroArch-Spielen alle 1–2 s `/_ui/state` ab; neue ID in `unlocks` → Meldung oben.
+- **ES-Menü RetroAchievements** im Dual-Build: Fehler 401 (keine Entwickler-Kennung) – später ausblenden oder auf das CC verweisen.
+- **Unterstützung** (`es_features.cfg`, Merkmal `cheevos`): alle passenden RetroArch-Cores; Standalone: gopher64, PPSSPP, Flycast,
+  DuckStation, Dolphin, melonDS, **DSperate** (`[cheevos] enabled` in dsperate.ini), AetherSX2, SkyEmu. DraStic: nein.
+- **Plan:** Stufe 1 RetroArch (über den Proxy). Stufe 2 DSperate prüfen (eigene Anmeldung; geht es über den Proxy?).
+  Andere Standalone-Emulatoren zeigen auf Seite 3 einen Hinweis.
