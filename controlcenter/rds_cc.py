@@ -1120,11 +1120,21 @@ class Switcher:
                     break
                 time.sleep(0.25)
         elif emu == "DraStic" and not fresh:
-            while time.time() < deadline and not run(["pidof", "drastic"]):
-                time.sleep(0.25)
-            log("Gameswitcher: DraStic gestartet nach %.1f s" % (time.monotonic() - t0))
-            time.sleep(4)                       # DraStic braucht etwas, bis das Spiel läuft
-            inject_keys([(312, 1), 0.15, (312, 0)])   # L2 = laden
+            env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+            def window():
+                try:
+                    tree = subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                          capture_output=True, text=True).stdout
+                    return '"drastic"' in tree.lower()
+                except Exception:
+                    return False
+            while time.time() < deadline and not window():   # sobald das Fenster da ist
+                time.sleep(0.15)
+            log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
+            time.sleep(0.4)
+            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden
+            time.sleep(1.2)
+            inject_keys([(312, 1), 0.1, (312, 0)])   # zur Sicherheit erneut (gleicher Stand)
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         # DSperate lädt selbst (autoload); für „neu starten“ siehe launch()
 
