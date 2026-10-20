@@ -200,6 +200,13 @@ def fade(P, x, y, w, h):
 # Übersetzt wird beim Zeichnen (AmPen), damit der übrige Code deutsch bleiben kann.
 EN_AM = {
     "Leerzeichen": "Space", "Abbrechen": "Cancel",
+    "Mehrteilige Spiele zusammenfassen (M3U)": "Merge multi-disc games (M3U)", "Zusammenfassen": "Merge",
+    "Keine mehrteiligen Spiele ohne M3U gefunden": "No multi-disc games without M3U found",
+    "M3U-Dateien werden erstellt …": "Creating M3U files …",
+    "Je Spiel entsteht eine .m3u. In EmulationStation erscheint es nur noch einmal,":
+        "Each game gets an .m3u. EmulationStation shows it only once,",
+    "in RetroArch wechselst du die CD über das Disc-Menü. Nichts wird gelöscht.":
+        "and RetroArch switches discs via the disc menu. Nothing is deleted.",
     "Artwork Manager": "Artwork Manager", "Willkommen": "Welcome", "Die Funktionen": "Features",
     "Voraussetzung": "Requirement", "Sicherung": "Backup",
     "Der Artwork Manager ergänzt Bilder in einer bestehenden Spieleliste.":
@@ -274,6 +281,10 @@ EN_AM = {
     "Speichern nicht vollständig bestätigt": "Saving could not be fully verified",
 }
 EN_AM_PATTERNS = [
+    (r"^(\d+) gefunden$", lambda m: f"{m[1]} found"),
+    (r"^(\d+) mehrteilige Spiele zusammenfassen\?$", lambda m: f"Merge {m[1]} multi-disc games?"),
+    (r"^(\d+) Spiele zusammengefasst$", lambda m: f"{m[1]} games merged"),
+    (r"^Beispiel: (.*)$", lambda m: f"Example: {m[1]}"),
     (r"^(\d+) Spiele$", lambda m: f"{m[1]} games"),
     (r"^Suche: (.*)$", lambda m: f"Search: {m[1]}"),
     (r"^Vorschau (\d+ / \d+)$", lambda m: f"Preview {m[1]}"),
@@ -319,6 +330,9 @@ class AmPen(Pen):
 
     def width(self, txt, size, bold=False, raw=False):
         return super().width(am_tr(txt), size, bold=bold, raw=True)
+
+
+from multidisc import find_groups, apply_groups, referenced_by_m3u  # noqa: E402
 
 
 def has_gamelist(system):
@@ -426,6 +440,7 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self._md_cache = None                          # gefundene mehrteilige Spiele
         self.intro = 0                                # Seite der Einführung beim ersten Start
         self.origin = "games"                         # wohin die Spielansicht zurückführt
         self.last_rom = None
@@ -507,8 +522,11 @@ class App:
                 names[path] = (g.get("name") or "").strip()
             self.system = s
             self.games = []
+            hidden = referenced_by_m3u(f"/storage/roms/{s['key']}")   # CDs, die eine .m3u zusammenfasst
             for rom in self.app.roms():
                 base = Path(str(rom)).name
+                if base.casefold() in hidden:
+                    continue
                 name = names.get(base.casefold()) or display_name_from_rom(base)
                 self.games.append((base, name, status.get(base, 0)))
             self.games.sort(key=lambda g: g[1].casefold())
@@ -933,7 +951,7 @@ class App:
         elif self.view == "gsearch":
             self.view, self.sel, self.scroll = "systems", 0, 0
         elif self.view == "restore":
-            self.view, self.sel, self.scroll = "settings", 3, 0
+            self.view, self.sel, self.scroll = "settings", 4, 0
         elif self.view == "game":
             self.leave_game()
         elif self.view == "games":
@@ -1053,6 +1071,8 @@ class App:
             ("SteamGridDB API-Key", "gesetzt" if steamgriddb_key() else "fehlt", self.edit_key),
             ("Sicherung vor dem Speichern", "an" if self.settings.get("backup") else "aus", self.toggle_backup),
             ("Kurzanleitung anzeigen", "", self.show_intro),
+            ("Mehrteilige Spiele zusammenfassen (M3U)", f"{sum(len(g) for g in self.multidisc_groups().values())} gefunden",
+             self.ask_multidisc),
             ("Sicherung wiederherstellen", f"{len(backups)} vorhanden", self.open_restore),
             ("Sicherungen aufräumen", f"{len(backups)} · {human(sum(b.stat().st_size for b in backups))}",
              self.prune_backups),
@@ -1167,6 +1187,46 @@ class App:
         self.previews.clear()
         self.sizes.clear()
         self.say("Zwischenspeicher geleert")
+
+    def multidisc_groups(self):
+        """{System: {m3u: [CDs]}} für alle Systeme; zwischengespeichert, bis neu gesucht wird."""
+        if self._md_cache is None:
+            self._md_cache = {}
+            for sysd in self.systems:
+                try:
+                    g = find_groups(f"/storage/roms/{sysd['key']}")
+                except OSError:
+                    g = {}
+                if g:
+                    self._md_cache[sysd["key"]] = g
+        return self._md_cache
+
+    def ask_multidisc(self):
+        groups = self.multidisc_groups()
+        n = sum(len(g) for g in groups.values())
+        if not n:
+            self.say("Keine mehrteiligen Spiele ohne M3U gefunden")
+            return
+        example = next(iter(next(iter(groups.values())).keys()))
+        self.ask(f"{n} mehrteilige Spiele zusammenfassen?",
+                 [f"Beispiel: {Path(example).stem}",
+                  "Je Spiel entsteht eine .m3u. In EmulationStation erscheint es nur noch einmal,",
+                  "in RetroArch wechselst du die CD über das Disc-Menü. Nichts wird gelöscht."],
+                 "Zusammenfassen", self.do_multidisc)
+
+    def do_multidisc(self):
+        groups = self.multidisc_groups()
+
+        def go():
+            total = 0
+            for key, g in groups.items():
+                total += apply_groups(f"/storage/roms/{key}", g)
+                log("M3U:", key, list(g))
+            self._md_cache = None
+            self.changed = True
+            self.system = None if self.system and self.system["key"] in groups else self.system
+            self.say(f"{total} Spiele zusammengefasst")
+        self.work("M3U-Dateien werden erstellt …", go)
 
     def clear_log(self):
         try:
