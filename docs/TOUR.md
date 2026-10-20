@@ -88,6 +88,7 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **Start** | Save |
 | | **Y** | Search another game |
 | | **L3** | Mix view / large view on top |
+| | **X** | Editor: turn the chosen image into a 1:1 cartridge image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border) |
 
 Before the first save per system a backup is created (can be turned off in the settings).
 The SteamGridDB API key can also be entered on a PC in

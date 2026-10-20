@@ -50,6 +50,9 @@ from rocknixds_artwork_manager.artwork_sources import (search_artwork_games, art
                                                        manual_search_rows)
 from rocknixds_artwork_manager.settings import steamgriddb_key  # noqa: E402
 from rocknixds_artwork_manager.nointro import normalize_name  # noqa: E402
+from rocknixds_artwork_manager.icon_generator import IconEditSettings, render_iisu_icon  # noqa: E402
+from rocknixds_artwork_manager.iisu_borders import prepare_iisu_borders, border_candidates  # noqa: E402
+from rocknixds_artwork_manager.device_profiles import target_for  # noqa: E402
 
 VERSION = "0.1.0"
 # Programm und alle Daten liegen im Ports-Ordner (am PC leicht erreichbar, z. B. per Netzwerkfreigabe)
@@ -200,6 +203,14 @@ def fade(P, x, y, w, h):
 # Übersetzt wird beim Zeichnen (AmPen), damit der übrige Code deutsch bleiben kann.
 EN_AM = {
     "Leerzeichen": "Space", "Abbrechen": "Cancel",
+    "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
+    "Editor – Cartridge": "Editor – Cartridge", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
+    "Rahmen": "Border", "Zoom": "Zoom", "Position": "Position", "Größe": "Size", "Zurücksetzen": "Reset",
+    "verschieben": "move", "Kein Rahmen": "No border", "Editor-Vorschau": "Editor preview",
+    "Das Ergebnis wird als Cartridge übernommen.": "The result is taken as the cartridge image.",
+    "Editor wird vorbereitet …": "Preparing editor …",
+    "Für dieses System gibt es keinen iiSU-Rahmen": "There is no iiSU border for this system",
+    "Editor-Bild als Cartridge übernommen": "Editor image taken as cartridge",
     "Mehrteilige Spiele zusammenfassen (M3U)": "Merge multi-disc games (M3U)", "Zusammenfassen": "Merge",
     "Keine mehrteiligen Spiele ohne M3U gefunden": "No multi-disc games without M3U found",
     "M3U-Dateien werden erstellt …": "Creating M3U files …",
@@ -810,8 +821,13 @@ class App:
                 log("Sicherung:", b.get("path"))
             self.saving["step"] = "Bilder werden zugeschnitten …"
             self.dirty = True
-            self.app.stage_scraper_artwork(rom, chosen,
-                                           lambda url: cached_download(WORK / "data" / "cache", url, download_artwork))
+            from_web = {k: v for k, v in chosen.items() if not v.get("_png")}
+            if from_web:
+                self.app.stage_scraper_artwork(rom, from_web,
+                                               lambda url: cached_download(WORK / "data" / "cache", url, download_artwork))
+            for k, v in chosen.items():           # im Editor gestaltet: fertiges PNG
+                if v.get("_png"):
+                    self.app.stage_artwork(rom, k, v["_png"])
             preview = self.app.preview()
             media = preview.get("media") or []
             if not media or (preview.get("set") or {}).get("rom") != rom or (preview.get("xml") or {}).get("games_changed") != 1:
@@ -847,6 +863,103 @@ class App:
                 self.saving = None
                 raise
         self.work("saving", run)
+
+    # -- Editor: 1:1-Bild mit iiSU-Rahmen --
+    def open_editor(self):
+        """Das gewählte Bild (beliebiger Stil) als Quelle für ein 1:1-Cartridge-Bild mit Rahmen."""
+        c = self.cand()
+        if not c:
+            return
+        system = self.system["key"]
+
+        def go():
+            data = cached_download(WORK / "data" / "cache", c.get("url") or c.get("preview_url"), download_artwork)
+            try:
+                prepare_iisu_borders(WORK / "data", system)
+            except Exception as exc:
+                log("Rahmen nicht ladbar:", exc)
+            borders = [b.path for b in border_candidates(WORK / "data", system)]
+            target = target_for(self.app.profile, "cartridge") if self.app and self.app.profile else None
+            self.editor = {"src": data, "borders": borders, "border": 0, "zoom": 100, "x": 0, "y": 0,
+                           "size": target.width if target else 480, "png": None, "path": None, "from": c}
+            if not borders:
+                self.say("Für dieses System gibt es keinen iiSU-Rahmen")
+            self.view = "editor"
+            self.editor_render()
+        self.work("Editor wird vorbereitet …", go)
+
+    def editor_render(self):
+        """Vorschau im Hintergrund neu berechnen (dieselbe Funktion wie im PC-Manager)."""
+        ed = self.editor
+        if not ed or not ed["borders"]:
+            return
+        ed["gen"] = ed.get("gen", 0) + 1
+        gen = ed["gen"]
+
+        def go():
+            try:
+                border = Path(ed["borders"][ed["border"]]).read_bytes()
+                png = render_iisu_icon(ed["src"], border, IconEditSettings(ed["zoom"], ed["x"], ed["y"]),
+                                       size=ed["size"])
+            except Exception as exc:
+                log("Editor:", exc)
+                self.say(f"Fehler: {exc}")
+                return
+            if self.editor is not ed or ed.get("gen") != gen:
+                return                                  # inzwischen geändert – neueres Ergebnis folgt
+            path = PREVIEW_DIR / "editor" / f"edit-{gen}.png"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(png)
+            old, ed["png"], ed["path"] = ed.get("path"), png, str(path)
+            if old and old != ed["path"]:
+                try:
+                    os.unlink(old)
+                except OSError:
+                    pass
+            self.top_dirty = self.dirty = True
+        threading.Thread(target=go, daemon=True).start()
+
+    def editor_move(self, dx, dy):
+        ed = self.editor
+        step = max(4, ed["size"] // 40)
+        ed["x"] = max(-ed["size"], min(ed["size"], ed["x"] + dx * step))
+        ed["y"] = max(-ed["size"], min(ed["size"], ed["y"] + dy * step))
+        self.editor_render()
+
+    def editor_zoom(self, d):
+        ed = self.editor
+        ed["zoom"] = max(50, min(220, ed["zoom"] + d))
+        self.editor_render()
+
+    def editor_reset(self):
+        ed = self.editor
+        if ed:
+            ed.update(zoom=100, x=0, y=0)
+            self.editor_render()
+
+    def editor_next_border(self):
+        ed = self.editor
+        ed["border"] = (ed["border"] + 1) % len(ed["borders"])
+        self.editor_render()
+
+    def editor_take(self):
+        """Ergebnis als Cartridge übernehmen und in der Bildleiste vorn einreihen."""
+        ed = self.editor
+        if not ed or not ed.get("png"):
+            return
+        n = sum(1 for c in self.cands.get("cartridge", []) if c.get("_png")) + 1
+        url = f"editor://{n}"
+        item = {"url": url, "preview_url": url, "source": "Editor", "_png": ed["png"]}
+        self.previews[url] = ed["path"]
+        self.cands["cartridge"] = [item] + list(self.cands.get("cartridge") or [])
+        self.kind = next(i for i, (k, _l) in enumerate(KINDS) if k == "cartridge")
+        self.idx["cartridge"] = 0
+        self.gscroll["cartridge"] = 0
+        self.chosen["cartridge"] = item
+        self.editor = None
+        self.view = "game"
+        self.top_dirty = True
+        self.say("Editor-Bild als Cartridge übernommen")
 
     def open_search(self):
         self.kbd = Keyboard(self, "Spiel suchen", self.run_search, secret=False)
@@ -941,6 +1054,11 @@ class App:
             return
         if self.busy:
             return
+        if self.view == "editor":
+            self.editor = None
+            self.view = "game"
+            self.top_dirty = True
+            return
         if self.view == "game" and self.batch:
             self.batch_end()
             return
@@ -964,12 +1082,18 @@ class App:
 
     def buttons(self):
         """Belegung der festen A/B/X/Y-Leiste je Ansicht: (Taste, Text, Aktion | None)."""
+        if self.view == "editor":
+            ed = self.editor or {}
+            return [("A", "Übernehmen", self.editor_take if ed.get("png") else None),
+                    ("B", "Abbrechen", self.back),
+                    ("X", "Zurücksetzen", self.editor_reset),
+                    ("Y", "Rahmen", self.editor_next_border if len(ed.get("borders") or []) > 1 else None)]
         if self.view == "game":
             kind, c = self.kind_key(), self.cand()
             taken = c is not None and self.chosen.get(kind) is c
             return [("A", "Abwählen" if taken else "Übernehmen", self.toggle_choice if c else None),
                     ("B", "Batch beenden" if self.batch else "Zurück", self.back),
-                    ("X", "Editor", None),          # vorgemerkt: 1:1-Bild mit iiSU-Rahmen
+                    ("X", "Editor", self.open_editor if c else None),   # 1:1-Bild mit iiSU-Rahmen
 
                     ("Y", "Spiel suchen", self.open_search)]
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen", "gsearch": "Öffnen",
@@ -1268,6 +1392,8 @@ class App:
             act = next((b[2] for b in self.buttons() if b[0] == keys[code]), None)
             if act:
                 act()
+        elif code in (BTN_TL, BTN_TR) and self.view == "editor":
+            self.editor_zoom(-5 if code == BTN_TL else 5)
         elif code in (BTN_TL, BTN_TR):
             d = -1 if code == BTN_TL else 1
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
@@ -1288,6 +1414,9 @@ class App:
 
     def on_dir(self, dx, dy):
         if self.busy or self.confirm:
+            return
+        if self.view == "editor":
+            self.editor_move(dx, dy)
             return
         if self.view == "game":
             if self.kind_key() in VERTICAL:
@@ -1480,6 +1609,7 @@ class App:
             ("Spielansicht", True),
             ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
             ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Ansicht oben")], False),
+            ([("X", "Editor: 1:1-Bild mit iiSU-Rahmen gestalten")], False),
         ]),
     ]
 
@@ -1532,8 +1662,33 @@ class App:
             self.draw_list(P)
         elif self.view == "game":
             self.draw_game(P)
+        elif self.view == "editor":
+            self.draw_editor(P)
         else:
             self.header(P, "Artwork Manager")
+
+    def draw_editor(self, P):
+        T, A = self.T, self.accent
+        ed = self.editor or {}
+        self.header(P, "Editor – Cartridge", "1:1 mit iiSU-Rahmen")
+        P.rrect(30, 100, 460, 460, 24, T["card"])
+        if ed.get("path"):
+            self.fit(P, ed["path"], 50, 120, 420, 420)
+        else:
+            P.text("Lädt …" if ed.get("borders") else "Kein Rahmen", 28, 260, 340, T["muted"], align="c", raw=True)
+        nb = len(ed.get("borders") or [])
+        rows = [("Rahmen", f"{ed.get('border', 0) + 1} / {nb}" if nb else "–"),
+                ("Zoom", f"{ed.get('zoom', 100)} %"),
+                ("Position", f"{ed.get('x', 0):+d} / {ed.get('y', 0):+d}"),
+                ("Größe", f"{ed.get('size', 0)} × {ed.get('size', 0)} px")]
+        y = 170
+        for label, value in rows:
+            P.rrect(520, y - 46, 700, 72, 18, T["card"])
+            P.text(label, 28, 550, y, T["text"], bold=True, raw=True)
+            P.text(value, 26, 1195, y, T["muted"], align="r", raw=True)
+            y += 90
+        P.text("Das Ergebnis wird als Cartridge übernommen.", 24, 520, y + 20, T["muted"], raw=True)
+        self.bar(P, hint_parts("◀ ▶ ▲ ▼", "verschieben", "L / R", "Zoom"))
 
     def draw_confirm(self, P, c):
         """Rückfrage über der aktuellen Ansicht: A = ja, B = nein."""
@@ -1728,6 +1883,12 @@ class App:
             P.rrect(0, 0, 1260, 951, 0, "000000", a=0.25)
             return
         P.fill_all("000000")
+        if self.view == "editor" and self.editor:
+            P.text(self.title, 30, 630, 50, "ffffff", bold=True, align="c", raw=True)
+            if self.editor.get("path"):
+                self.fit(P, self.editor["path"], 230, 80, 800, 800)
+            P.text("Editor-Vorschau", 22, 630, 925, "bdbdbd", align="c", raw=True)
+            return
         if self.view not in ("game", "search") or not self.rom:
             P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
             P.text("RetroDualStation", 32, 630, 490, "bdbdbd", align="c", raw=True)

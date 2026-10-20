@@ -89,6 +89,7 @@ im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt d
 | | **Start** | Speichern |
 | | **Y** | Anderes Spiel suchen |
 | | **L3** | Mix-Ansicht / Großansicht oben |
+| | **X** | Editor: aus dem gewählten Bild ein 1:1-Cartridge-Bild mit iiSU-Rahmen machen (◀ ▶ ▲ ▼ verschieben · L / R Zoom · Y Rahmen) |
 
 Vor dem ersten Speichern pro System wird eine Sicherung angelegt (in den Einstellungen abschaltbar).
 Den SteamGridDB-API-Key kannst du auch am PC eintragen:
