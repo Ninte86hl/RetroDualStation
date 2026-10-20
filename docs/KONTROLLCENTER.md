@@ -479,3 +479,12 @@ wird bei jedem Öffnen frisch gewählt.
   - DraStic: `controls_b[...]` in `drastic.cfg` (Wert − 1024 = Tastennummer).
 - Kürzel mit der Anbernic-Taste sind in Akzentfarbe hervorgehoben.
 - Als Nächstes: RetroArch-Kürzel anpassen (Aktion wählen → Taste drücken → `retroarch.cfg`, mit Sicherung und Zurücksetzen).
+
+### DSperate (21.10.2026)
+- Das CC liest die Kürzel aus `[padhotkeys]` der `dsperate.ini` und drückt genau diese Kombination
+  (Modifier `guide` = Anbernic). Speichern/Laden/Menü funktionieren daher mit jeder Belegung.
+- Werkseinstellung (`/usr/config/dsperate/dsperate.ini`): Speichern Anbernic+R1, Laden Anbernic+L1,
+  Slot ± Anbernic+◀/▶, Menü (`pause`) Anbernic+X, FPS Anbernic+Y, Vorspulen umschalten Anbernic+R2.
+- Beobachtung: Kürzel mit R2/L2 (`mod++righttrigger`) lösten bei uns kein Speichern aus, obwohl SDL R2 als Trigger meldet;
+  mit der Werkseinstellung (R1/L1) tritt das nicht auf.
+- SDL-Namen → Gerät: a = B, b = A, x = X, y = Y (laut SDL-Zuordnung `retrogame_joypad`).

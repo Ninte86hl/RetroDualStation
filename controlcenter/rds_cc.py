@@ -232,7 +232,8 @@ EN = {
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
     "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Tasten": "Buttons", "Spieltasten": "Game buttons",
     "Kürzel": "Shortcuts", "Original": "Original", "Steuerkreuz": "D-pad", "Menü": "Menu", "Zurückspulen": "Rewind",
-    "Bildschirme tauschen": "Swap screens", "Pause": "Pause", "FPS": "FPS", "Analogsticks": "Analog sticks",
+    "Bildschirme tauschen": "Swap screens", "Mikrofon": "Microphone", "Layout +": "Layout +",
+    "Layout −": "Layout −", "Vorspulen (halten)": "Fast forward (hold)", "Pause": "Pause", "FPS": "FPS", "Analogsticks": "Analog sticks",
     "Sticks": "Sticks", "Touchscreen": "Touchscreen", "unterer Bildschirm": "bottom screen", "Stick": "Stick",
     "Tasten 1–6": "Buttons 1–6", "Kreuz": "Cross", "Kreis": "Circle", "Quadrat": "Square",
     "Dreieck": "Triangle", "Menü (Kombination)": "Menu (combo)", "Alle Tasten wie am Gerät beschriftet.": "All buttons as labelled on the device.",
@@ -1547,7 +1548,8 @@ GAME_ACTIONS = {
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("shot", "Screenshot"),
+                 ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
 
@@ -1619,11 +1621,60 @@ def ra_shortcuts():
     return rows
 
 
-DSP_NAMES = {"guide": "Anbernic", "start": "Start", "back": "Select", "a": "B", "b": "A", "x": "Y", "y": "X",
+DSP_NAMES = {"guide": "Anbernic", "start": "Start", "back": "Select", "a": "B", "b": "A", "x": "X", "y": "Y",
+             "dpup": "▲", "dpdown": "▼", "dpleft": "◀", "dpright": "▶",
              "rightshoulder": "R1", "leftshoulder": "L1", "righttrigger": "R2", "lefttrigger": "L2",
              "leftstick": "L3", "rightstick": "R3"}
-DSP_LABELS = {"quit": "Beenden", "pause": "Pause", "fast_forward_toggle": "Vorspulen", "save_state": "Speichern",
+DSP_LABELS = {"quit": "Beenden", "pause": "Menü", "slot_next": "Slot +", "slot_prev": "Slot −",
+              "layout_next": "Layout +", "layout_prev": "Layout −", "screen_swap": "Bildschirme tauschen", "mic": "Mikrofon",
+              "fast_forward": "Vorspulen (halten)", "fast_forward_toggle": "Vorspulen", "save_state": "Speichern",
               "load_state": "Laden", "fps": "FPS", "screenshot": "Screenshot", "swap_screens": "Bildschirme tauschen"}
+
+
+# SDL-Namen (DSperate) → evdev-Code des eingebauten Joypads (Reihenfolge = retrogame_joypad.cfg)
+DSP_CODES = {"a": 304, "b": 305, "x": 307, "y": 308, "leftshoulder": 310, "rightshoulder": 311,
+             "lefttrigger": 312, "righttrigger": 313, "back": 314, "start": 315, "guide": 316,
+             "leftstick": 317, "rightstick": 318, "dpup": 544, "dpdown": 545, "dpleft": 546, "dpright": 547}
+
+
+def dsperate_binding(action):
+    """Tastencodes für eine DSperate-Aktion aus [padhotkeys], z. B. [316, 311]; None = nicht belegt."""
+    ini = rd("/storage/.config/dsperate/dsperate.ini") or ""
+    sec, mod, val = None, None, None
+    for line in ini.splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line.startswith("["):
+            sec = line.strip("[]")
+            continue
+        if sec != "padhotkeys" or "=" not in line:
+            continue
+        k, v = [x.strip() for x in line.split("=", 1)]
+        if k == "modifier":
+            mod = v
+        elif k == action:
+            val = v
+    if not val or val == "none":
+        return None
+    codes = []
+    for part in [p for p in val.split("+") if p]:
+        name = mod if part == "mod" else part
+        if name not in DSP_CODES:
+            return None
+        codes.append(DSP_CODES[name])
+    return codes
+
+
+def dsperate_press(action):
+    """DSperate-Kürzel einspeisen (Modifier halten, Taste drücken). False, wenn nicht belegt."""
+    codes = dsperate_binding(action)
+    if not codes:
+        return False
+    seq = []
+    for c in codes:
+        seq += [(c, 1), 0.08]
+    for c in reversed(codes):
+        seq += [(c, 0), 0.04]
+    return inject_keys(seq)
 
 
 def dsperate_shortcuts():
@@ -1636,7 +1687,7 @@ def dsperate_shortcuts():
             continue
         if sec != "padhotkeys" or "=" not in line:
             continue
-        k, v = [x.strip() for x in line.split("=", 1)]
+        k, v = [x.strip() for x in line.split("#", 1)[0].split("=", 1)]
         if k == "modifier":
             mod = DSP_NAMES.get(v, v)
             continue
@@ -4510,6 +4561,14 @@ def main():
         if key == "quit":
             do_quit()
             return
+        if emu == "DSperate" and key == "menu":
+            toggle("cc")
+            def later():
+                time.sleep(0.3)
+                ok = dsperate_press("pause")              # „pause“ öffnet bei DSperate das Menü
+                log("Seite Spiel: DSperate-Menü", "ok" if ok else "nicht belegt")
+            threading.Thread(target=later, daemon=True).start()
+            return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
             toggle("cc")                     # erst schließen (Pause aufheben), dann auslösen
             cmd = {"ff": "FAST_FORWARD", "slow": "SLOWMOTION", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
@@ -4550,8 +4609,8 @@ def main():
                     # DSperate-Kürzel: Modifier „guide“ (Anbernic-Taste) + R2 speichern / + L2 laden
                     st = nds_state_newest(g)
                     before = os.path.getmtime(st) if st else 0
-                    code = 313 if key == "save" else 312
-                    inject_keys([(316, 1), 0.08, (code, 1), 0.12, (code, 0), 0.05, (316, 0)])
+                    if not dsperate_press("save_state" if key == "save" else "load_state"):
+                        raise RuntimeError("DSperate: Kürzel nicht belegt")
                     ok = key == "load"
                     for _ in range(25):
                         time.sleep(0.1)
