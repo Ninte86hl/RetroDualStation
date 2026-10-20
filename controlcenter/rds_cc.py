@@ -230,7 +230,13 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Tasten": "Buttons", "Spieltasten": "Game buttons",
+    "Kürzel": "Shortcuts", "Original": "Original", "Steuerkreuz": "D-pad", "Menü": "Menu", "Zurückspulen": "Rewind",
+    "Bildschirme tauschen": "Swap screens", "Pause": "Pause", "FPS": "FPS", "Analogsticks": "Analog sticks",
+    "Sticks": "Sticks", "Touchscreen": "Touchscreen", "unterer Bildschirm": "bottom screen", "Stick": "Stick",
+    "Tasten 1–6": "Buttons 1–6", "Kreuz": "Cross", "Kreis": "Circle", "Quadrat": "Square",
+    "Dreieck": "Triangle", "Menü (Kombination)": "Menu (combo)", "Alle Tasten wie am Gerät beschriftet.": "All buttons as labelled on the device.",
+    "Keine Kürzel gefunden.": "No shortcuts found.", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
     "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
         "Save and Load use RetroArch's save slots.",
     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
@@ -608,6 +614,12 @@ class Pen:
                 cairo.cairo_set_line_width(cr, max(3, 5 * scale) * s)
                 self.color(c)
                 cairo.cairo_stroke(cr)
+        elif kind == "help":                      # Gamepad
+            self.rrect(cx - 24, cy - 12, 48, 26, 13, c)
+            self.rrect(cx - 15, cy - 2, 10, 3, 1.5, "000000")
+            self.rrect(cx - 11.5, cy - 5.5, 3, 10, 1.5, "000000")
+            self.circle(cx + 9, cy - 2, 2.6, "000000")
+            self.circle(cx + 15, cy + 3, 2.6, "000000")
         elif kind == "trash":                     # Mülleimer (klein, für den Slot-Knopf)
             self.rrect(cx - 4, cy - 12, 8, 3, 1.5, c)              # Griff
             self.rrect(cx - 10, cy - 9, 20, 3, 1.5, c)             # Deckel
@@ -1533,12 +1545,118 @@ PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
 GAME_ACTIONS = {
     "RetroArch": [("save", "Speichern"), ("load", "Laden"),
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
-                  ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("quit", "Beenden")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("quit", "Beenden")],
+                  ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
-# später: ("help", "Steuerung") – erklärt Tasten und Bedienung des jeweiligen Emulators
+
+# ---- Tastenbelegung ----
+# RetroArch-Tastennummern des eingebauten Joypads (retrogame_joypad.cfg) → Beschriftung
+RA_BTN = {"0": "B", "1": "A", "2": "X", "3": "Y", "4": "L1", "5": "R1", "6": "L2", "7": "R2",
+          "8": "Select", "9": "Start", "10": "Anbernic", "11": "L3", "12": "R3",
+          "13": "▲", "14": "▼", "15": "◀", "16": "▶"}
+RA_AUTOCONFIG = "/usr/share/libretro/autoconfig/retrogame_joypad.cfg"
+RA_CFG = "/storage/.config/retroarch/retroarch.cfg"
+# (Aktion in retroarch.cfg, Beschriftung)
+RA_HOTKEYS = [("save_state", "Speichern"), ("load_state", "Laden"), ("menu_toggle", "Menü"),
+              ("exit_emulator", "Beenden"), ("toggle_fast_forward", "Vorspulen"), ("rewind", "Zurückspulen"),
+              ("hold_slowmotion", "Zeitlupe"), ("screenshot", "Screenshot"), ("fps_toggle", "FPS"),
+              ("pause_toggle", "Pause")]
+# Original-Tasten je System → Taste am RG DS Plus (RetroArch-Standardbelegung)
+_DPAD = ("Steuerkreuz", "Steuerkreuz")
+_NES = [_DPAD, ("A", "A"), ("B", "B"), ("Select", "Select"), ("Start", "Start")]
+_SNES = [_DPAD, ("A", "A"), ("B", "B"), ("X", "X"), ("Y", "Y"), ("L", "L1"), ("R", "R1"),
+         ("Select", "Select"), ("Start", "Start")]
+_GBA = [_DPAD, ("A", "A"), ("B", "B"), ("L", "L1"), ("R", "R1"), ("Select", "Select"), ("Start", "Start")]
+_MD = [_DPAD, ("A", "Y"), ("B", "B"), ("C", "A"), ("X", "L1"), ("Y", "X"), ("Z", "R1"), ("Start", "Start"), ("Mode", "Select")]
+_SMS = [_DPAD, ("1", "B"), ("2", "A"), ("Start / Pause", "Start")]
+_PCE = [_DPAD, ("I", "A"), ("II", "B"), ("Select", "Select"), ("Run", "Start")]
+_PSX = [_DPAD, ("Kreuz", "B"), ("Kreis", "A"), ("Quadrat", "Y"), ("Dreieck", "X"), ("L1", "L1"), ("R1", "R1"), ("L2", "L2"),
+        ("R2", "R2"), ("Select", "Select"), ("Start", "Start"), ("Analogsticks", "Sticks")]
+_NDS = [_DPAD, ("A", "A"), ("B", "B"), ("X", "X"), ("Y", "Y"), ("L", "L1"), ("R", "R1"),
+        ("Select", "Select"), ("Start", "Start"), ("Touchscreen", "unterer Bildschirm")]
+_NEOGEO = [("Stick", "Steuerkreuz"), ("A", "B"), ("B", "A"), ("C", "Y"), ("D", "X"), ("Coin", "Select"), ("Start", "Start")]
+_ARCADE = [("Stick", "Steuerkreuz"), ("Tasten 1–6", "B · A · Y · X · L1 · R1"), ("Coin", "Select"), ("Start", "Start")]
+SYSTEM_PADS = {
+    "nes": _NES, "fds": _NES, "famicom": _NES, "gb": _NES, "gbc": _NES, "gamegear": _SMS, "mastersystem": _SMS,
+    "snes": _SNES, "sfc": _SNES, "satellaview": _SNES, "sufami": _SNES, "gba": _GBA,
+    "megadrive": _MD, "genesis": _MD, "md": _MD, "sega32x": _MD, "segacd": _MD, "megacd": _MD,
+    "pcengine": _PCE, "tg16": _PCE, "pcenginecd": _PCE, "tg16cd": _PCE,
+    "psx": _PSX, "nds": _NDS, "neogeo": _NEOGEO,
+    "arcade": _ARCADE, "fbneo": _ARCADE, "mame": _ARCADE, "cps1": _ARCADE, "cps2": _ARCADE, "cps3": _ARCADE,
+}
+
+
+def read_cfg(path):
+    out = {}
+    for line in (rd(path) or "").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip().strip('"')
+    return out
+
+
+def ra_shortcuts():
+    """Liste (Aktion, Tasten) der RetroArch-Kürzel; retroarch.cfg vor Geräte-Autoconfig."""
+    cfg, auto = read_cfg(RA_CFG), read_cfg(RA_AUTOCONFIG)
+    def btn(name):
+        v = cfg.get(f"input_{name}_btn", "nul")
+        if v in ("", "nul"):
+            v = auto.get(f"input_{name}_btn", "nul")
+        return None if v in ("", "nul") else RA_BTN.get(v, "Taste " + v)
+    hk = btn("enable_hotkey")
+    rows = []
+    for key, label in RA_HOTKEYS:
+        b = btn(key)
+        if b:
+            rows.append((label, (hk + " + " if hk else "") + b))
+    combo = cfg.get("input_menu_toggle_gamepad_combo", "0")
+    if combo not in ("0", ""):
+        rows.append(("Menü (Kombination)", {"1": "▼ + L1 + R1 + Y", "2": "L3 + R3", "3": "L1 + R1 + Start + Select",
+                              "4": "Start + Select", "5": "L3 + R1", "6": "L1 + R1",
+                              "7": "Start halten", "8": "Select halten", "9": "▼ + Select"}.get(combo, "Kombination " + combo)))
+    return rows
+
+
+DSP_NAMES = {"guide": "Anbernic", "start": "Start", "back": "Select", "a": "B", "b": "A", "x": "Y", "y": "X",
+             "rightshoulder": "R1", "leftshoulder": "L1", "righttrigger": "R2", "lefttrigger": "L2",
+             "leftstick": "L3", "rightstick": "R3"}
+DSP_LABELS = {"quit": "Beenden", "pause": "Pause", "fast_forward_toggle": "Vorspulen", "save_state": "Speichern",
+              "load_state": "Laden", "fps": "FPS", "screenshot": "Screenshot", "swap_screens": "Bildschirme tauschen"}
+
+
+def dsperate_shortcuts():
+    ini = rd("/storage/.config/dsperate/dsperate.ini") or ""
+    sec, mod, rows = None, None, []
+    for line in ini.splitlines():
+        line = line.strip()
+        if line.startswith("["):
+            sec = line.strip("[]")
+            continue
+        if sec != "padhotkeys" or "=" not in line:
+            continue
+        k, v = [x.strip() for x in line.split("=", 1)]
+        if k == "modifier":
+            mod = DSP_NAMES.get(v, v)
+            continue
+        if not v or v.lower() == "none":
+            continue
+        parts = [p for p in v.split("+") if p]
+        rows.append((DSP_LABELS.get(k, k), " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)))
+    return rows
+
+
+def drastic_shortcuts():
+    cfg = rd("/storage/.config/drastic/config/drastic.cfg") or ""
+    names = {"SAVE_STATE": "Speichern", "LOAD_STATE": "Laden", "MENU": "Menü", "FAST_FORWARD": "Vorspulen",
+             "SWAP_SCREENS": "Bildschirme tauschen", "QUIT": "Beenden"}
+    rows = []
+    for k, label in names.items():
+        m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % k, cfg)
+        if m and 1024 <= int(m.group(1)) < 1100:
+            rows.append((label, RA_BTN.get(str(int(m.group(1)) - 1024), "Taste %d" % (int(m.group(1)) - 1024))))
+    return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
 SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
@@ -2411,6 +2529,7 @@ class ControlCenter:
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
         self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
         self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
+        self.ghelp = False        # Tastenbelegung offen
         self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -2491,6 +2610,7 @@ class ControlCenter:
         self.kbd = None
         self.slot_pick = None
         self.del_confirm = None
+        self.ghelp = False
         self.back()
 
     def back(self):
@@ -2505,6 +2625,9 @@ class ControlCenter:
         if self.slot_pick is not None:
             self.slot_pick = None
             self.del_confirm = None
+            return True
+        if self.ghelp:
+            self.ghelp = False
             return True
         return False
 
@@ -2581,6 +2704,8 @@ class ControlCenter:
         if self.sub:
             self.sub.nav(dx, dy)
             return
+        if self.page == 1 and self.ghelp:
+            return
         if self.page == 1 and self.slot_pick is not None:
             n = self.slot_pick + dx + dy * 3
             if 0 <= n < SLOTS_USER:
@@ -2627,6 +2752,8 @@ class ControlCenter:
             return
         if self.page == 1 and self.ghint and self.game:
             self.hint_done()
+            return
+        if self.page == 1 and self.ghelp:
             return
         if self.page == 1 and self.slot_pick is not None:
             if self.slot_mode == "load" and not self._slot_exists(self.slot_pick):
@@ -2807,6 +2934,8 @@ class ControlCenter:
         left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        elif self.page == 1 and self.ghelp:
+            left = [("B", "zurück")]
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
@@ -2817,7 +2946,7 @@ class ControlCenter:
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
         P.hint(left, 17, 45, 835, T["muted"], T["text"])
-        right = [("Select", "Tour")] if self.slot_pick is not None else [("Select", "Tour"), ("B", "Schließen")]
+        right = [("Select", "Tour")] if (self.slot_pick is not None or self.ghelp) else [("Select", "Tour"), ("B", "Schließen")]
         P.hint(right, 17, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
@@ -3079,6 +3208,9 @@ class ControlCenter:
         if self.slot_pick is not None:
             self._draw_slots(P)
             return
+        if self.ghelp:
+            self._draw_help(P, g)
+            return
         big = [(i, k, l) for i, (k, l) in enumerate(acts) if k in GAME_BIG]
         small = [(i, k, l) for i, (k, l) in enumerate(acts) if k not in GAME_BIG]
         self._draw_info(P, g, 70)
@@ -3151,6 +3283,41 @@ class ControlCenter:
             if os.path.exists(p):
                 return p
         return None
+
+    def _draw_help(self, P, g):
+        """Tastenbelegung: Spieltasten des Systems und Kürzel des Emulators."""
+        T, A = self.T, self.accent
+        emu = g.get("emu")
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
+        system = os.path.basename(os.path.dirname(rom)).lower()
+        pad = SYSTEM_PADS.get(system)
+        if emu in ("DraStic", "DSperate"):
+            pad, sc = _NDS, (drastic_shortcuts() if emu == "DraStic" else dsperate_shortcuts())
+        else:
+            sc = ra_shortcuts() if emu == "RetroArch" else []
+        P.text(g.get("name") or "", 30, 45, 95, T["text"], bold=True, raw=True)
+        P.text(" · ".join(v for v in (system.upper(), emu) if v), 18, 45, 128, T["muted"], raw=True)
+        # links: Spieltasten
+        P.rrect(45, 160, 574, 610, 24, T["card"])
+        P.text("Spieltasten", 22, 75, 205, T["text"], bold=True)
+        y = 250
+        if pad:
+            for orig, dev in pad:
+                P.text(tr(orig), 19, 75, y, T["muted"], raw=True)
+                P.text(tr(dev), 19, 590, y, T["text"], bold=True, align="r", raw=True)
+                y += 40
+        else:
+            P.text("Alle Tasten wie am Gerät beschriftet.", 19, 75, y, T["muted"])
+        # rechts: Kürzel
+        P.rrect(641, 160, 574, 610, 24, T["card"])
+        P.text("Kürzel", 22, 671, 205, T["text"], bold=True)
+        y = 250
+        if not sc:
+            P.text("Keine Kürzel gefunden.", 19, 671, y, T["muted"])
+        for label, keys in sc[:13]:
+            P.text(tr(label), 19, 671, y, T["muted"], raw=True)
+            P.text(keys, 19, 1186, y, A if "Anbernic" in keys else T["text"], bold=True, align="r", raw=True)
+            y += 40
 
     def _session(self):
         """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
@@ -3248,7 +3415,10 @@ class ControlCenter:
         self.hits.append((45, 200, 1170, 420, ("ghint", None)))
 
     def open_slots(self, key):
-        """RetroArch: Speichern/Laden öffnet erst die Slot-Auswahl. True, wenn geöffnet."""
+        """RetroArch: Speichern/Laden öffnet erst die Slot-Auswahl; „Tasten“ die Belegung. True, wenn geöffnet."""
+        if key == "help":
+            self.ghelp = True
+            return True
         if (self.game or {}).get("emu") != "RetroArch" or key not in ("save", "load"):
             return False
         self.slot_mode = key

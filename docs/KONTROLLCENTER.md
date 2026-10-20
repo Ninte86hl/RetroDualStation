@@ -467,3 +467,15 @@ wird bei jedem Öffnen frisch gewählt.
 | RA Ordner | `/storage/roms/savestates/<System>/` (setzt ROCKNIX beim Start) | dort sucht das CC |
 | Gameswitcher | fester Slot 9 | im Slot-Menü nicht wählbar |
 | ROCKNIX beim Start (`/tmp/.retroarch.cfg`) | `state_slot` = nächster freier Slot (z. B. 10, weil Slot 9 belegt), `savestate_auto_index = true` | RetroArch-eigenes Speichern zählt hoch (10, 11 …). Das CC nutzt deshalb **`SAVE_STATE_SLOT n` / `LOAD_STATE_SLOT n`** mit ausdrücklichem Slot und ist davon unabhängig |
+
+### Tastenbelegung (Symbol „Tasten“, 21.10.2026)
+- Links **Spieltasten**: nur die Tasten des Original-Systems und wo sie am RG DS Plus liegen (Tabelle `SYSTEM_PADS`,
+  RetroArch-Standardbelegung; NDS für DraStic/DSperate). Unbekannte Systeme: „Alle Tasten wie am Gerät beschriftet“.
+- Rechts **Kürzel**, gelesen aus den echten Dateien:
+  - RetroArch: `retroarch.cfg`, fehlende Werte aus `/usr/share/libretro/autoconfig/retrogame_joypad.cfg`
+    (Tastennummern: 0 B, 1 A, 2 X, 3 Y, 4 L1, 5 R1, 6 L2, 7 R2, 8 Select, 9 Start, 10 Anbernic, 11 L3, 12 R3, 13–16 Steuerkreuz).
+    Hotkey-Taste bei uns: 10 = Anbernic.
+  - DSperate: `[padhotkeys]` in `dsperate.ini` (Modifier `guide` = Anbernic).
+  - DraStic: `controls_b[...]` in `drastic.cfg` (Wert − 1024 = Tastennummer).
+- Kürzel mit der Anbernic-Taste sind in Akzentfarbe hervorgehoben.
+- Als Nächstes: RetroArch-Kürzel anpassen (Aktion wählen → Taste drücken → `retroarch.cfg`, mit Sicherung und Zurücksetzen).
