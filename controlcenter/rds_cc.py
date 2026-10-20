@@ -1144,6 +1144,7 @@ class Switcher:
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
                     log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
+                    sway_cmd('[app_id="retroarch"] move to output ' + TOP_OUTPUT)   # Fenster existiert jetzt sicher
                     if fresh:
                         time.sleep(0.5)
                         ra_command("RESET")      # Auto-Laden übergehen (Ladebildschirm verdeckt es)
