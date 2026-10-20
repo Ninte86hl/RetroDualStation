@@ -429,7 +429,7 @@ class Pen:
 
     _png = {}
 
-    def image(self, path, x, y, w, h, r=0):
+    def image(self, path, x, y, w, h, r=0, stretch=False):
         """PNG eingepasst (cover) mit abgerundeten Ecken zeichnen. False, wenn nicht ladbar."""
         try:
             key = (path, os.path.getmtime(path))   # neues Bild bei geänderter Datei (Screenshots)
@@ -463,9 +463,13 @@ class Pen:
         cairo.cairo_arc(cr, X + R, Y + R, R, PI, 3 * PI / 2)
         cairo.cairo_close_path(cr)
         cairo.cairo_clip(cr)
-        k = max(W / iw, H / ih)
-        cairo.cairo_translate(cr, X + (W - iw * k) / 2, Y + (H - ih * k) / 2)
-        cairo.cairo_scale(cr, k, k)
+        if stretch:   # genau auf die Fläche (Konsolen-Seitenverhältnis wie im Emulator)
+            cairo.cairo_translate(cr, X, Y)
+            cairo.cairo_scale(cr, W / iw, H / ih)
+        else:         # füllen und mittig zuschneiden
+            k = max(W / iw, H / ih)
+            cairo.cairo_translate(cr, X + (W - iw * k) / 2, Y + (H - ih * k) / 2)
+            cairo.cairo_scale(cr, k, k)
         cairo.cairo_set_source_surface(cr, surf, 0, 0)
         cairo.cairo_paint(cr)
         cairo.cairo_restore(cr)
@@ -2804,7 +2808,7 @@ class ControlCenter:
             y = cy + (maxh - h) / 2
             P.rrect(x, y, w, h, 28, T["card"])
             es = e.get("shot")
-            if not (es and os.path.exists(es) and P.image(es, x, y, w, h, 28)):
+            if not (es and os.path.exists(es) and P.image(es, x, y, w, h, 28, stretch=True)):
                 icon = e.get("icon")
                 if not (icon and os.path.exists(icon) and P.image(icon, x + w / 2 - 110 * sc, y + h / 2 - 110 * sc, 220 * sc, 220 * sc, 28)):
                     P.text(e["name"][:1].upper(), 140 * sc, x + w / 2, y + h / 2 + 50 * sc, T["muted"], bold=True, align="c", raw=True)
