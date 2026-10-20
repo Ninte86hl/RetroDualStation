@@ -1140,11 +1140,11 @@ class Switcher:
                     seen = True
                     log("Gameswitcher: RetroArch-Prozess nach %.1f s" % (time.monotonic() - t0))
                     # Sicherheitsnetz: falls Sway es unten geöffnet hat, nach oben holen
-                    sway_cmd('[app_id="retroarch"] move to output ' + TOP_OUTPUT)
+                    sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT)
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
                     log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
-                    sway_cmd('[app_id="retroarch"] move to output ' + TOP_OUTPUT)   # Fenster existiert jetzt sicher
+                    sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT)   # Fenster existiert jetzt sicher
                     if fresh:
                         time.sleep(0.5)
                         ra_command("RESET")      # Auto-Laden übergehen (Ladebildschirm verdeckt es)
