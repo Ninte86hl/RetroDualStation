@@ -200,6 +200,38 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
 fi
 
+# --- Artwork Manager (Ports) ---
+# Programm nach ports/artworkmanager; settings.cfg, Sicherungen und Zwischenspeicher bleiben erhalten.
+AMDIR="$PORTS/artworkmanager"
+if [ -f "$SRC/artworkmanager/rds_artwork.py" ]; then
+    mkdir -p "$AMDIR"
+    cp "$SRC/artworkmanager/rds_artwork.py" "$SRC/artworkmanager/multidisc.py" "$AMDIR/"
+    if [ -d "$SRC/artworkmanager/rocknixds_artwork_manager" ]; then
+        rm -rf "$AMDIR/rocknixds_artwork_manager"
+        cp -r "$SRC/artworkmanager/rocknixds_artwork_manager" "$AMDIR/"
+    fi
+    rm -rf "$AMDIR/__pycache__"
+    log "Artwork Manager kopiert: $AMDIR"
+    # Pillow (Bildverarbeitung) für das Gerät
+    LIBDIR=/storage/.config/retrodualstation/lib
+    mkdir -p "$LIBDIR"
+    if [ -f "$SRC/lib/pillow.whl" ]; then
+        rm -rf "$LIBDIR/PIL" "$LIBDIR"/pillow*.dist-info "$LIBDIR/pillow.libs"
+        ( cd "$LIBDIR" && python3 -m zipfile -e "$SRC/lib/pillow.whl" . ) && log "Pillow aus dem Paket installiert"
+    elif ! PYTHONPATH="$LIBDIR" python3 -c "import PIL" 2>/dev/null; then
+        ( cd "$LIBDIR" && python3 - <<'PY' ) >>"$LOG" 2>&1 && log "Pillow aus dem Internet geladen" || log "WARNUNG: Pillow fehlt – Artwork Manager braucht Internet beim nächsten Installieren"
+import io, json, sys, urllib.request, zipfile
+tag = "cp%d%d" % sys.version_info[:2]
+info = json.load(urllib.request.urlopen("https://pypi.org/pypi/pillow/json", timeout=30))
+url = next(f["url"] for f in info["urls"] if f"{tag}-{tag}-manylinux" in f["filename"] and "aarch64" in f["filename"])
+zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(url, timeout=120).read())).extractall(".")
+print("Pillow:", url.rsplit("/", 1)[1])
+PY
+    else
+        log "Pillow bereits vorhanden"
+    fi
+fi
+
 # --- PS1: funktionierenden Standard-Emulator sicherstellen ---
 # Manche ROCKNIX-Versionen wählen pcsx_rearmed32, das nicht installiert ist (RetroArch bricht ab).
 # Nur korrigieren, wenn kein Core gesetzt ist oder der gesetzte fehlt – eine gültige Wahl bleibt.

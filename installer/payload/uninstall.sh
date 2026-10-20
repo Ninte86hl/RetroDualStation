@@ -14,7 +14,7 @@ log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 log "=== Deinstallation ROCKNIX DualStation $(cat $DEST/VERSION 2>/dev/null) ==="
 
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
-for f in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do
+for f in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh" "Artwork Manager.sh"; do
     rm -f "$PORTS/$f" && log "entfernt: $PORTS/$f"
 done
 
@@ -31,12 +31,16 @@ else
 fi
 
 # Icons und gamelist-Einträge entfernen
-rm -f "$PORTS"/images/rds-dual.png "$PORTS"/images/rds-single.png "$PORTS"/images/rds-uninstall.png "$PORTS"/images/rds-install.png
+rm -f "$PORTS"/images/rds-dual.png "$PORTS"/images/rds-single.png "$PORTS"/images/rds-uninstall.png "$PORTS"/images/rds-install.png "$PORTS"/images/rds-artwork.png
+# Artwork Manager: Programm entfernen, Daten (settings.cfg, Sicherungen) bleiben im Ordner
+AMDIR="$PORTS/artworkmanager"
+rm -rf "$AMDIR/rocknixds_artwork_manager" "$AMDIR/__pycache__" "$AMDIR/rds_artwork.py" "$AMDIR/multidisc.py" "$AMDIR/manager.log"
+rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Daten bleiben: $AMDIR"
 [ -f "$PORTS/gamelist.xml" ] && python3 - "$PORTS/gamelist.xml" <<'PY' 2>>"$LOG"
 import sys, xml.etree.ElementTree as ET
 f = sys.argv[1]
 tree = ET.parse(f); root = tree.getroot()
-drop = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh"}
+drop = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh", "./Artwork Manager.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in drop]:
     root.remove(g)
 tree.write(f, encoding="utf-8", xml_declaration=True)
