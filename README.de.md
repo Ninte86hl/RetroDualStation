@@ -24,7 +24,7 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 |---|---|---|
 | EmulationStation | ein Bildschirm | **beide Bildschirme** |
 | Themes | ein Bildschirm | Dual-Screen-Themes wie **canvas-ds** |
-| Artwork | Scraper-Bilder | Hero, Icon und Cover pro Spiel über **DualStation Sync** |
+| Artwork | Scraper-Bilder | Boxart, Icon und Hero pro Spiel über den **Artwork Manager** – direkt am Gerät |
 | Unterer Bildschirm im Spiel | nur RetroArch-Touchmenü | **Kontrollcenter** überall – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Zurück zum Original | – | ein Tipp unter **Ports** |
 
@@ -32,9 +32,11 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 
 - **Dual-Screen-ES** – Menüs, Scraper, Tastatur und Meldungen auf dem richtigen Bildschirm
 - **canvas-ds** – fünf Spielelisten-Ansichten für zwei Bildschirme
-- **DualStation Sync** – PC-Begleiter für Dual-Screen-Artwork *(siehe unten)*
+- **Artwork Manager** – Artworks für deine Spiele direkt am Gerät suchen und anpassen *(siehe unten)*
 - **Kontrollcenter** – Schnelleinstellungen, Power-Menü und Spiel beenden über jedem Spiel
 - **Gameswitcher** – zwischen den zuletzt gespielten Spielen wechseln und dort weitermachen
+- **Spielesuche** – **Y** in der Systemansicht durchsucht alle Systeme auf einmal
+- **Kurze Tour** – läuft einmal nach der Installation, jederzeit wieder mit **Select** im Kontrollcenter
 
 ## Themes
 
@@ -51,13 +53,27 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 | **Showcase** – Cover und Spieleliste | **Spotlight** – eine große Karte, die hereingleitet |  |
 
 Artwork: `romname-hero.png`, `romname-icon.png`, `romname-box.png` und das Scraper-Logo –
-die ersten drei erstellt DualStation Sync für dich; fehlende Bilder ersetzt ES durch Scraper-Medien.
+die ersten drei erstellt der Artwork Manager für dich; fehlende Bilder ersetzt ES durch Scraper-Medien.
 
-## DualStation Sync
+## Artwork Manager
 
-Unser PC-Begleiter (derzeit noch als
-[RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager) veröffentlicht):
-bereitet Hero-, Icon- und Coverbilder für deine Spiele in den Namen und Größen vor, die canvas-ds erwartet.
+Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge-Icon** (1:1) und
+**Hero-Bild** für deine Spiele – oben siehst du live, wie alles zusammen wirkt,
+unten liegen Listen, Suche und Tasten.
+
+- Quellen: iiSU-Datenbank und SteamGridDB (kostenloser API-Key in den Einstellungen) sowie
+  **eigene Bilder** aus `ports/artworkmanager/eigene/`
+- **Einzelsuche** (Start) oder **Mehrfachsuche** (Select) durch alle Spiele mit fehlenden Artworks
+- **Icon-Editor** – macht aus jedem Icon ein 1:1-Bild mit iiSU-Rahmen (verschieben, zoomen, Rahmen wählen)
+- **Filter** in der Spieleliste: alle · fehlende · keine Artworks; **Spielesuche** über alle Systeme
+- **Mehrteilige Spiele** zu einem `.m3u`-Eintrag zusammenfassen (Einstellungen), Arcade-Namen aus der FBNeo-Liste
+- Sicherung jeder `gamelist.xml` vor dem ersten Speichern, Wiederherstellen in den Einstellungen
+
+Voraussetzung: Jedes System braucht eine `gamelist.xml` – einmalig mit dem Scraper im Single-Screen-Modus erstellen.
+Alle Tasten: [kurze Tour](docs/TOUR.de.md#5-artwork-manager).
+
+Die PC-Version gibt es weiterhin als
+[RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager).
 
 ## Kontrollcenter
 
@@ -96,19 +112,20 @@ ein Ladebildschirm liegt über beiden Screens, der Ton bleibt stumm, bis du wied
 |---|---|
 | ✅ | Dual-Screen-EmulationStation, Installer, Rückweg mit einem Tipp |
 | ✅ | canvas-ds mit fünf Spielelisten-Ansichten |
-| ✅ | DualStation Sync: Dual-Screen-Artwork |
+| ✅ | Artwork Manager am Gerät – Boxart, Icon, Hero, Icon-Editor, M3U *(ab v12)* |
 | ✅ | Kontrollcenter: Schnelleinstellungen, WLAN, Bluetooth, Tastatur, Power-Menü, Spiel beenden, unterer Screen aus |
 | ✅ | Gameswitcher – zuletzt gespielte Spiele mit Screenshot vom letzten Stand; **A** weiterspielen, **Y** neu starten *(ab v11)* |
+| ✅ | Spielesuche mit **Y** in der Systemansicht, kurze Tour *(ab v12)* |
 | 🔜 **als Nächstes** | Kontrollcenter: Seite „Spiel“ – Speicherstände und Tastenkürzel |
 | 🔜 | Unterstützung für das normale RG DS |
 | 💭 vielleicht | Einstellungsmenü wie am Smartphone, aufgerufen aus dem Kontrollcenter |
 | 💭 vielleicht | RetroAchievements – Benachrichtigung und Übersicht |
 | 💭 vielleicht | Benutzerprofile mit eigenen Spielständen |
-| 🕓 später | DualStation Sync: bessere Titelsuche, Spielelisten bearbeiten |
+| 🕓 später | Artwork Manager: Spielelisten bearbeiten, M3U in Unterordnern |
 
 ## Installation
 
-1. **`rocknix-dualstation-v11.zip`** (enthält canvas-ds) aus dem
+1. **`rocknix-dualstation-v12.zip`** (enthält canvas-ds) aus dem
    [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest) laden.
 2. In den Ordner **`ports`** bei den ROMs entpacken (`/storage/roms/ports`).
 3. In ES **Ports** → **Install ROCKNIX DualStation** starten.
@@ -121,10 +138,10 @@ Ein Update funktioniert genauso.
 <summary>ROMs auf einer ext4-Partition? ZIP über das Netzwerk kopieren</summary>
 
 ```bash
-scp rocknix-dualstation-v11.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v12.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v11.zip && rm rocknix-dualstation-v11.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v12.zip && rm rocknix-dualstation-v12.zip"
 ```
 </details>
 
@@ -135,6 +152,7 @@ Spiele, Medien, Spielelisten und Spielstände bleiben unberührt.
 
 - **Kein ScreenScraper und keine RetroAchievements** in der Dual-Version – die Zugangsdaten
   gibt es nur für den offiziellen ROCKNIX-Build. Zum Scrapen per Ports auf *Single* und zurück.
+- PS1: Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - DS über RetroArch-Cores ist ungetestet; DraStic und DSperate funktionieren.
 - Touch in DraStic reagiert nicht? **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).
 

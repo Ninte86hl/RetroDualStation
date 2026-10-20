@@ -1,6 +1,6 @@
 # To-do – RetroDualStation & Artwork Manager
 
-Stand: 19.10.2026 · Eine Liste für alles, damit nichts verloren geht.
+Stand: 20.10.2026 · Eine Liste für alles, damit nichts verloren geht.
 
 > **Leitsatz:** RetroDualStation – one system, two screens, everything in sync.
 >
@@ -19,6 +19,22 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - **Hinweiszeilen:** Taste/Bedienelement **fett**, danach „– Erklärung“, mehrere Einträge mit „·“ getrennt.
   Beispiel: **▲ ▼** – System wählen · **Start** – Einzelsuche · **Select** – Mehrfachsuche.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
+
+## Erledigt 20.10.2026 (Release v12)
+- [x] **Artwork Manager am Gerät** (Ports): zwei Bildschirme (oben Mix-Vorschau, unten Listen), Tabs Boxart/Cartridge/Image,
+      Einzel- und Mehrfachsuche, globale Spielesuche, Filter, Icon-Editor mit iiSU-Rahmen, eigene Bilder (`eigene/`),
+      Einstellungen (API-Key, Sicherung, M3U, Wiederherstellen, Cache, Log), Englisch, Pillow im Installer
+- [x] Mehrteilige Spiele → `.m3u` (Discs ausgeblendet, Sicherung `gamelist.xml.vor-m3u`)
+- [x] Arcade (FBNeo-Namen), PS1 und CPS1–3 im Artwork Manager
+- [x] PS1: Installer setzt `pcsx_rearmed`, wenn der gewählte Core fehlt
+- [x] **Tour** am Gerät (einmalig, erneut mit Select im CC) + `docs/TOUR.md`/`TOUR.de.md` mit Screenshots
+- [x] Hinweiszeilen mit fetten Tasten überall (`Pen.hint`)
+- [x] README EN/DE: Artwork Manager statt „DualStation Sync“
+
+### Offen nach v12
+- [ ] Artwork Manager: SGDB-Wiederholung bei Zeitüberschreitung, M3U in Unterordnern
+- [ ] PC-Programm: Linux-Test, Windows-Passwort-Login
+- [ ] Umbenennungs-Reste (siehe unten)
 
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
@@ -53,8 +69,9 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [x] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden) – 20.10.2026
-- [ ] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) erstreckt sich über beide Bildschirme – auf einen Bildschirm begrenzen (gefunden 19.10.2026)
-- [ ] ES (eigener Dual-Build): `system.cfg` neu einlesen, wenn sie sich geändert hat (z. B. beim Öffnen des Menüs) – sonst zeigt das ES-Menü WLAN/Bluetooth nach dem Umschalten im Kontrollcenter erst nach ES-Neustart richtig an
+- [x] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) auf einen Bildschirm begrenzt – Patch 003 (20.10.2026)
+- [x] ES (eigener Dual-Build): `system.cfg` wird beim Öffnen des Hauptmenüs neu eingelesen, wenn sie sich geändert hat – Patch 003 (20.10.2026)
+- [x] ES: **B** in der Systemliste ohne Navigationsleiste („Go to manufacturer“), **Y** = Spielesuche über alle Systeme (Trefferliste, A springt zum Spiel) – Patch 003 (20.10.2026)
 - [x] Kontrollcenter: Pause in RetroArch, DraStic und DSperate getestet (19.10.2026)
 - [x] Kontrollcenter: Mini-Power-Menü wie bei Android – Ausschalten, Neustart, Ruhemodus,
       ES neu starten (mit Rückfrage; laufendes Spiel vorher speichern/beenden).
