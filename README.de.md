@@ -34,6 +34,7 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 - **canvas-ds** – fünf Spielelisten-Ansichten für zwei Bildschirme
 - **DualStation Sync** – PC-Begleiter für Dual-Screen-Artwork *(siehe unten)*
 - **Kontrollcenter** – Schnelleinstellungen, Power-Menü und Spiel beenden über jedem Spiel
+- **Gameswitcher** – zwischen den zuletzt gespielten Spielen wechseln und dort weitermachen
 
 ## Themes
 
@@ -81,6 +82,17 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 | **Bluetooth** – Controller direkt koppeln | **Bildschirmtastatur** für Passwörter |
 | ![Power-Menü](docs/screenshots/control-center-power.png) | |
 | **Power-Menü** – kurz auf die Ein/Aus-Taste | |
+
+## Gameswitcher
+
+**Home-Taste halten** (1,5 s) zeigt die zuletzt gespielten Spiele – jedes mit einem Bild vom letzten
+Stand im Format seiner Konsole. **A** setzt genau dort fort, **Y** startet neu, **X** entfernt es aus
+der Liste. **Kurz drücken** speichert und kehrt zu ES zurück.
+
+Funktioniert mit RetroArch, DraStic, DSperate und PortMaster. Ein Wechsel dauert etwa 5 Sekunden –
+ein Ladebildschirm liegt über beiden Screens, der Ton bleibt stumm, bis du wieder im Spiel bist.
+
+![Gameswitcher](docs/screenshots/game-switcher.png)
 
 ## Roadmap
 
