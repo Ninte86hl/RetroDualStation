@@ -380,8 +380,8 @@ class App:
             for k, _label in KINDS:   # Vergleich mit dem PC-Manager: gefunden → angezeigt
                 srcs = {}
                 for c in raw.get(k, []):
-                    key = c.get("style") or c.get("source") or "?"
-                    srcs[key] = srcs.get(key, 0) + 1
+                    src = c.get("style") or c.get("source") or "?"
+                    srcs[src] = srcs.get(src, 0) + 1
                 log(f"  {k}: gefunden {len(raw.get(k, []))} {srcs} → angezeigt {len(self.cands.get(k, []))}")
             self.query = search
             if not any(self.cands.values()):
