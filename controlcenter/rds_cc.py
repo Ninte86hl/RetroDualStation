@@ -1223,8 +1223,6 @@ class Switcher:
                         restore = txt
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
                 log("Gameswitcher:", "neu starten" if fresh else "fortsetzen", item["name"])
-                # Fokus auf den oberen Bildschirm, sonst öffnet Sway das Spiel unten (z. B. nach Touch)
-                sway_cmd("focus output " + TOP_OUTPUT)
                 if es_launch(item["rom"]):
                     for _ in range(100):
                         if run(["pgrep", "-f", "runemu.sh"]):
