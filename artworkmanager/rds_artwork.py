@@ -67,15 +67,15 @@ LIST_Y, ROW_H, ROWS = 100, 74, 9            # Listen: 9 sichtbare Zeilen
 TABS_Y, TABS_H = 28, 78                     # Artwork-Stile (Spielname steht oben)
 GAL_Y = 120                                 # Bildleiste
 # Kachelform je Artwork-Stil: (Breite, Höhe) – Hülle hochkant, Cartridge quadratisch, Hero breit
-TILE_SIZE = {"boxart": (330, 495), "cartridge": (370, 370), "image": (760, 245)}
+TILE_SIZE = {"boxart": (330, 495), "cartridge": (370, 370), "image": (385, 125)}
+TILES = 3                                   # immer drei Kacheln, mittig
 TILE_GAP = 22
 
 
 def tile_geom(kind):
     """Breite, Höhe, Schrittweite und Anzahl voll sichtbarer Kacheln."""
     w, h = TILE_SIZE[kind]
-    step = w + TILE_GAP
-    return w, h, step, max(1, int((1200 + TILE_GAP) // step))
+    return w, h, w + TILE_GAP, TILES
 BAR_Y, BAR_H = 800, 86                      # A/B/X/Y-Leiste
 HINT_Y = 930                                # Hinweiszeile
 
@@ -666,9 +666,7 @@ class App:
             return
         if self.view == "game":
             if dx:
-                self.step(dx)
-            elif dy:
-                self.switch_kind(dy)
+                self.step(dx)           # Stil wechselt nur mit L/R oder Antippen
         elif dy:
             self.move(dy)
 
@@ -900,8 +898,10 @@ class App:
         tw_, th, step, tiles = tile_geom(kind)
         if not items:
             P.text("Keine Bilder für diesen Artwork-Stil", 30, 630, gy + gh / 2, T["muted"], align="c", raw=True)
-        for j in range(first, min(len(items), first + tiles + 1)):
-            tx = 34 + (j - first) * step
+        shown = min(tiles, len(items) - first)
+        x0 = 630 - (shown * step - TILE_GAP) / 2           # Gruppe mittig
+        for j in range(first, first + shown):
+            tx = x0 + (j - first) * step
             ty = gy + (gh - th) / 2
             sel = j == cur
             if sel:
@@ -917,10 +917,12 @@ class App:
                 P.circle(tx + tw_ - 28, ty + 28, 22, "2bb673")
                 P.text("✓", 26, tx + tw_ - 28, ty + 37, "ffffff", bold=True, align="c", raw=True)
             self.hits.append((tx, ty, tw_, th, ("tile", j)))
-        if len(items) > first + tiles:   # Hinweis: es geht weiter
-            P.rrect(1180, gy, 80, gh, 0, T["bg"], a=0.6)
+        if first > 0:                    # Hinweis: links/rechts geht es weiter
+            P.text("‹", 60, 14, gy + gh / 2 + 20, T["muted"], raw=True)
+        if len(items) > first + tiles:
+            P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, "◀ ▶ Bild wählen · Wischen blättert", "")
+        self.bar(P, "◀ ▶ Bild wählen · L / R Artwork-Stil", "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
         label = f"Start  Speichern ({len(self.chosen)})"
         w = P.width(label, 22, bold=True, raw=True) + 36
