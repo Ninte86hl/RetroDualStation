@@ -978,7 +978,11 @@ class App:
             if on:
                 self.hits.append((x, BAR_Y, w, BAR_H, ("btn", act)))
             x += w + gap
-        P.text(hint_left, 22, 40, HINT_Y, T["muted"], raw=True)
+        # Hinweis: Text oder Liste aus (Text, fett)-Teilen, z. B. [("Start", True), (" Einzelsuche", False)]
+        parts = [(hint_left, False)] if isinstance(hint_left, str) else hint_left
+        hx = 40
+        for txt, bold in parts:
+            hx += P.text(txt, 22, hx, HINT_Y, T["text"] if bold else T["muted"], bold=bold, raw=True)
         if hint_right:
             P.text(hint_right, 22, 1220, HINT_Y, T["muted"], align="r", raw=True)
 
@@ -1054,7 +1058,9 @@ class App:
         T, A = self.T, self.accent
         legend = None
         if self.view == "systems":
-            title, hint = "Artwork Manager", "▲ ▼ System wählen · Start Einzeln · Select Batch"
+            title = "Artwork Manager"
+            hint = [("▲ ▼ System wählen  ·  ", False), ("Start", True), (" – Einzelsuche (Single)  ·  ", False),
+                    ("Select", True), (" – Mehrfachsuche (Batch)", False)]
             rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
         elif self.view == "settings":
             title, hint = "Einstellungen", "▲ ▼ wählen · A ändern"
