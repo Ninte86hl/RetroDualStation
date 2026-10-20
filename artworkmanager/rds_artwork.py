@@ -295,6 +295,9 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self.origin = "games"                         # wohin die Spielansicht zurückführt
+        self.last_rom = None
+        self.gsel = 0
         self.top_mode = "mix"                         # oben: "mix" (alle Stile) oder "single" (Großansicht)
         self.gquery = ""
         self.gresults = []                            # Spielsuche über alle Systeme
@@ -415,9 +418,26 @@ class App:
         rest = len(b["queue"]) - b["pos"]
         self.say(f"Batch beendet · {b['saved']} gespeichert · {b['skipped']} übersprungen"
                  + (f" · {rest} offen" if rest > 0 else ""))
-        self.view, self.rom = "games", None
-        self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
-        self.top_dirty = True
+        self.leave_game("systems")
+
+    def leave_game(self, where=None):
+        """Spielansicht verlassen: zurück dorthin, wo die Suche gestartet wurde.
+        Einzelsuche → Spieleliste, Batch → Systemliste, Spielsuche (Y) → deren Trefferliste."""
+        where = where or self.origin
+        self.rom = None
+        if where == "systems":
+            self.view = "systems"
+            self.sel = next((n for n, s in enumerate(self.systems) if s is self.system), 0)
+            self.scroll = max(0, self.sel - ROWS + 1)
+        elif where == "gsearch" and self.gresults:
+            self.view = "gsearch"
+            self.sel = self.gsel
+            self.scroll = max(0, self.sel - ROWS + 1)
+        else:
+            self.view = "games"
+            self.sel = next((n for n, g in enumerate(self.games) if g[0] == self.last_rom), self.sel)
+            self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
+        self.top_dirty = self.dirty = True
 
     # Suchnamen wie im PC-Manager
     def _arcade(self, rom):
@@ -451,6 +471,9 @@ class App:
     def open_game(self, i, forced=None, name=None):
         rom, title, _st = self.games[i]
         self.rom, self.title = rom, title
+        self.last_rom = rom
+        if self.batch:
+            self.origin = "systems"
         self.cands = {k: [] for k, _ in KINDS}
         self.idx = {k: 0 for k, _ in KINDS}
         self.gscroll = {}
@@ -663,6 +686,8 @@ class App:
             self.saving.update(step="Gespeichert", done=True)
             if self.batch:
                 self.after_saving = lambda: self.batch_next(True)
+            else:
+                self.after_saving = self.leave_game
             self.saving_until = time.monotonic() + 1.2      # kurz „Gespeichert“ zeigen
 
         def run():
@@ -753,6 +778,7 @@ class App:
         elif self.view == "restore" and self.backups:
             self.ask_restore(i)
         elif self.view == "games" and self.games:
+            self.origin = "games"
             self.open_game(i)
         elif self.view == "search" and self.results:
             self.pick_result(i)
@@ -775,9 +801,7 @@ class App:
         elif self.view == "restore":
             self.view, self.sel, self.scroll = "settings", 2, 0
         elif self.view == "game":
-            self.sel = next((n for n, g in enumerate(self.games) if g[0] == self.rom), self.sel)
-            self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
-            self.view, self.rom = "games", None
+            self.leave_game()
         elif self.view == "games":
             self.view = "systems"
             self.sel = next((n for n, s in enumerate(self.systems) if s is self.system), 0)
@@ -843,6 +867,7 @@ class App:
 
     def pick_global(self, i):
         h = self.gresults[i]
+        self.gsel = i
 
         def then():
             gi = next((n for n, g in enumerate(self.games) if g[0].casefold() == h["rom"].casefold()), None)
@@ -851,6 +876,7 @@ class App:
                 return
             self.sel = gi
             self.scroll = max(0, gi - ROWS + 1)
+            self.origin = "gsearch"
             self.open_game(gi)
         self.open_system(h["si"], then=then)
 
