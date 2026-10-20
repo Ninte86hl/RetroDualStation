@@ -78,6 +78,14 @@ if [ -f "$ESCFG" ]; then
         log "es_settings.cfg ohne </config>, Theme nicht gesetzt"
     fi
     log "Theme: $(grep 'name="ThemeSet"' "$ESCFG")"
+    # Dual: Spielstart ohne Überblendung (schnellerer Wechsel im Gameswitcher)
+    if [ "$MODE" = "dual" ]; then
+        if grep -q 'name="GameTransitionStyle"' "$ESCFG"; then
+            sed -i 's|<string name="GameTransitionStyle" value="[^"]*" />|<string name="GameTransitionStyle" value="instant" />|' "$ESCFG"
+        else
+            sed -i "s|</config>|\t<string name=\"GameTransitionStyle\" value=\"instant\" />\n</config>|" "$ESCFG"
+        fi
+    fi
 else
     log "es_settings.cfg nicht gefunden, Theme nicht gesetzt"
 fi
