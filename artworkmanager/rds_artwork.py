@@ -30,7 +30,7 @@ from rds_cc import (Overlay, Pen, Keyboard, THEMES, load_config, log, grab,   # 
                     open_event, read_events, find_event, abs_range, TouchReader,
                     EV_SYN, EV_KEY, EV_ABS, ABS_HAT0X, ABS_HAT0Y, DPAD,
                     BTN_SOUTH, BTN_EAST, BTN_NORTH, BTN_WEST, BTN_TL, BTN_TR, BTN_START,
-                    BTN_MODE, BTN_Z, JOYPAD_NAME, HOME_NAME, TOUCH_NAME, PI)
+                    BTN_MODE, BTN_Z, BTN_SELECT, JOYPAD_NAME, HOME_NAME, TOUCH_NAME, PI)
 from PIL import Image                                 # noqa: E402
 
 from rocknixds_artwork_manager.app_controller import AppController          # noqa: E402
@@ -260,6 +260,9 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self.batch = None                             # laufender Batch
+        self.pending = None                           # Folgeaktion nach Hintergrundarbeit
+        self.after_saving = None                      # Folgeaktion nach dem Ladebildschirm
         self.results = []                             # Trefferliste der Suche
         self.query = ""
 
@@ -268,21 +271,26 @@ class App:
         self.message = (text, time.monotonic())
         self.dirty = True
 
-    def work(self, label, fn):
-        """fn im Hintergrund ausführen; Fehler werden angezeigt statt abzubrechen."""
+    def work(self, label, fn, then=None):
+        """fn im Hintergrund ausführen; Fehler werden angezeigt statt abzubrechen.
+        then() läuft danach im Hauptthread (nur wenn fn erfolgreich war)."""
         if self.busy:
             return
         self.busy = label
         self.dirty = True
 
         def run():
+            ok = False
             try:
                 fn()
+                ok = True
             except Exception as exc:
                 log("Fehler:\n" + traceback.format_exc().rstrip())
                 self.say(f"Fehler: {exc}")
             finally:
                 self.busy = None
+                if ok and then:
+                    self.pending = then
                 self.dirty = self.top_dirty = True
         threading.Thread(target=run, daemon=True).start()
 
@@ -308,7 +316,7 @@ class App:
             self.view, self.sel, self.scroll = "systems", 0, 0
         self.work("Verbinde mit EmulationStation …", go)
 
-    def open_system(self, i):
+    def open_system(self, i, batch=False):
         s = self.systems[i]
 
         def go():
@@ -326,7 +334,46 @@ class App:
                 self.games.append((base, name, status.get(base, 0)))
             self.games.sort(key=lambda g: g[1].casefold())
             self.view, self.sel, self.scroll = "games", 0, 0
-        self.work(f"{s['name']} wird geladen …", go)
+        self.work(f"{s['name']} wird geladen …", go, then=self.start_batch if batch else None)
+
+    # -- Batch: alle Spiele mit fehlenden Artworks nacheinander --
+    def start_batch(self):
+        queue = [g[0] for g in self.games if g[2] < 3]
+        if not queue:
+            self.batch = None
+            self.say("Alle Spiele haben bereits alle Artworks")
+            return
+        self.batch = {"queue": queue, "pos": 0, "saved": 0, "skipped": 0}
+        log("Batch:", len(queue), "Spiele")
+        self.batch_open()
+
+    def batch_open(self):
+        rom = self.batch["queue"][self.batch["pos"]]
+        i = next((n for n, g in enumerate(self.games) if g[0] == rom), 0)
+        self.sel = i
+        self.open_game(i)
+
+    def batch_next(self, saved):
+        b = self.batch
+        if not b:
+            return
+        b["saved" if saved else "skipped"] += 1
+        b["pos"] += 1
+        if b["pos"] < len(b["queue"]):
+            self.batch_open()
+        else:
+            self.batch_end()
+
+    def batch_end(self):
+        b, self.batch = self.batch, None
+        if not b:
+            return
+        rest = len(b["queue"]) - b["pos"]
+        self.say(f"Batch beendet · {b['saved']} gespeichert · {b['skipped']} übersprungen"
+                 + (f" · {rest} offen" if rest > 0 else ""))
+        self.view, self.rom = "games", None
+        self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
+        self.top_dirty = True
 
     # Suchnamen wie im PC-Manager
     def _arcade(self, rom):
@@ -570,6 +617,8 @@ class App:
                     to_png(info["data"], path, 400)
                     self.current[kind] = str(path)
             self.saving.update(step="Gespeichert", done=True)
+            if self.batch:
+                self.after_saving = lambda: self.batch_next(True)
             self.saving_until = time.monotonic() + 1.2      # kurz „Gespeichert“ zeigen
 
         def run():
@@ -665,6 +714,9 @@ class App:
             return
         if self.busy:
             return
+        if self.view == "game" and self.batch:
+            self.batch_end()
+            return
         if self.view == "search":
             self.view = "game"
         elif self.view == "settings":
@@ -687,7 +739,7 @@ class App:
             kind, c = self.kind_key(), self.cand()
             taken = c is not None and self.chosen.get(kind) is c
             return [("A", "Abwählen" if taken else "Übernehmen", self.toggle_choice if c else None),
-                    ("B", "Zurück", self.back),
+                    ("B", "Batch beenden" if self.batch else "Zurück", self.back),
                     ("X", "Editor", None),          # vorgemerkt: 1:1-Bild mit iiSU-Rahmen
 
                     ("Y", "Spiel suchen", self.open_search)]
@@ -796,6 +848,12 @@ class App:
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
         elif code == BTN_START and self.view == "game":
             self.transfer()
+        elif code == BTN_START and self.view == "systems" and self.systems:
+            self.open_system(self.sel)                       # Einzelmodus
+        elif code == BTN_SELECT and self.view == "systems" and self.systems:
+            self.open_system(self.sel, batch=True)           # Batch
+        elif code == BTN_SELECT and self.view == "game" and self.batch:
+            self.batch_next(False)                           # Spiel überspringen
 
     def on_dir(self, dx, dy):
         if self.busy:
@@ -996,7 +1054,7 @@ class App:
         T, A = self.T, self.accent
         legend = None
         if self.view == "systems":
-            title, hint = "Artwork Manager", "▲ ▼ System wählen"
+            title, hint = "Artwork Manager", "▲ ▼ System wählen · Start Einzeln · Select Batch"
             rows = [(s["name"], f"{s['rom_count']} Spiele", None) for s in self.systems]
         elif self.view == "settings":
             title, hint = "Einstellungen", "▲ ▼ wählen · A ändern"
@@ -1099,7 +1157,8 @@ class App:
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, ("▲ ▼" if vertical else "◀ ▶") + " Bild wählen · L / R Artwork-Stil", "")
+        self.bar(P, ("▲ ▼" if vertical else "◀ ▶") + " Bild wählen · L / R Artwork-Stil"
+                 + (" · Select überspringen" if self.batch else ""), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
         label = f"Start  Speichern ({len(self.chosen)})"
         w = P.width(label, 22, bold=True, raw=True) + 36
@@ -1134,7 +1193,10 @@ class App:
             return
         kind = self.kind_key()
         c = self.cand()
-        P.clip(30, 10, 1200, 70)
+        b = self.batch
+        if b:
+            P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "bdbdbd", align="r", raw=True)
+        P.clip(30, 10, 1200 - (160 if b else 0), 70)
         P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
         P.unclip()
         path = self.preview_of(c)
@@ -1226,6 +1288,12 @@ def main():
             if a.saving and a.saving.get("done") and time.monotonic() > a.saving_until:
                 a.saving = None
                 a.dirty = a.top_dirty = True
+                if a.after_saving:
+                    nxt, a.after_saving = a.after_saving, None
+                    nxt()
+            if a.pending and not a.busy:
+                nxt, a.pending = a.pending, None
+                nxt()
             if a.message and time.monotonic() - a.message[1] > 4:
                 a.message = None
                 a.dirty = True
