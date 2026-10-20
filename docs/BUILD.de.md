@@ -38,7 +38,7 @@ grep -n "Hunk\|FAILED\| error:" build.log | head
 Erwartet wird: keine Ausgabe. Die vielen `LC_CTYPE`-/Locale-Zeilen am Ende
 des Logs stammen aus dem Glibc-Locale-Build und sind harmlos.
 
-Im Ordner `patches/aarch64/` darf nur **eine** Patch-Datei liegen. Bis v8
+Im Ordner `patches/aarch64/` dürfen nur unsere Patches (`001-…`, `002-…`) liegen. Bis v8
 hieß der Patch `001-rgds-menu-dualscreen-v2.patch` – diese alte Datei
 vorher löschen, sonst wird sie zusätzlich angewendet und der Build schlägt fehl.
 
