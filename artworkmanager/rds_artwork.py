@@ -636,12 +636,13 @@ class App:
             self.draw_game(P)
         else:
             self.header(P, "Artwork Manager")
-        if self.busy:
+        busy, message = self.busy, self.message   # Hintergrund-Threads ändern das jederzeit
+        if busy:
             P.rrect(230, 400, 800, 150, 30, T["card"])
-            P.text(self.busy, 32, 630, 488, T["text"], bold=True, align="c", raw=True)
-        elif self.message and time.monotonic() - self.message[1] < 4:
+            P.text(str(busy), 32, 630, 488, T["text"], bold=True, align="c", raw=True)
+        elif message and time.monotonic() - message[1] < 4:
             P.rrect(130, 800, 1000, 90, 26, T["card"])
-            P.text(self.message[0], 28, 630, 856, T["text"], align="c", raw=True)
+            P.text(str(message[0]), 28, 630, 856, T["text"], align="c", raw=True)
 
     def draw_setup(self, P):
         T = self.T
