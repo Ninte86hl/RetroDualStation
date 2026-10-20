@@ -1,0 +1,1023 @@
+diff --git a/es-app/src/guis/GuiAutoScrape.cpp b/es-app/src/guis/GuiAutoScrape.cpp
+index 4effde249..f540e18b4 100644
+--- a/es-app/src/guis/GuiAutoScrape.cpp
++++ b/es-app/src/guis/GuiAutoScrape.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiAutoScrape.h"
+ #include "guis/GuiMsgBox.h"
+ 
+diff --git a/es-app/src/guis/GuiBackupStart.cpp b/es-app/src/guis/GuiBackupStart.cpp
+index 0b1769b03..915521930 100644
+--- a/es-app/src/guis/GuiBackupStart.cpp
++++ b/es-app/src/guis/GuiBackupStart.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiBackupStart.h"
+ 
+ #include "ApiSystem.h"
+@@ -44,9 +45,9 @@ GuiBackupStart::GuiBackupStart(Window* window) : GuiComponent(window), mMenu(win
+ 	mMenu.addButton(_("BACK"), "back", [&] { delete this; });
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.1f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.1f);
+ }
+ 
+ void GuiBackupStart::start()
+diff --git a/es-app/src/guis/GuiBatoceraStore.cpp b/es-app/src/guis/GuiBatoceraStore.cpp
+index 224282c85..d16dbc37a 100644
+--- a/es-app/src/guis/GuiBatoceraStore.cpp
++++ b/es-app/src/guis/GuiBatoceraStore.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiBatoceraStore.h"
+ 
+ #include "ApiSystem.h"
+@@ -152,7 +153,7 @@ void GuiBatoceraStore::centerWindow()
+ 	else
+ 		setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.875f);
+ 
+-	setPosition((RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
++	setPosition((RdsScreens::menuX() * 2 + RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ }
+ 
+ static bool sortPackagesByGroup(PacmanPackage& sys1, PacmanPackage& sys2)
+diff --git a/es-app/src/guis/GuiBezelInstaller.cpp b/es-app/src/guis/GuiBezelInstaller.cpp
+index c4346cb04..f5e0503aa 100644
+--- a/es-app/src/guis/GuiBezelInstaller.cpp
++++ b/es-app/src/guis/GuiBezelInstaller.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiBezelInstaller.h"
+ 
+ #include "ApiSystem.h"
+@@ -13,7 +14,7 @@
+ #include <cstring>
+ #include "SystemConf.h"
+ 
+-#define WINDOW_WIDTH (float)Math::min(Renderer::getScreenHeight() * 1.125f, ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.90f)
++#define WINDOW_WIDTH (float)Math::min(Renderer::getScreenHeight() * 1.125f, RdsScreens::menuW() * 0.90f)
+ 
+ GuiBezelInstaller::GuiBezelInstaller(Window* window)
+ 	: GuiComponent(window), mMenu(window, _("THE BEZEL PROJECT").c_str()), mReloadList(1)
+@@ -114,10 +115,10 @@ void GuiBezelInstaller::loadBezelsAsync()
+ 			loadList();
+ 		}
+ 	);
+-	if (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768)
++	if (RdsScreens::active())
+ 	{
+ 		loading->setTag("GuiBezelLoading");
+-		loading->setLoadingArea(1024.0f, 0.0f, 1024.0f, 768.0f);
++		loading->setLoadingArea(RdsScreens::other().x, RdsScreens::other().y, RdsScreens::other().w, RdsScreens::other().h);
+ 	}
+ 	mWindow->pushGui(loading);
+ }
+@@ -125,11 +126,11 @@ void GuiBezelInstaller::loadBezelsAsync()
+ void GuiBezelInstaller::centerWindow()
+ {
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()), Renderer::getScreenHeight());
++		mMenu.setSize(RdsScreens::menuW(), Renderer::getScreenHeight());
+ 	else
+ 		mMenu.setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.875f);
+ 
+-	mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++	mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ }
+ 
+ void GuiBezelInstaller::processBezel(BatoceraBezel bezel)
+diff --git a/es-app/src/guis/GuiBios.cpp b/es-app/src/guis/GuiBios.cpp
+index 36e9d688f..0ef8cc738 100644
+--- a/es-app/src/guis/GuiBios.cpp
++++ b/es-app/src/guis/GuiBios.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiBios.h"
+ 
+ #include "ApiSystem.h"
+@@ -206,7 +207,7 @@ void GuiBios::centerWindow()
+ 	else
+ 		setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.875f);
+ 
+-	setPosition((RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
++	setPosition((RdsScreens::menuX() * 2 + RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ }
+ 
+ bool GuiBios::input(InputConfig* config, Input input)
+diff --git a/es-app/src/guis/GuiBluetoothDeviceOptions.cpp b/es-app/src/guis/GuiBluetoothDeviceOptions.cpp
+index 2e364ec3c..cd95d7519 100644
+--- a/es-app/src/guis/GuiBluetoothDeviceOptions.cpp
++++ b/es-app/src/guis/GuiBluetoothDeviceOptions.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "GuiBluetoothDeviceOptions.h"
+ #include "guis/GuiMsgBox.h"
+ #include "GuiLoading.h"
+@@ -21,7 +22,7 @@ GuiBluetoothDeviceOptions::GuiBluetoothDeviceOptions(Window* window, const std::
+     mMenu.addButton(_("FORGET"), "forget", [&] { onForgetDevice(); });
+     mMenu.addButton(_("BACK"), "back", [&] { delete this; });
+ 
+-    mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++    mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ }
+ 
+ bool GuiBluetoothDeviceOptions::input(InputConfig* config, Input input)
+diff --git a/es-app/src/guis/GuiBluetoothDevices.cpp b/es-app/src/guis/GuiBluetoothDevices.cpp
+index 1d45785f2..19962e003 100644
+--- a/es-app/src/guis/GuiBluetoothDevices.cpp
++++ b/es-app/src/guis/GuiBluetoothDevices.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiBackup.h"
+ #include "guis/GuiMsgBox.h"
+ #include "Window.h"
+@@ -27,9 +28,9 @@ GuiBluetoothDevices::GuiBluetoothDevices(Window* window)
+ 	mMenu.addButton(_("BACK"), "back", [&] { delete this; });
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ }
+ 
+ bool GuiBluetoothDevices::load()
+@@ -69,7 +70,7 @@ bool GuiBluetoothDevices::load()
+ 	mMenu.updateSize();
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	
+ 	return ssids.size() > 0;
+ }
+diff --git a/es-app/src/guis/GuiBluetoothPair.cpp b/es-app/src/guis/GuiBluetoothPair.cpp
+index a84e3afe4..92bd7cb73 100644
+--- a/es-app/src/guis/GuiBluetoothPair.cpp
++++ b/es-app/src/guis/GuiBluetoothPair.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiBackup.h"
+ #include "guis/GuiMsgBox.h"
+ #include "Window.h"
+@@ -24,13 +25,13 @@ GuiBluetoothPair::GuiBluetoothPair(Window* window)
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+ 	{
+-		float rdsW = (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth();
++		float rdsW = RdsScreens::menuW();
+ 		setSize(rdsW, Renderer::getScreenHeight());
+ 		setPosition((rdsW - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ 	}
+ 	else
+ 	{
+-		setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ 		setSize(getSize().x(), Renderer::getScreenHeight() * 0.60f);
+ 	}
+ 
+diff --git a/es-app/src/guis/GuiFavoriteMusicSelector.cpp b/es-app/src/guis/GuiFavoriteMusicSelector.cpp
+index c689ede11..b8a40fda9 100644
+--- a/es-app/src/guis/GuiFavoriteMusicSelector.cpp
++++ b/es-app/src/guis/GuiFavoriteMusicSelector.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiFavoriteMusicSelector.h"
+ #include "guis/GuiSettings.h"
+ #include "components/SwitchComponent.h"
+@@ -53,7 +54,7 @@ GuiFavoriteMusicSelector::GuiFavoriteMusicSelector(Window* window) : GuiComponen
+         save();
+     });
+     
+-    s->getMenu().setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - s->getMenu().getSize().x()) / 2,
++    s->getMenu().setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - s->getMenu().getSize().x()) / 2,
+                             (Renderer::getScreenHeight() - s->getMenu().getSize().y()) / 2);
+     
+     mWindow->pushGui(s);
+diff --git a/es-app/src/guis/GuiFileBrowser.cpp b/es-app/src/guis/GuiFileBrowser.cpp
+index 306a9d224..074a0e231 100644
+--- a/es-app/src/guis/GuiFileBrowser.cpp
++++ b/es-app/src/guis/GuiFileBrowser.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiFileBrowser.h"
+ 
+ #include "ApiSystem.h"
+@@ -14,7 +15,7 @@
+ #include "SystemConf.h"
+ #include "Paths.h"
+ 
+-#define WINDOW_WIDTH (float)Math::max((int)Renderer::getScreenHeight(), (int)(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.65f))
++#define WINDOW_WIDTH (float)Math::max((int)Renderer::getScreenHeight(), (int)(RdsScreens::menuW() * 0.65f))
+ 
+ #define DRIVE_ICON		_U("\uF0A0 ")
+ #define FOLDER_ICON		_U("\uF07C ")
+@@ -141,11 +142,11 @@ void GuiFileBrowser::navigateTo(const std::string path)
+ void GuiFileBrowser::centerWindow()
+ {
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()), Renderer::getScreenHeight());
++		mMenu.setSize(RdsScreens::menuW(), Renderer::getScreenHeight());
+ 	else
+ 	{
+ 		mMenu.setSize(mMenu.getSize().x(), Renderer::getScreenHeight() * 0.875f);
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	}
+ }
+ 
+diff --git a/es-app/src/guis/GuiGameAchievements.cpp b/es-app/src/guis/GuiGameAchievements.cpp
+index 55a1f6736..d0afe94a2 100644
+--- a/es-app/src/guis/GuiGameAchievements.cpp
++++ b/es-app/src/guis/GuiGameAchievements.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiGameAchievements.h"
+ #include "guis/GuiSettings.h"
+ #include "components/WebImageComponent.h"
+@@ -14,7 +15,7 @@
+ #include "GuiGameAchievements.h"
+ #include "views/ViewController.h"
+ 
+-#define WINDOW_WIDTH (float)Math::min(Renderer::getScreenHeight() * 1.125f, ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.90f)
++#define WINDOW_WIDTH (float)Math::min(Renderer::getScreenHeight() * 1.125f, RdsScreens::menuW() * 0.90f)
+ #define IMAGESIZE (Renderer::getScreenHeight() * (48.0 / 720.0))
+ #define IMAGESPACER (Renderer::getScreenHeight() * (10.0 / 720.0))
+ 
+@@ -183,14 +184,14 @@ GuiGameAchievements::GuiGameAchievements(Window* window, GameInfoAndUserProgress
+ 
+ void GuiGameAchievements::centerWindow()
+ {
+-	float width = (float)Math::min((int)Renderer::getScreenHeight(), (int)(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.90f));
++	float width = (float)Math::min((int)Renderer::getScreenHeight(), (int)(RdsScreens::menuW() * 0.90f));
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()), Renderer::getScreenHeight());
++		mMenu.setSize(RdsScreens::menuW(), Renderer::getScreenHeight());
+ 	else
+ 		mMenu.setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.901f);
+ 
+-	mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++	mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ }
+ 
+ void GuiGameAchievements::render(const Transform4x4f& parentTrans)
+@@ -204,7 +205,7 @@ void GuiGameAchievements::render(const Transform4x4f& parentTrans)
+ 		float h = theme->TextSmall.font->sizeText("A8O\rA8O", 1.1).y();
+ 		float sz = mMenu.getHeaderGridHeight() + Renderer::getScreenHeight() * 0.005;
+ 
+-		float width = (float)Math::min((int)Renderer::getScreenHeight(), (int)(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.90f));
++		float width = (float)Math::min((int)Renderer::getScreenHeight(), (int)(RdsScreens::menuW() * 0.90f));
+ 		float iw = mMenu.getTitleHeight() / width;
+ 
+ 		float xx = mMenu.getSize().x() - (mMenu.getSize().x() * iw);
+diff --git a/es-app/src/guis/GuiGameOptions.cpp b/es-app/src/guis/GuiGameOptions.cpp
+index 97733a8bd..1f50dce50 100644
+--- a/es-app/src/guis/GuiGameOptions.cpp
++++ b/es-app/src/guis/GuiGameOptions.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "GuiGameOptions.h"
+ #include "guis/GuiGamelistFilter.h"
+ #include "scrapers/Scraper.h"
+@@ -467,18 +468,18 @@ GuiGameOptions::GuiGameOptions(Window* window, FileData* game) : GuiComponent(wi
+ 		});
+ 	}
+ 
+-	if (Renderer::ScreenSettings::fullScreenMenus() || (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768))
++	if (Renderer::ScreenSettings::fullScreenMenus() || RdsScreens::active())
+ 	{	
+ 		mMenu.addButton(_("BACK"), _("go back"), [this] { close(); });
+ 
+ 		mMenu.setMaxHeight(Renderer::getScreenHeight() * 0.85f);
+ 		setSize((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
+-		mMenu.animateTo(Vector2f(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2));
++		mMenu.animateTo(Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2));
+ 	}
+ 	else
+ 	{
+-		float w = Math::min((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) * 0.5, ThemeData::getMenuTheme()->Text.font->sizeText("S").x() * 33.0f);
+-		w = Math::max(w, (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) / 3.0f);
++		float w = Math::min(RdsScreens::menuW() * 0.5, ThemeData::getMenuTheme()->Text.font->sizeText("S").x() * 33.0f);
++		w = Math::max(w, RdsScreens::menuW() / 3.0f);
+ 
+ 		mMenu.setSize(w, Renderer::getScreenHeight() + 2);
+ 		/*mMenu.animateTo(
+@@ -486,8 +487,8 @@ GuiGameOptions::GuiGameOptions(Window* window, FileData* game) : GuiComponent(wi
+ 			Vector2f(-1, -1), AnimateFlags::OPACITY | AnimateFlags::POSITION);
+ 			*/
+ 		mMenu.animateTo(
+-			Vector2f((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? (1024.0f - w) / 2.0f : (float)Renderer::getScreenWidth(), -1),
+-			Vector2f((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? (1024.0f - w) / 2.0f : Renderer::getScreenWidth() - w - 1, -1), AnimateFlags::OPACITY | AnimateFlags::POSITION);
++			Vector2f(RdsScreens::active() ? (RdsScreens::menuX() * 2 + RdsScreens::menuW() - w) / 2.0f : (float)Renderer::getScreenWidth(), -1),
++			Vector2f(RdsScreens::active() ? (RdsScreens::menuX() * 2 + RdsScreens::menuW() - w) / 2.0f : Renderer::getScreenWidth() - w - 1, -1), AnimateFlags::OPACITY | AnimateFlags::POSITION);
+ 	}
+ }
+ 
+diff --git a/es-app/src/guis/GuiGameScraper.cpp b/es-app/src/guis/GuiGameScraper.cpp
+index 357d8a477..d537abaeb 100644
+--- a/es-app/src/guis/GuiGameScraper.cpp
++++ b/es-app/src/guis/GuiGameScraper.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiGameScraper.h"
+ 
+ #include "components/ButtonComponent.h"
+@@ -50,11 +51,11 @@ GuiGameScraper::GuiGameScraper(Window* window, ScraperSearchParams params, std::
+ 	mSearch->setSearchDoneCallback([&] { BuildButtonGrid(true); });
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()), Renderer::getScreenHeight());
++		setSize(RdsScreens::menuW(), Renderer::getScreenHeight());
+ 	else
+-		setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.90f, Renderer::getScreenHeight() * 0.85f);
++		setSize(RdsScreens::menuW() * 0.90f, Renderer::getScreenHeight() * 0.85f);
+ 		
+-	setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++	setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ 
+ 	mGrid.resetCursor();
+ 	mSearch->search(params); // start the search
+diff --git a/es-app/src/guis/GuiGamelistFilter.cpp b/es-app/src/guis/GuiGamelistFilter.cpp
+index f33025276..ebcf59934 100644
+--- a/es-app/src/guis/GuiGamelistFilter.cpp
++++ b/es-app/src/guis/GuiGamelistFilter.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiGamelistFilter.h"
+ 
+ #include "components/OptionListComponent.h"
+@@ -39,9 +40,9 @@ void GuiGamelistFilter::initializeMenu()
+ 	mMenu.addButton(_("BACK"), "back", std::bind(&GuiGamelistFilter::applyFilters, this));
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ }
+ 
+ void GuiGamelistFilter::resetAllFilters()
+diff --git a/es-app/src/guis/GuiGamelistOptions.cpp b/es-app/src/guis/GuiGamelistOptions.cpp
+index 4a3eee602..a03b8b26f 100644
+--- a/es-app/src/guis/GuiGamelistOptions.cpp
++++ b/es-app/src/guis/GuiGamelistOptions.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "GuiGamelistOptions.h"
+ #include "guis/GuiGamelistFilter.h"
+ #include "scrapers/Scraper.h"
+@@ -276,7 +277,7 @@ GuiGamelistOptions::GuiGamelistOptions(Window* window, IGameListView* gamelist,
+ 
+ 	// center the menu
+ 	setSize((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
+-	mMenu.animateTo(Vector2f(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2));
++	mMenu.animateTo(Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2));
+ }
+ 
+ void GuiGamelistOptions::addTextFilterToMenu()
+diff --git a/es-app/src/guis/GuiHashStart.cpp b/es-app/src/guis/GuiHashStart.cpp
+index 7e17c1264..597b6093b 100644
+--- a/es-app/src/guis/GuiHashStart.cpp
++++ b/es-app/src/guis/GuiHashStart.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiHashStart.h"
+ 
+ #include "components/OptionListComponent.h"
+@@ -66,9 +67,9 @@ GuiHashStart::GuiHashStart(Window* window, ThreadedHasher::HasherType type) : Gu
+ 	mMenu.addButton(_("BACK"), _("BACK"), [&] { delete this; });
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ }
+ 
+ void GuiHashStart::start()
+diff --git a/es-app/src/guis/GuiImageViewer.cpp b/es-app/src/guis/GuiImageViewer.cpp
+index cd2e3db2d..82f4d5a26 100644
+--- a/es-app/src/guis/GuiImageViewer.cpp
++++ b/es-app/src/guis/GuiImageViewer.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "GuiImageViewer.h"
+ #include "ThemeData.h"
+ 
+@@ -31,7 +32,7 @@ public:
+ 		setIsLinear(true);
+ 		setImage(image, false, MaxSizeInfo(8192, 8192));
+ 
+-		setPosition(RGDS_MENU_W * 0.5, Renderer::getScreenHeight() * 0.5);
++		setPosition(RdsScreens::menuX() + RGDS_MENU_W * 0.5, Renderer::getScreenHeight() * 0.5);
+ 		setOrigin(0.5, 0.5);
+ 		setMaxSize(RGDS_MENU_W, Renderer::getScreenHeight());	
+ 	}
+@@ -730,7 +731,7 @@ GuiVideoViewer::GuiVideoViewer(Window* window, const std::string& path) : GuiCom
+ 	}
+ 	
+ 	mVideo->setOrigin(0.5f, 0.5f);
+-	mVideo->setPosition(RGDS_MENU_W / 2.0f, Renderer::getScreenHeight() / 2.0f);
++	mVideo->setPosition(RdsScreens::menuX() + RGDS_MENU_W / 2.0f, Renderer::getScreenHeight() / 2.0f);
+ 	mVideo->setMaxSize(RGDS_MENU_W, Renderer::getScreenHeight());
+ 
+ 	mVideo->setOnVideoEnded([&]()
+diff --git a/es-app/src/guis/GuiInstallStart.cpp b/es-app/src/guis/GuiInstallStart.cpp
+index d661f0bf2..a6c6cbeac 100644
+--- a/es-app/src/guis/GuiInstallStart.cpp
++++ b/es-app/src/guis/GuiInstallStart.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiInstallStart.h"
+ 
+ #include "ApiSystem.h"
+@@ -64,9 +65,9 @@ mMenu(window, _("INSTALL ON A NEW DISK").c_str())
+ 		mMenu.addButton(_("NETWORK REQUIRED"), "back", [&] { delete this; });	
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.1f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.1f);
+ }
+ 
+ void GuiInstallStart::start()
+diff --git a/es-app/src/guis/GuiKeyMappingEditor.cpp b/es-app/src/guis/GuiKeyMappingEditor.cpp
+index de67b4cf0..d85e910d4 100644
+--- a/es-app/src/guis/GuiKeyMappingEditor.cpp
++++ b/es-app/src/guis/GuiKeyMappingEditor.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiKeyMappingEditor.h"
+ 
+ #include "ApiSystem.h"
+@@ -21,7 +22,7 @@
+ #include <unordered_set>
+ #include <algorithm>
+ 
+-#define WINDOW_WIDTH (float)Math::max((int)Renderer::getScreenHeight(), (int)(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.73f))
++#define WINDOW_WIDTH (float)Math::max((int)Renderer::getScreenHeight(), (int)(RdsScreens::menuW() * 0.73f))
+ 
+ void GuiKeyMappingEditor::initMappingNames()
+ {
+@@ -195,11 +196,11 @@ void GuiKeyMappingEditor::onSizeChanged()
+ void GuiKeyMappingEditor::centerWindow()
+ {
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()), Renderer::getScreenHeight());
++		setSize(RdsScreens::menuW(), Renderer::getScreenHeight());
+ 	else
+ 		setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.875f);
+ 
+-	setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
++	setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ }
+ 
+ static bool sortPackagesByGroup(PacmanPackage& sys1, PacmanPackage& sys2)
+@@ -392,7 +393,7 @@ void GuiKeyMappingEditor::loadList(bool restoreIndex)
+ 		else
+ 		{
+ 			auto info = std::make_shared<TextComponent>(mWindow, mouseMapping == "joystick1" ? _("LEFT ANALOG STICK") : _("RIGHT ANALOG STICK"), theme->Text.font, theme->Text.color);
+-			info->setPadding(Vector4f(0, 0, ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.01f, 0));
++			info->setPadding(Vector4f(0, 0, RdsScreens::menuW() * 0.01f, 0));
+ 			mouseRow.addElement(info, false);
+ 			mList->addRow(mouseRow, idx > 0 && last);
+ 		}
+diff --git a/es-app/src/guis/GuiKeyboardLayout.cpp b/es-app/src/guis/GuiKeyboardLayout.cpp
+index 84034658d..dac347624 100644
+--- a/es-app/src/guis/GuiKeyboardLayout.cpp
++++ b/es-app/src/guis/GuiKeyboardLayout.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "GuiKeyboardLayout.h"
+ #include "utils/FileSystemUtil.h"
+ #include "utils/StringUtil.h"
+@@ -46,11 +47,11 @@ GuiKeyboardLayout::GuiKeyboardLayout(Window* window, const std::function<void(co
+ 		}
+ 	}
+ 
+-	const bool rgdsPlus = Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768;
+-	const float keyboardWidth = rgdsPlus ? 1024.0f : Renderer::getScreenWidth();
++	const bool rgdsPlus = RdsScreens::active();
++	const float keyboardWidth = rgdsPlus ? RdsScreens::otherW() : Renderer::getScreenWidth();
+ 	setSize(keyboardWidth, Renderer::getScreenHeight());
+ 	if (rgdsPlus)
+-		setPosition(1024.0f, 0.0f);
++		setPosition(RdsScreens::otherX(), RdsScreens::other().y);
+ 
+ 	mKeyboard.setOrigin(0.5f, 0.5f);
+ 	mKeyboard.setPosition(keyboardWidth / 2.0f, Renderer::getScreenHeight() / 2.0f);
+diff --git a/es-app/src/guis/GuiLoading.h b/es-app/src/guis/GuiLoading.h
+index a73c3f5cd..3378a3e73 100644
+--- a/es-app/src/guis/GuiLoading.h
++++ b/es-app/src/guis/GuiLoading.h
+@@ -5,6 +5,7 @@
+ #ifndef EMULATIONSTATION_ALL_GUILOADING_H
+ #define EMULATIONSTATION_ALL_GUILOADING_H
+ 
++#include "RdsScreens.h"
+ #include "Window.h"
+ #include "GuiComponent.h"
+ #include "components/MenuComponent.h"
+@@ -29,7 +30,7 @@ public:
+ 	GuiLoading(Window *window, const std::string title, const std::function<T(IGuiLoadingHandler*)> &func, const std::function<void(T)> &func2 = nullptr)
+ 		: GuiComponent(window), mBusyAnim(window), mFunc(func), mFunc2(func2)
+ 	{
+-		setSize((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
++		setSize(RdsScreens::menuW(), (float)Renderer::getScreenHeight());
+ 		setTag("GuiLoading");
+ 	
+ 		mText = title;
+diff --git a/es-app/src/guis/GuiMenu.cpp b/es-app/src/guis/GuiMenu.cpp
+index 0b1b740be..21bf3cf4e 100644
+--- a/es-app/src/guis/GuiMenu.cpp
++++ b/es-app/src/guis/GuiMenu.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiMenu.h"
+ 
+ #include "components/OptionListComponent.h"
+@@ -234,16 +235,16 @@ GuiMenu::GuiMenu(Window *window, bool animate) : GuiComponent(window), mMenu(win
+ 	if (animate)
+ 	{
+ 		if (Renderer::ScreenSettings::fullScreenMenus())
+-			animateTo(Vector2f((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2));
++			animateTo(Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2));
+ 		else
+-			animateTo(Vector2f((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f));
++			animateTo(Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f));
+ 	}
+ 	else
+ 	{
+ 		if (Renderer::ScreenSettings::fullScreenMenus())
+-			setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++			setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ 		else
+-			setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f);
++			setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ 	}
+ }
+ 
+@@ -6045,9 +6046,9 @@ void GuiMenu::openQuitMenu_static(Window *window, bool quickAccessMenu, bool ani
+ #endif
+ 
+ 	if (quickAccessMenu && animate)
+-		s->getMenu().animateTo(Vector2f(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) - s->getMenu().getSize().x()) / 2, (Renderer::getScreenHeight() - s->getMenu().getSize().y()) / 2));
++		s->getMenu().animateTo(Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - s->getMenu().getSize().x()) / 2, (Renderer::getScreenHeight() - s->getMenu().getSize().y()) / 2));
+ 	else if (quickAccessMenu)
+-		s->getMenu().setPosition(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 ? 1024.0f : Renderer::getScreenWidth()) - s->getMenu().getSize().x()) / 2, (Renderer::getScreenHeight() - s->getMenu().getSize().y()) / 2);
++		s->getMenu().setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - s->getMenu().getSize().x()) / 2, (Renderer::getScreenHeight() - s->getMenu().getSize().y()) / 2);
+ 
+ 	window->pushGui(s);
+ }
+diff --git a/es-app/src/guis/GuiMetaDataEd.cpp b/es-app/src/guis/GuiMetaDataEd.cpp
+index c1f510b7d..0247e32ef 100644
+--- a/es-app/src/guis/GuiMetaDataEd.cpp
++++ b/es-app/src/guis/GuiMetaDataEd.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiMetaDataEd.h"
+ 
+ #include "components/ButtonComponent.h"
+@@ -396,7 +397,7 @@ GuiMetaDataEd::GuiMetaDataEd(Window* window, MetaDataList* md, const std::vector
+ 		setSize(width, Renderer::getScreenHeight() * 0.82f);
+ 	}
+ 
+-	setPosition((RGDS_MENU_W - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++	setPosition((RdsScreens::menuX() * 2 + RGDS_MENU_W - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ }
+ 
+ void GuiMetaDataEd::onSizeChanged()
+diff --git a/es-app/src/guis/GuiSaveState.cpp b/es-app/src/guis/GuiSaveState.cpp
+index 43404a9ee..67ecc3223 100644
+--- a/es-app/src/guis/GuiSaveState.cpp
++++ b/es-app/src/guis/GuiSaveState.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "GuiSaveState.h"
+ #include "SystemData.h"
+ #include "FileData.h"
+@@ -38,7 +39,7 @@ GuiSaveState::GuiSaveState(Window* window, FileData* game, const std::function<v
+ 	addChild(&mLayout);
+ 	
+ 	float cellProportion = 1.77;
+-	float screenProportion = (float)((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) / (float)Renderer::getScreenHeight();
++	float screenProportion = (float)RdsScreens::menuW() / (float)Renderer::getScreenHeight();
+ 
+ 	float sh = (float)Math::min(Renderer::getScreenHeight(), Renderer::getScreenWidth());
+ 	sh = (float) theme->TextSmall.font->getSize() / sh;
+@@ -193,10 +194,10 @@ void GuiSaveState::onSizeChanged()
+ 
+ void GuiSaveState::centerWindow()
+ {
+-	setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()), WINDOW_HEIGHT);
++	setSize(RdsScreens::menuW(), WINDOW_HEIGHT);
+ 	animateTo(
+-		Vector2f(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : 0.0f) + (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - getSize().x()) / 2, Renderer::getScreenHeight()),
+-		Vector2f(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : 0.0f) + (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - getSize().x()) / 2, Renderer::getScreenHeight() - WINDOW_HEIGHT),
++		Vector2f(RdsScreens::otherX() + (RdsScreens::otherW() - getSize().x()) / 2, Renderer::getScreenHeight()),
++		Vector2f(RdsScreens::otherX() + (RdsScreens::otherW() - getSize().x()) / 2, Renderer::getScreenHeight() - WINDOW_HEIGHT),
+ 		AnimateFlags::OPACITY | AnimateFlags::POSITION);
+ }
+ 
+diff --git a/es-app/src/guis/GuiScraperStart.cpp b/es-app/src/guis/GuiScraperStart.cpp
+index bac8d2040..af3d2c215 100644
+--- a/es-app/src/guis/GuiScraperStart.cpp
++++ b/es-app/src/guis/GuiScraperStart.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiScraperStart.h"
+ #include "components/OptionListComponent.h"
+ #include "components/SwitchComponent.h"
+@@ -24,9 +25,9 @@ GuiScraperStart::GuiScraperStart(Window* window)
+ 	onFinalize([] { Settings::getInstance()->saveFile(); });
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((RGDS_MENU_W - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RGDS_MENU_W - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((RGDS_MENU_W - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RGDS_MENU_W - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ }
+ 
+ void GuiScraperStart::loadActivePage()
+@@ -395,8 +396,8 @@ void GuiScraperStart::start()
+ 				close();
+ 			}
+ 		});
+-	if (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768)
+-		loading->setLoadingArea(0.0f, 0.0f, 1024.0f, 768.0f);
++	if (RdsScreens::active())
++		loading->setLoadingArea(RdsScreens::menu().x, RdsScreens::menu().y, RdsScreens::menu().w, RdsScreens::menu().h);
+ 	mWindow->pushGui(loading);
+ }
+ 
+diff --git a/es-app/src/guis/GuiSettings.cpp b/es-app/src/guis/GuiSettings.cpp
+index 7b7610b22..9bf0d5b09 100644
+--- a/es-app/src/guis/GuiSettings.cpp
++++ b/es-app/src/guis/GuiSettings.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiSettings.h"
+ 
+ #include "views/ViewController.h"
+@@ -39,18 +40,18 @@ GuiSettings::GuiSettings(Window* window,
+ 	if (animate)
+ 	{
+ 		if (Renderer::ScreenSettings::fullScreenMenus())
+-			mMenu.animateTo((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++			mMenu.animateTo((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 		else
+ 			mMenu.animateTo(
+-				Vector2f((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.5),
+-				Vector2f((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f));
++				Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.5),
++				Vector2f((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f));
+ 	}
+ 	else
+ 	{
+ 		if (Renderer::ScreenSettings::fullScreenMenus())
+-			mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++			mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 		else
+-			mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : mSize.x()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++			mMenu.setPosition(((RdsScreens::active() ? RdsScreens::menuX() * 2 + RdsScreens::menuW() : mSize.x()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ 	}	
+ }
+ 
+diff --git a/es-app/src/guis/GuiThemeInstaller.cpp b/es-app/src/guis/GuiThemeInstaller.cpp
+index 04b1dc772..8601d80b2 100644
+--- a/es-app/src/guis/GuiThemeInstaller.cpp
++++ b/es-app/src/guis/GuiThemeInstaller.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiThemeInstaller.h"
+ 
+ #include "ApiSystem.h"
+@@ -246,7 +247,7 @@ void GuiThemeInstaller::centerWindow()
+ 	else
+ 		setSize(WINDOW_WIDTH, Renderer::getScreenHeight() * 0.875f);
+ 
+-	setPosition((RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
++	setPosition((RdsScreens::menuX() * 2 + RGDS_MENU_W - getSize().x()) / 2, (Renderer::getScreenHeight() - getSize().y()) / 2);
+ }
+ 
+ void GuiThemeInstaller::processTheme(BatoceraTheme theme, bool isCurrentTheme)
+diff --git a/es-app/src/guis/GuiUpdate.cpp b/es-app/src/guis/GuiUpdate.cpp
+index affa5ee60..35dfd4124 100644
+--- a/es-app/src/guis/GuiUpdate.cpp
++++ b/es-app/src/guis/GuiUpdate.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiUpdate.h"
+ #include "guis/GuiMsgBox.h"
+ #include "Window.h"
+diff --git a/es-app/src/guis/GuiWifi.cpp b/es-app/src/guis/GuiWifi.cpp
+index 7bb530e33..50b6c60f1 100644
+--- a/es-app/src/guis/GuiWifi.cpp
++++ b/es-app/src/guis/GuiWifi.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiBackup.h"
+ #include "guis/GuiMsgBox.h"
+ #include "Window.h"
+@@ -30,9 +31,9 @@ GuiWifi::GuiWifi(Window* window, const std::string title)
+ 	mMenu.addButton(_("BACK"), "back", [&] { delete this; });
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 	else
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ }
+ 
+ void GuiWifi::load(std::vector<std::string> availableNetworks)
+@@ -92,7 +93,7 @@ void GuiWifi::load(std::vector<std::string> availableNetworks)
+ 	mMenu.updateSize();
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++		mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 
+ 	mWaitingLoad = false;
+ }
+diff --git a/es-core/src/RdsScreens.h b/es-core/src/RdsScreens.h
+new file mode 100644
+index 000000000..808e5aa0d
+--- /dev/null
++++ b/es-core/src/RdsScreens.h
+@@ -0,0 +1,80 @@
++#pragma once
++// RetroDualStation: Bildschirm-Bereiche im gemeinsamen ES-Fenster.
++// Quelle: /storage/.config/retrodualstation/screens.cfg
++//   top=x,y,w,h
++//   bottom=x,y,w,h
++//   menu=top|bottom      (Menüs, Meldungen; der andere Bereich bekommt die Tastatur)
++// Ohne Datei: Fenster 2048x768 -> zwei Hälften (oben links, unten rechts),
++// sonst ein Bildschirm = ganzes Fenster (Verhalten wie Original-ES).
++#include "renderers/Renderer.h"
++#include <fstream>
++#include <string>
++#include <cstdio>
++
++namespace RdsScreens
++{
++	struct Rect { float x = 0, y = 0, w = 0, h = 0; };
++
++	struct Layout
++	{
++		bool dual = false;
++		Rect top, bottom;
++		bool menuOnTop = true;
++		int forW = -1, forH = -1;
++	};
++
++	inline Layout& layout()
++	{
++		static Layout l;
++		int sw = Renderer::getScreenWidth(), sh = Renderer::getScreenHeight();
++		if (l.forW == sw && l.forH == sh)
++			return l;
++
++		l = Layout();
++		l.forW = sw; l.forH = sh;
++		Rect full; full.w = (float)sw; full.h = (float)sh;
++		l.top = full; l.bottom = full;
++
++		bool haveTop = false, haveBottom = false;
++		std::ifstream f("/storage/.config/retrodualstation/screens.cfg");
++		std::string line;
++		while (f && std::getline(f, line))
++		{
++			if (line.empty() || line[0] == '#')
++				continue;
++			auto eq = line.find('=');
++			if (eq == std::string::npos)
++				continue;
++			std::string key = line.substr(0, eq), val = line.substr(eq + 1);
++			Rect r;
++			if ((key == "top" || key == "bottom") && sscanf(val.c_str(), "%f,%f,%f,%f", &r.x, &r.y, &r.w, &r.h) == 4 && r.w > 0 && r.h > 0)
++			{
++				if (key == "top") { l.top = r; haveTop = true; }
++				else { l.bottom = r; haveBottom = true; }
++			}
++			else if (key == "menu")
++				l.menuOnTop = val.find("bottom") != 0;
++		}
++
++		if (haveTop && haveBottom)
++			l.dual = true;
++		else if (sw == 2048 && sh == 768)
++		{
++			l.dual = true;
++			l.top = { 0, 0, 1024, 768 };
++			l.bottom = { 1024, 0, 1024, 768 };
++		}
++		return l;
++	}
++
++	inline bool active() { return layout().dual; }
++	inline const Rect& top() { return layout().top; }
++	inline const Rect& bottom() { return layout().bottom; }
++	inline const Rect& menu() { return layout().menuOnTop ? layout().top : layout().bottom; }
++	inline const Rect& other() { return layout().menuOnTop ? layout().bottom : layout().top; }
++
++	inline float menuX() { return menu().x; }
++	inline float menuW() { return menu().w; }
++	inline float otherX() { return active() ? other().x : 0.0f; }
++	inline float otherW() { return other().w; }
++}
+diff --git a/es-core/src/Window.cpp b/es-core/src/Window.cpp
+index 36f6ac8c1..eb67688f9 100644
+--- a/es-core/src/Window.cpp
++++ b/es-core/src/Window.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "Window.h"
+ 
+ #include "components/HelpComponent.h"
+@@ -689,10 +690,10 @@ void Window::render()
+ 
+ 		if (bottom != top)
+ 		{
+-			if (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768 && top->getTag() == "GuiBezelLoading")
++			if (RdsScreens::active() && top->getTag() == "GuiBezelLoading")
+ 			{
+ 				Renderer::setMatrix(transform);
+-				Renderer::drawRect(1024.0f, 0.0f, 1024.0f, 768.0f, 0x12161EFF);
++				Renderer::drawRect(RdsScreens::other().x, RdsScreens::other().y, RdsScreens::other().w, RdsScreens::other().h, 0x12161EFF);
+ 			}
+ 			if ((top->getTag() == "GuiLoading" || top->getTag() == "GuiBezelLoading") && mGuiStack.size() > 2)
+ 			{
+diff --git a/es-core/src/components/MenuComponent.cpp b/es-core/src/components/MenuComponent.cpp
+index ccc000663..3f482b206 100644
+--- a/es-core/src/components/MenuComponent.cpp
++++ b/es-core/src/components/MenuComponent.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "components/MenuComponent.h"
+ #include "components/ButtonComponent.h"
+ #include "components/MultiLineMenuEntry.h"
+@@ -378,7 +379,7 @@ void MenuComponent::updateSize()
+ 	// GPI
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+ 	{
+-		setSize((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth(), Renderer::getScreenHeight());
++		setSize(RdsScreens::menuW(), Renderer::getScreenHeight());
+ 		return;
+ 	}
+ 
+diff --git a/es-core/src/components/OptionListComponent.h b/es-core/src/components/OptionListComponent.h
+index f1a591567..468e84c78 100644
+--- a/es-core/src/components/OptionListComponent.h
++++ b/es-core/src/components/OptionListComponent.h
+@@ -2,6 +2,7 @@
+ #ifndef ES_CORE_COMPONENTS_OPTION_LIST_COMPONENT_H
+ #define ES_CORE_COMPONENTS_OPTION_LIST_COMPONENT_H
+ 
++#include "RdsScreens.h"
+ #include "GuiComponent.h"
+ #include "Log.h"
+ #include "Window.h"
+@@ -181,9 +182,9 @@ private:
+ 			}
+ 
+ 			if (Renderer::ScreenSettings::fullScreenMenus())
+-				mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
++				mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, (Renderer::getScreenHeight() - mMenu.getSize().y()) / 2);
+ 			else
+-				mMenu.setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
++				mMenu.setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mMenu.getSize().x()) / 2, Renderer::getScreenHeight() * 0.15f);
+ 
+ 			addChild(&mMenu);
+ 		}
+diff --git a/es-core/src/guis/GuiInfoPopup.cpp b/es-core/src/guis/GuiInfoPopup.cpp
+index 3799c3f4d..d07d8a595 100644
+--- a/es-core/src/guis/GuiInfoPopup.cpp
++++ b/es-core/src/guis/GuiInfoPopup.cpp
+@@ -1,4 +1,5 @@
+-#define RGDS_MENU_W ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : (float)Renderer::getScreenWidth())
++#define RGDS_MENU_W (RdsScreens::menuW())
++#include "RdsScreens.h"
+ #include "guis/GuiInfoPopup.h"
+ 
+ #include "components/ComponentGrid.h"
+@@ -45,7 +46,7 @@ GuiInfoPopup::GuiInfoPopup(Window* window, std::string message, int duration) :
+ 	mSize[0] = mSize.x() + paddingX;
+ 	mSize[1] = mSize.y() + paddingY;
+ 
+-	float posX = RGDS_MENU_W*0.5f - mSize.x()*0.5f;
++	float posX = RdsScreens::menuX() + RGDS_MENU_W*0.5f - mSize.x()*0.5f;
+ 	float posY = Renderer::getScreenHeight() * 0.02f;
+ 
+ 	setPosition(posX, posY, 0);
+diff --git a/es-core/src/guis/GuiMsgBox.cpp b/es-core/src/guis/GuiMsgBox.cpp
+index 714b8d435..9889d8c27 100644
+--- a/es-core/src/guis/GuiMsgBox.cpp
++++ b/es-core/src/guis/GuiMsgBox.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiMsgBox.h"
+ 
+ #include "components/ButtonComponent.h"
+@@ -36,7 +37,7 @@ GuiMsgBox::GuiMsgBox(Window* window, const std::string& text,
+ 	mBackground.setCornerSize(theme->Background.cornerSize);
+ 	mBackground.setPostProcessShader(theme->Background.menuShader);
+ 
+-	const float dialogScreenWidth = (Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth();
++	const float dialogScreenWidth = RdsScreens::menuW();
+ 
+         float width = dialogScreenWidth * 0.6f; // max width
+ 	float minWidth = dialogScreenWidth * 0.3f; // minimum width
+diff --git a/es-core/src/guis/GuiTextEditPopup.cpp b/es-core/src/guis/GuiTextEditPopup.cpp
+index c3d639187..2686daeef 100644
+--- a/es-core/src/guis/GuiTextEditPopup.cpp
++++ b/es-core/src/guis/GuiTextEditPopup.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiTextEditPopup.h"
+ 
+ #include "components/ButtonComponent.h"
+@@ -45,8 +46,8 @@ GuiTextEditPopup::GuiTextEditPopup(Window* window, const std::string& title, con
+ 		textHeight *= 6;
+ 	mText->setSize(0, textHeight);
+ 
+-	setSize(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.5f, mTitle->getFont()->getHeight() + textHeight + mButtonGrid->getSize().y() + 40);
+-	setPosition((((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++	setSize(RdsScreens::menuW() * 0.5f, mTitle->getFont()->getHeight() + textHeight + mButtonGrid->getSize().y() + 40);
++	setPosition((RdsScreens::menuX() * 2 + RdsScreens::menuW() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ }
+ 
+ void GuiTextEditPopup::onSizeChanged()
+diff --git a/es-core/src/guis/GuiTextEditPopupKeyboard.cpp b/es-core/src/guis/GuiTextEditPopupKeyboard.cpp
+index c44eb62f9..4ae1de9e6 100644
+--- a/es-core/src/guis/GuiTextEditPopupKeyboard.cpp
++++ b/es-core/src/guis/GuiTextEditPopupKeyboard.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "guis/GuiTextEditPopupKeyboard.h"
+ #include "components/MenuComponent.h"
+ #include "utils/StringUtil.h"
+@@ -5,13 +6,13 @@
+ #include "LocaleES.h"
+ #include "SystemConf.h"
+ 
+-#define OSK_WIDTH (Renderer::ScreenSettings::fullScreenMenus() ? ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) : ((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.78f)
++#define OSK_WIDTH (Renderer::ScreenSettings::fullScreenMenus() ? RdsScreens::menuW() : RdsScreens::menuW() * 0.78f)
+ #define OSK_HEIGHT (Renderer::ScreenSettings::fullScreenMenus() ? Renderer::getScreenHeight() : Renderer::getScreenHeight() * 0.60f)
+ 
+-#define OSK_PADDINGX (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.02f)
+-#define OSK_PADDINGY (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) * 0.01f)
++#define OSK_PADDINGX (RdsScreens::menuW() * 0.02f)
++#define OSK_PADDINGY (RdsScreens::menuW() * 0.01f)
+ 
+-#define BUTTON_GRID_HORIZ_PADDING (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth())*0.0052083333)
++#define BUTTON_GRID_HORIZ_PADDING (RdsScreens::menuW()*0.0052083333)
+ #define BUTTON_LAYER_SIZE (4)
+ 
+ std::vector<std::vector<const char*>> kbUs {
+@@ -300,14 +301,14 @@ GuiTextEditPopupKeyboard::GuiTextEditPopupKeyboard(Window* window, const std::st
+ 		else
+ 			setSize(OSK_WIDTH, OSK_HEIGHT - mText->getFont()->getHeight() + textHeight);
+ 
+-		setPosition(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : 0.0f) + (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++		setPosition(RdsScreens::otherX() + (RdsScreens::otherW() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ 	}
+ 	else
+ 	{
+ 		//setSize(OSK_WIDTH, mTitle->getFont()->getHeight() + textHeight + 40 + (Renderer::getScreenHeight() * 0.085f) * 6);
+ 		setSize(OSK_WIDTH, OSK_HEIGHT);
+-		setPosition(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : 0.0f) + (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+-		animateTo(Vector2f(((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : 0.0f) + (((Renderer::getScreenWidth() == 2048 && Renderer::getScreenHeight() == 768) ? 1024.0f : Renderer::getScreenWidth()) - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2));
++		setPosition(RdsScreens::otherX() + (RdsScreens::otherW() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++		animateTo(Vector2f(RdsScreens::otherX() + (RdsScreens::otherW() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2));
+ 	}
+ }
+ 

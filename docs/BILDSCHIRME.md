@@ -17,15 +17,15 @@ Thor oder RG DDS (ungleiche Größen) gehen so nicht.
 ES kennt die Bildschirme als **eigene Bereiche** (Position, Größe). Menüs und Themes beziehen sich
 auf einen Bereich statt auf feste Zahlen. Ein neues Gerät = eine neue Konfiguration, kein neuer Patch.
 
-## Stufe A – Bereiche zentral (kleiner Umbau, gleiches Verhalten)
+## Stufe A – Bereiche zentral (kleiner Umbau, gleiches Verhalten) – umgesetzt: Patch 004
 
 - Neu in es-core: `RdsScreens` mit `top()`, `bottom()`, `menu()` → jeweils Rechteck (x, y, b, h).
 - Quelle: `/storage/.config/retrodualstation/screens.cfg`, z. B.
   ```
-  # RG DS Plus
+  # RG DS Plus (Fenster: links = oben, rechts = unten)
   top=0,0,1024,768
   bottom=1024,0,1024,768
-  menu=bottom
+  menu=top
   ```
   Fehlt die Datei: aus der Fenstergröße ableiten (2048 × 768 → zwei Hälften, wie heute;
   sonst ein Bildschirm = ganzes Fenster → Verhalten wie Original-ES).
@@ -33,6 +33,8 @@ auf einen Bereich statt auf feste Zahlen. Ein neues Gerät = eine neue Konfigura
   Dabei wird auch die **Position** des Menübereichs berücksichtigt (heute nur die Breite).
 - Der Installer schreibt `screens.cfg` passend zum erkannten Gerät.
 - Test: RG DS Plus muss sich exakt wie v12 verhalten.
+- Stand Patch 004: Breiten und X-Positionen kommen aus den Bereichen; Höhen/Y nutzen noch die
+  Fensterhöhe (reicht für gleich hohe Bildschirme, z. B. RG DS). `screens.cfg` schreibt der Installer noch nicht.
 
 ## Stufe B – Themes bekommen die Bereiche
 
