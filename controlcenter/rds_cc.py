@@ -1535,6 +1535,7 @@ GAME_ACTIONS = {
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("quit", "Beenden")],
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("quit", "Beenden")],
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("shot", "Screenshot"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
 # später: ("help", "Steuerung") – erklärt Tasten und Bedienung des jeweiligen Emulators
@@ -1542,6 +1543,17 @@ GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
 SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
+
+
+def nds_state_newest(game):
+    """Neuester Spielstand eines NDS-Spiels in /storage/roms/savestates/nds (DSperate/DraStic)."""
+    rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
+    stem = os.path.splitext(os.path.basename(rom))[0]
+    if not stem:
+        return None
+    files = [f for f in glob.glob(os.path.join("/storage/roms/savestates/nds", glob.escape(stem) + "*"))
+             if not f.endswith((".png", ".jpg"))]
+    return max(files, key=os.path.getmtime) if files else None
 
 
 def game_actions(game):
@@ -3197,6 +3209,11 @@ class ControlCenter:
                 return tr("Kein Spielstand")
             n = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
             return "Slot %d  ·  %s" % (n, when(self._slot_file(n)))
+        if g.get("emu") == "DSperate":
+            st = nds_state_newest(g)
+            if st:
+                return tr("Zuletzt") + "  ·  " + when(st)
+            return tr("Kein Spielstand") if key == "load" else ""
         if g.get("emu") == "DraStic":
             rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
             dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
@@ -4359,6 +4376,20 @@ def main():
                     out = os.path.join(SHOT_DIR, base + time.strftime("-%Y%m%d-%H%M%S.png"))
                     if subprocess.run(["grim", "-o", TOP_OUTPUT, out], timeout=10).returncode == 0:
                         msg = "Screenshot gespeichert"
+                elif emu == "DSperate":
+                    # DSperate-Kürzel: Modifier „guide“ (Anbernic-Taste) + R2 speichern / + L2 laden
+                    st = nds_state_newest(g)
+                    before = os.path.getmtime(st) if st else 0
+                    code = 313 if key == "save" else 312
+                    inject_keys([(316, 1), 0.08, (code, 1), 0.12, (code, 0), 0.05, (316, 0)])
+                    ok = key == "load"
+                    for _ in range(25):
+                        time.sleep(0.1)
+                        st = nds_state_newest(g)
+                        if key == "save" and st and os.path.getmtime(st) > before:
+                            ok = True
+                            break
+                    msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 elif emu == "DraStic":
                     # kurz auftauen und Taste einspeisen (ohne Grab erreicht sie den Emulator)
                     rom = g.get("rom") or rom_of(g["pid"]) or ""
