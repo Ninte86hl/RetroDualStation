@@ -502,7 +502,7 @@ Modifier ist überall die **Anbernic-Taste** (RetroArch Taste 10, DSperate `guid
 | Y | FPS | `input_fps_toggle_btn = 3` | `fps = mod+y` |
 | Start | Beenden | `input_exit_emulator_btn = 9` | `quit = mod+start` |
 | ◀ / ▶ | Slot − / + | `input_state_slot_decrease/increase_btn = 15/16` | `slot_prev/next = mod+dpleft/dpright` |
-| ▲ | Bildschirme tauschen | – | `screen_swap = mod+dpup` |
+| ▲ | Bildschirme tauschen | – | `screen_swap = mod+dpup` (wirkt bei DSperate nicht, 21.10.2026 – nicht wichtig) |
 | Select / ▼ | Layout vor / zurück | – | `layout_next = mod+back`, `layout_prev = mod+dpdown` |
 
 R1 ist am leichtesten erreichbar → Vorspulen; Speichern/Laden auf den Triggern verhindert versehentliches Auslösen.
