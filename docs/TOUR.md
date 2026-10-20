@@ -82,6 +82,8 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **Select** | Batch search: all games with missing artwork, one after another |
 | | **Y** | Search a game across all systems |
 | | **X** | Settings (API key, backups, merge multi-disc games as M3U, cache, quick guide) |
+| Game list | **X** | Open the editor for this game directly |
+| | **Y** | Filter: all · missing · no artwork |
 | Game view | **◀ ▶** | Choose image |
 | | **L / R** | Artwork style |
 | | **A** | Take image |

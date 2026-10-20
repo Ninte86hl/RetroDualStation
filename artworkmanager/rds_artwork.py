@@ -203,6 +203,8 @@ def fade(P, x, y, w, h):
 # Übersetzt wird beim Zeichnen (AmPen), damit der übrige Code deutsch bleiben kann.
 EN_AM = {
     "Leerzeichen": "Space", "Abbrechen": "Cancel",
+    "Filter": "Filter", "Keine Spiele für diesen Filter": "No games for this filter",
+    "Spieleliste": "Game list", "Filter: alle · fehlende · keine Artworks": "Filter: all · missing · no artwork",
     "Editor: 1:1-Bild mit iiSU-Rahmen gestalten": "Editor: create a 1:1 image with iiSU border",
     "Editor – Cartridge": "Editor – Cartridge", "1:1 mit iiSU-Rahmen": "1:1 with iiSU border",
     "Rahmen": "Border", "Zoom": "Zoom", "Position": "Position", "Größe": "Size", "Zurücksetzen": "Reset",
@@ -292,6 +294,8 @@ EN_AM = {
     "Speichern nicht vollständig bestätigt": "Saving could not be fully verified",
 }
 EN_AM_PATTERNS = [
+    (r"^(.*) · (alle|fehlende|keine Artworks)$",
+     lambda m: f"{m[1]} · " + {"alle": "all", "fehlende": "missing", "keine Artworks": "no artwork"}[m[2]]),
     (r"^(\d+) gefunden$", lambda m: f"{m[1]} found"),
     (r"^(\d+) mehrteilige Spiele zusammenfassen\?$", lambda m: f"Merge {m[1]} multi-disc games?"),
     (r"^(\d+) Spiele zusammengefasst$", lambda m: f"{m[1]} games merged"),
@@ -451,6 +455,7 @@ class App:
         self.saving = None                            # Ladebildschirm beim Speichern
         self.saving_until = 0.0
         self.settings_from = 0
+        self.gfilter = 0                              # Spieleliste: 0 alle · 1 fehlende · 2 keine Artworks
         self._md_cache = None                          # gefundene mehrteilige Spiele
         self.intro = 0                                # Seite der Einführung beim ersten Start
         self.origin = "games"                         # wohin die Spielansicht zurückführt
@@ -596,7 +601,8 @@ class App:
             self.scroll = max(0, self.sel - ROWS + 1)
         else:
             self.view = "games"
-            self.sel = next((n for n, g in enumerate(self.games) if g[0] == self.last_rom), self.sel)
+            self.sel = next((n for n, g in enumerate(self.vgames()) if g[0] == self.last_rom),
+                            min(self.sel, max(0, len(self.vgames()) - 1)))
             self.scroll = max(0, min(self.scroll, self.sel), self.sel - ROWS + 1)
         self.top_dirty = self.dirty = True
 
@@ -693,10 +699,34 @@ class App:
             self.want_previews()
         self.work("Artworks werden gesucht …", go, then=then)
 
+    FILTERS = ["alle", "fehlende", "keine Artworks"]
+
+    def vgames(self):
+        """Spieleliste nach Filter: alle · fehlende (rot und gelb) · nur rote."""
+        if self.gfilter == 1:
+            return [g for g in self.games if g[2] < 3]
+        if self.gfilter == 2:
+            return [g for g in self.games if g[2] == 0]
+        return self.games
+
+    def real_index(self, i):
+        """Index in der sichtbaren Liste → Index in self.games."""
+        vis = self.vgames()
+        return self.games.index(vis[i]) if 0 <= i < len(vis) else 0
+
+    def next_filter(self):
+        rom = self.vgames()[self.sel][0] if self.vgames() else None
+        self.gfilter = (self.gfilter + 1) % len(self.FILTERS)
+        vis = self.vgames()
+        self.sel = next((n for n, g in enumerate(vis) if g[0] == rom), 0)
+        self.scroll = max(0, self.sel - ROWS + 1)
+        if not vis:
+            self.say("Keine Spiele für diesen Filter")
+
     def game_to_editor(self, i=None):
         """X in der Spieleliste: Spiel öffnen und direkt in den Editor springen."""
-        i = self.sel if i is None else i
-        if not self.games:
+        i = self.real_index(self.sel if i is None else i)
+        if not self.vgames():
             return
         self.origin = "games"
 
@@ -1029,7 +1059,7 @@ class App:
 
     # -- Bedienung --
     def list_len(self):
-        return {"systems": len(self.systems), "games": len(self.games), "search": len(self.results),
+        return {"systems": len(self.systems), "games": len(self.vgames()), "search": len(self.results),
                 "settings": len(self.setting_rows()), "gsearch": len(self.gresults),
                 "restore": len(self.backups)}.get(self.view, 0)
 
@@ -1060,9 +1090,9 @@ class App:
             self.pick_global(i)
         elif self.view == "restore" and self.backups:
             self.ask_restore(i)
-        elif self.view == "games" and self.games:
+        elif self.view == "games" and self.vgames():
             self.origin = "games"
-            self.open_game(i)
+            self.open_game(self.real_index(i))
         elif self.view == "search" and self.results:
             self.pick_result(i)
 
@@ -1120,7 +1150,8 @@ class App:
                 ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else
                 ("X", "Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
-                ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else ("Y", "", None)]
+                ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else
+                ("Y", "Filter", self.next_filter) if self.view == "games" else ("Y", "", None)]
 
     # -- Spielsuche über alle Systeme --
     def open_global_search(self):
@@ -1624,7 +1655,8 @@ class App:
             ([("Start", "Einzelsuche: ein Spiel aus der Spieleliste bearbeiten")], False),
             ([("Select", "Mehrfachsuche: alle Spiele mit fehlenden Artworks nacheinander")], False),
             ([("Y", "Spiel suchen über alle Systeme"), ("X", "Einstellungen")], False),
-            ("", False),
+            ("Spieleliste", True),
+            ([("X", "Editor"), ("Y", "Filter: alle · fehlende · keine Artworks")], False),
             ("Spielansicht", True),
             ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
             ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Ansicht oben")], False),
@@ -1766,7 +1798,9 @@ class App:
             rows = [(f"{b['name']} · {b['when']}", f"{b['files']} Artworks", None) for b in self.backups]
         elif self.view == "games":
             title, hint = self.system["name"], hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
-            rows = [(name, None, st) for _rom, name, st in self.games]
+            if self.gfilter:
+                title = f"{title} · {self.FILTERS[self.gfilter]}"
+            rows = [(name, None, st) for _rom, name, st in self.vgames()]
             legend = True
         else:
             title, hint = f"Suche: {self.query}", hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")

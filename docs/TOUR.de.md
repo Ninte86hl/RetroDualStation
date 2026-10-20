@@ -83,6 +83,8 @@ im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt d
 | | **Select** | Mehrfachsuche: alle Spiele mit fehlenden Artworks nacheinander |
 | | **Y** | Spiel über alle Systeme suchen |
 | | **X** | Einstellungen (API-Key, Sicherungen, mehrteilige Spiele per M3U zusammenfassen, Zwischenspeicher, Kurzanleitung) |
+| Spieleliste | **X** | Direkt in den Editor für dieses Spiel |
+| | **Y** | Filter: alle · fehlende · keine Artworks |
 | Spielansicht | **◀ ▶** | Bild wählen |
 | | **L / R** | Artwork-Stil |
 | | **A** | Bild übernehmen |
