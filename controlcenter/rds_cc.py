@@ -1085,14 +1085,15 @@ TOUR = [
                 "Holding Power sends the device to sleep immediately.")]},
     {"title": ("Artwork Manager", "Artwork Manager"),
      "img": ("tour-artwork-5.png", "tour-artwork-5.png"),
-     "lines": [("Unter Ports: ergänzt Boxart, Cartridge und Image für deine Spiele.",
-                "In Ports: adds boxart, cartridge and image to your games."),
-               ("Voraussetzung: eine Spieleliste (gamelist.xml) – einmal im",
-                "Requirement: a game list (gamelist.xml) – scrape your games once"),
-               ("Single-Screen-Modus mit dem Scraper anlegen.",
-                "with the scraper in single-screen mode."),
-               ("Viel Spaß mit RetroDualStation!", "Have fun with RetroDualStation!")],
-     "keys": [("Start", ("Einzelsuche", "single search")), ("Select", ("Mehrfachsuche", "batch search"))]},
+     "lines": [("Unter Ports: Boxart, Cartridge und Image für deine Spiele – mit Editor",
+                "In Ports: boxart, cartridge and image for your games – with an editor"),
+               ("für 1:1-Bilder mit iiSU-Rahmen, eigenen Bildern und M3U für Mehr-CD-Spiele.",
+                "for 1:1 images with iiSU border, your own images and M3U for multi-disc games."),
+               ("Voraussetzung: eine Spieleliste – einmal im Single-Screen-Modus scrapen.",
+                "Requirement: a game list – scrape your games once in single-screen mode.")],
+     "keys": [("Start", ("Einzelsuche", "single search")), ("Select", ("Mehrfachsuche", "batch search")),
+              ("X", ("Editor (Spieleliste und Spielansicht)", "editor (game list and game view)")),
+              ("Y", ("Filter (Spieleliste) / Spiel suchen", "filter (game list) / search game"))]},
 ]
 
 
