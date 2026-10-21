@@ -5477,6 +5477,9 @@ def main():
                 cc.toast_now = cc.toasts.pop(0)
                 cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 1.5)
                 ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
+                if cc.toast_now["kind"] == "cheevo":       # Erfolg: doppelter Impuls („ta-dam“)
+                    haptic("open")
+                    threading.Timer(0.22, haptic, args=("open",)).start()
             if ui.view == "cc" and cc.page == 1 and (cc.gbusy or (cc.gmsg and time.monotonic() - cc.gmsg[1] < 4.5)):
                 state["dirty"] = True
             if home_down["pending"] is not None \
