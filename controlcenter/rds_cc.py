@@ -1265,7 +1265,7 @@ CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gam
 SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
 
 
-HAPTIC = {"open": (0x7000, 60), "tap": (0x5000, 35)}   # Stärke, Dauer (ms) – „open“ am Gerät ausgewählt
+HAPTIC = {"open": (0xFFFF, 110), "tap": (0xC000, 70)}   # Stärke, Dauer (ms) – kleine Motoren brauchen Anlaufzeit
 _haptic_fd = [None]
 
 

@@ -573,6 +573,6 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
 
 ### Vibration (21.10.2026)
 - Der eingebaute Joypad kann Force Feedback (`FF_RUMBLE`); das CC legt per `EVIOCSFF` einen kurzen Effekt an und spielt ihn mit `EV_FF` ab.
-- Stärken (am Gerät ausgewählt): **Öffnen** 0x7000 / 60 ms (CC, Power-Menü, Gameswitcher), **Antippen** 0x5000 / 35 ms
+- Stärken (am Gerät ausgewählt): **Öffnen** 0xFFFF / 110 ms (CC, Power-Menü, Gameswitcher), **Antippen** 0xC000 / 70 ms
   (Wechsel im Gameswitcher, Aktion auf der Seite „Spiel“, Bestätigen im Power-Menü).
 - Schalter oben im CC (Symbol Gerät mit Wellen, durchgestrichen = aus), gespeichert als `"haptics"` in `controlcenter.json`.
