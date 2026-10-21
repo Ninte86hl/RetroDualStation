@@ -212,6 +212,12 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
                -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' \
                -e 's/^video_font_enable = .*/video_font_enable = "false"/' \
                -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' "$RACFG"
+        # Netzbefehle (Port 55355, nur lokal genutzt): Kontrollcenter/Gameswitcher speichern, laden
+        # und beenden darüber – bei frischem ROCKNIX sind sie aus
+        for kv in 'network_cmd_enable=true' 'quit_press_twice=false'; do
+            k="${kv%%=*}"; v="${kv#*=}"
+            if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
+        done
         log "RetroArch: Rueckfragen und Einblendungen aus (Erfolgsmeldung zeigt das Kontrollcenter)"
     fi
     # Einheitliche Kürzel (Anbernic + R1 Vorspulen, R2 Speichern, L2 Laden, X Menü, Y FPS, Start Beenden).
