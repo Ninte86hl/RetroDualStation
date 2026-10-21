@@ -1143,8 +1143,21 @@ def quit_game(game):
     log("Spiel beenden:", game["emu"], game["pid"])
     if game["emu"] == "RetroArch" and ra_command("QUIT") is not None:
         ra_command("QUIT")   # zweimal: RetroArch fragt sonst ggf. nach
+
+        def fallback(pid=game["pid"]):
+            # UDP meldet keinen Fehler, wenn RetroArch nicht zuhört (Netzbefehle aus, angehalten …):
+            # ist der Prozess nach 2,5 s noch da, hart beenden (wie bei den anderen Emulatoren)
+            time.sleep(2.5)
+            if os.path.exists("/proc/%d" % pid):
+                log("RetroArch reagiert nicht auf QUIT – beende per Signal")
+                _terminate(pid)
+        threading.Thread(target=fallback, daemon=True).start()
         return
-    for p in proc_tree(game["pid"]):
+    _terminate(game["pid"])
+
+
+def _terminate(pid):
+    for p in proc_tree(pid):
         try:
             os.kill(p, signal.SIGCONT)
             os.kill(p, signal.SIGTERM)
