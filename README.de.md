@@ -7,8 +7,6 @@ Dual-Screen-EmulationStation für das **Anbernic RG DS Plus**, aufgebaut auf **R
 
 🇬🇧 [English version](README.md) · 🧭 [Kurze Tour](docs/TOUR.de.md)
 
-<p align="center"><img src="docs/screenshots/canvas-system.png" alt="canvas-ds mit RetroDualStation: Systemansicht auf beiden Bildschirmen" width="360"></p>
-
 ---
 
 ## Was ist RetroDualStation?
@@ -17,6 +15,48 @@ ROCKNIX zeigt EmulationStation auf dem RG DS Plus normalerweise auf einem Bildsc
 RetroDualStation nutzt **beide Bildschirme** (2048 × 768): oben Artwork und Video,
 Spieleliste und Menüs dort, wo sie hingehören – auch nach Spielen und Neustarts.
 Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit einem Tipp.
+
+## Galerie
+
+*Zum Umschalten auf einen Titel tippen.*
+
+<details open>
+<summary><b>Spieleliste – canvas-ds</b></summary>
+
+<p align="center"><img src="docs/screenshots/canvas-view-gamecarousel.png" alt="Spieleliste – canvas-ds" width="480"></p>
+
+Fünf Ansichten für zwei Bildschirme, oben Hero-Bild und Video. → [mehr](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Themes-DE)
+
+</details>
+
+<details>
+<summary><b>Kontrollcenter</b></summary>
+
+<p align="center"><img src="docs/screenshots/control-center-main.png" alt="Kontrollcenter" width="480"></p>
+
+**Anbernic-Taste** – Schnelleinstellungen, Speicherplätze mit Bild, Vorspulen, Power-Menü – über jedem Spiel. → [mehr](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Kontrollcenter)
+
+</details>
+
+<details>
+<summary><b>Gameswitcher</b></summary>
+
+<p align="center"><img src="docs/screenshots/game-switcher.png" alt="Gameswitcher" width="480"></p>
+
+**Home halten** – zwischen den letzten Spielen wechseln und genau dort weitermachen. → [mehr](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Gameswitcher)
+
+</details>
+
+<details>
+<summary><b>RetroAchievements</b></summary>
+
+<p align="center"><img src="docs/tour/tour-ra.png" alt="RetroAchievements" width="480"></p>
+
+Fortschritt und alle Erfolge im Kontrollcenter, Meldung oben über dem Spiel. → [mehr](https://github.com/Ninte86hl/rocknix-dualstation/wiki/RetroAchievements-DE)
+
+</details>
+
+📖 Alle Funktionen, Tasten und Tipps: **[Wiki](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Home-DE)** · [Roadmap](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Roadmap-DE) · [Gut zu wissen](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Gut-zu-wissen)
 
 ## Was ist anders?
 
@@ -27,22 +67,6 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 | Artwork | Scraper-Bilder | Boxart, Icon und Hero pro Spiel über den **Artwork Manager** – direkt am Gerät |
 | Unterer Bildschirm im Spiel | nur RetroArch-Touchmenü | **Kontrollcenter** überall – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Zurück zum Original | – | ein Tipp unter **Ports** |
-
-## Highlights
-
-- **[Kontrollcenter](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Kontrollcenter)** – Anbernic-Taste: Schnelleinstellungen, Speicherplätze mit Bild, Vorspulen, Power-Menü – über jedem Spiel
-- **[Gameswitcher](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Gameswitcher)** – Home halten: zwischen den letzten Spielen wechseln und weitermachen
-- **[RetroAchievements](https://github.com/Ninte86hl/rocknix-dualstation/wiki/RetroAchievements-DE)** – Fortschritt im Kontrollcenter, Meldung oben über dem Spiel
-- **[canvas-ds](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Themes-DE)** – fünf Spielelisten-Ansichten für zwei Bildschirme
-- **[Artwork Manager](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Artwork-Manager-DE)** – Boxart, Icon und Hero direkt am Gerät
-- **Spielesuche** – **Y** in der Systemansicht · **Kurze Tour** – **Select** im Kontrollcenter
-
-| | | |
-|:-:|:-:|:-:|
-| <img src="docs/screenshots/control-center-main.png" alt="Kontrollcenter"> | <img src="docs/screenshots/game-switcher.png" alt="Gameswitcher"> | <img src="docs/screenshots/canvas-view-gamecarousel.png" alt="canvas-ds"> |
-| **Kontrollcenter** | **Gameswitcher** | **canvas-ds** |
-
-📖 Alle Funktionen, Tasten und Tipps: **[Wiki](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Home-DE)** · [Roadmap](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Roadmap-DE) · [Gut zu wissen](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Gut-zu-wissen)
 
 ## Installation
 
