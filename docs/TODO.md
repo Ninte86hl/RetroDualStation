@@ -193,6 +193,9 @@ Danach abwägen, was als Nächstes ausgebaut wird.
   – Favorit: Variante 3 „Verwoben“ mit Dual-Screen-Handheld
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
 
+### Nächste Version (Wunsch 21.10.2026)
+- [ ] ES-Quick-Access/Beenden-Menü: **FAST SHUTDOWN SYSTEM** im Dual-Modus ausblenden (doppelte Option neben *Shutdown system*). Kleiner ES-Patch 010: Eintrag in `GuiMenu.cpp` (Beenden-Menü) nur ohne `RdsScreens::active()` anlegen.
+
 ### Technik & Wartung (beschlossen 21.10.2026)
 - [ ] **v14: RAM sparen im Kontrollcenter/Gameswitcher** – Bildercache (`Pen._png`) beim Schließen leeren und auf ~20 Bilder begrenzen; Zeichenpuffer (`_mm`, oben/Meldungen) beim Verbergen freigeben. Vorher/nachher messen: `ps -o pid,rss,args | grep "[r]ds_cc"`
 - [ ] **Module statt einer Datei** – `rds_cc.py` (~5.500 Zeilen) erst aufteilen, wenn ein großes Feature ansteht (Einstellungsmenü oder normales RG DS): z. B. wayland · eingabe · emulatoren · kontrollcenter · gameswitcher · achievements · ui. Neue Teile gleich als eigenes Modul.
