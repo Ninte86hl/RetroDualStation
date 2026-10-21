@@ -3577,8 +3577,12 @@ class ControlCenter:
         P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 18, 130, 118, T["muted"], raw=True)
         label = tr("Hardcore an") if hc else tr("Softcore")
         pw = P.width(label, 18, bold=True, raw=True) + 48
-        P.rrect(1215 - pw, 70, pw, 54, 27, mix(T["tile"], A, 0.35 if hc else 0.12))
-        P.text(label, 18, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+        if hc:   # Hardcore: Akzentfarbe mit weißer Schrift – lesbar in Hell und Dunkel
+            P.rrect(1215 - pw, 70, pw, 54, 27, A)
+            P.text(label, 18, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+        else:
+            P.rrect(1215 - pw, 70, pw, 54, 27, T["pill"])
+            P.text(label, 18, 1215 - pw / 2, 104, T["text"], bold=True, align="c", raw=True)
         # Spielkarte
         rows, unl = self._ra_rows()
         P.rrect(45, 165, 1170, 190, 28, T["card"])
