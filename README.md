@@ -2,7 +2,7 @@
 
 **One system, two screens, everything in sync.**
 
-Dual-screen EmulationStation for the **Anbernic RG DS Plus**, built on **ROCKNIX**.
+Dual-screen EmulationStation for the **Anbernic RG DS Plus** and **RG DS**, built on **ROCKNIX**.
 *Formerly “ROCKNIX DualStation”.*
 
 🇩🇪 [Deutsche Version](README.de.md) · 🧭 [Quick tour](https://github.com/Ninte86hl/RetroDualStation/wiki/Tour)
@@ -13,8 +13,8 @@ Dual-screen EmulationStation for the **Anbernic RG DS Plus**, built on **ROCKNIX
 
 ## What is RetroDualStation?
 
-Stock ROCKNIX runs EmulationStation on one screen of the RG DS Plus.
-RetroDualStation stretches it across **both screens** (2048 × 768): artwork and video on top,
+Stock ROCKNIX runs EmulationStation on one screen of the RG DS Plus and RG DS.
+RetroDualStation stretches it across **both screens**: artwork and video on top,
 your game list and menus where they belong – and it stays that way after games and reboots.
 It is a free, open add-on: install it via **Ports**, switch back to stock ES with one tap.
 

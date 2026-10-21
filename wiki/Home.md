@@ -1,6 +1,6 @@
 # RetroDualStation Wiki
 
-**One system, two screens, everything in sync.** Dual-screen EmulationStation for the **Anbernic RG DS Plus**, built on **ROCKNIX**.
+**One system, two screens, everything in sync.** Dual-screen EmulationStation for the **Anbernic RG DS Plus** and **RG DS**, built on **ROCKNIX**.
 
 🇩🇪 [Deutsch](Home-DE)
 

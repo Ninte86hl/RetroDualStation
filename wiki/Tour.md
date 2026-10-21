@@ -2,7 +2,7 @@
 
 *[Deutsche Fassung](Tour-DE)*
 
-RetroDualStation turns ROCKNIX on the Anbernic RG DS Plus into **one system with two screens**.
+RetroDualStation turns ROCKNIX on the Anbernic RG DS Plus and RG DS into **one system with two screens**.
 This tour shows the additions on top of EmulationStation: the two special buttons, the
 Control Center, the Game switcher, the Power menu and the Artwork Manager.
 

@@ -11,7 +11,7 @@
 | ✅ | Game search with **Y** in the system view, quick tour *(in v12)* |
 | ✅ | Control Center: game page – save slots with pictures, emulator menu, fast forward, button layout; unified shortcuts *(in v13)* |
 | ✅ | RetroAchievements – overview and unlock notification *(in v13)* |
-| 🔜 **next** | Support for the original RG DS |
+| ✅ | Support for the original RG DS, device-neutral themes (canvas rds, dii-ess-aye rds) *(in v14)* |
 | 🔜 | ScreenScraper in dual-screen mode (developer access requested) |
 | 💭 maybe | Settings menu like on a smartphone, opened from the Control Center |
 | 💭 maybe | User profiles with their own saves |

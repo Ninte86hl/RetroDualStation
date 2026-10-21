@@ -6,6 +6,6 @@
 - **PS1:** Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - **DS:** DraStic und DSperate funktionieren; RetroArch-DS-Cores sind ungetestet.
 - **Touch in DraStic reagiert nicht?** **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).
-- **Zurück zum Original:** *Ports → RGDS Single-Screen ES*; *Uninstall* stellt Original-ES samt Theme wieder her – Spiele, Medien, Spielelisten und Spielstände bleiben unberührt.
+- **Zurück zum Original:** *Ports → RDS Single-Screen*; *Uninstall* stellt Original-ES samt Theme wieder her – Spiele, Medien, Spielelisten und Spielstände bleiben unberührt.
 
 Technik und manuelle Installation: [TECHNIK.md](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TECHNIK.md)
