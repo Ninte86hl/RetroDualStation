@@ -95,8 +95,15 @@ Technical details and manual installation: [docs/TECHNICAL.md](docs/TECHNICAL.md
 
 ## Credits & license
 
-Built on the work of the ROCKNIX and Batocera teams, the original EmulationStation,
-toniremi's canvas-ds and beebono's dii-ess-aye. Full list: [CREDITS.md](CREDITS.md). Thank you! 🙏
+A special thank-you goes to the two theme creators – RDS wouldn't look like this without them:
+
+- **[beebono](https://github.com/beebono)** for [dii-ess-aye](https://github.com/beebono/dii-ess-aye) – the dual-screen theme for the RG DS that RDS started from. Included as **dii-ess-aye rds**.
+- **[toniremi](https://github.com/toniremi)** for [canvas-ds](https://github.com/toniremi/canvas-ds) – RDS's default theme with five views, hero image and video. Included as **canvas rds**, shared with his permission.
+
+Both themes keep their names on purpose. Thank you! 🙏
+
+Also built on the work of the ROCKNIX and Batocera teams and the original EmulationStation.
+Full list: [CREDITS.md](CREDITS.md).
 
 Scripts and documentation: MIT ([LICENSE](LICENSE)). The ES patch modifies
 [ROCKNIX/emulationstation-next](https://github.com/ROCKNIX/emulationstation-next) (MIT).

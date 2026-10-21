@@ -1,6 +1,6 @@
 # Credits
 
-ROCKNIX DualStation is only a small layer on top of the work of many people.
+RetroDualStation (RDS) is only a small layer on top of the work of many people.
 Thank you to everyone who made it possible.
 
 ## Operating system and EmulationStation
@@ -15,13 +15,20 @@ Thank you to everyone who made it possible.
 - **Alec "Aloshi" Lofquist and contributors** – the original
   [EmulationStation](https://emulationstation.org).
 
-## Theme
+## Themes – the two that made RDS possible
 
-- **[beebono](https://github.com/beebono)** – the original
-  [dii-ess-aye](https://github.com/beebono/dii-ess-aye) dual-screen theme
-  for the RG DS (and AYN Thor), which this mod is designed around.
-- The **RG DS Plus variant** (`dii-ess-aye-rds`) is an adaptation of
-  beebono's theme by [Ninte86hl](https://github.com/Ninte86hl).
+RDS ships two themes, and both carry their creators' names on purpose:
+**dii-ess-aye rds** and **canvas rds** are our adaptations, but the ideas, the designs and
+countless hours of work behind them belong to beebono and toniremi.
+
+### dii-ess-aye rds – thanks to beebono
+
+- **[beebono](https://github.com/beebono)** created
+  [dii-ess-aye](https://github.com/beebono/dii-ess-aye), a dual-screen theme
+  for the RG DS (and AYN Thor). RDS started from it: the game list below and artwork
+  above, on one device with two screens – this theme showed how good that can look.
+  beebono also added a license so the adaptation can be shared – thank you!
+- `dii-ess-aye-rds` is the adaptation for RDS by [Ninte86hl](https://github.com/Ninte86hl).
 - Credited in the theme itself: **Ant ([anthonycaccese](https://github.com/anthonycaccese))**
   for the status and slot icons, **Jeod ([JeodC](https://github.com/JeodC))**
   for testing, **Zoidburg13** for the system icons.
@@ -33,12 +40,14 @@ included in [`theme/dii-ess-aye-rds/`](theme/dii-ess-aye-rds/)
 with the original license and copyright notice. The original also credits
 **Valve** for the Steam logo (Wikimedia Commons).
 
-## Theme: canvas-ds (optional overlay)
+### canvas rds – thanks to toniremi
 
-- **[toniremi](https://github.com/toniremi)** – [canvas-ds](https://github.com/toniremi/canvas-ds),
-  the dual-screen theme the overlay in
-  [`theme/canvas-rds-overlay/`](theme/canvas-rds-overlay/) adapts.
-  Thank you for allowing the RG DS Plus overlay to be shared!
+- **[toniremi](https://github.com/toniremi)** created [canvas-ds](https://github.com/toniremi/canvas-ds),
+  the beautiful dual-screen theme that is RDS's default look: five game list views, hero images
+  and video on top. toniremi allowed the adaptation to be shared and bundled with RDS –
+  thank you for your generosity and for a theme that makes two screens feel natural!
+- `canvas-rds` is canvas-ds with a small overlay for RDS
+  ([`theme/canvas-rds-overlay/`](theme/canvas-rds-overlay/)).
 - **[Siddy212](https://github.com/Siddy212)** – [Canvas (ES version)](https://github.com/Siddy212/canvas-es),
   the original theme canvas-ds is built on.
 - **[fagnerpc](https://github.com/fagnerpc)** – original artwork and layouts.
@@ -56,7 +65,7 @@ comes from the original project.
 
 ## Hardware
 
-- **Anbernic** – for the RG DS Plus.
+- **Anbernic** – for the RG DS and RG DS Plus.
 
 ---
 
