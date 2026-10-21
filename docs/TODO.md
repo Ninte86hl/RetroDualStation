@@ -140,7 +140,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
         + **CC anpassen** wie Schnelleinstellungen am Handy: welche Kacheln/Regler sichtbar,
         Reihenfolge; auf der Seite „Spiel“ wählen, welche Kürzel/Funktionen (Savestate laden/
         speichern, Screenshot, Vorspulen …) angezeigt werden
-      - Darstellung folgt Hell/Dunkel und Akzentfarbe des CC (Mockup: docs/kontrollcenter/einstellungen-mockup.png)
+      - Darstellung folgt Hell/Dunkel und Akzentfarbe des CC (Mockup: docs/kontrollcenter/einstellungen-mockup.png; Dual-Screen-Entwurf 21.10.2026: einstellungen-mockup-v2.png, tools/settings-mockup.py)
       - später: RetroAchievements-Anmeldung, Benutzerwechsel
       - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
       - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
