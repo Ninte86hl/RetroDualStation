@@ -7,6 +7,12 @@ Dual-screen EmulationStation for the **Anbernic RG DS Plus**, built on **ROCKNIX
 
 🇩🇪 [Deutsche Version](README.de.md) · 🧭 [Quick tour](https://github.com/Ninte86hl/RetroDualStation/wiki/Tour)
 
+<p align="center">
+  <img src="docs/screenshots/canvas-system.png" alt="System view" width="260">
+  <img src="docs/screenshots/canvas-view-gamecarousel.png" alt="Game list" width="260">
+  <img src="docs/screenshots/control-center-main.png" alt="Control Center over a game" width="260">
+</p>
+
 ---
 
 ## What is RetroDualStation?
