@@ -6,7 +6,7 @@
 PORTS="${1:-/storage/roms/ports}"
 SRC="$PORTS/.canvas-ds"
 THEMEDIR=/storage/.config/emulationstation/themes
-NAME=canvas-ds-rgds-plus
+NAME=canvas-rds
 LOG=/storage/dualstation-canvas-install.log
 
 log()    { echo "$(date '+%F %T') $*" >> "$LOG"; }

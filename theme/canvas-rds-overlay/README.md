@@ -69,13 +69,13 @@ screens).
 
 Requires ROCKNIX DualStation to be installed.
 
-1. Download **`canvas-ds-rgds-plus-v9.zip`** from the
+1. Download **`canvas-rds-v9.zip`** from the
    [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest)
    (about 180 MB – the complete theme including toniremi's artwork).
 2. Unpack it into the **`ports`** folder of your ROMs.
 3. Start **Ports → Install canvas-ds theme**. ES restarts and shows a
    message when it is done.
-4. Select **canvas-ds-rgds-plus** under *User Interface Settings → Theme*.
+4. Select **canvas-rds** under *User Interface Settings → Theme*.
 
 The ZIP is built with `tools/make-canvas-installer.py`, which takes
 canvas-ds from toniremi's repository and applies this overlay.
@@ -86,19 +86,19 @@ canvas-ds from toniremi's repository and applies this overlay.
 On your computer:
 
 ```bash
-git clone --depth 1 https://github.com/toniremi/canvas-ds.git canvas-ds-rgds-plus
+git clone --depth 1 https://github.com/toniremi/canvas-ds.git canvas-rds
 ```
 ```bash
-cp -r theme/canvas-ds-rgds-plus-overlay/_inc theme/canvas-ds-rgds-plus-overlay/*.xml canvas-ds-rgds-plus/
+cp -r theme/canvas-rds-overlay/_inc theme/canvas-rds-overlay/*.xml canvas-rds/
 ```
 ```bash
-rm -rf canvas-ds-rgds-plus/.git
+rm -rf canvas-rds/.git
 ```
 ```bash
-scp -r canvas-ds-rgds-plus root@<IP>:/storage/.config/emulationstation/themes/
+scp -r canvas-rds root@<IP>:/storage/.config/emulationstation/themes/
 ```
 
-Then select **canvas-ds-rgds-plus** under *User Interface Settings → Theme*.
+Then select **canvas-rds** under *User Interface Settings → Theme*.
 The Ports switch remembers it for the dual-screen mode.
 
 **Do not use the `scripts/` folder of canvas-ds** with this mod – it rewrites

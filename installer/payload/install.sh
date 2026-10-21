@@ -113,14 +113,25 @@ done
 echo "$VERSION" > "$DEST/VERSION"
 log "Skripte kopiert nach $DEST"
 
-if [ -d "$SRC/theme/dii-ess-aye-rgds-plus" ]; then
+if [ -d "$SRC/theme/dii-ess-aye-rds" ]; then
     mkdir -p "$THEMEDIR"
-    rm -rf "$THEMEDIR/dii-ess-aye-rgds-plus.new"
-    cp -r "$SRC/theme/dii-ess-aye-rgds-plus" "$THEMEDIR/dii-ess-aye-rgds-plus.new" || fail "Could not copy the theme."
-    rm -rf "$THEMEDIR/dii-ess-aye-rgds-plus"
-    mv "$THEMEDIR/dii-ess-aye-rgds-plus.new" "$THEMEDIR/dii-ess-aye-rgds-plus"
-    log "Theme kopiert: $THEMEDIR/dii-ess-aye-rgds-plus"
+    rm -rf "$THEMEDIR/dii-ess-aye-rds.new"
+    cp -r "$SRC/theme/dii-ess-aye-rds" "$THEMEDIR/dii-ess-aye-rds.new" || fail "Could not copy the theme."
+    rm -rf "$THEMEDIR/dii-ess-aye-rds"
+    mv "$THEMEDIR/dii-ess-aye-rds.new" "$THEMEDIR/dii-ess-aye-rds"
+    log "Theme kopiert: $THEMEDIR/dii-ess-aye-rds"
 fi
+
+# Themes hießen bis v13.1 "...-rgds-plus" – auf die geräteneutralen Namen umziehen (Auswahl und Ansichten bleiben)
+ESTH=/storage/.config/emulationstation
+for pair in "dii-ess-aye-rgds-plus:dii-ess-aye-rds" "canvas-ds-rgds-plus:canvas-rds"; do
+    o="${pair%%:*}"; n="${pair#*:}"
+    [ -d "$THEMEDIR/$o" ] && rm -rf "$THEMEDIR/$o" && log "altes Theme entfernt: $o"
+    [ -f "$ESTH/themesettings/$o.cfg" ] && [ ! -f "$ESTH/themesettings/$n.cfg" ] && mv "$ESTH/themesettings/$o.cfg" "$ESTH/themesettings/$n.cfg"
+    for tf in "$DEST/theme.dual" "$DEST/theme.single"; do
+        [ -f "$tf" ] && grep -qx "$o" "$tf" && echo "$n" > "$tf" && log "Theme-Auswahl: $o -> $n"
+    done
+done
 
 for f in "$SRC"/ports/*.sh; do
     cp "$f" "$PORTS/" && chmod +x "$PORTS/$(basename "$f")" 2>/dev/null
@@ -128,13 +139,13 @@ for f in "$SRC"/ports/*.sh; do
 done
 
 # canvas-ds (Standard-Theme im Dual-Modus, falls im Paket)
-if [ -d "$SRC/theme/canvas-ds-rgds-plus" ]; then
-    rm -rf "$THEMEDIR/canvas-ds-rgds-plus.new"
-    mv "$SRC/theme/canvas-ds-rgds-plus" "$THEMEDIR/canvas-ds-rgds-plus.new" || fail "Could not copy canvas-ds (not enough space?)."
-    rm -rf "$THEMEDIR/canvas-ds-rgds-plus"
-    mv "$THEMEDIR/canvas-ds-rgds-plus.new" "$THEMEDIR/canvas-ds-rgds-plus"
-    [ -f "$DEST/theme.dual" ] || echo canvas-ds-rgds-plus > "$DEST/theme.dual"
-    log "Theme kopiert: canvas-ds-rgds-plus (Standard im Dual-Modus: $(cat "$DEST/theme.dual"))"
+if [ -d "$SRC/theme/canvas-rds" ]; then
+    rm -rf "$THEMEDIR/canvas-rds.new"
+    mv "$SRC/theme/canvas-rds" "$THEMEDIR/canvas-rds.new" || fail "Could not copy canvas-ds (not enough space?)."
+    rm -rf "$THEMEDIR/canvas-rds"
+    mv "$THEMEDIR/canvas-rds.new" "$THEMEDIR/canvas-rds"
+    [ -f "$DEST/theme.dual" ] || echo canvas-rds > "$DEST/theme.dual"
+    log "Theme kopiert: canvas-rds (Standard im Dual-Modus: $(cat "$DEST/theme.dual"))"
 fi
 
 # Ports-Einträge vor v14 hießen anders (ROCKNIX DualStation / RGDS) – alte Dateien entfernen

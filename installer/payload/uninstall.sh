@@ -69,10 +69,11 @@ sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d' /storage/.co
 sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>/dev/null
 log "Kontrollcenter und Geraeteeinstellungen entfernt"
 
-rm -rf "$THEMEDIR/dii-ess-aye-rgds-plus" && log "entfernt: Theme dii-ess-aye-rgds-plus"
-if [ -d "$THEMEDIR/canvas-ds-rgds-plus" ]; then
-    rm -rf "$THEMEDIR/canvas-ds-rgds-plus" /storage/.config/emulationstation/themesettings/canvas-ds-rgds-plus.cfg
-    log "entfernt: Theme canvas-ds-rgds-plus"
+rm -rf "$THEMEDIR/dii-ess-aye-rds" "$THEMEDIR/dii-ess-aye-rgds-plus" && log "entfernt: Theme dii-ess-aye-rds"
+rm -rf "$THEMEDIR/canvas-ds-rgds-plus" /storage/.config/emulationstation/themesettings/canvas-ds-rgds-plus.cfg   # Namen bis v13.1
+if [ -d "$THEMEDIR/canvas-rds" ]; then
+    rm -rf "$THEMEDIR/canvas-rds" /storage/.config/emulationstation/themesettings/canvas-rds.cfg
+    log "entfernt: Theme canvas-rds"
 fi
 rm -f /storage/dualstation-canvas-install.log
 rm -rf "$DEST" && log "entfernt: $DEST"

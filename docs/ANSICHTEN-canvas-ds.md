@@ -1,4 +1,4 @@
-# canvas-ds-rgds-plus – Ansichten und Artworks
+# canvas-rds – Ansichten und Artworks
 
 Stand: 18.10.2026 (Zweig `theme-varianten`)
 

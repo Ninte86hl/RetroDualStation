@@ -39,11 +39,11 @@ THIRD-PARTY NOTICES
 
    The dii-ess-aye theme (https://github.com/beebono/dii-ess-aye) is
    licensed under the MIT License, Copyright (c) 2026 Noxwell (beebono).
-   The RG DS Plus variant (dii-ess-aye-rgds-plus) is a modification of it
+   The RG DS Plus variant (dii-ess-aye-rds) is a modification of it
    and is distributed under the same license; the original license and
    copyright notice are included with the theme files.
 
-   The canvas-ds overlay (theme/canvas-ds-rgds-plus-overlay) modifies
+   The canvas-ds overlay (theme/canvas-rds-overlay) modifies
    canvas-ds by toniremi (https://github.com/toniremi/canvas-ds), based on
    Canvas by Siddy212, and is shared with permission under the same
    Creative Commons BY-NC-SA license

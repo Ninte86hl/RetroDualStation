@@ -7,10 +7,10 @@ Beispiel:
     python3 tools/make-canvas-installer.py v8
 
 Holt canvas-ds von toniremi (git clone), legt das Overlay aus
-theme/canvas-ds-rgds-plus-overlay darueber und packt alles als
-canvas-ds-rgds-plus-<version>.zip. Inhalt (in den Ordner "ports" entpacken):
+theme/canvas-rds-overlay darueber und packt alles als
+canvas-rds-<version>.zip. Inhalt (in den Ordner "ports" entpacken):
     Install canvas-ds theme.sh
-    .canvas-ds/   install-canvas.sh, VERSION, canvas-ds-rgds-plus/
+    .canvas-ds/   install-canvas.sh, VERSION, canvas-rds/
 Nicht enthalten: .git, scripts/ (wird mit diesem Mod nicht benutzt),
 "customization examples".
 """
@@ -21,8 +21,8 @@ repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if len(sys.argv) != 2:
     sys.exit(__doc__)
 version = sys.argv[1]
-overlay = os.path.join(repo, "theme", "canvas-ds-rgds-plus-overlay")
-out = os.path.join(repo, f"canvas-ds-rgds-plus-{version}.zip")
+overlay = os.path.join(repo, "theme", "canvas-rds-overlay")
+out = os.path.join(repo, f"canvas-rds-{version}.zip")
 SKIP_TOP = {".git", "scripts", "customization examples"}
 EXEC, FILE = 0o100755 << 16, 0o100644 << 16
 
@@ -67,7 +67,7 @@ with zipfile.ZipFile(out, "w") as z:
     add(z, os.path.join(repo, "installer", "canvas", "Install canvas-ds theme.sh"), "Install canvas-ds theme.sh", EXEC)
     add(z, os.path.join(repo, "installer", "canvas", "install-canvas.sh"), ".canvas-ds/install-canvas.sh", EXEC)
     z.writestr(zipfile.ZipInfo(".canvas-ds/VERSION"), f"{version} (canvas-ds {commit})\n")
-    base = ".canvas-ds/canvas-ds-rgds-plus/"
+    base = ".canvas-ds/canvas-rds/"
     z.writestr(zipfile.ZipInfo(base + "RGDS-PLUS-NOTICE.txt"), notice)
     for root, dirs, files in os.walk(src):
         rel = os.path.relpath(root, src)

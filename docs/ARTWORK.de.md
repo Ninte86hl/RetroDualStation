@@ -33,4 +33,4 @@ Pfade in der `gamelist.xml` sind relativ: `./images/<rom>-hero.png`.
 
 ES-Theme-Variablen: `{game:image}` (Hero), `{game:boxart}`, `{game:cartridge}` (Icon),
 `{game:thumbnail}`, `{game:marquee}` – oder klassisch `md_image`, `md_thumbnail`, `md_marquee`.
-Referenz ist canvas-ds: [theme/canvas-ds-rgds-plus-overlay](../theme/canvas-ds-rgds-plus-overlay).
+Referenz ist canvas-ds: [theme/canvas-rds-overlay](../theme/canvas-rds-overlay).

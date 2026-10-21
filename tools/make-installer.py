@@ -63,7 +63,7 @@ with zipfile.ZipFile(out, "w") as z:
         add(z, os.path.join(repo, "device", "ports", f), p + "ports/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "ports", "Uninstall RDS.sh"),
         p + "ports/Uninstall RDS.sh", EXEC)
-    theme = os.path.join(repo, "theme", "dii-ess-aye-rgds-plus")
+    theme = os.path.join(repo, "theme", "dii-ess-aye-rds")
     for root, dirs, files in os.walk(theme):
         dirs.sort()
         for f in sorted(files):
@@ -79,10 +79,10 @@ with zipfile.ZipFile(out, "w") as z:
         add(z, os.path.join(repo, "installer", "payload", "images", f), p + "images/" + f, FILE)
     if canvas:   # canvas-ds aus dessen Installer-ZIP übernehmen
         with zipfile.ZipFile(canvas) as cz:
-            pre = ".canvas-ds/canvas-ds-rgds-plus/"
+            pre = ".canvas-ds/canvas-rds/"
             for info in cz.infolist():
                 if info.filename.startswith(pre) and not info.is_dir():
-                    ni = zipfile.ZipInfo(p + "theme/canvas-ds-rgds-plus/" + info.filename[len(pre):], info.date_time)
+                    ni = zipfile.ZipInfo(p + "theme/canvas-rds/" + info.filename[len(pre):], info.date_time)
                     ni.external_attr, ni.compress_type = FILE, zipfile.ZIP_DEFLATED
                     z.writestr(ni, cz.read(info))
     # Artwork Manager (Gerätefassung): Programm, Ports-Eintrag, Manager-Paket, Pillow

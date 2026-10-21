@@ -1,4 +1,4 @@
-# dii-ess-aye-rgds-plus
+# dii-ess-aye-rds
 
 RG DS Plus variant of **[dii-ess-aye](https://github.com/beebono/dii-ess-aye)**
 by **beebono**, adapted by [Ninte86hl](https://github.com/Ninte86hl) for the
@@ -39,10 +39,10 @@ screen.
 Copy this folder to the device:
 
 ```bash
-scp -r theme/dii-ess-aye-rgds-plus root@<IP>:/storage/.config/emulationstation/themes/
+scp -r theme/dii-ess-aye-rds root@<IP>:/storage/.config/emulationstation/themes/
 ```
 
-Then select **dii-ess-aye-rgds-plus** under *User Interface Settings → Theme*,
+Then select **dii-ess-aye-rds** under *User Interface Settings → Theme*,
 or switch to the dual-screen mode via Ports – the switch sets the theme
 automatically.
 

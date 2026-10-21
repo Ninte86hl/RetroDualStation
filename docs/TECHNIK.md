@@ -37,8 +37,8 @@ device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
   es-switch-helper.sh        Umschalten single/dual (Theme, Dienst, Sway)
 device/ports/                Einträge für /storage/roms/ports/
 device/system.d/             Drop-in für essway.service
-theme/dii-ess-aye-rgds-plus/ RG-DS-Plus-Variante des Themes dii-ess-aye (MIT)
-theme/canvas-ds-rgds-plus-overlay/ Layout-Overlay für canvas-ds (CC BY-NC-SA)
+theme/dii-ess-aye-rds/ RG-DS-Plus-Variante des Themes dii-ess-aye (MIT)
+theme/canvas-rds-overlay/ Layout-Overlay für canvas-ds (CC BY-NC-SA)
 docs/BUILD.de.md             Bauen des ES-Pakets
 docs/screenshots/            Screenshots für diese README
 docs/zwischenstand-*.md      technische Analyse und Projektstand
@@ -61,7 +61,7 @@ scp emulationstation-rgds device/rgds-test/*.sh installer/payload/uninstall.sh r
 scp device/ports/*.sh installer/payload/ports/*.sh root@<IP>:/storage/roms/ports/
 ```
 ```bash
-scp -r theme/dii-ess-aye-rgds-plus root@<IP>:/storage/.config/emulationstation/themes/
+scp -r theme/dii-ess-aye-rds root@<IP>:/storage/.config/emulationstation/themes/
 ```
 
 Auf dem Gerät:

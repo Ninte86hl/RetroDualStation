@@ -10,7 +10,7 @@
 # Modus gespeichert, den man verlaesst, und das zuletzt genutzte Theme des
 # Zielmodus wiederhergestellt.
 #   /storage/rgds-test/theme.single   (Standard: system-theme)
-#   /storage/rgds-test/theme.dual     (Standard: dii-ess-aye-rgds-plus)
+#   /storage/rgds-test/theme.dual     (Standard: dii-ess-aye-rds)
 
 MODE="$1"
 DROPIN=/storage/.config/system.d/essway.service.d
@@ -25,7 +25,7 @@ log() { echo "$(date) $MODE: $*" >> "$LOG"; }
 
 case "$MODE" in
     single) DEFAULT_THEME="system-theme" ;;
-    dual)   DEFAULT_THEME="dii-ess-aye-rgds-plus" ;;
+    dual)   DEFAULT_THEME="dii-ess-aye-rds" ;;
     *)      echo "$(date) Ungueltiger Modus: '$MODE'" >> "$LOG"; exit 1 ;;
 esac
 

@@ -20,7 +20,7 @@ Thank you to everyone who made it possible.
 - **[beebono](https://github.com/beebono)** – the original
   [dii-ess-aye](https://github.com/beebono/dii-ess-aye) dual-screen theme
   for the RG DS (and AYN Thor), which this mod is designed around.
-- The **RG DS Plus variant** (`dii-ess-aye-rgds-plus`) is an adaptation of
+- The **RG DS Plus variant** (`dii-ess-aye-rds`) is an adaptation of
   beebono's theme by [Ninte86hl](https://github.com/Ninte86hl).
 - Credited in the theme itself: **Ant ([anthonycaccese](https://github.com/anthonycaccese))**
   for the status and slot icons, **Jeod ([JeodC](https://github.com/JeodC))**
@@ -29,7 +29,7 @@ Thank you to everyone who made it possible.
 dii-ess-aye is licensed under the **MIT License**
 (Copyright (c) 2026 Noxwell / beebono). Thank you, beebono, for adding the
 license and allowing the RG DS Plus variant to be shared! The variant is
-included in [`theme/dii-ess-aye-rgds-plus/`](theme/dii-ess-aye-rgds-plus/)
+included in [`theme/dii-ess-aye-rds/`](theme/dii-ess-aye-rds/)
 with the original license and copyright notice. The original also credits
 **Valve** for the Steam logo (Wikimedia Commons).
 
@@ -37,7 +37,7 @@ with the original license and copyright notice. The original also credits
 
 - **[toniremi](https://github.com/toniremi)** – [canvas-ds](https://github.com/toniremi/canvas-ds),
   the dual-screen theme the overlay in
-  [`theme/canvas-ds-rgds-plus-overlay/`](theme/canvas-ds-rgds-plus-overlay/) adapts.
+  [`theme/canvas-rds-overlay/`](theme/canvas-rds-overlay/) adapts.
   Thank you for allowing the RG DS Plus overlay to be shared!
 - **[Siddy212](https://github.com/Siddy212)** – [Canvas (ES version)](https://github.com/Siddy212/canvas-es),
   the original theme canvas-ds is built on.
