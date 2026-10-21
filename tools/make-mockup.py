@@ -52,8 +52,8 @@ else:
     frames, durs = [], []
     for i, a in enumerate(imgs):
         b = imgs[(i + 1) % len(imgs)]
-        frames.append(render(a)); durs.append(2500)
+        frames.append(render(a)); durs.append(1800)
         for k in range(1, 6):
-            frames.append(render(Image.blend(a, b, k / 6))); durs.append(60)
+            frames.append(render(Image.blend(a, b, k / 6))); durs.append(45)
     frames[0].save(out, save_all=True, append_images=frames[1:], duration=durs, loop=0, quality=82, method=6)
 print(out)
