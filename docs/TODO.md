@@ -36,7 +36,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 ### Offen nach v12
 - [x] Issue #5 (maniman303): Artwork-Standard dokumentiert (`docs/ARTWORK.md`, 20.10.2026)
 - [ ] Issue #5: ScreenScraper-Dev-Kennung beantragt (20.10.2026, Forum „ScreenScraper WebAPI“) – danach ES-Build über GitHub Actions mit Secret
-- [ ] Issue #5: Bildschirm-Bereiche im ES-Patch (`rds-screens.cfg`, `screen="top|bottom"` im Theme) – vor der RG-DS-Version; Konzept zuerst
+- [x] Issue #5: Bildschirm-Bereiche im ES-Patch (Patch 004/005, getestet 20.10.2026); Konzept: [BILDSCHIRME.md](BILDSCHIRME.md)
 - [ ] Artwork Manager: libretro-Thumbnails als Quelle ohne Schlüssel
 - [ ] Issue #5 beantworten, sobald Punkte stehen
 - [ ] Artwork Manager: SGDB-Wiederholung bei Zeitüberschreitung, M3U in Unterordnern
@@ -50,7 +50,7 @@ Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
    - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
      (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
      **X** aus der Liste entfernen (Speicherstand bleibt) · **B** schließen
-2. **Etappe 2: Seite „Spiel“** im CC (Savestates speichern/laden, Kürzel, Spickzettel)
+2. ✅ **Etappe 2: Seite „Spiel“** im CC (fertig 20.10.2026; offen: Steuerung, DSperate)
 3. **Version für das normale RG DS** (640×480) – sobald 1 und 2 gebaut und getestet sind
 
 Danach abwägen, was als Nächstes ausgebaut wird.
@@ -73,7 +73,12 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 
 ### Kontrollcenter & Co. (Details: [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [x] Etappe 1 (abgeschlossen 19.10.2026): Schnelleinstellungen, Seiten, Anbernic-Taste, Pause, Hell/Dunkel, Akzentfarbe, WLAN/Bluetooth-Untermenüs, Tastatur, externe Controller, Englisch, Autostart
-- [ ] Etappe 2: Seite „Spiel“ (Buttons, Spickzettel, Tastenkürzel standardmäßig aus)
+- [x] Etappe 2: Seite „Spiel“ – Infoansicht, Speichern/Laden mit Slot-Auswahl und Vorschau, Löschen (X X / Mülleimer), Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden (getestet 20.10.2026)
+- [x] Seite „Spiel“: Tastenbelegung je System/Emulator, DSperate Speichern/Laden/Slots/Menü, einheitliche Kürzel (21.10.2026)
+- [x] DraStic: Slots 0–8 mit Vorschaubild und Emulator-Menü über das CC (getestet 21.10.2026); Kürzel-Kombinationen kennt DraStic nicht; Vorspulen über das CC (R3 fehlt am Gerät) getestet
+- [x] DraStic: Menü (R3) und Vorspulen (Geister-Stick) nur über das CC, L3 frei – getestet 21.10.2026
+- [~] DraStic-Menü vergrößern: `librgdsmenu.so` auf dem RG DS Plus nicht vorhanden – zurückgestellt (21.10.2026)
+- [~] RetroArch-Kürzel im CC anpassen – verworfen (21.10.2026): einheitliches festes Schema reicht
 - [x] Etappe 4: RetroArch-Touchmenü (lowerdeck) ersetzt, CC im Installer (19.10.2026, Test der ZIP ausstehend)
 - [x] Etappe 5: Gameswitcher (Return/Home-Taste, Auto-Speichern/Laden) – 20.10.2026
 - [x] ES (eigener Dual-Build): Bluetooth-Menü (Gerät koppeln) auf einen Bildschirm begrenzt – Patch 003 (20.10.2026)
@@ -95,7 +100,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       `input_playerN_joypad_index`, wirkt nur bei RetroArch; DraStic/DSperate prüfen)
 - [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
       beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
-- [ ] Etappe 3: RetroAchievements  (nach Bluetooth-Koppeln im Spiel, festgelegt 20.10.2026)
+- [x] Etappe 3: RetroAchievements – Seite 3, Erfolg öffnen, Freischalt-Meldung, Lautstärke-Anzeige (21.10.2026)
       - **Benachrichtigung:** kurzes Overlay auf dem unteren Bildschirm, wenn ein Erfolg
         freigeschaltet wird (Symbol, Titel, Punkte; blendet sich selbst aus, Spiel läuft weiter)
       - **Erfolge-Übersicht** (CC-Seite „RetroAchievements“): erledigte und offene Erfolge
@@ -169,7 +174,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
 
 ### Scraper
-- [ ] ScreenScraper-Entwicklerzugang beantragen (Forum; Antragstext vorbereiten)
+- [x] ScreenScraper-Entwicklerzugang beantragt (20.10.2026, Antwort ausstehend)
 - [ ] mit Zugang: Scraper im Dual-Build von ES wieder aktivieren (Zugangsdaten nur als GitHub-Secret beim Bauen, nie im Repository)
 
 ## Artwork Manager

@@ -86,14 +86,20 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
   wieder ein. In RetroArch und PortMaster wird der untere Bildschirm automatisch dunkel.
 - **Power-Menü** – kurz auf die **Ein/Aus-Taste**: Ruhemodus, Neu starten (wahlweise mit
   Log-Sicherung), Ausschalten, ES neu starten
+- **Seite „Spiel“** – Speichern/Laden mit 9 Plätzen und Vorschaubild, Emulator-Menü, Vorspulen, Zeitlupe,
+  Screenshot, Tastenbelegung – für RetroArch, DSperate und DraStic *(ab v13)*
+- **Einheitliche Kürzel** – Anbernic-Taste + R1 Vorspulen, + R2/L2 Speichern/Laden, + X Menü – in jedem Emulator gleich
+- **RetroAchievements** – Konto, Fortschritt und alle Erfolge; neue Erfolge und die Lautstärke erscheinen kurz oben über dem Spiel *(ab v13)*
 - Deutsch oder Englisch, je nach ES-Sprache
 
 | | | |
 |:-:|:-:|:-:|
 | <img src="docs/screenshots/control-center-main.png" alt="Kontrollcenter"> | <img src="docs/screenshots/control-center-wifi.png" alt="WLAN"> | <img src="docs/screenshots/control-center-bluetooth.png" alt="Bluetooth"> |
 | **Kontrollcenter** über einem pausierten Spiel | **WLAN** – gespeicherte Netze oben | **Bluetooth** – Controller direkt koppeln |
-| <img src="docs/screenshots/control-center-keyboard.png" alt="Tastatur"> | <img src="docs/screenshots/control-center-power.png" alt="Power-Menü"> |  |
-| **Bildschirmtastatur** für Passwörter | **Power-Menü** – kurz auf die Ein/Aus-Taste |  |
+| <img src="docs/screenshots/control-center-keyboard.png" alt="Tastatur"> | <img src="docs/screenshots/control-center-power.png" alt="Power-Menü"> | <img src="docs/tour/tour-spiel.png" alt="Seite Spiel"> |
+| **Bildschirmtastatur** für Passwörter | **Power-Menü** – kurz auf die Ein/Aus-Taste | **Seite „Spiel“** – Speichern, Laden, Vorspulen … |
+| <img src="docs/tour/tour-slots.png" alt="Speicherplätze"> | <img src="docs/tour/tour-ra.png" alt="RetroAchievements"> | <img src="docs/tour/tour-tasten.png" alt="Tasten"> |
+| **Speicherplätze** mit Vorschaubild | **RetroAchievements** | **Tastenbelegung** je System |
 
 ## Gameswitcher
 
@@ -116,16 +122,17 @@ ein Ladebildschirm liegt über beiden Screens, der Ton bleibt stumm, bis du wied
 | ✅ | Kontrollcenter: Schnelleinstellungen, WLAN, Bluetooth, Tastatur, Power-Menü, Spiel beenden, unterer Screen aus |
 | ✅ | Gameswitcher – zuletzt gespielte Spiele mit Screenshot vom letzten Stand; **A** weiterspielen, **Y** neu starten *(ab v11)* |
 | ✅ | Spielesuche mit **Y** in der Systemansicht, kurze Tour *(ab v12)* |
-| 🔜 **als Nächstes** | Kontrollcenter: Seite „Spiel“ – Speicherstände und Tastenkürzel |
-| 🔜 | Unterstützung für das normale RG DS |
+| ✅ | Kontrollcenter: Seite „Spiel“ – Speicherplätze mit Bild, Emulator-Menü, Vorspulen, Tastenbelegung; einheitliche Kürzel *(ab v13)* |
+| ✅ | RetroAchievements – Übersicht und Meldung beim Freischalten *(ab v13)* |
+| 🔜 **als Nächstes** | Unterstützung für das normale RG DS |
+| 🔜 | ScreenScraper im Dual-Modus (Entwicklerzugang beantragt) |
 | 💭 vielleicht | Einstellungsmenü wie am Smartphone, aufgerufen aus dem Kontrollcenter |
-| 💭 vielleicht | RetroAchievements – Benachrichtigung und Übersicht |
 | 💭 vielleicht | Benutzerprofile mit eigenen Spielständen |
 | 🕓 später | Artwork Manager: Spielelisten bearbeiten, M3U in Unterordnern |
 
 ## Installation
 
-1. **`rocknix-dualstation-v12.zip`** (enthält canvas-ds) aus dem
+1. **`rocknix-dualstation-v13.zip`** (enthält canvas-ds) aus dem
    [aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest) laden.
 2. In den Ordner **`ports`** bei den ROMs entpacken (`/storage/roms/ports`).
 3. In ES **Ports** → **Install ROCKNIX DualStation** starten.
@@ -138,10 +145,10 @@ Ein Update funktioniert genauso.
 <summary>ROMs auf einer ext4-Partition? ZIP über das Netzwerk kopieren</summary>
 
 ```bash
-scp rocknix-dualstation-v12.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v13.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v12.zip && rm rocknix-dualstation-v12.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v13.zip && rm rocknix-dualstation-v13.zip"
 ```
 </details>
 
@@ -150,8 +157,10 @@ Spiele, Medien, Spielelisten und Spielstände bleiben unberührt.
 
 ## Gut zu wissen
 
-- **Kein ScreenScraper und keine RetroAchievements** in der Dual-Version – die Zugangsdaten
-  gibt es nur für den offiziellen ROCKNIX-Build. Zum Scrapen per Ports auf *Single* und zurück.
+- **Kein ScreenScraper** in der Dual-Version – die Zugangsdaten gibt es nur für den offiziellen
+  ROCKNIX-Build. Zum Scrapen per Ports auf *Single* und zurück.
+- **RetroAchievements** funktionieren im Spiel; der Eintrag *RetroAchievements* im ES-Hauptmenü zeigt
+  einen Fehler (gleicher Grund) – stattdessen Seite 3 im Kontrollcenter nutzen.
 - PS1: Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - DS über RetroArch-Cores ist ungetestet; DraStic und DSperate funktionieren.
 - Touch in DraStic reagiert nicht? **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).

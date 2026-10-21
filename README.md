@@ -86,14 +86,20 @@ DSperate and PortMaster. The game pauses and continues where you left off.
   In RetroArch and PortMaster the bottom screen goes dark automatically.
 - **Power menu** – a short press on the **power button**: sleep, restart (optionally saving logs),
   power off, restart ES
+- **Game page** – save/load with 9 slots and preview pictures, emulator menu, fast forward, slow motion,
+  screenshot, button layout – for RetroArch, DSperate and DraStic *(in v13)*
+- **Same shortcuts everywhere** – Anbernic button + R1 fast forward, + R2/L2 save/load, + X menu
+- **RetroAchievements** – account, progress and all achievements; new achievements and the volume briefly appear on top of the game *(in v13)*
 - English or German, following the ES language
 
 | | | |
 |:-:|:-:|:-:|
 | <img src="docs/screenshots/control-center-main.png" alt="Control Center"> | <img src="docs/screenshots/control-center-wifi.png" alt="Wi-Fi"> | <img src="docs/screenshots/control-center-bluetooth.png" alt="Bluetooth"> |
 | **Control Center** over a paused game | **Wi-Fi** – saved networks on top | **Bluetooth** – pair controllers directly |
-| <img src="docs/screenshots/control-center-keyboard.png" alt="Keyboard"> | <img src="docs/screenshots/control-center-power.png" alt="Power menu"> |  |
-| **On-screen keyboard** for passwords | **Power menu** – short press on the power button |  |
+| <img src="docs/screenshots/control-center-keyboard.png" alt="Keyboard"> | <img src="docs/screenshots/control-center-power.png" alt="Power menu"> | <img src="docs/tour/tour-spiel.png" alt="Game page"> |
+| **On-screen keyboard** for passwords | **Power menu** – short press on the power button | **Game page** – save, load, fast forward … |
+| <img src="docs/tour/tour-slots.png" alt="Save slots"> | <img src="docs/tour/tour-ra.png" alt="RetroAchievements"> | <img src="docs/tour/tour-tasten.png" alt="Buttons"> |
+| **Save slots** with preview | **RetroAchievements** | **Button layout** per system |
 
 ## Game switcher
 
@@ -116,16 +122,17 @@ a loading screen covers both screens and the sound stays muted until you're back
 | ✅ | Control Center: quick settings, Wi-Fi, Bluetooth, keyboard, power menu, quit game, bottom screen off |
 | ✅ | Game switcher – recent games with a screenshot of where you left off; **A** resume, **Y** start fresh *(in v11)* |
 | ✅ | Game search with **Y** in the system view, quick tour *(in v12)* |
-| 🔜 **next** | Control Center: game page – save states and shortcuts |
-| 🔜 | Support for the original RG DS |
+| ✅ | Control Center: game page – save slots with pictures, emulator menu, fast forward, button layout; unified shortcuts *(in v13)* |
+| ✅ | RetroAchievements – overview and unlock notification *(in v13)* |
+| 🔜 **next** | Support for the original RG DS |
+| 🔜 | ScreenScraper in dual-screen mode (developer access requested) |
 | 💭 maybe | Settings menu like on a smartphone, opened from the Control Center |
-| 💭 maybe | RetroAchievements – unlock notification and overview |
 | 💭 maybe | User profiles with their own saves |
 | 🕓 later | Artwork Manager: editing game lists, M3U in subfolders |
 
 ## Installation
 
-1. Download **`rocknix-dualstation-v12.zip`** (includes canvas-ds) from the
+1. Download **`rocknix-dualstation-v13.zip`** (includes canvas-ds) from the
    [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
 3. In ES open **Ports** → **Install ROCKNIX DualStation**.
@@ -138,10 +145,10 @@ Updating works the same way.
 <summary>ROMs on an ext4 partition? Copy the ZIP over the network</summary>
 
 ```bash
-scp rocknix-dualstation-v12.zip root@<IP>:/storage/roms/ports/
+scp rocknix-dualstation-v13.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v12.zip && rm rocknix-dualstation-v12.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v13.zip && rm rocknix-dualstation-v13.zip"
 ```
 </details>
 
@@ -150,8 +157,10 @@ Games, media, game lists and saves are not touched.
 
 ## Good to know
 
-- **No ScreenScraper and no RetroAchievements** in the dual-screen build – the credentials are
-  reserved for the official ROCKNIX build. To scrape, switch to *Single* via Ports and back.
+- **No ScreenScraper** in the dual-screen build – the credentials are reserved for the official
+  ROCKNIX build. To scrape, switch to *Single* via Ports and back.
+- **RetroAchievements** work in games; the *RetroAchievements* entry in the ES main menu shows an error
+  (same reason) – use page 3 of the Control Center instead.
 - PS1: the installer sets **pcsx_rearmed** if no working core is selected.
 - DS via RetroArch cores is untested; DraStic and DSperate work.
 - DraStic touch not responding? Set **Follow 3D Renderer** to *Auto* (also happens on stock ROCKNIX).

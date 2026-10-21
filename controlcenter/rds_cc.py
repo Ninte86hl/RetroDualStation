@@ -226,6 +226,41 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
+    "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
+    "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
+    "nochmal X oder tippen": "X again or tap",
+    "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!",
+    "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
+    "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
+    "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
+    "Anmeldung fehlgeschlagen – Konto in ES prüfen.": "Login failed – check the account in ES.",
+    "Erfolge erscheinen hier, sobald ein Spiel läuft.": "Achievements appear here once a game is running.",
+    "Für %s im Menü des Emulators.": "For %s in the emulator's own menu.",
+    "Diese ROM-Version wird von RetroAchievements nicht unterstützt.": "This ROM version is not supported by RetroAchievements.",
+    "Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes": "Supported versions: retroachievements.org → game → Supported Game Hashes", "Tasten": "Buttons", "Spieltasten": "Game buttons",
+    "Kürzel": "Shortcuts", "Original": "Original", "Steuerkreuz": "D-pad", "Menü": "Menu", "Zurückspulen": "Rewind",
+    "Bildschirme tauschen": "Swap screens", "Mikrofon": "Microphone", "Layout +": "Layout +",
+    "Layout −": "Layout −", "Vorspulen (halten)": "Fast forward (hold)", "Pause": "Pause", "FPS": "FPS", "Analogsticks": "Analog sticks",
+    "Sticks": "Sticks", "Touchscreen": "Touchscreen", "unterer Bildschirm": "bottom screen", "Stick": "Stick",
+    "Tasten 1–6": "Buttons 1–6", "Kreuz": "Cross", "Kreis": "Circle", "Quadrat": "Square",
+    "Dreieck": "Triangle", "Menü (Kombination)": "Menu (combo)", "Alle Tasten wie am Gerät beschriftet.": "All buttons as labelled on the device.",
+    "Keine Kürzel gefunden.": "No shortcuts found.", "nur über das CC": "Control Center only", "Gespielt seit": "Playing for", "Letzter Spielstand": "Last save state", "belegt": "used", "leer": "empty", "Gut zu wissen": "Good to know", "Verstanden": "Got it",
+    "Speichern und Laden nutzen die Speicherplätze von RetroArch.":
+        "Save and Load use RetroArch's save slots.",
+    "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.":
+        "When saving or loading you pick the slot (0–8).",
+    "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch":
+        "Your own settings in ES (e.g. incremental savestates) or RetroArch",
+    "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher.":
+        "can change this behaviour. Slot 9 is used by the Game switcher.",
+    "übernehmen": "take", "zurück": "back",
+    "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
+    "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
+    "Starte ein Spiel, um es hier zu steuern.": "Start a game to control it here.",
+    "Gespeichert": "Saved", "Geladen": "Loaded", "Screenshot gespeichert": "Screenshot saved",
+    "Fehlgeschlagen": "Failed", "Bitte warten …": "Please wait …", "Ausführen": "Run",
+    "Weitere Aktionen im Menü des Emulators.": "More actions in the emulator's own menu.",
     "Fertig": "Done", "Weiter": "Next", "Tour beenden": "End tour", "Tour": "Tour",
     "Seite wechseln": "switch page", "Ein/Aus": "on/off", "Details": "details",
     "Auswählen": "Select", "wählen": "choose", "einfügen": "insert", "schließen": "close",
@@ -544,6 +579,70 @@ class Pen:
         self.color(c)
         cairo.cairo_stroke(cr)
 
+    def poly(self, pts, c):
+        cr = self.cr
+        cairo.cairo_new_path(cr)
+        cairo.cairo_move_to(cr, self.X(pts[0][0]), self.Y(pts[0][1]))
+        for x, y in pts[1:]:
+            cairo.cairo_line_to(cr, self.X(x), self.Y(y))
+        cairo.cairo_close_path(cr)
+        self.color(c)
+        cairo.cairo_fill(cr)
+
+    def game_icon(self, kind, cx, cy, c, scale=1.0):
+        """Symbole der Seite „Spiel“: Vorspulen, Screenshot, Neu starten, Emulator-Menü."""
+        import math
+        cr, s = self.cr, self.s
+        if kind == "ff":
+            for dx in (-14, 6):
+                self.poly([(cx + dx - 6, cy - 14), (cx + dx + 14, cy), (cx + dx - 6, cy + 14)], c)
+        elif kind == "shot":
+            self.rrect(cx - 22, cy - 13, 44, 30, 6, c)
+            self.rrect(cx - 8, cy - 19, 16, 8, 3, c)
+            self.circle(cx, cy + 2, 10, "000000")
+            self.circle(cx, cy + 2, 6, c)
+        elif kind == "reset":
+            cairo.cairo_new_path(cr)
+            cairo.cairo_arc(cr, self.X(cx), self.Y(cy), 16 * s, -math.pi * 0.35, math.pi * 1.45)
+            cairo.cairo_set_line_cap(cr, 1)
+            cairo.cairo_set_line_width(cr, 4 * s)
+            self.color(c)
+            cairo.cairo_stroke(cr)
+            ax, ay = cx + 16 * math.cos(-math.pi * 0.35), cy + 16 * math.sin(-math.pi * 0.35)
+            self.poly([(ax - 9, ay - 6), (ax + 7, ay - 9), (ax + 2, ay + 7)], c)
+        elif kind == "slow":                      # halber Vorspul-Pfeil mit Bremsstrich: „langsam“
+            self.rrect(cx - 18, cy - 15, 5, 30, 2.5, c)
+            self.poly([(cx - 7, cy - 15), (cx + 17, cy), (cx - 7, cy + 15)], c)
+        elif kind == "quit":
+            k = 13 * scale
+            for a, b in (((-k, -k), (k, k)), ((k, -k), (-k, k))):
+                cairo.cairo_new_path(cr)
+                cairo.cairo_move_to(cr, self.X(cx + a[0]), self.Y(cy + a[1]))
+                cairo.cairo_line_to(cr, self.X(cx + b[0]), self.Y(cy + b[1]))
+                cairo.cairo_set_line_cap(cr, 1)
+                cairo.cairo_set_line_width(cr, max(3, 5 * scale) * s)
+                self.color(c)
+                cairo.cairo_stroke(cr)
+        elif kind == "trophy":
+            self.poly([(cx - 14, cy - 14), (cx + 14, cy - 14), (cx + 10, cy + 2), (cx - 10, cy + 2)], c)
+            self.rrect(cx - 3, cy + 2, 6, 8, 2, c)
+            self.rrect(cx - 10, cy + 10, 20, 5, 2, c)
+        elif kind == "help":                      # Gamepad
+            self.rrect(cx - 24, cy - 12, 48, 26, 13, c)
+            self.rrect(cx - 15, cy - 2, 10, 3, 1.5, "000000")
+            self.rrect(cx - 11.5, cy - 5.5, 3, 10, 1.5, "000000")
+            self.circle(cx + 9, cy - 2, 2.6, "000000")
+            self.circle(cx + 15, cy + 3, 2.6, "000000")
+        elif kind == "trash":                     # Mülleimer (klein, für den Slot-Knopf)
+            self.rrect(cx - 4, cy - 12, 8, 3, 1.5, c)              # Griff
+            self.rrect(cx - 10, cy - 9, 20, 3, 1.5, c)             # Deckel
+            self.poly([(cx - 8, cy - 4), (cx + 8, cy - 4), (cx + 6.5, cy + 11), (cx - 6.5, cy + 11)], c)
+            for dx in (-3, 0, 3):                                   # Rillen
+                self.rrect(cx + dx - 0.75, cy - 1, 1.5, 9, 0.75, "000000")
+        elif kind == "menu":
+            for dy in (-11, 0, 11):
+                self.rrect(cx - 16, cy + dy - 2.5, 32, 5, 2.5, c)
+
     def logo(self, x, y, h, fg, knockout, red="e5383b", blue="3d7bff"):
         """RDS-Monogramm „Verwoben“ (Logo-Entwurf Variante 3), Höhe h, oben links bei (x, y)."""
         import math
@@ -737,6 +836,32 @@ def volume_get():
     out = run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
     m = re.search(r"([\d.]+)", out or "")
     return min(100, round(float(m.group(1)) * 100)) if m else None
+
+
+VOLUME_NAME = os.environ.get("RDS_CC_VOLKEYS", "gpio-keys-volume")
+KEY_VOLUMEDOWN, KEY_VOLUMEUP = 114, 115
+RA_PROXY_STATE = "http://127.0.0.1:4874/_ui/state"
+RA_BADGES = "/storage/thumbnails/cheevos/badges"
+TOAST_H = 150          # Höhe der Meldung oben in Bildschirm-Pixeln
+
+
+def ra_state():
+    """Zustand des ROCKNIX-RetroAchievements-Proxys (läuft nur während RetroArch) oder None."""
+    try:
+        import urllib.request
+        with urllib.request.urlopen(RA_PROXY_STATE, timeout=1.5) as r:
+            return json.loads(r.read().decode("utf-8", "replace"))
+    except Exception:
+        return None
+
+
+def ra_badge(badge, locked=False):
+    p = os.path.join(RA_BADGES, "%s%s.png" % (badge, "_lock" if locked else ""))
+    return p if badge and os.path.exists(p) else None
+
+
+def volume_muted():
+    return "MUTED" in (run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]) or "")
 
 
 def volume_set(pct):
@@ -1071,6 +1196,35 @@ TOUR = [
                ("Im Spiel pausiert das Spiel, solange das Kontrollcenter offen ist.",
                 "In a game, the game pauses while the Control Center is open.")],
      "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
+    {"title": ("Seite „Spiel“", "Game page"),
+     "img": ("tour-spiel.png", "tour-spiel.png"),
+     "lines": [("Im Spiel: Speichern und Laden mit 9 Speicherplätzen und Vorschaubild.",
+                "In a game: save and load with 9 slots and a preview picture."),
+               ("Dazu Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot und Beenden.",
+                "Plus emulator menu, restart, fast forward, slow motion, screenshot and quit."),
+               ("Für RetroArch, DSperate und DraStic. „Tasten“ zeigt die Belegung des Spiels.",
+                "For RetroArch, DSperate and DraStic. “Buttons” shows the game's controls.")],
+     "keys": [("R1", ("zur Seite „Spiel“", "to the game page")), ("A", ("ausführen", "run")),
+              (("Mülleimer", "Bin"), ("Spielstand löschen", "delete a save"))]},
+    {"title": ("Kürzel", "Shortcuts"),
+     "img": ("tour-tasten.png", "tour-tasten.png"),
+     "lines": [("In jedem Emulator gleich: Anbernic-Taste halten und eine zweite Taste drücken.",
+                "The same in every emulator: hold the Anbernic button and press a second one."),
+               ("Alles geht auch per Tipp im Kontrollcenter.",
+                "Everything also works with a tap in the Control Center.")],
+     "keys": [("Anbernic + R1", ("Vorspulen an/aus", "fast forward on/off")),
+              ("Anbernic + R2 / L2", ("Speichern / Laden", "save / load")),
+              ("Anbernic + X", ("Emulator-Menü", "emulator menu")),
+              ("Anbernic + Start", ("Spiel beenden", "quit game"))]},
+    {"title": ("RetroAchievements", "RetroAchievements"),
+     "img": ("tour-ra.png", "tour-ra.png"),
+     "lines": [("Seite 3 im Kontrollcenter: dein Konto, der Fortschritt im Spiel und alle Erfolge.",
+                "Page 3 of the Control Center: your account, your progress and all achievements."),
+               ("Ein neuer Erfolg erscheint kurz oben über dem Spiel.",
+                "A new achievement briefly appears on top of the game."),
+               ("Anmelden in ES: Spieleinstellungen → RetroAchievements-Einstellungen.",
+                "Sign in in ES: Game settings → RetroAchievements settings.")],
+     "keys": [("▲ ▼", ("blättern", "scroll")), ("A", ("Erfolg öffnen", "open achievement"))]},
     {"title": ("Gameswitcher", "Game switcher"),
      "img": ("tour-gameswitcher.png", "tour-gameswitcher.png"),
      "lines": [("Home 1,5 s halten: die zuletzt gespielten Spiele. Home 2× im Spiel: direkt zum vorherigen.",
@@ -1123,6 +1277,11 @@ def inject_keys(seq):
         for item in seq:
             if isinstance(item, float):
                 time.sleep(item)
+                continue
+            if len(item) == 3:                     # ("abs", Achse, Wert)
+                _, code, val = item
+                os.write(fd, EVENT.pack(0, 0, 3, code, val))
+                os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
                 continue
             code, val = item
             os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
@@ -1454,6 +1613,263 @@ MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August"
           "September", "Oktober", "November", "Dezember"]
 ACCENTS = ["e5383b", "3d7bff", "2bb673", "f08c00", "9b5de5", "e64980"]
 PAGES = ["Schnelleinstellungen", "Spiel", "RetroAchievements"]
+
+# Seite „Spiel“: Aktionen je Emulator (Schlüssel, Beschriftung)
+GAME_ACTIONS = {
+    "RetroArch": [("save", "Speichern"), ("load", "Laden"),
+                  ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
+                  ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
+                ("help", "Tasten"), ("quit", "Beenden")],
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
+                 ("help", "Tasten"), ("quit", "Beenden")],
+}
+GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
+
+# ---- Tastenbelegung ----
+# RetroArch-Tastennummern des eingebauten Joypads (retrogame_joypad.cfg) → Beschriftung
+RA_BTN = {"0": "B", "1": "A", "2": "X", "3": "Y", "4": "L1", "5": "R1", "6": "L2", "7": "R2",
+          "8": "Select", "9": "Start", "10": "Anbernic", "11": "L3", "12": "R3",
+          "13": "▲", "14": "▼", "15": "◀", "16": "▶"}
+RA_AUTOCONFIG = "/usr/share/libretro/autoconfig/retrogame_joypad.cfg"
+RA_CFG = "/storage/.config/retroarch/retroarch.cfg"
+# (Aktion in retroarch.cfg, Beschriftung)
+RA_HOTKEYS = [("save_state", "Speichern"), ("load_state", "Laden"), ("menu_toggle", "Menü"),
+              ("exit_emulator", "Beenden"), ("toggle_fast_forward", "Vorspulen"), ("rewind", "Zurückspulen"),
+              ("hold_slowmotion", "Zeitlupe"), ("screenshot", "Screenshot"), ("fps_toggle", "FPS"),
+              ("pause_toggle", "Pause")]
+# Original-Tasten je System → Taste am RG DS Plus (RetroArch-Standardbelegung)
+_DPAD = ("Steuerkreuz", "Steuerkreuz")
+_NES = [_DPAD, ("A", "A"), ("B", "B"), ("Select", "Select"), ("Start", "Start")]
+_SNES = [_DPAD, ("A", "A"), ("B", "B"), ("X", "X"), ("Y", "Y"), ("L", "L1"), ("R", "R1"),
+         ("Select", "Select"), ("Start", "Start")]
+_GBA = [_DPAD, ("A", "A"), ("B", "B"), ("L", "L1"), ("R", "R1"), ("Select", "Select"), ("Start", "Start")]
+_MD = [_DPAD, ("A", "Y"), ("B", "B"), ("C", "A"), ("X", "L1"), ("Y", "X"), ("Z", "R1"), ("Start", "Start"), ("Mode", "Select")]
+_SMS = [_DPAD, ("1", "B"), ("2", "A"), ("Start / Pause", "Start")]
+_PCE = [_DPAD, ("I", "A"), ("II", "B"), ("Select", "Select"), ("Run", "Start")]
+_PSX = [_DPAD, ("Kreuz", "B"), ("Kreis", "A"), ("Quadrat", "Y"), ("Dreieck", "X"), ("L1", "L1"), ("R1", "R1"), ("L2", "L2"),
+        ("R2", "R2"), ("Select", "Select"), ("Start", "Start"), ("Analogsticks", "Sticks")]
+_NDS = [_DPAD, ("A", "A"), ("B", "B"), ("X", "X"), ("Y", "Y"), ("L", "L1"), ("R", "R1"),
+        ("Select", "Select"), ("Start", "Start"), ("Touchscreen", "unterer Bildschirm")]
+_NEOGEO = [("Stick", "Steuerkreuz"), ("A", "B"), ("B", "A"), ("C", "Y"), ("D", "X"), ("Coin", "Select"), ("Start", "Start")]
+_ARCADE = [("Stick", "Steuerkreuz"), ("Tasten 1–6", "B · A · Y · X · L1 · R1"), ("Coin", "Select"), ("Start", "Start")]
+SYSTEM_PADS = {
+    "nes": _NES, "fds": _NES, "famicom": _NES, "gb": _NES, "gbc": _NES, "gamegear": _SMS, "mastersystem": _SMS,
+    "snes": _SNES, "sfc": _SNES, "satellaview": _SNES, "sufami": _SNES, "gba": _GBA,
+    "megadrive": _MD, "genesis": _MD, "md": _MD, "sega32x": _MD, "segacd": _MD, "megacd": _MD,
+    "pcengine": _PCE, "tg16": _PCE, "pcenginecd": _PCE, "tg16cd": _PCE,
+    "psx": _PSX, "nds": _NDS, "neogeo": _NEOGEO,
+    "arcade": _ARCADE, "fbneo": _ARCADE, "mame": _ARCADE, "cps1": _ARCADE, "cps2": _ARCADE, "cps3": _ARCADE,
+}
+
+
+def read_cfg(path):
+    out = {}
+    for line in (rd(path) or "").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip().strip('"')
+    return out
+
+
+def ra_shortcuts():
+    """Liste (Aktion, Tasten) der RetroArch-Kürzel; retroarch.cfg vor Geräte-Autoconfig."""
+    cfg, auto = read_cfg(RA_CFG), read_cfg(RA_AUTOCONFIG)
+    def btn(name):
+        v = cfg.get(f"input_{name}_btn", "nul")
+        if v in ("", "nul"):
+            v = auto.get(f"input_{name}_btn", "nul")
+        return None if v in ("", "nul") else RA_BTN.get(v, "Taste " + v)
+    hk = btn("enable_hotkey")
+    rows = []
+    for key, label in RA_HOTKEYS:
+        b = btn(key)
+        if b:
+            rows.append((label, (hk + " + " if hk else "") + b))
+    combo = cfg.get("input_menu_toggle_gamepad_combo", "0")
+    if combo not in ("0", ""):
+        rows.append(("Menü (Kombination)", {"1": "▼ + L1 + R1 + Y", "2": "L3 + R3", "3": "L1 + R1 + Start + Select",
+                              "4": "Start + Select", "5": "L3 + R1", "6": "L1 + R1",
+                              "7": "Start halten", "8": "Select halten", "9": "▼ + Select"}.get(combo, "Kombination " + combo)))
+    return rows
+
+
+DSP_NAMES = {"guide": "Anbernic", "start": "Start", "back": "Select", "a": "B", "b": "A", "x": "X", "y": "Y",
+             "dpup": "▲", "dpdown": "▼", "dpleft": "◀", "dpright": "▶",
+             "rightshoulder": "R1", "leftshoulder": "L1", "righttrigger": "R2", "lefttrigger": "L2",
+             "leftstick": "L3", "rightstick": "R3"}
+DSP_LABELS = {"quit": "Beenden", "pause": "Menü", "slot_next": "Slot +", "slot_prev": "Slot −",
+              "layout_next": "Layout +", "layout_prev": "Layout −", "fast_forward_toggle": "Vorspulen", "volume_up": "Lauter",
+              "volume_down": "Leiser", "mute": "Stumm", "fullscreen": "Vollbild", "lid": "Deckel", "pip_corner_next": "Bild-im-Bild-Ecke", "screen_swap": "Bildschirme tauschen", "mic": "Mikrofon",
+              "fast_forward": "Vorspulen (halten)", "fast_forward_toggle": "Vorspulen", "save_state": "Speichern",
+              "load_state": "Laden", "fps": "FPS", "screenshot": "Screenshot", "swap_screens": "Bildschirme tauschen"}
+
+
+# Tastennummer (RetroArch/SDL/DraStic) → evdev-Code des eingebauten Joypads
+JOY_CODES = [304, 305, 307, 308, 310, 311, 312, 313, 314, 315, 316, 317, 318, 544, 545, 546, 547]
+
+# SDL-Achsennummer → evdev-ABS-Code (Gerät meldet ABS_X, ABS_Y, ABS_RX, ABS_RY; den rechten Stick gibt es nicht)
+JOY_AXES = [0, 1, 3, 4]
+
+
+def drastic_press(name, dflt=None):
+    """DraStic-Steuerung auslösen, wie in drastic.cfg belegt (controls_b): Taste (1024+n) oder
+    Stick-Richtung (1152+n = Achse n positiv, 1216+n = negativ). Liefert die Beschreibung oder None."""
+    m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % name,
+                  rd("/storage/.config/drastic/config/drastic.cfg") or "")
+    v = int(m.group(1)) if m else dflt
+    if v is None:
+        return None
+    if 1024 <= v < 1024 + len(JOY_CODES):
+        code = JOY_CODES[v - 1024]
+        inject_keys([(code, 1), 0.12, (code, 0)])
+        return "Taste %d" % (v - 1024)
+    for base, sign in ((1152, 1), (1216, -1)):
+        n = v - base
+        if 0 <= n < len(JOY_AXES):
+            ax = JOY_AXES[n]
+            inject_keys([("abs", ax, 32767 * sign), 0.15, ("abs", ax, 0)])
+            return "Achse %d%s" % (n, "+" if sign > 0 else "−")
+    return None
+
+
+# SDL-Namen (DSperate) → evdev-Code des eingebauten Joypads (Reihenfolge = retrogame_joypad.cfg)
+DSP_CODES = {"a": 304, "b": 305, "x": 307, "y": 308, "leftshoulder": 310, "rightshoulder": 311,
+             "lefttrigger": 312, "righttrigger": 313, "back": 314, "start": 315, "guide": 316,
+             "leftstick": 317, "rightstick": 318, "dpup": 544, "dpdown": 545, "dpleft": 546, "dpright": 547}
+
+
+def dsperate_binding(action):
+    """Tastencodes für eine DSperate-Aktion aus [padhotkeys], z. B. [316, 311]; None = nicht belegt."""
+    ini = rd("/storage/.config/dsperate/dsperate.ini") or ""
+    sec, mod, val = None, None, None
+    for line in ini.splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line.startswith("["):
+            sec = line.strip("[]")
+            continue
+        if sec != "padhotkeys" or "=" not in line:
+            continue
+        k, v = [x.strip() for x in line.split("=", 1)]
+        if k == "modifier":
+            mod = v
+        elif k == action:
+            val = v
+    if not val or val == "none":
+        return None
+    codes = []
+    for part in [p for p in val.split("+") if p]:
+        name = mod if part == "mod" else part
+        if name not in DSP_CODES:
+            return None
+        codes.append(DSP_CODES[name])
+    return codes
+
+
+def dsperate_press(action):
+    """DSperate-Kürzel einspeisen (Modifier halten, Taste drücken). False, wenn nicht belegt."""
+    codes = dsperate_binding(action)
+    if not codes:
+        return False
+    seq = []
+    for c in codes:
+        seq += [(c, 1), 0.08]
+    for c in reversed(codes):
+        seq += [(c, 0), 0.04]
+    return inject_keys(seq)
+
+
+def dsperate_shortcuts():
+    ini = rd("/storage/.config/dsperate/dsperate.ini") or ""
+    sec, mod, rows = None, None, []
+    for line in ini.splitlines():
+        line = line.strip()
+        if line.startswith("["):
+            sec = line.strip("[]")
+            continue
+        if sec != "padhotkeys" or "=" not in line:
+            continue
+        k, v = [x.strip() for x in line.split("#", 1)[0].split("=", 1)]
+        if k == "modifier":
+            mod = DSP_NAMES.get(v, v)
+            continue
+        if not v or v.lower() == "none":
+            continue
+        parts = [p for p in v.split("+") if p]
+        base, alt = (k[:-4], True) if k.endswith(".alt") else (k, False)
+        label = DSP_LABELS.get(base, base) + (" (2)" if alt else "")
+        rows.append((label, " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)))
+    return rows
+
+
+def drastic_shortcuts():
+    cfg = rd("/storage/.config/drastic/config/drastic.cfg") or ""
+    names = {"SAVE_STATE": "Speichern", "LOAD_STATE": "Laden", "MENU": "Menü", "FAST_FORWARD": "Vorspulen",
+             "SWAP_SCREENS": "Bildschirme tauschen", "QUIT": "Beenden"}
+    rows = []
+    for k, label in names.items():
+        m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % k, cfg)
+        if not m:
+            continue
+        v = int(m.group(1))
+        if 1024 <= v < 1100:
+            name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
+            rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
+        elif 1152 <= v < 1280:
+            rows.append((label, tr("nur über das CC")))
+    return rows
+GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
+GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
+SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
+SHOT_DIR = "/storage/roms/screenshots"
+
+
+SLOT_EMUS = ("RetroArch", "DSperate", "DraStic")    # Emulatoren mit Slot-Auswahl
+
+
+def drastic_base_slot():
+    """Slot, in den DraStic per Taste speichert (savestate_number in drastic.cfg)."""
+    m = re.search(r"^savestate_number\s*=\s*(\d+)", rd("/storage/.config/drastic/config/drastic.cfg") or "", re.M)
+    return int(m.group(1)) if m else 0
+
+
+def drastic_slot_path(game, n):
+    rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
+    return os.path.join("/storage/roms/savestates/nds", "%s_%d.dss" % (os.path.splitext(os.path.basename(rom))[0], n))
+
+
+def nds_gamecode(rom):
+    """4-stelliger Spielcode aus dem NDS-Header (Offset 0x0C) – DSperate benennt Spielstände danach."""
+    try:
+        if rom.lower().endswith(".zip"):
+            import zipfile
+            with zipfile.ZipFile(rom) as z:
+                name = next((n for n in z.namelist() if n.lower().endswith(".nds")), None)
+                head = z.open(name).read(16) if name else b""
+        else:
+            with open(rom, "rb") as f:
+                head = f.read(16)
+        code = head[12:16].decode("ascii", "ignore")
+        return code if len(code) == 4 and code.isalnum() else None
+    except Exception:
+        return None
+
+
+def nds_state_newest(game):
+    """Neuester Spielstand eines NDS-Spiels in /storage/roms/savestates/nds (DSperate/DraStic)."""
+    rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
+    stem = os.path.splitext(os.path.basename(rom))[0]
+    if not stem:
+        return None
+    files = [f for f in glob.glob(os.path.join("/storage/roms/savestates/nds", glob.escape(stem) + "*"))
+             if not f.endswith((".png", ".jpg"))]
+    return max(files, key=os.path.getmtime) if files else None
+
+
+def game_actions(game):
+    if not game:
+        return []
+    return GAME_ACTIONS.get(game.get("emu"), GAME_ACTIONS_OTHER)
 TILES = ["WLAN", "Bluetooth", "Unterer Screen aus", "Ruhemodus"]
 
 
@@ -2298,6 +2714,22 @@ class ControlCenter:
         self.marquee = False
         self.marquee_t0 = 0.0
         self.switcher = Switcher()
+        self.gsel = 0             # Auswahl auf der Seite „Spiel“
+        self.gmsg = None          # (Text, Zeitpunkt) – Rückmeldung nach einer Aktion
+        self.gbusy = False
+        self.slot = 0             # zuletzt im CC genutzter Slot (Vorauswahl)
+        self.dsp_slot = 0         # aktueller Slot in DSperate (startet mit 0, das CC zählt mit)
+        self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
+        self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
+        self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
+        self.ghelp = False        # Tastenbelegung offen
+        self.toasts = []          # wartende Meldungen oben: {"kind": "volume"|"cheevo", ...}
+        self.toast_now = None     # angezeigte Meldung
+        self.toast_until = 0.0
+        self.ra = None            # letzter Stand des RetroAchievements-Proxys
+        self.ra_sel = 0
+        self.ra_detail = False    # Erfolg geöffnet (A)
+        self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
         self.tracks = {}        # Regler -> (x0, x1)
@@ -2375,6 +2807,10 @@ class ControlCenter:
     def reset(self):
         """Beim Schließen des Overlays: Tastatur und Untermenü verlassen."""
         self.kbd = None
+        self.slot_pick = None
+        self.del_confirm = None
+        self.ghelp = False
+        self.ra_detail = False
         self.back()
 
     def back(self):
@@ -2386,6 +2822,16 @@ class ControlCenter:
             self.sub.close()
             self.sub = None
             return True
+        if self.slot_pick is not None:
+            self.slot_pick = None
+            self.del_confirm = None
+            return True
+        if self.ghelp:
+            self.ghelp = False
+            return True
+        if self.ra_detail:
+            self.ra_detail = False
+            return True
         return False
 
     def tick(self):
@@ -2395,6 +2841,15 @@ class ControlCenter:
             self.sub.tick()
 
     def details(self):
+        if self.page == 1 and self.slot_pick is not None:
+            n = self.slot_pick
+            if not self._slot_exists(n):
+                return
+            if self.del_confirm != n:
+                self.del_confirm = n          # erst beim zweiten X wirklich löschen
+                return
+            self.delete_slot(n)
+            return
         if self.page == 0 and not self.sub and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             self.open_sub(self.tile)
 
@@ -2452,6 +2907,32 @@ class ControlCenter:
         if self.sub:
             self.sub.nav(dx, dy)
             return
+        if self.page == 2:
+            self.ra_sel = max(0, self.ra_sel + dy)
+            return
+        if self.page == 1 and self.ghelp:
+            return
+        if self.page == 1 and self.slot_pick is not None:
+            n = self.slot_pick + dx + dy * 3
+            if 0 <= n < SLOTS_USER:
+                self.slot_pick = n
+                self.del_confirm = None
+            return
+        if self.page == 1:
+            acts = game_actions(self.game)
+            if acts:
+                big = [i for i, a in enumerate(acts) if a[0] in GAME_BIG]
+                small = [i for i, a in enumerate(acts) if a[0] not in GAME_BIG]
+                row = big if self.gsel in big else small
+                if dx:
+                    k = row.index(self.gsel) + dx
+                    if 0 <= k < len(row):
+                        self.gsel = row[k]
+                elif dy > 0 and self.gsel in big and small:
+                    self.gsel = small[min(big.index(self.gsel) * 2, len(small) - 1)]
+                elif dy < 0 and self.gsel in small and big:
+                    self.gsel = big[min(small.index(self.gsel) // 2, len(big) - 1)]
+            return
         if self.page != 0:
             return
         rows = self.rows()
@@ -2474,6 +2955,26 @@ class ControlCenter:
             return
         if self.sub:
             self.sub.confirm()
+            return
+        if self.page == 2 and self.ra and self._ra_rows()[0]:
+            self.ra_detail = not self.ra_detail
+            return
+        if self.page == 1 and self.ghint and self.game:
+            self.hint_done()
+            return
+        if self.page == 1 and self.ghelp:
+            return
+        if self.page == 1 and self.slot_pick is not None:
+            if self.slot_mode == "load" and not self._slot_exists(self.slot_pick):
+                return
+            return ("game", "setslot")
+        if self.page == 1:
+            acts = game_actions(self.game)
+            if acts and not self.gbusy:
+                key = acts[min(self.gsel, len(acts) - 1)][0]
+                if self.open_slots(key):
+                    return
+                return ("game", key)
             return
         if self.page != 0:
             return
@@ -2575,6 +3076,30 @@ class ControlCenter:
                 return "power"
             elif kind == "quit":
                 return "quit"
+            elif kind == "ra_row":
+                self.ra_sel, self.ra_detail = val, True
+            elif kind == "ra_close":
+                self.ra_detail = False
+            elif kind == "ghint":
+                self.hint_done()
+            elif kind == "gact" and not self.gbusy:
+                self.gsel = val
+                key = game_actions(self.game)[val][0]
+                if self.open_slots(key):
+                    return
+                return ("game", key)
+            elif kind == "slotdel":
+                self.slot_pick, self.del_confirm = val, val   # erste Berührung: nachfragen
+            elif kind == "slotpick" and self.del_confirm == val:
+                self.delete_slot(val)                          # zweite Berührung: löschen
+            elif kind == "slotpick" and self.del_confirm is not None:
+                self.del_confirm = None                        # woanders getippt: abbrechen
+                self.slot_pick = val
+            elif kind == "slotpick":
+                if self.slot_mode == "load" and not self._slot_exists(val):
+                    return
+                self.slot_pick = val
+                return ("game", "setslot")
 
     def _hit(self, x, y):
         for hx, hy, hw, hh, action in self.hits:
@@ -2611,6 +3136,10 @@ class ControlCenter:
             pass
         elif self.page == 0:
             self._draw_quick(P)
+        elif self.page == 1:
+            self._draw_game(P)
+        elif self.page == 2:
+            self._draw_ra(P)
         else:
             self._draw_placeholder(P)
         # Fußzeile mit Seitenpunkten
@@ -2620,8 +3149,25 @@ class ControlCenter:
         left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        elif self.page == 1 and self.ghelp:
+            left = [("B", "zurück")]
+        elif self.page == 2 and self.ra and self.ra_detail:
+            left = [("▲ ▼", "nächster Erfolg"), ("A / B", "zurück")]
+        elif self.page == 2 and self.ra:
+            left = [("▲ ▼", "blättern"), ("A", "öffnen"), ("L1 / R1", "Seite wechseln")]
+        elif self.page == 1 and self.ghint and self.game:
+            left = [("A", "Verstanden")]
+        elif self.page == 1 and self.slot_pick is not None:
+            left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
+            if self._slot_exists(self.slot_pick):
+                left.append(("X", "nochmal: löschen" if self.del_confirm == self.slot_pick else "löschen"))
+            left.append(("B", "zurück"))
+        elif self.page == 1 and game_actions(self.game):
+            left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
         P.hint(left, 17, 45, 835, T["muted"], T["text"])
-        P.hint([("Select", "Tour"), ("B", "Schließen")], 17, 1215, 835, T["muted"], T["text"], align="r")
+        right = [("Select", "Tour")] if (self.slot_pick is not None or self.ghelp or (self.page == 2 and self.ra_detail)) \
+            else [("Select", "Tour"), ("B", "Schließen")]
+        P.hint(right, 17, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
             wdt = 34 if i == self.page else 12
@@ -2862,6 +3408,485 @@ class ControlCenter:
                 return "Kein Gerät"
             return short(names[0], 16 if len(names) > 1 else 20) + (f" +{len(names) - 1}" if len(names) > 1 else "")
         return ""
+
+    def _draw_game(self, P):
+        """Seite „Spiel“: Kacheln für Speichern, Laden usw. des laufenden Emulators."""
+        T, A = self.T, self.accent
+        g = self.game
+        acts = game_actions(g)
+        if not g:
+            P.text("Kein Spiel läuft", 40, 630, 420, T["text"], bold=True, align="c")
+            P.text("Starte ein Spiel, um es hier zu steuern.", 22, 630, 470, T["muted"], align="c")
+            return
+        cols, gap = 4, 22
+        tw = (1170 - gap * (cols - 1)) / cols
+        th = 150
+        self.gsel = min(self.gsel, len(acts) - 1)
+        if self.ghint:
+            self._draw_ghint(P)
+            return
+        if self.slot_pick is not None:
+            self._draw_slots(P)
+            return
+        if self.ghelp:
+            self._draw_help(P, g)
+            return
+        big = [(i, k, l) for i, (k, l) in enumerate(acts) if k in GAME_BIG]
+        small = [(i, k, l) for i, (k, l) in enumerate(acts) if k not in GAME_BIG]
+        self._draw_info(P, g, 70)
+        y = 520
+        if big:
+            self._draw_big(P, g, big)
+            y = 610
+        if small:
+            sp = 1170 / len(small) if len(small) > 1 else 1170
+            for j, (i, key, label) in enumerate(small):
+                cx = 45 + sp * (j + 0.5) if len(small) > 1 else 630
+                cy = 670                                  # Symbolreihe unten über der Fußzeile
+                sel = i == self.gsel
+                P.circle(cx, cy, 50, A if sel else mix(T["tile"], A, 0.22))
+                P.game_icon(key, cx, cy, "ffffff" if sel else T["text"])
+                if sel:
+                    self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
+                P.text(label, 18, cx, cy + 86, T["muted"], align="c")
+                self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
+        if self.gbusy:
+            P.text("Bitte warten …", 24, 630, y, T["muted"], align="c")
+        elif self.gmsg and time.monotonic() - self.gmsg[1] < 4:
+            P.text(self.gmsg[0], 24, 630, y, T["text"], bold=True, align="c")
+        elif g.get("emu") not in GAME_ACTIONS:
+            P.text("Weitere Aktionen im Menü des Emulators.", 20, 630, y, T["muted"], align="c")
+
+    def _newest_shot(self):
+        """Vorschaubild des neuesten RetroArch-Spielstands (Slot 0–8) oder None."""
+        if (self.game or {}).get("emu") != "RetroArch":
+            return None
+        used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
+        if not used:
+            return None
+        png = self._slot_file(max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))) + ".png"
+        return png if os.path.exists(png) else None
+
+    def _big_tile(self, P, i, key, label, x, y, w, h, shot=None):
+        T, A = self.T, self.accent
+        sel = i == self.gsel
+        fill = A if sel else mix(T["tile"], A, 0.22)      # angesteuert = Akzentfarbe wie im CC
+        tc, mc = ("ffffff", mix("ffffff", A, 0.25)) if sel else (T["text"], T["muted"])
+        P.rrect(x, y, w, h, 24, fill)
+        arrow = (self.game or {}).get("emu") in SLOT_EMUS
+        if shot and P.image(shot, x, y, w, h, 24):
+            P.rrect(x, y + h - 92, w, 92, 24, "000000", 0.62)
+            P.text(label, 24, x + 28, y + h - 52, "ffffff", bold=True)
+            P.text(self._big_detail(key), 17, x + 28, y + h - 22, "dddddd", raw=True)
+            cy, cc_ = y + h - 46, "ffffff"
+        else:
+            P.text(label, 24, x + 28, y + h / 2 - 8, tc, bold=True)
+            P.text(self._big_detail(key), 17, x + 28, y + h / 2 + 26, mc, raw=True)
+            cy, cc_ = y + h / 2, tc
+        if arrow:
+            P.circle(x + w - 44, cy, 24, mix(fill, tc, 0.18) if not shot else "000000")
+            P.chevron(x + w - 40, cy, 10, cc_)
+        if i == self.gsel:
+            self._focus_ring(P, x, y, w, h, 24)
+        self.hits.append((x, y, w, h, ("gact", i)))
+
+    def _game_icon(self):
+        """Icon des laufenden Spiels (Artwork Manager: -icon, sonst Scraper-Bilder) oder None."""
+        g = self.game or {}
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
+        if not rom:
+            return None
+        stem = os.path.splitext(os.path.basename(rom))[0]
+        img = os.path.join(os.path.dirname(rom), "images")
+        for suf in ("-icon", "-thumb", "-box", "-image"):
+            p = os.path.join(img, stem + suf + ".png")
+            if os.path.exists(p):
+                return p
+        return None
+
+    def _draw_help(self, P, g):
+        """Tastenbelegung: Spieltasten des Systems und Kürzel des Emulators."""
+        T, A = self.T, self.accent
+        emu = g.get("emu")
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
+        system = os.path.basename(os.path.dirname(rom)).lower()
+        pad = SYSTEM_PADS.get(system)
+        if emu in ("DraStic", "DSperate"):
+            pad, sc = _NDS, (drastic_shortcuts() if emu == "DraStic" else dsperate_shortcuts())
+        else:
+            sc = ra_shortcuts() if emu == "RetroArch" else []
+        P.text(g.get("name") or "", 30, 45, 95, T["text"], bold=True, raw=True)
+        P.text(" · ".join(v for v in (system.upper(), emu) if v), 18, 45, 128, T["muted"], raw=True)
+        # links: Spieltasten
+        P.rrect(45, 160, 574, 610, 24, T["card"])
+        P.text("Spieltasten", 22, 75, 205, T["text"], bold=True)
+        y = 250
+        if pad:
+            for orig, dev in pad:
+                P.text(tr(orig), 19, 75, y, T["muted"], raw=True)
+                P.text(tr(dev), 19, 590, y, T["text"], bold=True, align="r", raw=True)
+                y += 40
+        else:
+            P.text("Alle Tasten wie am Gerät beschriftet.", 19, 75, y, T["muted"])
+        # rechts: Kürzel
+        P.rrect(641, 160, 574, 610, 24, T["card"])
+        P.text("Kürzel", 22, 671, 205, T["text"], bold=True)
+        y = 250
+        if not sc:
+            P.text("Keine Kürzel gefunden.", 19, 671, y, T["muted"])
+        for label, keys in sc[:13]:
+            P.text(tr(label), 19, 671, y, T["muted"], raw=True)
+            P.text(keys, 19, 1186, y, A if "Anbernic" in keys else T["text"], bold=True, align="r", raw=True)
+            y += 40
+
+    def _ra_rows(self):
+        st = self.ra or {}
+        unl = st.get("unlocks") or {}
+        achs = [a for a in st.get("achievements") or [] if a.get("id") != 101000001]
+        locked = [a for a in achs if str(a.get("id")) not in unl]
+        done = [a for a in achs if str(a.get("id")) in unl]
+        return locked + done, unl
+
+    def _draw_ra(self, P):
+        """Seite 3: RetroAchievements des laufenden Spiels (Daten vom ROCKNIX-Proxy)."""
+        T, A = self.T, self.accent
+        g = self.game or {}
+        st = self.ra if g.get("emu") == "RetroArch" else None
+        if not g:
+            P.text("Kein Spiel läuft", 40, 630, 420, T["text"], bold=True, align="c")
+            P.text("Erfolge erscheinen hier, sobald ein Spiel läuft.", 22, 630, 470, T["muted"], align="c")
+            return
+        if g.get("emu") != "RetroArch":
+            P.text("RetroAchievements", 40, 630, 400, T["text"], bold=True, align="c", raw=True)
+            P.text(tr("Für %s im Menü des Emulators.") % g.get("emu", ""), 22, 630, 450, T["muted"], align="c", raw=True)
+            return
+        if not st or st.get("login_status") != "ok":
+            msg = "Anmeldung fehlgeschlagen – Konto in ES prüfen." if (st or {}).get("login_status") == "failed" \
+                else "Verbinde mit RetroAchievements …"
+            P.text("RetroAchievements", 40, 630, 400, T["text"], bold=True, align="c", raw=True)
+            P.text(msg, 22, 630, 450, T["muted"], align="c")
+            return
+        user, game = st.get("user") or {}, st.get("game") or {}
+        # Kopf: Konto
+        name = user.get("name") or ""
+        P.circle(80, 95, 34, mix(T["tile"], A, 0.3))
+        P.text(name[:1].upper(), 30, 80, 106, "ffffff", bold=True, align="c", raw=True)
+        P.text(name, 28, 130, 88, T["text"], bold=True, raw=True)
+        hc = re.search(r"^global\.retroachievements\.hardcore=1", rd("/storage/.config/system/configs/system.cfg") or "", re.M)
+        pts = user.get("score") if hc else user.get("softcore_score")
+        P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 18, 130, 118, T["muted"], raw=True)
+        label = tr("Hardcore an") if hc else tr("Softcore")
+        pw = P.width(label, 18, bold=True, raw=True) + 48
+        P.rrect(1215 - pw, 70, pw, 54, 27, mix(T["tile"], A, 0.35 if hc else 0.12))
+        P.text(label, 18, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+        # Spielkarte
+        rows, unl = self._ra_rows()
+        P.rrect(45, 165, 1170, 190, 28, T["card"])
+        icon = self._game_icon()
+        if not (icon and P.image(icon, 70, 190, 140, 140, 24)):
+            P.rrect(70, 190, 140, 140, 24, T["tile"])
+            P.logo(95, 225, 80, T["muted"], T["tile"])
+        unsupported = (game.get("id") or 0) >= 100000000 or not rows
+        title = g.get("name") or game.get("title") or ""
+        while P.width(title, 30, bold=True, raw=True) > 940 and len(title) > 4:
+            title = title[:-2]
+        P.text(title, 30, 240, 225, T["text"], bold=True, raw=True)
+        if unsupported:
+            P.text(tr("Diese ROM-Version wird von RetroAchievements nicht unterstützt."), 18, 240, 262, T["muted"], raw=True)
+            P.text(tr("Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes"), 16, 240, 296, T["muted"], raw=True)
+            return
+        n_done = sum(1 for a in rows if str(a.get("id")) in unl)
+        p_done = sum(a.get("points") or 0 for a in rows if str(a.get("id")) in unl)
+        p_all = sum(a.get("points") or 0 for a in rows)
+        P.text("%d %s %d %s  ·  %d / %d %s" % (n_done, tr("von"), len(rows), tr("Erfolgen"), p_done, p_all, tr("Punkte")),
+               18, 240, 260, T["muted"], raw=True)
+        frac = n_done / len(rows) if rows else 0
+        P.rrect(240, 285, 940, 18, 9, T["seg"])
+        if frac:
+            P.rrect(240, 285, max(18, 940 * frac), 18, 9, A)
+        P.text("%d %%" % round(frac * 100), 17, 1180, 325, T["muted"], align="r", raw=True)
+        self.ra_sel = min(self.ra_sel, len(rows) - 1)
+        if self.ra_detail:
+            self._draw_ra_detail(P, rows[self.ra_sel], unl)
+            return
+        # Liste: offene zuerst, dann geschaffte
+        first = max(0, min(self.ra_sel - 1, len(rows) - 4))
+        y = 380
+        for i, a in enumerate(rows[first:first + 4], start=first):
+            done = str(a.get("id")) in unl
+            sel = i == self.ra_sel
+            P.rrect(45, y, 1170, 92, 20, A if sel else mix(T["tile"], A, 0.22))
+            b = ra_badge(a.get("badge"), locked=not done)
+            if not (b and P.image(b, 58, y + 10, 72, 72, 14)):
+                P.rrect(58, y + 10, 72, 72, 14, A if done else T["seg"])
+                P.game_icon("trophy", 94, y + 46, "ffffff" if done else T["muted"])
+            tc = "ffffff" if sel else T["text"]
+            t = a.get("title") or ""
+            while P.width(t, 20, bold=True, raw=True) > 900 and len(t) > 4:
+                t = t[:-2]
+            P.text(t, 20, 150, y + 38, tc, bold=True, raw=True)
+            d = a.get("desc") or ""
+            while P.width(d, 16, raw=True) > 920 and len(d) > 4:
+                d = d[:-2]
+            P.text(d, 16, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
+            P.text("%d P" % (a.get("points") or 0), 19, 1190, y + 54,
+                   "ffffff" if (sel or done) else T["muted"], bold=True, align="r", raw=True)
+            self.hits.append((45, y, 1170, 92, ("ra_row", i)))
+            y += 102
+
+    def _wrap(self, P, text, size, width, lines=4):
+        out, cur = [], ""
+        for word in (text or "").split():
+            t = (cur + " " + word).strip()
+            if P.width(t, size, raw=True) <= width:
+                cur = t
+            else:
+                out.append(cur)
+                cur = word
+        if cur:
+            out.append(cur)
+        if len(out) > lines:
+            out = out[:lines]
+            out[-1] = out[-1].rstrip(".,") + " …"
+        return out
+
+    def _draw_ra_detail(self, P, a, unl):
+        """Ein Erfolg geöffnet: großes Abzeichen, was zu tun ist, Punkte, Seltenheit, Datum."""
+        T, A = self.T, self.accent
+        done = unl.get(str(a.get("id")))
+        P.rrect(45, 380, 1170, 400, 28, T["card"])
+        b = ra_badge(a.get("badge"), locked=not done)
+        if not (b and P.image(b, 75, 410, 170, 170, 24)):
+            P.rrect(75, 410, 170, 170, 24, A if done else T["seg"])
+            P.game_icon("trophy", 160, 495, "ffffff" if done else T["muted"])
+        x = 280
+        t = a.get("title") or ""
+        while P.width(t, 30, bold=True, raw=True) > 900 and len(t) > 4:
+            t = t[:-2]
+        P.text(t, 30, x, 450, T["text"], bold=True, raw=True)
+        y = 495
+        for line in self._wrap(P, a.get("desc"), 21, 900, 4):
+            P.text(line, 21, x, y, T["muted"], raw=True)
+            y += 34
+        info = ["%d %s" % (a.get("points") or 0, tr("Punkte"))]
+        rar = a.get("rarity")
+        if rar not in (None, ""):
+            info.append(tr("%s %% der Spieler") % ("%.1f" % float(rar)).rstrip("0").rstrip("."))
+        P.text("  ·  ".join(info), 19, x, 680, T["text"], bold=True, raw=True)
+        if done:
+            when = done.get("when")
+            ds = time.strftime("%d.%m.%Y %H:%M", time.localtime(int(when))) if str(when).isdigit() else ""
+            label = tr("Freigeschaltet") + (" " + ds if ds else "") + (" · Hardcore" if done.get("hardcore") else "")
+            P.rrect(x, 705, P.width(label, 17, bold=True, raw=True) + 40, 44, 22, A)
+            P.text(label, 17, x + 20, 734, "ffffff", bold=True, raw=True)
+        else:
+            P.text(tr("Noch offen"), 17, x, 734, T["muted"], bold=True)
+        self.hits.append((45, 380, 1170, 400, ("ra_close", None)))
+
+    def paint_toast(self, cr, w, h):
+        """Schmale Meldung oben über dem Spiel (Lautstärke oder freigeschalteter Erfolg)."""
+        P = Pen(cr, w, h)
+        P.s, P.ox, P.oy = w / 1260, 0, 0          # Entwurf 1260 breit, Höhe frei
+        T, A = self.T, self.accent
+        t = self.toast_now or {}
+        if t.get("kind") == "volume":
+            bw, x = 560, 630 - 280
+            P.rrect(x, 22, bw, 112, 56, "1c1c1c", 0.9)
+            # Lautsprecher
+            P.rrect(x + 46, 64, 16, 28, 4, "ffffff")
+            P.poly([(x + 58, 64), (x + 78, 48), (x + 78, 108), (x + 58, 92)], "ffffff")
+            if t.get("muted") or not t.get("value"):
+                P.game_icon("quit", x + 100, 78, "ffffff", scale=0.5)
+            P.rrect(x + 120, 70, 330, 16, 8, "4a4a4a")
+            P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
+            P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, "ffffff", bold=True, align="r", raw=True)
+            return
+        if t.get("kind") == "cheevo":
+            x, bw = 230, 800
+            P.rrect(x, 14, bw, 128, 34, "1c1c1c", 0.92)
+            b = ra_badge(t.get("badge"))
+            if not (b and P.image(b, x + 20, 30, 96, 96, 16)):
+                P.rrect(x + 20, 30, 96, 96, 16, A)
+                P.game_icon("trophy", x + 68, 78, "ffffff")
+            P.text(tr("Erfolg freigeschaltet!"), 18, x + 140, 58, A, bold=True)
+            title = t.get("title") or ""
+            while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
+                title = title[:-2]
+            P.text(title, 28, x + 140, 96, "ffffff", bold=True, raw=True)
+            P.text(t.get("sub") or "", 17, x + 140, 126, "bdbdbd", raw=True)
+
+    def _session(self):
+        """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
+        g = self.game or {}
+        try:
+            start = int(rd(f"/proc/{g['pid']}/stat").rsplit(")", 1)[1].split()[19]) / os.sysconf("SC_CLK_TCK")
+            up = float(rd("/proc/uptime").split()[0])
+            m = int(max(0, up - start) // 60)
+            return "%d:%02d h" % (m // 60, m % 60)
+        except Exception:
+            return None
+
+    def _draw_info(self, P, g, top):
+        """Kleine Infoansicht: Icon links, Name und Angaben rechts."""
+        T = self.T
+        P.rrect(45, top, 1170, 270, 28, T["card"])
+        icon = self._game_icon()
+        if not (icon and P.image(icon, 70, top + 25, 220, 220, 30)):
+            P.rrect(70, top + 25, 220, 220, 30, T["tile"])
+            P.logo(70 + 55, top + 85, 100, T["muted"], T["tile"])
+        x = 330
+        name = g.get("name") or ""
+        while P.width(name, 36, bold=True, raw=True) > 860 and len(name) > 4:
+            name = name[:-2]
+        P.text(name, 36, x, top + 75, T["text"], bold=True, raw=True)
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
+        system = os.path.basename(os.path.dirname(rom)).upper() if rom else ""
+        lines = [" · ".join(v for v in (system, g.get("emu", "")) if v)]
+        ses = self._session()
+        if ses:
+            lines.append(tr("Gespielt seit") + " " + ses)
+        if "load" in [k for k, _ in game_actions(g)]:
+            lines.append(tr("Letzter Spielstand") + ": " + self._big_detail("load"))
+        y = top + 125
+        for line in lines:
+            P.text(line, 20, x, y, T["muted"], raw=True)
+            y += 38
+
+    def _draw_big(self, P, g, big):
+        """Speichern/Laden nebeneinander unter der Infoansicht."""
+        gap, th, y = 22, 120, 470
+        bw = (1170 - gap * (len(big) - 1)) / len(big)
+        for j, (i, key, label) in enumerate(big):
+            self._big_tile(P, i, key, label, 45 + j * (bw + gap), y, bw, th)
+
+    def _big_detail(self, key):
+        """Zweite Zeile der Kacheln Speichern/Laden (wie bei WLAN/Bluetooth)."""
+        g = self.game or {}
+        def when(path):
+            return time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(path)))
+        if g.get("emu") in SLOT_EMUS:
+            used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
+            if key == "save":
+                return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % self.slot if used else tr("Slot wählen")
+            if not used:
+                return tr("Kein Spielstand")
+            n = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
+            return "Slot %d  ·  %s" % (n, when(self._slot_file(n)))
+        if g.get("emu") == "DSperate":
+            st = nds_state_newest(g)
+            if st:
+                return tr("Zuletzt") + "  ·  " + when(st)
+            return tr("Kein Spielstand") if key == "load" else ""
+        if g.get("emu") == "DraStic":
+            rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else "") or ""
+            dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
+            if os.path.exists(dss):
+                return "Slot 0  ·  " + when(dss)
+            return "Slot 0" if key == "save" else tr("Kein Spielstand")
+        return ""
+
+    def hint_done(self):
+        self.ghint = False
+        try:
+            with open(GAME_HINT_DONE, "w") as f:
+                f.write(time.strftime("%Y-%m-%d %H:%M\n"))
+        except OSError as exc:
+            log("Seite Spiel: Hinweis-Merker nicht schreibbar:", exc)
+
+    def _draw_ghint(self, P):
+        """Einmaliger Hinweis beim ersten Öffnen der Seite „Spiel“."""
+        T, A = self.T, self.accent
+        P.rrect(45, 200, 1170, 420, 24, T["card"])
+        P.text("Gut zu wissen", 30, 85, 270, T["text"], bold=True)
+        y = 330
+        for line in ("Speichern und Laden nutzen die Speicherplätze von RetroArch.",
+                     "Beim Speichern und Laden wählst du den Speicherplatz (0–8) aus.",
+                     "Eigene Einstellungen in ES (z. B. „Savestates hochzählen“) oder RetroArch",
+                     "können dieses Verhalten verändern. Slot 9 nutzt der Gameswitcher."):
+            P.text(line, 21, 85, y, T["muted"])
+            y += 42
+        P.rrect(85, 530, 260, 64, 32, A)
+        P.text("Verstanden", 22, 215, 571, "ffffff", bold=True, align="c")
+        self._focus_ring(P, 85, 530, 260, 64, 32)
+        self.hits.append((45, 200, 1170, 420, ("ghint", None)))
+
+    def open_slots(self, key):
+        """RetroArch: Speichern/Laden öffnet erst die Slot-Auswahl; „Tasten“ die Belegung. True, wenn geöffnet."""
+        if key == "help":
+            self.ghelp = True
+            return True
+        if (self.game or {}).get("emu") not in SLOT_EMUS or key not in ("save", "load"):
+            return False
+        self.slot_mode = key
+        start = min(self.slot, SLOTS_USER - 1)
+        if key == "load" and not self._slot_exists(start):   # auf den neuesten belegten Slot
+            used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
+            if used:
+                start = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
+        self.slot_pick = start
+        return True
+
+    def delete_slot(self, n):
+        f = self._slot_file(n)
+        for path in (f, f + ".png"):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        log("Seite Spiel: Slot", n, "gelöscht")
+        self.del_confirm = None
+
+    def _slot_exists(self, n):
+        f = self._slot_file(n)
+        return bool(f and os.path.exists(f))
+
+    def _slot_file(self, n):
+        """Pfad des Spielstands für Slot n (RetroArch: …stateN, DSperate: CODE.N.dss)."""
+        g = self.game or {}
+        rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
+        if not rom:
+            return None
+        if g.get("emu") == "DraStic":
+            return drastic_slot_path(g, n)
+        if g.get("emu") == "DSperate":
+            if g.get("_code") is None:
+                g["_code"] = nds_gamecode(rom) or ""
+            return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n)) if g["_code"] else None
+        return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
+                            os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
+
+    def _draw_slots(self, P):
+        """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
+        T, A = self.T, self.accent
+        P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 200, T["text"], bold=True)
+        cols, gap = 3, 22
+        tw, th = (1170 - gap * (cols - 1)) / cols, 170
+        for n in range(SLOTS_USER):
+            tx = 45 + (n % cols) * (tw + gap)
+            ty = 225 + (n // cols) * (th + gap)
+            cur = n == self.slot
+            usable = self.slot_mode == "save" or self._slot_exists(n)
+            P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
+            f = self._slot_file(n)
+            when = None
+            if f and os.path.exists(f):
+                when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(f)))
+                P.image(f + ".png", tx, ty, tw, th, 20)
+            # Beschriftung unten auf dunklem Band
+            P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
+            label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
+            P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            if when and n != self.del_confirm:          # Löschen-Knopf für Touch
+                P.circle(tx + tw - 32, ty + 32, 22, "000000")
+                P.game_icon("trash", tx + tw - 32, ty + 32, "ffffff")
+                self.hits.append((tx + tw - 64, ty, 64, 64, ("slotdel", n)))
+            if n == self.del_confirm:
+                P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
+                P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
+                P.text(tr("nochmal X oder tippen"), 16, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
+            if n == self.slot_pick:
+                self._focus_ring(P, tx, ty, tw, th, 20)
+            self.hits.append((tx, ty, tw, th, ("slotpick", n)))
 
     def _draw_placeholder(self, P):
         T = self.T
@@ -3226,6 +4251,7 @@ class Overlay:
         self.pending_view = None
         self._mm = None
         self.top = None   # Fläche auf dem oberen Bildschirm (Ladebildschirm)
+        self.toast = None # schmale Meldung oben (Lautstärke, Erfolge)
 
         self.registry = marshal(self.display, 1, IF_REGISTRY, ("n", None))
         G = CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_char_p, c_uint32)
@@ -3415,8 +4441,10 @@ class Overlay:
     def top_output(self):
         return next((o for o, n in reversed(list(self.outputs.items())) if n == TOP_OUTPUT), None)
 
-    def show_top(self, painter):
-        self.hide_top()
+    def show_top(self, painter, slot="top", height=None):
+        """Fläche auf dem oberen Bildschirm. slot="toast" mit height: schmaler Streifen oben
+        (durchsichtig außerhalb der Meldung, das Spiel bleibt sichtbar)."""
+        self.hide_top(slot)
         out = self.top_output()
         if not out:
             return
@@ -3429,21 +4457,25 @@ class Overlay:
         def configure(_d, lsurf, serial, w, h):
             try:
                 marshal(lsurf, 6, None, ("u", serial))
-                t["size"] = (w or 1024, h or 768)
-                self.redraw_top()
+                t["size"] = (w or 1024, h or (height or 768))
+                self.redraw_top(slot)
             except Exception as exc:
                 log("Fehler oben:", exc)
         listen(t["lsurf"],
                CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_uint32, c_uint32)(configure),
                CFUNCTYPE(None, c_void_p, c_void_p)(lambda *a: None))
-        marshal(t["lsurf"], 1, None, ("u", ANCHOR_ALL))
-        marshal(t["lsurf"], 2, None, ("i", -1))
+        if height:
+            marshal(t["lsurf"], 0, None, ("u", 0), ("u", int(height)))   # volle Breite, feste Höhe
+            marshal(t["lsurf"], 1, None, ("u", 1 | 4 | 8))                # oben, links, rechts
+        else:
+            marshal(t["lsurf"], 1, None, ("u", ANCHOR_ALL))
+            marshal(t["lsurf"], 2, None, ("i", -1))
         marshal(t["surface"], 6, None)
         wl.wl_display_flush(self.display)
-        self.top = t
+        setattr(self, slot, t)
 
-    def redraw_top(self):
-        t = self.top
+    def redraw_top(self, slot="top"):
+        t = getattr(self, slot, None)
         if not (t and t["size"]):
             return
         w, h = t["size"]
@@ -3475,8 +4507,9 @@ class Overlay:
         t["mm"] = mm
         wl.wl_display_flush(self.display)
 
-    def hide_top(self):
-        t, self.top = self.top, None
+    def hide_top(self, slot="top"):
+        t = getattr(self, slot, None)
+        setattr(self, slot, None)
         if not t:
             return
         marshal(t["lsurf"], 7, None, destroy=True)
@@ -3679,7 +4712,9 @@ def main():
         if ui.view != "cc":
             return
         result = {"down": cc.touch_down, "move": cc.touch_move}.get(kind, lambda *_: cc.touch_up())(x, y)
-        if result == "power":
+        if isinstance(result, tuple) and result[0] == "game":
+            game_act(result[1])
+        elif result == "power":
             toggle("power")
         elif result == "close":
             toggle("cc")
@@ -3694,6 +4729,7 @@ def main():
         pads[joy] = {"name": JOYPAD_NAME, "path": find_event(JOYPAD_NAME), "ext": False,
                      "range": abs_range(joy, ABS_X)}
     home = open_event(HOME_NAME)
+    vol = open_event(VOLUME_NAME)      # nur mitlesen (kein Grab): ROCKNIX regelt, wir zeigen an
     pwr = open_event(POWER_NAME)
     pwr_down_at = None   # Zeitstempel des Drückens (für Kurz/Lang)
     tfd = open_event(TOUCH_NAME)
@@ -3870,6 +4906,196 @@ def main():
             quit_game(game)
         threading.Thread(target=work, daemon=True).start()
 
+    def game_act(key):
+        """Seite „Spiel“: Aktion für das laufende Spiel ausführen."""
+        g = cc.game
+        if not g or cc.gbusy:
+            return
+        emu = g["emu"]
+
+        def finish(msg):
+            cc.gbusy = False
+            cc.gmsg = (msg, time.monotonic())
+            state["dirty"] = True
+
+        if key == "quit":
+            do_quit()
+            return
+        if emu == "DraStic" and key in ("menu", "ff"):
+            toggle("cc")
+            def later():
+                time.sleep(0.3)
+                how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
+                log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
+            threading.Thread(target=later, daemon=True).start()
+            return
+        if emu == "DSperate" and key in ("menu", "ff"):
+            toggle("cc")
+            def later():
+                time.sleep(0.3)
+                # „pause“ öffnet bei DSperate das Menü; Vorspulen über das Umschalt-Kürzel
+                ok = dsperate_press("pause" if key == "menu" else "fast_forward_toggle")
+                log("Seite Spiel: DSperate", key, "ok" if ok else "nicht belegt")
+            threading.Thread(target=later, daemon=True).start()
+            return
+        if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
+            toggle("cc")                     # erst schließen (Pause aufheben), dann auslösen
+            cmd = {"ff": "FAST_FORWARD", "slow": "SLOWMOTION", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
+            def later():
+                time.sleep(0.3)
+                ra_command(cmd)
+                log("Seite Spiel:", cmd)
+            threading.Thread(target=later, daemon=True).start()
+            return
+        if key == "setslot":
+            target = cc.slot_pick if cc.slot_pick is not None else cc.slot
+            cc.slot_pick = None
+            cc.slot = target                 # zuletzt genutzter Slot = Vorauswahl beim nächsten Mal
+            key = cc.slot_mode
+        if emu == "RetroArch":
+            # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
+            cmd = {"save": f"SAVE_STATE_SLOT {cc.slot}", "load": f"LOAD_STATE_SLOT {cc.slot}",
+                   "shot": "SCREENSHOT"}[key]
+            ra_command(cmd)
+            log("Seite Spiel:", cmd, "Slot", cc.slot)
+            toggle("cc")                     # erledigt → zurück ins Spiel
+            return
+
+        toggle("cc")                         # schließen: Pause und Grab aufheben, dann auslösen
+
+        def work():
+            msg = "Fehlgeschlagen"
+            try:
+                time.sleep(0.3)
+                if key == "shot":
+                    os.makedirs(SHOT_DIR, exist_ok=True)
+                    rom = g.get("rom") or rom_of(g["pid"]) or g.get("name", "spiel")
+                    base = re.sub(r"[^\w.-]+", "_", os.path.splitext(os.path.basename(rom))[0])
+                    out = os.path.join(SHOT_DIR, base + time.strftime("-%Y%m%d-%H%M%S.png"))
+                    if subprocess.run(["grim", "-o", TOP_OUTPUT, out], timeout=10).returncode == 0:
+                        msg = "Screenshot gespeichert"
+                elif emu == "DSperate":
+                    # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
+                    n = cc.slot
+                    step = "slot_next" if n > cc.dsp_slot else "slot_prev"
+                    for _ in range(abs(n - cc.dsp_slot)):
+                        if not dsperate_press(step):
+                            raise RuntimeError("DSperate: Slot-Kürzel nicht belegt")
+                        time.sleep(0.12)
+                    cc.dsp_slot = n
+                    f = cc._slot_file(n)
+                    before = os.path.getmtime(f) if f and os.path.exists(f) else 0
+                    shot = None
+                    if key == "save" and f:     # Vorschaubild vom oberen Bildschirm (DSperate legt keins an)
+                        shot = f + ".png"
+                        subprocess.run(["grim", "-l", "1", "-o", TOP_OUTPUT, shot + ".tmp"], timeout=5,
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if not dsperate_press("save_state" if key == "save" else "load_state"):
+                        raise RuntimeError("DSperate: Kürzel nicht belegt")
+                    ok = key == "load"
+                    for _ in range(30):
+                        time.sleep(0.1)
+                        if key == "save" and f and os.path.exists(f) and os.path.getmtime(f) > before:
+                            ok = True
+                            break
+                    if shot and os.path.exists(shot + ".tmp"):
+                        if ok:
+                            os.replace(shot + ".tmp", shot)
+                        else:
+                            os.remove(shot + ".tmp")
+                    msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
+                elif emu == "DraStic":
+                    # DraStic speichert/lädt per Taste (R2/L2) immer in seinem eingestellten Slot b.
+                    # Andere Slots: Datei von/nach <rom>_<n>.dss kopieren; Slot b wird vorher gesichert.
+                    n, b = cc.slot, drastic_base_slot()
+                    fb, fn = drastic_slot_path(g, b), drastic_slot_path(g, n)
+                    bak = fb + ".rdsbak"
+                    if n != b and os.path.exists(fb):
+                        shutil.copy2(fb, bak)
+                    try:
+                        if key == "load" and n != b:
+                            shutil.copy2(fn, fb)
+                        before = os.path.getmtime(fb) if os.path.exists(fb) else 0
+                        shot = None
+                        if key == "save":
+                            shot = fn + ".png"
+                            subprocess.run(["grim", "-l", "1", "-o", TOP_OUTPUT, shot + ".tmp"], timeout=5,
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        code = 313 if key == "save" else 312     # R2 speichern, L2 laden
+                        inject_keys([(code, 1), 0.1, (code, 0)])
+                        ok = False
+                        for _ in range(30):
+                            time.sleep(0.1)
+                            if key == "save" and os.path.exists(fb) and os.path.getmtime(fb) > before:
+                                time.sleep(0.2)                  # Schreiben abschließen lassen
+                                ok = True
+                                break
+                        if key == "load":
+                            time.sleep(0.8)                      # DraStic liest die Datei
+                            ok = True
+                        if key == "save" and ok and n != b:
+                            shutil.copy2(fb, fn)
+                        if shot and os.path.exists(shot + ".tmp"):
+                            os.replace(shot + ".tmp", shot) if ok else os.remove(shot + ".tmp")
+                    finally:
+                        if n != b and os.path.exists(bak):
+                            os.replace(bak, fb)                  # Slot b unverändert zurück
+                        elif n != b and key == "load" and os.path.exists(fb):
+                            os.remove(fb)                        # war vorher leer
+                    msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
+                log("Seite Spiel:", emu, key, "→", msg)
+            except Exception:
+                log("Seite Spiel: Fehler\n" + traceback.format_exc().rstrip())
+            finish(msg)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def volume_toast():
+        t = {"kind": "volume", "value": volume_get() or 0, "muted": volume_muted()}
+        if cc.toast_now and cc.toast_now.get("kind") == "volume":
+            cc.toast_now = t                              # Balken mitziehen, Anzeige verlängern
+            cc.toast_until = time.monotonic() + 1.6
+            cc.toast_dirty = True
+        else:
+            cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "volume"] + [t]
+
+    def cheevo_watch():
+        """Fragt während RetroArch-Spielen den ROCKNIX-Proxy ab und meldet neue Erfolge."""
+        known = {"game": None, "ids": set()}
+        while True:
+            if os.path.exists("/tmp/rds-toast-test"):          # Testmeldung: touch /tmp/rds-toast-test
+                os.remove("/tmp/rds-toast-test")
+                cc.toasts.append({"kind": "cheevo", "badge": None, "title": "Test: Erfolg freigeschaltet",
+                                  "sub": "10 %s  ·  1 / 1" % tr("Punkte")})
+            g = cc.game
+            if not (g and g.get("emu") == "RetroArch"):
+                known["game"], cc.ra = None, None
+                time.sleep(3)
+                continue
+            st = ra_state()
+            if st:
+                if st != cc.ra and ui.view == "cc" and cc.page == 2:
+                    state["dirty"] = True
+                cc.ra = st
+                gid = (st.get("game") or {}).get("id")
+                ids = set((st.get("unlocks") or {}).keys())
+                if gid != known["game"]:
+                    known["game"], known["ids"] = gid, ids        # Ausgangsstand: nichts melden
+                else:
+                    new = ids - known["ids"]
+                    known["ids"] = ids
+                    achs = {str(a.get("id")): a for a in st.get("achievements") or []}
+                    total = len(achs)
+                    for i in sorted(new):
+                        a = achs.get(i, {})
+                        cc.toasts.append({"kind": "cheevo", "badge": a.get("badge"), "title": a.get("title"),
+                                          "sub": "%d %s  ·  %d / %d" % (a.get("points") or 0, tr("Punkte"),
+                                                                       len(ids), total)})
+                        log("Erfolg freigeschaltet:", a.get("title"))
+            time.sleep(1.5)
+
+    threading.Thread(target=cheevo_watch, daemon=True).start()
+
     def do_quit():
         game = cc.game
         if ui.view:
@@ -3984,7 +5210,9 @@ def main():
             cc.details()
         elif typ == EV_KEY and code == BTN_EAST:
             result = cc.confirm()
-            if result == "power":
+            if isinstance(result, tuple) and result[0] == "game":
+                game_act(result[1])
+            elif result == "power":
                 toggle("power")
             elif result == "close":
                 toggle("cc")
@@ -4034,7 +5262,7 @@ def main():
     last_minute = time.strftime("%H:%M")
     next_pad_scan = 0.0
     exit_code = [0]
-    wake = {"swallow": False}
+    wake = {"swallow": False, "combo": False}
     last_game = {"pid": None}
     try:
         while True:
@@ -4061,12 +5289,15 @@ def main():
                             cc.screen_auto = True
                         elif not g and cc.screen_auto:
                             cc.screen_on()
+                        cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
-            fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
+            fds = [fd for fd in [home, pwr, tfd, vol] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
                 or (home_down["t"] is not None and not home_down["fired"]) \
-                or home_down["pending"] is not None
+                or home_down["pending"] is not None \
+                or cc.gbusy or (cc.gmsg is not None and time.monotonic() - cc.gmsg[1] < 4.5) \
+                or cc.toast_now is not None or bool(cc.toasts)
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -4102,6 +5333,9 @@ def main():
                                 if not home_down["fired"]:
                                     home_down["pending"] = time.monotonic()   # kurz: auf zweiten Druck warten
                                 home_down["t"] = None
+                        elif fd == vol:
+                            if typ == EV_KEY and code in (KEY_VOLUMEUP, KEY_VOLUMEDOWN) and value in (1, 2):
+                                threading.Timer(0.15, volume_toast).start()   # ROCKNIX hat dann schon geregelt
                         elif fd == pwr:
                             KEY_POWER = 116
                             if typ == EV_KEY and code == KEY_POWER:
@@ -4120,16 +5354,23 @@ def main():
                                         subprocess.Popen(["systemctl", "suspend"])
                         elif fd in pads:
                             # Nur Anbernic-Taste weckt unteren Screen auf
+                            # Erst beim LOSLASSEN entscheiden: allein gedrückt → wecken/CC,
+                            # als Teil einer Kombination (Emulator-Kürzel, z. B. Anbernic + R2) → nichts tun,
+                            # sonst würde das CC beim Drücken öffnen und dem Emulator die zweite Taste wegnehmen.
                             if typ == EV_KEY and code == BTN_MODE and (cc.screen_bottom_off or wake["swallow"]):
                                 if value == 1 and cc.screen_bottom_off:
-                                    auto = cc.screen_auto
-                                    cc.screen_on()
-                                    if auto:   # RetroArch: direkt das CC zeigen
-                                        toggle("cc")
-                                        cc.redim = True
-                                    wake["swallow"] = True   # Loslassen nicht als CC-Aufruf werten
-                                elif value == 0:
+                                    wake["swallow"], wake["combo"] = True, False
+                                elif value == 0 and wake["swallow"]:
                                     wake["swallow"] = False
+                                    if not wake.get("combo") and cc.screen_bottom_off:
+                                        auto = cc.screen_auto
+                                        cc.screen_on()
+                                        if auto:   # RetroArch: direkt das CC zeigen
+                                            toggle("cc")
+                                            cc.redim = True
+                                continue
+                            if wake["swallow"] and value == 1 and typ == EV_KEY:
+                                wake["combo"] = True   # zweite Taste während Anbernic gehalten
                                 continue
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
@@ -4156,6 +5397,20 @@ def main():
                     last_minute = time.strftime("%H:%M")
                     state["dirty"] = True
             if scrolling:
+                state["dirty"] = True
+            # Meldungen oben (Lautstärke, Erfolge): eine nach der anderen, nie über Ladebildschirm/Tour
+            now = time.monotonic()
+            if cc.toast_now and now >= cc.toast_until:
+                ui.hide_top("toast")
+                cc.toast_now = None
+            if cc.toast_now and getattr(cc, "toast_dirty", False):
+                cc.toast_dirty = False
+                ui.redraw_top("toast")
+            if not cc.toast_now and cc.toasts and ui.top is None:
+                cc.toast_now = cc.toasts.pop(0)
+                cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 1.5)
+                ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
+            if ui.view == "cc" and cc.page == 1 and (cc.gbusy or (cc.gmsg and time.monotonic() - cc.gmsg[1] < 4.5)):
                 state["dirty"] = True
             if home_down["pending"] is not None \
                     and time.monotonic() - home_down["pending"] >= HOME_DOUBLE_S:

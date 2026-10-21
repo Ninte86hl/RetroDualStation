@@ -41,6 +41,46 @@ Kontrollcenter mit **Select** erneut starten.
 
 **L1 / R1** – Seite wechseln · **B** – Schließen · **Select** – diese Tour erneut starten
 
+### Seite „Spiel“
+
+| | |
+|---|---|
+| <img src="tour/tour-spiel.png" alt="Seite Spiel"> | <img src="tour/tour-slots.png" alt="Speicherplätze"> |
+
+Im Spiel mit **R1** zur Seite „Spiel“ (RetroArch, DSperate und DraStic):
+- **Speichern / Laden** öffnen die Speicherplätze 0–8 mit Vorschaubild und Uhrzeit. Beim Laden ist der neueste vorausgewählt.
+  Der **Mülleimer** (oder **X**, **X**) löscht einen Spielstand.
+- Symbole: **Emulator-Menü · Neu starten · Vorspulen · Zeitlupe · Screenshot · Tasten · Beenden**.
+- **Tasten** zeigt die Original-Tasten des Systems (z. B. NES: Steuerkreuz, A, B, Select, Start) und die Kürzel des Emulators.
+- Nach einer Aktion schließt sich das Kontrollcenter und du bist wieder im Spiel.
+
+### Kürzel – in jedem Emulator gleich
+
+<p align="center"><img src="tour/tour-tasten.png" alt="Tastenbelegung" width="480"></p>
+
+**Anbernic-Taste halten** und eine zweite Taste drücken. Alles geht auch per Tipp im Kontrollcenter.
+
+| Anbernic + | Aktion |
+|---|---|
+| **R1** | Vorspulen an/aus |
+| **R2 / L2** | Speichern / Laden |
+| **X** | Emulator-Menü |
+| **Y** | FPS anzeigen |
+| **Start** | Spiel beenden |
+| **◀ / ▶** | Speicherplatz − / + |
+
+DraStic kennt keine Tastenkombinationen: Dort liegen Speichern und Laden auf R2 und L2, Menü und Vorspulen gibt es über das Kontrollcenter.
+
+### RetroAchievements (Seite 3)
+
+| | |
+|---|---|
+| <img src="tour/tour-ra.png" alt="RetroAchievements"> | <img src="tour/tour-toast.png" alt="Erfolg freigeschaltet"> |
+
+Dein Konto, der Fortschritt im laufenden Spiel und alle Erfolge – **A** öffnet einen Erfolg mit Beschreibung,
+Punkten und Seltenheit. Ein neuer Erfolg erscheint kurz **oben über dem Spiel**, ebenso die **Lautstärke** bei Vol+ / Vol−.
+Anmelden in ES: *Spieleinstellungen → RetroAchievements-Einstellungen*. Unterstützt werden RetroArch-Spiele.
+
 ---
 
 ## 3. Gameswitcher

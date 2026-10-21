@@ -439,3 +439,134 @@ wird bei jedem Öffnen frisch gewählt.
 - Bedienung: **A** / **▶** weiter · **B** / **◀** zurück · **Start** beenden.
 - Gleicher Inhalt als Anleitung: [TOUR.de.md](TOUR.de.md) / [TOUR.md](TOUR.md).
 
+
+### Seite „Spiel“ – erste Fassung (20.10.2026)
+- Kacheln je Emulator (L1/R1 zur Seite, Steuerkreuz + A oder Touch):
+  - **RetroArch:** Speichern und Laden öffnen die Slot-Auswahl (0–8, Vorschaubild und Zeit; Laden nur belegte,
+    vorausgewählt der neueste; Slot 9 = Gameswitcher), Vorspulen, Screenshot,
+    Neu starten, Emulator-Menü (über die Steuerschnittstelle).
+    Der Slot wird seit Spielstart mitgezählt (RetroArch meldet ihn nicht zurück).
+  - **DraStic:** Speichern (R2), Laden (L2) – kurz auftauen, Taste einspeisen, wieder anhalten; Screenshot.
+  - **Andere (DSperate, Ports …):** Screenshot; Hinweis auf das Emulator-Menü.
+- Aufbau: **Speichern** und **Laden** als große Kacheln mit zweiter Zeile (zuletzt genutzter / neuester Slot mit Zeit),
+  darunter Symbole in dieser Reihenfolge: Emulator-Menü, Neu starten, Vorspulen, Zeitlupe, Screenshot, Beenden
+  (ohne RetroArch nur Screenshot und Beenden). Später: „Steuerung“ – erklärt Tasten und Bedienung des Emulators.
+- Slot-Auswahl: **X** auf einem belegten Slot, dann nochmal **X** → Savestate und Vorschaubild löschen.
+  Touch: Mülleimer oben rechts am Slot → Rückfrage „Löschen?“ → erneut auf den Slot tippen.
+- Nach jeder Aktion schließt sich das CC (zurück ins Spiel) – außer bei der Slot-Wahl.
+- Screenshots außerhalb RetroArch: `grim` vom oberen Bildschirm nach `/storage/roms/screenshots/`.
+- Offen: Spickzettel, DSperate-Speichern über eigene (2)-Belegung, Schalter „Tastenkürzel erlauben“.
+
+### Savestates: ES, RetroArch und CC (Abgleich 20.10.2026)
+| Einstellung | Wert | Bedeutung für uns |
+|---|---|---|
+| ES `global.autosave` | 1 | RetroArch speichert beim Beenden automatisch und lädt beim Start (eigene Auto-Datei, kein Slot) |
+| ES `global.incrementalsavestates` | **2** „Nicht hochzählen“ | Spiel startet in Slot 0 → Slot-Zählung im CC stimmt. Bei „Pro Speichern hochzählen“ würde ES einen freien Slot wählen und die Anzeige wäre falsch → einmaliger Hinweis beim ersten Öffnen der Seite „Spiel“ (`spiel-hinweis.done`), keine Änderung durch den Installer |
+| RA `savestate_thumbnail_enable` | true | Vorschaubild `…stateN.png` neben jedem Savestate → Slot-Menü und Gameswitcher |
+| RA `savestate_file_compression` | true | kleinere Dateien, unkritisch |
+| RA Ordner | `/storage/roms/savestates/<System>/` (setzt ROCKNIX beim Start) | dort sucht das CC |
+| Gameswitcher | fester Slot 9 | im Slot-Menü nicht wählbar |
+| ROCKNIX beim Start (`/tmp/.retroarch.cfg`) | `state_slot` = nächster freier Slot (z. B. 10, weil Slot 9 belegt), `savestate_auto_index = true` | RetroArch-eigenes Speichern zählt hoch (10, 11 …). Das CC nutzt deshalb **`SAVE_STATE_SLOT n` / `LOAD_STATE_SLOT n`** mit ausdrücklichem Slot und ist davon unabhängig |
+
+### Tastenbelegung (Symbol „Tasten“, 21.10.2026)
+- Links **Spieltasten**: nur die Tasten des Original-Systems und wo sie am RG DS Plus liegen (Tabelle `SYSTEM_PADS`,
+  RetroArch-Standardbelegung; NDS für DraStic/DSperate). Unbekannte Systeme: „Alle Tasten wie am Gerät beschriftet“.
+- Rechts **Kürzel**, gelesen aus den echten Dateien:
+  - RetroArch: `retroarch.cfg`, fehlende Werte aus `/usr/share/libretro/autoconfig/retrogame_joypad.cfg`
+    (Tastennummern: 0 B, 1 A, 2 X, 3 Y, 4 L1, 5 R1, 6 L2, 7 R2, 8 Select, 9 Start, 10 Anbernic, 11 L3, 12 R3, 13–16 Steuerkreuz).
+    Hotkey-Taste bei uns: 10 = Anbernic.
+  - DSperate: `[padhotkeys]` in `dsperate.ini` (Modifier `guide` = Anbernic).
+  - DraStic: `controls_b[...]` in `drastic.cfg` (Wert − 1024 = Tastennummer).
+- Kürzel mit der Anbernic-Taste sind in Akzentfarbe hervorgehoben.
+- Eigene Kürzel im CC anpassen: verworfen (21.10.2026) – das einheitliche Schema reicht.
+
+### DSperate (21.10.2026)
+- Das CC liest die Kürzel aus `[padhotkeys]` der `dsperate.ini` und drückt genau diese Kombination
+  (Modifier `guide` = Anbernic). Speichern/Laden/Menü funktionieren daher mit jeder Belegung.
+- Werkseinstellung (`/usr/config/dsperate/dsperate.ini`): Speichern Anbernic+R1, Laden Anbernic+L1,
+  Slot ± Anbernic+◀/▶, Menü (`pause`) Anbernic+X, FPS Anbernic+Y, Vorspulen umschalten Anbernic+R2.
+- Beobachtung: Kürzel mit R2/L2 (`mod++righttrigger`) lösten bei uns kein Speichern aus, obwohl SDL R2 als Trigger meldet;
+  mit der Werkseinstellung (R1/L1) tritt das nicht auf.
+- SDL-Namen → Gerät: a = B, b = A, x = X, y = Y (laut SDL-Zuordnung `retrogame_joypad`).
+
+### Einheitliche Kürzel (festgelegt 21.10.2026)
+Modifier ist überall die **Anbernic-Taste** (RetroArch Taste 10, DSperate `guide`).
+
+| Anbernic + | Aktion | RetroArch (`retroarch.cfg`) | DSperate (`[padhotkeys]`) |
+|---|---|---|---|
+| R1 | Vorspulen an/aus | `input_toggle_fast_forward_btn = 5` | `fast_forward_toggle = mod+rightshoulder` |
+| R2 | Speichern | `input_save_state_btn = 7` | `save_state = mod++righttrigger` |
+| L2 | Laden | `input_load_state_btn = 6` | `load_state = mod++lefttrigger` |
+| L1 | Zurückspulen | `input_rewind_btn = 4` | – |
+| X | Menü | `input_menu_toggle_btn = 2` | `pause = mod+x` |
+| Y | FPS | `input_fps_toggle_btn = 3` | `fps = mod+y` |
+| Start | Beenden | `input_exit_emulator_btn = 9` | `quit = mod+start` |
+| ◀ / ▶ | Slot − / + | `input_state_slot_decrease/increase_btn = 15/16` | `slot_prev/next = mod+dpleft/dpright` |
+| ▲ | Bildschirme tauschen | – | `screen_swap = mod+dpup` (wirkt bei DSperate nicht, 21.10.2026 – nicht wichtig) |
+| Select / ▼ | Layout vor / zurück | – | `layout_next = mod+back`, `layout_prev = mod+dpdown` |
+
+R1 ist am leichtesten erreichbar → Vorspulen; Speichern/Laden auf den Triggern verhindert versehentliches Auslösen.
+DraStic kennt keinen Modifier: Speichern R2, Laden L2 (ohne Anbernic), Vorspulen R3, Menü L3.
+Sicherungen vor jeder Änderung auf dem PC unter `~/RetroDualStation/backup/`.
+Später: Installer setzt dieses Schema optional (mit Sicherung).
+
+### DSperate-Slots (getestet 21.10.2026)
+- Spielstände heißen `<Spielcode>.<Slot>.dss` (Spielcode aus dem NDS-Header, Offset 0x0C, z. B. `AMCP.3.dss`), Auto: `<Code>.auto.dss`.
+- Das CC steuert den Slot mit Anbernic + ◀/▶ an (zählt ab Spielstart von 0 mit), speichert/lädt dann mit dem Kürzel.
+- Vorschaubild: Screenshot des oberen Bildschirms direkt vor dem Speichern → `<Code>.<Slot>.dss.png`.
+- Speichern, Laden, Bilder und Emulator-Menü per CC getestet.
+
+### Log des Kontrollcenters
+Das CC schreibt ins Journal: `journalctl -u rds-controlcenter --no-pager | tail -40`
+
+### DraStic-Slots (21.10.2026)
+- DraStic speichert/lädt per Taste nur in seinem eingestellten Slot `savestate_number` (drastic.cfg, meist 0); Dateien `<ROM>_<n>.dss`.
+- Das CC bietet trotzdem Slot 0–8: Speichern in Slot n = R2 drücken, dann `_b.dss` nach `_n.dss` kopieren;
+  Laden aus Slot n = `_n.dss` nach `_b.dss` kopieren, L2 drücken. Slot b wird vorher gesichert (`.rdsbak`) und danach zurückgelegt.
+- Die Dateien entsprechen DraStics eigenen Slots – sie erscheinen auch in seinem Menü.
+- Vorschaubild: Screenshot des oberen Bildschirms → `<ROM>_<n>.dss.png`.
+
+### Grundsatz Seite „Spiel“ (21.10.2026)
+Jede Emulator-Funktion ist auf zwei Wegen erreichbar: per **Kürzel** (Anbernic + Taste, einheitlich) **oder** per **Tipp im CC**.
+Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die das Gerät nicht hat (DraStic-Vorspulen auf R3).
+
+### DraStic: Menü und Vorspulen nur über das CC (21.10.2026)
+- Das RG DS Plus meldet 17 Tasten (A B X Y L1 R1 L2 R2 Select Start Anbernic L3 R3 + Steuerkreuz) und vier Achsen,
+  hat aber **kein R3** und **keinen rechten Stick**. Diese „Geister“ nutzen wir:
+  - `controls_a/b[CONTROL_INDEX_MENU] = 1036` (R3)
+  - `controls_a/b[CONTROL_INDEX_FAST_FORWARD] = 1154` (Achse 2 positiv = rechter Stick nach rechts)
+- DraStic-Kodierung: Taste n = 1024+n, Achse n positiv = 1152+n, negativ = 1216+n.
+- L3 ist damit frei; Menü/Vorspulen gibt es nur über das CC. Installer setzt das einmalig (`drastic-kuerzel.done`, Sicherung `.vor-rds-kuerzel`).
+- Normales RG DS hat zwei Sticks → dort andere Lösung nötig.
+- Menü-Vergrößerung: `librgdsmenu.so` gibt es auf dem RG DS Plus nicht (nur `libdrastouch.so`) → zurückgestellt.
+
+### RetroAchievements – Entwurf (21.10.2026)
+- **CC-Seite 3:** Kopf mit Konto (Name, Punkte, Rang) und Hardcore-Anzeige; Spielkarte (Icon, „12 von 48 Erfolgen · Punkte“,
+  Fortschrittsbalken); Liste „Als Nächstes“ (Abzeichen, Titel, Beschreibung, Punkte). A = Details, Y = alle Erfolge.
+- **Freischalt-Meldung:** einige Sekunden **oben über dem Spiel** (Abzeichen, „Erfolg freigeschaltet!“, Titel, Punkte, Stand),
+  ersetzt die abgeschaltete RetroArch-Einblendung.
+- **Farben:** an die Akzentfarbe des CC gekoppelt (kein eigenes Gold).
+- Datenquellen: RetroAchievements-Web-API (Konto + API-Key) für Abzeichen/Texte; Freischalten aus RetroArch (Ausgabe bzw. `ra_proxy`) – zu klären.
+
+### RetroAchievements – Datenquelle und Unterstützung (21.10.2026)
+- **ROCKNIX-Proxy** `/usr/share/lowerdeck/ra_proxy.py` (aus lowerdeck, GPL – nur Daten lesen, keinen Code übernehmen):
+  sitzt zwischen RetroArch und retroachievements.org, `GET http://127.0.0.1:4874/_ui/state` liefert
+  `user`, `game`, `achievements` (Titel, Beschreibung, Punkte, Abzeichen), `unlocks` (ID → Zeit, Hardcore), `login_status`.
+  Abzeichen: `/storage/thumbnails/cheevos/badges/<badge>.png` bzw. `_lock.png`. Beendet sich 3 s nach RetroArch.
+- **Freischalt-Meldung:** CC fragt während RetroArch-Spielen alle 1–2 s `/_ui/state` ab; neue ID in `unlocks` → Meldung oben.
+- **ES-Menü RetroAchievements** im Dual-Build: Fehler 401 (keine Entwickler-Kennung) – später ausblenden oder auf das CC verweisen.
+- **Unterstützung** (`es_features.cfg`, Merkmal `cheevos`): alle passenden RetroArch-Cores; Standalone: gopher64, PPSSPP, Flycast,
+  DuckStation, Dolphin, melonDS, **DSperate** (`[cheevos] enabled` in dsperate.ini), AetherSX2, SkyEmu. DraStic: nein.
+- **Plan:** Stufe 1 RetroArch (über den Proxy). Stufe 2 DSperate prüfen (eigene Anmeldung; geht es über den Proxy?).
+  Andere Standalone-Emulatoren zeigen auf Seite 3 einen Hinweis.
+
+### RetroAchievements und Lautstärke – Umsetzung Stufe 1 (21.10.2026)
+- **Seite 3:** Konto (Name, Punkte Softcore/Hardcore nach ES-Einstellung), Spielkarte (Icon aus dem Artwork Manager,
+  „n von m Erfolgen · Punkte“, Balken), Liste offene → geschaffte Erfolge mit Abzeichen (▲ ▼ blättern).
+  Nicht unterstützte ROM-Version (Spiel-ID ≥ 100000000) → Hinweis auf „Supported Game Hashes“.
+  Andere Emulatoren → Hinweis aufs Emulator-Menü.
+- **Freischalt-Meldung:** Hintergrund-Thread fragt `/_ui/state` alle 1,5 s ab (nur RetroArch), neue Einträge in `unlocks` →
+  Meldung 1,5 s oben (schmale Ebene `toast`, Spiel bleibt sichtbar).
+- **Lautstärke:** `gpio-keys-volume` (KEY_VOLUMEUP/DOWN) wird nur mitgelesen; 0,15 s nach dem Druck liest das CC
+  `wpctl get-volume` und zeigt 1,6 s einen Balken oben. Mehrere Drücke ziehen den Balken mit.
+- **Installer:** schaltet RetroAchievements nicht mehr ab; ein von früher gemerkter Wert wird einmalig zurückgegeben.

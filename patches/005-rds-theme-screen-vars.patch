@@ -1,0 +1,50 @@
+diff --git a/es-app/src/SystemData.cpp b/es-app/src/SystemData.cpp
+index b504a11ea..fa1a1a300 100644
+--- a/es-app/src/SystemData.cpp
++++ b/es-app/src/SystemData.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "SystemData.h"
+ 
+ #include "SystemConf.h"
+@@ -1607,6 +1608,26 @@ void SystemData::loadTheme()
+ 		sysData["screen.ratio"] = Renderer::getAspectRatio();
+ 		sysData["screen.vertical"] = Renderer::isVerticalScreen() ? "true" : "false";
+ 
++		// RDS: Bildschirm-Bereiche (Pixel und relativ 0..1 zum Fenster)
++		sysData["screen.dual"] = RdsScreens::active() ? "true" : "false";
++		sysData["screen.menu"] = (RdsScreens::menu().x == RdsScreens::top().x && RdsScreens::menu().y == RdsScreens::top().y) ? "top" : "bottom";
++		{
++			const float sw = (float)Renderer::getScreenWidth(), sh = (float)Renderer::getScreenHeight();
++			const std::pair<const char*, RdsScreens::Rect> areas[] = { { "top", RdsScreens::top() }, { "bottom", RdsScreens::bottom() } };
++			for (auto& a : areas)
++			{
++				std::string k = std::string("screen.") + a.first;
++				sysData[k + ".x"] = std::to_string(a.second.x);
++				sysData[k + ".y"] = std::to_string(a.second.y);
++				sysData[k + ".width"] = std::to_string(a.second.w);
++				sysData[k + ".height"] = std::to_string(a.second.h);
++				sysData[k + ".relx"] = std::to_string(a.second.x / sw);
++				sysData[k + ".rely"] = std::to_string(a.second.y / sh);
++				sysData[k + ".relwidth"] = std::to_string(a.second.w / sw);
++				sysData[k + ".relheight"] = std::to_string(a.second.h / sh);
++			}
++		}
++
+ 		// Retrocompatibility
+ 		sysData["cheevos.username"] = SystemConf::getInstance()->getBool("global.retroachievements") ? SystemConf::getInstance()->get("global.retroachievements.username") : "";
+ 
+diff --git a/es-core/src/ThemeData.cpp b/es-core/src/ThemeData.cpp
+index 9f331fb34..9df90e866 100644
+--- a/es-core/src/ThemeData.cpp
++++ b/es-core/src/ThemeData.cpp
+@@ -794,7 +794,8 @@ void ThemeData::loadFile(const std::string& system, const std::map<std::string,
+ 
+ 	for (auto var : mVariables)
+ 	{
+-		if (var.first == "screen.height" || var.first == "screen.width")
++		if (var.first == "screen.height" || var.first == "screen.width" ||
++			(Utils::String::startsWith(var.first, "screen.top.") || Utils::String::startsWith(var.first, "screen.bottom.")))
+ 			mEvaluatorVariables[var.first] = Utils::String::toFloat(var.second);
+ 		else if (var.second == "true" || var.second == "false")
+ 			mEvaluatorVariables[var.first] = var.second == "true" ? 1 : 0;

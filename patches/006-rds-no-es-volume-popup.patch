@@ -1,0 +1,14 @@
+diff --git a/es-core/src/Window.cpp b/es-core/src/Window.cpp
+index eb67688f9..4dc5186c6 100644
+--- a/es-core/src/Window.cpp
++++ b/es-core/src/Window.cpp
+@@ -459,7 +459,8 @@ void Window::update(int deltaTime)
+ 	for (auto extra : mScreenExtras)
+ 		extra->update(deltaTime);
+ 
+-	if (mVolumeInfo)
++	// RDS: im Dual-Modus zeigt das Kontrollcenter die Lautstärke an (oben über dem Spiel)
++	if (mVolumeInfo && !RdsScreens::active())
+ 		mVolumeInfo->update(deltaTime);
+ 
+ 	mFrameTimeElapsed += deltaTime;

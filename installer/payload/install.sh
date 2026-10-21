@@ -48,6 +48,20 @@ sys.exit(0 if ok else 1)' 2>>"$LOG"; then
 fi
 log "Geraet: RG DS Plus erkannt"
 
+# Bildschirm-Bereiche fuer ES (Patch 004/005); eigene Anpassungen bleiben erhalten
+SCREENS=/storage/.config/retrodualstation/screens.cfg
+if [ ! -f "$SCREENS" ]; then
+    mkdir -p /storage/.config/retrodualstation
+    cat > "$SCREENS" <<'EOS'
+# RetroDualStation: Bildschirm-Bereiche im ES-Fenster (x,y,Breite,Hoehe)
+# RG DS Plus: links = oberer Bildschirm, rechts = unterer
+top=0,0,1024,768
+bottom=1024,0,1024,768
+menu=top
+EOS
+    log "screens.cfg angelegt (RG DS Plus)"
+fi
+
 chmod +x "$SRC/$BIN" 2>/dev/null
 cp "$SRC/$BIN" /tmp/dualstation-bincheck && chmod +x /tmp/dualstation-bincheck
 MISSING="$(ldd /tmp/dualstation-bincheck 2>&1 | grep 'not found')"
@@ -182,16 +196,55 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
                -e 's/^confirm_close = .*/confirm_close = "false"/' \
                -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' \
                -e 's/^video_font_enable = .*/video_font_enable = "false"/' \
-               -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' \
-               -e 's/^cheevos_enable = .*/cheevos_enable = "false"/' "$RACFG"
-        log "RetroArch: Rueckfragen, Einblendungen und RetroAchievements aus"
+               -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' "$RACFG"
+        log "RetroArch: Rueckfragen und Einblendungen aus (Erfolgsmeldung zeigt das Kontrollcenter)"
     fi
-    # RetroAchievements vorerst aus (kommen später über das Kontrollcenter); alten Wert merken
-    if [ ! -f "$DEST/retroachievements.before" ]; then
-        ( . /etc/profile >/dev/null 2>&1; get_setting global.retroachievements ) > "$DEST/retroachievements.before" 2>/dev/null
+    # Einheitliche Kürzel (Anbernic + R1 Vorspulen, R2 Speichern, L2 Laden, X Menü, Y FPS, Start Beenden).
+    # Nur einmal pro Gerät (Merker), vorher Sicherung; eigene spätere Änderungen bleiben unangetastet.
+    KMARK=/storage/.config/retrodualstation/kuerzel.done
+    if [ ! -f "$KMARK" ] && [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
+        cp "$RACFG" "$RACFG.vor-rds-kuerzel"
+        set_ra(){ if grep -q "^$1 = " "$RACFG"; then sed -i "s/^$1 = .*/$1 = \"$2\"/" "$RACFG"; else echo "$1 = \"$2\"" >> "$RACFG"; fi; }
+        set_ra input_enable_hotkey_btn 10; set_ra input_toggle_fast_forward_btn 5; set_ra input_save_state_btn 7
+        set_ra input_load_state_btn 6; set_ra input_rewind_btn 4; set_ra input_menu_toggle_btn 2
+        set_ra input_fps_toggle_btn 3; set_ra input_exit_emulator_btn 9
+        set_ra input_state_slot_decrease_btn 15; set_ra input_state_slot_increase_btn 16
+        DSPINI=/storage/.config/dsperate/dsperate.ini
+        if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null; then
+            cp "$DSPINI" "$DSPINI.vor-rds-kuerzel"
+            sed -i -e 's/^modifier = .*/modifier = guide/' -e 's/^quit = .*/quit = mod+start/' \
+                   -e 's/^pause = .*/pause = mod+x/' -e 's/^fast_forward = .*/fast_forward = none/' \
+                   -e 's/^fast_forward_toggle = .*/fast_forward_toggle = mod+rightshoulder/' \
+                   -e 's/^save_state = .*/save_state = mod++righttrigger/' -e 's/^load_state = .*/load_state = mod++lefttrigger/' \
+                   -e 's/^slot_next = .*/slot_next = mod+dpright/' -e 's/^slot_prev = .*/slot_prev = mod+dpleft/' \
+                   -e 's/^layout_next = .*/layout_next = mod+back/' -e 's/^layout_prev = .*/layout_prev = mod+dpdown/' \
+                   -e 's/^screen_swap = .*/screen_swap = mod+dpup/' -e 's/^fps = .*/fps = mod+y/' "$DSPINI"
+        fi
+        mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
+        log "Kuerzel: einheitliches Schema gesetzt (Sicherungen *.vor-rds-kuerzel)"
     fi
-    ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements 0 ) >/dev/null 2>&1
-    log "ES: RetroAchievements aus (vorher: $(cat "$DEST/retroachievements.before" 2>/dev/null))"
+    # DraStic: Menü und Vorspulen auf Tasten, die das RG DS Plus nicht hat (R3 und den fehlenden rechten Stick)
+    # → nur über das Kontrollcenter erreichbar, L3 bleibt frei. Einmalig, mit Sicherung.
+    DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
+    DCFG=/storage/.config/drastic/config/drastic.cfg
+    if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        cp "$DCFG" "$DCFG.vor-rds-kuerzel"
+        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
+                  -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 1154/' "$DCFG"
+        date > "$DMARK"
+        log "DraStic: Menue auf R3, Vorspulen auf rechten Stick (nur ueber das CC)"
+    fi
+    # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
+    # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
+    if [ -f "$DEST/retroachievements.before" ]; then
+        RAOLD="$(cat "$DEST/retroachievements.before" 2>/dev/null)"
+        RANOW="$( . /etc/profile >/dev/null 2>&1; get_setting global.retroachievements )"
+        if [ "$RANOW" = "0" ] && [ -n "$RAOLD" ] && [ "$RAOLD" != "0" ]; then
+            ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements "$RAOLD" ) >/dev/null 2>&1
+            log "ES: RetroAchievements wieder wie vor RetroDualStation ($RAOLD)"
+        fi
+        rm -f "$DEST/retroachievements.before"
+    fi
 
     MAKOCFG=/storage/.config/mako/config
     if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then
