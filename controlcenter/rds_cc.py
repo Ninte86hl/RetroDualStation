@@ -1265,7 +1265,8 @@ CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gam
 SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
 
 
-HAPTIC = {"open": (0xFFFF, 110), "tap": (0xC000, 70)}   # Stärke, Dauer (ms) – kleine Motoren brauchen Anlaufzeit
+# Stärke, Dauer (ms) – kleine Motoren brauchen Anlaufzeit, sonst hört man sie nur
+HAPTIC = {"power": (0xFFFF, 110), "open": (0xB000, 85), "tap": (0xA000, 60)}
 _haptic_fd = [None]
 
 
@@ -3036,7 +3037,10 @@ class ControlCenter:
     def turn_page(self, d):
         if self.sub:
             return
-        self.page = max(0, min(len(PAGES) - 1, self.page + d))
+        new = max(0, min(len(PAGES) - 1, self.page + d))
+        if new != self.page:
+            haptic("tap")
+        self.page = new
 
     # -- Bedienung mit Touch (Pixel des Bildschirms) --
     def touch_down(self, px, py):
@@ -3099,6 +3103,8 @@ class ControlCenter:
             hit = self._hit(x0, y0)
             if not hit:
                 return
+            if hit[0] not in ("gact",):                    # Aktionen der Seite „Spiel“ vibrieren in game_act
+                haptic("tap")
             kind, val = hit
             if kind == "perf":
                 self.focus = self.rows().index(("perf", None))
@@ -4746,6 +4752,8 @@ def main():
                 hit = next((h[4] for h in reversed(cc.hits)
                             if h[0] <= dx <= h[0] + h[2] and h[1] <= dy <= h[1] + h[3]), None)
                 if hit and hit[0] == "gs":
+                    if hit[1] != cc.switcher.sel:
+                        haptic("tap")
                     if hit[1] == cc.switcher.sel:
                         gs_act(False)
                     else:
@@ -4848,7 +4856,7 @@ def main():
             pauser.resume()
         else:
             if view in ("cc", "power", "switcher"):
-                haptic("open")                       # kurzes Feedback beim Öffnen
+                haptic("power" if view == "power" else "open")   # kurzes Feedback beim Öffnen
             if not ui.view:
                 if cc.screen_bottom_off and cc.screen_auto:   # automatisch abgedunkelt → für die Anzeige an
                     cc.screen_on()
