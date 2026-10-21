@@ -63,9 +63,9 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 ## RetroDualStation
 
 ### Umbenennung ROCKNIX DualStation → RetroDualStation (beschlossen 19.10.2026)
-- [ ] GitHub-Repository umbenennen (z. B. `retrodualstation`; GitHub leitet alte Links weiter)
+- [x] GitHub-Repository umbenennen → `Ninte86hl/RetroDualStation` (21.10.2026, Links im Repo angepasst)
 - [ ] README (EN/DE), CREDITS, Overlay-README, Doku: Name und Leitsatz
-- [ ] Installer/Uninstaller, Ports-Einträge, Meldungen, Log-Namen; ZIP-Namen ab dem nächsten Release
+- [ ] Installer/Uninstaller, Ports-Einträge, Meldungen, Log-Namen; ZIP-Namen **mit v14** (Übergang für alte Installationen)
 - [ ] Ankündigung mit neuem Namen und Logo
 - Easter Egg (bewusst nicht erklärt): RDS liest sich auch als **R**OCKNIX **D**ual**S**tation,
   Farben Rot (ROCKNIX) · Blau (JELOS) · Weiß – für Kenner der Szene ableitbar,
@@ -180,8 +180,14 @@ Danach abwägen, was als Nächstes ausgebaut wird.
   – Favorit: Variante 3 „Verwoben“ mit Dual-Screen-Handheld
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
 
+### Technik & Wartung (beschlossen 21.10.2026)
+- [ ] **v14: RAM sparen im Kontrollcenter/Gameswitcher** – Bildercache (`Pen._png`) beim Schließen leeren und auf ~20 Bilder begrenzen; Zeichenpuffer (`_mm`, oben/Meldungen) beim Verbergen freigeben. Vorher/nachher messen: `ps -o pid,rss,args | grep "[r]ds_cc"`
+- [ ] **Module statt einer Datei** – `rds_cc.py` (~5.500 Zeilen) erst aufteilen, wenn ein großes Feature ansteht (Einstellungsmenü oder normales RG DS): z. B. wayland · eingabe · emulatoren · kontrollcenter · gameswitcher · achievements · ui. Neue Teile gleich als eigenes Modul.
+- Verworfen: CC und Gameswitcher als getrennte Prozesse – mehr RAM, Tastenabstimmung fehleranfällig, kein Tempogewinn (Engpass ist der Emulatorstart)
+
 ### Scraper
 - [x] ScreenScraper-Entwicklerzugang beantragt (20.10.2026, Antwort ausstehend)
+- Alternative, falls ScreenScraper absagt: IGDB-/SteamGridDB-Scraper aus maniman303s ES-Fork (Branch `dual_screen_support`, nur Nutzer-Zugangsdaten; Issue #5)
 - [ ] mit Zugang: Scraper im Dual-Build von ES wieder aktivieren (Zugangsdaten nur als GitHub-Secret beim Bauen, nie im Repository)
 
 ## Artwork Manager
