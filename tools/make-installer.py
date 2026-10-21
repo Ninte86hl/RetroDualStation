@@ -35,6 +35,8 @@ if len(args) not in (2, 3) or None in opts.values():
     sys.exit(__doc__)
 binary, version = args[0], args[1]
 canvas = args[2] if len(args) == 3 else None
+if len(args) == 3 and not (canvas and os.path.isfile(canvas)):
+    sys.exit("canvas-ZIP nicht gefunden: %r – erst tools/make-canvas-installer.py <version> ausführen" % canvas)
 artwork_repo, pillow = opts.get("--artwork"), opts.get("--pillow")
 binname = "emulationstation-rgds"
 

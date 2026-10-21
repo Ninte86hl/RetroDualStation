@@ -126,7 +126,10 @@ fi
 ESTH=/storage/.config/emulationstation
 for pair in "dii-ess-aye-rgds-plus:dii-ess-aye-rds" "canvas-ds-rgds-plus:canvas-rds"; do
     o="${pair%%:*}"; n="${pair#*:}"
-    [ -d "$THEMEDIR/$o" ] && rm -rf "$THEMEDIR/$o" && log "altes Theme entfernt: $o"
+    # nur entfernen, wenn der neue Name wirklich da ist (Paket oder schon installiert) – sonst bliebe kein Theme
+    if [ -d "$THEMEDIR/$o" ] && { [ -d "$SRC/theme/$n" ] || [ -d "$THEMEDIR/$n" ]; }; then
+        rm -rf "$THEMEDIR/$o" && log "altes Theme entfernt: $o"
+    fi
     [ -f "$ESTH/themesettings/$o.cfg" ] && [ ! -f "$ESTH/themesettings/$n.cfg" ] && mv "$ESTH/themesettings/$o.cfg" "$ESTH/themesettings/$n.cfg"
     for tf in "$DEST/theme.dual" "$DEST/theme.single"; do
         [ -f "$tf" ] && grep -qx "$o" "$tf" && echo "$n" > "$tf" && log "Theme-Auswahl: $o -> $n"
