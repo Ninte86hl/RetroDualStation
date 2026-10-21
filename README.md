@@ -32,7 +32,7 @@ Five views made for two screens, hero image and video on top. → [more](https:/
 <details>
 <summary><b>Control Center</b></summary>
 
-<p align="center"><img src="docs/screenshots/control-center-main.png" alt="Control Center" width="480"></p>
+<p align="center"><img src="docs/screenshots/cc-unten.png" alt="Control Center" width="400"> <img src="docs/tour/tour-spiel.png" alt="Game page" width="400"></p>
 
 **Anbernic button** – quick settings, save slots with pictures, fast forward, power menu – over any game. → [more](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Control-Center)
 
@@ -41,7 +41,7 @@ Five views made for two screens, hero image and video on top. → [more](https:/
 <details>
 <summary><b>Game switcher</b></summary>
 
-<p align="center"><img src="docs/screenshots/game-switcher.png" alt="Game switcher" width="480"></p>
+<p align="center"><img src="docs/screenshots/gs-unten.png" alt="Game switcher" width="480"></p>
 
 **Hold Home** – jump between recent games and continue exactly where you left off. → [more](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Game-Switcher)
 

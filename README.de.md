@@ -32,7 +32,7 @@ Fünf Ansichten für zwei Bildschirme, oben Hero-Bild und Video. → [mehr](http
 <details>
 <summary><b>Kontrollcenter</b></summary>
 
-<p align="center"><img src="docs/screenshots/control-center-main.png" alt="Kontrollcenter" width="480"></p>
+<p align="center"><img src="docs/screenshots/cc-unten.png" alt="Kontrollcenter" width="400"> <img src="docs/tour/tour-spiel.png" alt="Seite „Spiel“" width="400"></p>
 
 **Anbernic-Taste** – Schnelleinstellungen, Speicherplätze mit Bild, Vorspulen, Power-Menü – über jedem Spiel. → [mehr](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Kontrollcenter)
 
@@ -41,7 +41,7 @@ Fünf Ansichten für zwei Bildschirme, oben Hero-Bild und Video. → [mehr](http
 <details>
 <summary><b>Gameswitcher</b></summary>
 
-<p align="center"><img src="docs/screenshots/game-switcher.png" alt="Gameswitcher" width="480"></p>
+<p align="center"><img src="docs/screenshots/gs-unten.png" alt="Gameswitcher" width="480"></p>
 
 **Home halten** – zwischen den letzten Spielen wechseln und genau dort weitermachen. → [mehr](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Gameswitcher)
 
