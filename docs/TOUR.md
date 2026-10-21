@@ -41,6 +41,46 @@ Open it with the **Anbernic** button – in EmulationStation and in every game (
 
 **L1 / R1** – switch page · **B** – close · **Select** – start this tour again
 
+### Game page
+
+| | |
+|---|---|
+| <img src="tour/tour-spiel.png" alt="Game page"> | <img src="tour/tour-slots.png" alt="Save slots"> |
+
+In a game, press **R1** for the game page (RetroArch, DSperate and DraStic):
+- **Save / Load** open slots 0–8 with preview picture and time. Loading preselects the newest one.
+  The **bin** (or **X**, **X**) deletes a save.
+- Icons: **Emulator menu · Restart · Fast forward · Slow motion · Screenshot · Buttons · Quit**.
+- **Buttons** shows the original system's buttons (e.g. NES: D-pad, A, B, Select, Start) and the emulator's shortcuts.
+- After an action the Control Center closes and you're back in the game.
+
+### Shortcuts – the same in every emulator
+
+<p align="center"><img src="tour/tour-tasten.png" alt="Button layout" width="480"></p>
+
+**Hold the Anbernic button** and press a second button. Everything also works with a tap in the Control Center.
+
+| Anbernic + | Action |
+|---|---|
+| **R1** | Fast forward on/off |
+| **R2 / L2** | Save / Load |
+| **X** | Emulator menu |
+| **Y** | Show FPS |
+| **Start** | Quit game |
+| **◀ / ▶** | Save slot − / + |
+
+DraStic has no button combinations: save and load are on R2 and L2, menu and fast forward via the Control Center.
+
+### RetroAchievements (page 3)
+
+| | |
+|---|---|
+| <img src="tour/tour-ra.png" alt="RetroAchievements"> | <img src="tour/tour-toast.png" alt="Achievement unlocked"> |
+
+Your account, your progress in the running game and all achievements – **A** opens one with description,
+points and rarity. A new achievement briefly appears **on top of the game**, and so does the **volume** on Vol+ / Vol−.
+Sign in in ES: *Game settings → RetroAchievements settings*. Supported: RetroArch games.
+
 ---
 
 ## 3. Game switcher
