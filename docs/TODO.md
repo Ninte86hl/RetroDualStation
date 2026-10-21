@@ -36,7 +36,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 ### Offen nach v12
 - [x] Issue #5 (maniman303): Artwork-Standard dokumentiert (`docs/ARTWORK.md`, 20.10.2026)
 - [ ] Issue #5: ScreenScraper-Dev-Kennung beantragt (20.10.2026, Forum „ScreenScraper WebAPI“) – danach ES-Build über GitHub Actions mit Secret
-- [ ] Issue #5: Bildschirm-Bereiche im ES-Patch – vor der RG-DS-Version; Konzept: [BILDSCHIRME.md](BILDSCHIRME.md)
+- [x] Issue #5: Bildschirm-Bereiche im ES-Patch (Patch 004/005, getestet 20.10.2026); Konzept: [BILDSCHIRME.md](BILDSCHIRME.md)
 - [ ] Artwork Manager: libretro-Thumbnails als Quelle ohne Schlüssel
 - [ ] Issue #5 beantworten, sobald Punkte stehen
 - [ ] Artwork Manager: SGDB-Wiederholung bei Zeitüberschreitung, M3U in Unterordnern
@@ -100,7 +100,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       `input_playerN_joypad_index`, wirkt nur bei RetroArch; DraStic/DSperate prüfen)
 - [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
       beim Spielstart; CC muss den Helfer bei Bedarf selbst starten (`systemd-run rocknix-bluetooth-agent`)
-- [ ] Etappe 3: RetroAchievements  (nach Bluetooth-Koppeln im Spiel, festgelegt 20.10.2026)
+- [x] Etappe 3: RetroAchievements – Seite 3, Erfolg öffnen, Freischalt-Meldung, Lautstärke-Anzeige (21.10.2026)
       - **Benachrichtigung:** kurzes Overlay auf dem unteren Bildschirm, wenn ein Erfolg
         freigeschaltet wird (Symbol, Titel, Punkte; blendet sich selbst aus, Spiel läuft weiter)
       - **Erfolge-Übersicht** (CC-Seite „RetroAchievements“): erledigte und offene Erfolge
@@ -174,7 +174,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
 
 ### Scraper
-- [ ] ScreenScraper-Entwicklerzugang beantragen (Forum; Antragstext vorbereiten)
+- [x] ScreenScraper-Entwicklerzugang beantragt (20.10.2026, Antwort ausstehend)
 - [ ] mit Zugang: Scraper im Dual-Build von ES wieder aktivieren (Zugangsdaten nur als GitHub-Secret beim Bauen, nie im Repository)
 
 ## Artwork Manager
