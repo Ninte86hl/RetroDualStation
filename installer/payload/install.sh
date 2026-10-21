@@ -240,9 +240,11 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
     # DraStic: Menü und Vorspulen auf Tasten, die das RG DS Plus nicht hat (R3 und den fehlenden rechten Stick)
     # → nur über das Kontrollcenter erreichbar, L3 bleibt frei. Einmalig, mit Sicherung.
+    # Nur RG DS Plus: das RG DS hat R3 und den rechten Stick – dort bleibt die ROCKNIX-Belegung
+    # (Menü L3, Vorspulen R3); das Kontrollcenter liest die Belegung aus drastic.cfg.
     DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
     DCFG=/storage/.config/drastic/config/drastic.cfg
-    if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+    if [ "$DEVICE" = "RG DS Plus" ] && [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
         cp "$DCFG" "$DCFG.vor-rds-kuerzel"
         sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 1154/' "$DCFG"
