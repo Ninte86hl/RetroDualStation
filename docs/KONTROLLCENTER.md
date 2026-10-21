@@ -566,7 +566,7 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
   Nicht unterstützte ROM-Version (Spiel-ID ≥ 100000000) → Hinweis auf „Supported Game Hashes“.
   Andere Emulatoren → Hinweis aufs Emulator-Menü.
 - **Freischalt-Meldung:** Hintergrund-Thread fragt `/_ui/state` alle 1,5 s ab (nur RetroArch), neue Einträge in `unlocks` →
-  Meldung 5 s oben (schmale Ebene `toast`, Spiel bleibt sichtbar).
+  Meldung 1,5 s oben (schmale Ebene `toast`, Spiel bleibt sichtbar).
 - **Lautstärke:** `gpio-keys-volume` (KEY_VOLUMEUP/DOWN) wird nur mitgelesen; 0,15 s nach dem Druck liest das CC
   `wpctl get-volume` und zeigt 1,6 s einen Balken oben. Mehrere Drücke ziehen den Balken mit.
 - **Installer:** schaltet RetroAchievements nicht mehr ab; ein von früher gemerkter Wert wird einmalig zurückgegeben.

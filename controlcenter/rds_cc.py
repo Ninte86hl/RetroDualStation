@@ -5379,7 +5379,7 @@ def main():
                 ui.redraw_top("toast")
             if not cc.toast_now and cc.toasts and ui.top is None:
                 cc.toast_now = cc.toasts.pop(0)
-                cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 5.0)
+                cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 1.5)
                 ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
             if ui.view == "cc" and cc.page == 1 and (cc.gbusy or (cc.gmsg and time.monotonic() - cc.gmsg[1] < 4.5)):
                 state["dirty"] = True
