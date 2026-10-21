@@ -265,6 +265,14 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         echo "$SSOLD" > "$SSMARK"
         log "ES: Savestate-Manager aus (vorher: ${SSOLD:-Standard})"
     fi
+    # ROCKNIX-Hotkeys aus der Controller-Datei überdecken sonst unser Kürzel-Schema (RG DS: L1/R1/R2)
+    AHMARK=/storage/.config/retrodualstation/autohotkeys.done
+    if [ ! -f "$AHMARK" ]; then
+        AHOLD="$( . /etc/profile >/dev/null 2>&1; get_setting system.autohotkeys )"
+        ( . /etc/profile >/dev/null 2>&1; set_setting system.autohotkeys 0 ) >/dev/null 2>&1
+        echo "$AHOLD" > "$AHMARK"
+        log "RetroArch: automatische Hotkeys von ROCKNIX aus (vorher: ${AHOLD:-Standard})"
+    fi
     # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
     # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
     if [ -f "$DEST/retroachievements.before" ]; then
