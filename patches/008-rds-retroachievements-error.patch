@@ -1,0 +1,14 @@
+diff --git a/es-app/src/RetroAchievements.cpp b/es-app/src/RetroAchievements.cpp
+index 138136565..ba9735083 100644
+--- a/es-app/src/RetroAchievements.cpp
++++ b/es-app/src/RetroAchievements.cpp
+@@ -665,6 +665,9 @@ bool RetroAchievements::testAccount(const std::string& username, const std::stri
+ 		if (!request.wait())
+ 		{						
+ 			tokenOrError = request.getErrorMsg();
++			// RDS: keine ganze HTML-Fehlerseite im Meldungsfenster anzeigen
++			if (tokenOrError.find('<') != std::string::npos || tokenOrError.size() > 200)
++				tokenOrError = "Server error (" + std::to_string((int)request.status()) + ")";
+ 			return false;
+ 		}
+ 
