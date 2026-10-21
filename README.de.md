@@ -47,6 +47,8 @@ Fortschritt und alle Erfolge im Kontrollcenter, Meldung oben über dem Spiel. �
 
 </details>
 
+🧭 **Neu hier? Die [kurze Tour](https://github.com/Ninte86hl/RetroDualStation/wiki/Tour-DE) zeigt alle Tasten und Funktionen in wenigen Minuten.**
+
 📖 Alle Funktionen, Tasten und Tipps: **[Wiki](https://github.com/Ninte86hl/RetroDualStation/wiki/Home-DE)** · [Roadmap](https://github.com/Ninte86hl/RetroDualStation/wiki/Roadmap-DE) · [Gut zu wissen](https://github.com/Ninte86hl/RetroDualStation/wiki/Gut-zu-wissen)
 
 ## Was ist anders?

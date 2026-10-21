@@ -47,6 +47,8 @@ Progress and all achievements in the Control Center, notification on top of the 
 
 </details>
 
+🧭 **New here? The [quick tour](https://github.com/Ninte86hl/RetroDualStation/wiki/Tour) shows all buttons and features in a few minutes.**
+
 📖 All features, buttons and tips: **[Wiki](https://github.com/Ninte86hl/RetroDualStation/wiki)** · [Roadmap](https://github.com/Ninte86hl/RetroDualStation/wiki/Roadmap) · [Good to know](https://github.com/Ninte86hl/RetroDualStation/wiki/Good-to-know)
 
 ## What's different?
