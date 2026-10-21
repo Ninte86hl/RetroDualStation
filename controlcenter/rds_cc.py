@@ -46,7 +46,8 @@ VERSION = "0.12.0"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 TOP_OUTPUT = os.environ.get("RDS_CC_TOP_OUTPUT", "DSI-2")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
-HOME_NAME = os.environ.get("RDS_CC_HOMEKEY", "adc-keys-back")
+# RG DS Plus: adc-keys-back · RG DS: adc-keys-home (erstes vorhandenes wird genommen)
+HOME_NAMES = [os.environ["RDS_CC_HOMEKEY"]] if os.environ.get("RDS_CC_HOMEKEY") else ["adc-keys-back", "adc-keys-home"]
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
@@ -842,7 +843,20 @@ VOLUME_NAME = os.environ.get("RDS_CC_VOLKEYS", "gpio-keys-volume")
 KEY_VOLUMEDOWN, KEY_VOLUMEUP = 114, 115
 RA_PROXY_STATE = "http://127.0.0.1:4874/_ui/state"
 RA_BADGES = "/storage/thumbnails/cheevos/badges"
-TOAST_H = 150          # Höhe der Meldung oben in Bildschirm-Pixeln
+def _top_height():
+    """Höhe des oberen Bildschirms (RG DS Plus 768, RG DS 480)."""
+    try:
+        out = subprocess.run(["swaymsg", "-t", "get_outputs", "-r"], capture_output=True, text=True, timeout=3,
+                             env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout
+        for o in json.loads(out):
+            if o.get("name") == TOP_OUTPUT and o.get("rect", {}).get("height"):
+                return int(o["rect"]["height"])
+    except Exception:
+        pass
+    return 768
+
+
+TOAST_H = round(150 * _top_height() / 768)   # Höhe der Meldung oben (150 px bei 768 px Bildschirmhöhe)
 
 
 def ra_state():
@@ -4791,7 +4805,7 @@ def main():
     if joy is not None:
         pads[joy] = {"name": JOYPAD_NAME, "path": find_event(JOYPAD_NAME), "ext": False,
                      "range": abs_range(joy, ABS_X)}
-    home = open_event(HOME_NAME)
+    home = next((fd for fd in (open_event(n) for n in HOME_NAMES if find_event(n)) if fd is not None), None)
     vol = open_event(VOLUME_NAME)      # nur mitlesen (kein Grab): ROCKNIX regelt, wir zeigen an
     pwr = open_event(POWER_NAME)
     pwr_down_at = None   # Zeitstempel des Drückens (für Kurz/Lang)

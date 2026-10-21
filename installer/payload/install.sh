@@ -2,7 +2,7 @@
 # ROCKNIX DualStation – Installation
 # Aufruf: systemd-run --no-block /bin/bash <ports>/.dualstation/install.sh <ports>
 #
-# 1. Pruefen: RG DS Plus (DSI-1 + DSI-2 mit 1024x768), ES-Binary laeuft auf
+# 1. Pruefen: RG DS Plus oder RG DS (DSI-1 + DSI-2 gleich gross), ES-Binary laeuft auf
 #    dieser ROCKNIX-Version (keine fehlenden Bibliotheken)
 # 2. Dateien nach /storage/rgds-test, Theme, Ports-Eintraege kopieren
 # 3. Installer-Dateien entfernen und auf Dual umschalten
@@ -38,28 +38,43 @@ grep -E '^(NAME|VERSION|VERSION_ID|BUILD_ID)=' /etc/os-release 2>/dev/null | whi
 [ -n "$BIN" ] && [ -f "$SRC/$BIN" ] || fail "Installer files are incomplete (.dualstation folder missing?)."
 
 OUTPUTS="$(swaymsg -t get_outputs -r 2>/dev/null)"
-if ! printf '%s' "$OUTPUTS" | python3 -c '
+MODEL="$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+log "Modell: $MODEL"
+case "$(tr '\0' ' ' < /proc/device-tree/compatible 2>/dev/null)" in
+    *anbernic,rg-ds-plus*) DEVICE="RG DS Plus" ;;
+    *anbernic,rg-ds*)      DEVICE="RG DS" ;;
+    *)                     DEVICE="" ;;
+esac
+# Bildschirm-Bereiche aus Sway: DSI-2 = oben, DSI-1 = unten, gleich groß (relativ zum ES-Fenster)
+SCREENDATA="$(printf '%s' "$OUTPUTS" | python3 -c '
 import json, sys
-o = {x["name"]: x for x in json.load(sys.stdin)}
-ok = all(n in o and any(m["width"] == 1024 and m["height"] == 768 for m in o[n].get("modes", [])) for n in ("DSI-1", "DSI-2"))
-sys.exit(0 if ok else 1)' 2>>"$LOG"; then
+o = {x["name"]: x["rect"] for x in json.load(sys.stdin) if x.get("active")}
+t, b = o.get("DSI-2"), o.get("DSI-1")
+if not (t and b) or (t["width"], t["height"]) != (b["width"], b["height"]):
+    sys.exit(1)
+x0, y0 = min(t["x"], b["x"]), min(t["y"], b["y"])
+print("top=%d,%d,%d,%d" % (t["x"] - x0, t["y"] - y0, t["width"], t["height"]))
+print("bottom=%d,%d,%d,%d" % (b["x"] - x0, b["y"] - y0, b["width"], b["height"]))' 2>>"$LOG")"
+if [ -z "$DEVICE" ] || [ -z "$SCREENDATA" ]; then
     log "Ausgaenge: $(printf '%s' "$OUTPUTS" | tr -d '\n' | head -c 600)"
-    fail "This version only supports the Anbernic RG DS Plus (two 1024x768 screens)."
+    fail "This version supports the Anbernic RG DS Plus and RG DS (two screens of equal size)."
 fi
-log "Geraet: RG DS Plus erkannt"
+log "Geraet: $DEVICE erkannt ($(echo $SCREENDATA))"
 
-# Bildschirm-Bereiche fuer ES (Patch 004/005); eigene Anpassungen bleiben erhalten
+# Bildschirm-Bereiche fuer ES (Patch 004/005); eigene Anpassungen bleiben erhalten,
+# solange sie zur aktuellen Bildschirmgroesse passen
 SCREENS=/storage/.config/retrodualstation/screens.cfg
+if [ -f "$SCREENS" ] && ! grep -q "$(printf '%s' "$SCREENDATA" | head -1 | cut -d, -f3-)" "$SCREENS"; then
+    mv -f "$SCREENS" "$SCREENS.alt"
+    log "screens.cfg passte nicht zum Geraet -> screens.cfg.alt"
+fi
 if [ ! -f "$SCREENS" ]; then
     mkdir -p /storage/.config/retrodualstation
-    cat > "$SCREENS" <<'EOS'
-# RetroDualStation: Bildschirm-Bereiche im ES-Fenster (x,y,Breite,Hoehe)
-# RG DS Plus: links = oberer Bildschirm, rechts = unterer
-top=0,0,1024,768
-bottom=1024,0,1024,768
-menu=top
-EOS
-    log "screens.cfg angelegt (RG DS Plus)"
+    { echo "# RetroDualStation: Bildschirm-Bereiche im ES-Fenster (x,y,Breite,Hoehe)"
+      echo "# $DEVICE (vom Installer aus Sway ermittelt)"
+      printf '%s\n' "$SCREENDATA"
+      echo "menu=top"; } > "$SCREENS"
+    log "screens.cfg angelegt ($DEVICE)"
 fi
 
 chmod +x "$SRC/$BIN" 2>/dev/null
