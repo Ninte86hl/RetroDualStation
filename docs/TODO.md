@@ -92,6 +92,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Kontrollcenter: Zuklappen/Aufklappen berücksichtigen (Pause bleibt bis zum Aufklappen;
       „Unterer Screen aus“ nach dem Aufklappen beibehalten bzw. bewusst wieder einschalten)
 - [ ] Kontrollcenter: „Läuft gerade“ über die ES-Schnittstelle `http://localhost:1234/runningGame`
+- [x] Vibration (21.10.2026): kurzes Feedback in Gameswitcher, CC und Power-Menü, Schalter oben im CC
 - [ ] Kontrollcenter: Log-Manager für einfache Fehlersuche – Logs von Kontrollcenter, ES,
       RetroArch, DraStic, System an einer Stelle ansehen; „Fehlerbericht erstellen“ packt sie
       in eine Datei (z. B. `/storage/logs/`), die man per Netzwerkfreigabe holen kann
@@ -140,6 +141,11 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
       - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
         **Start lang** → originales ES-Menü als Rückfall
+  - Gestaltung (21.10.2026): unten Kategorien als wischbares Karussell wie canvas-ds, darunter die Einstellungen
+    der Kategorie; oben Erklärung in Klartext mit 1:1-Bild. Schreibt in dieselbe `system.cfg` wie ES.
+  - Bewusst **nicht** enthalten (Entscheidung 21.10.2026): Updates (erst bei größerer Nutzerbasis), Formatieren
+    (im Single-Modus möglich; RDS ist restlos deinstallierbar), Overclocking (erst in ROCKNIX selbst ausprobieren) –
+    als Einzelentwickler zu großes Unterfangen und Risiko.
 - [ ] Vision (20.10.2026): ES nur noch als Anzeige/Theme-Engine, Bedienung über eigene Overlays
       auf dem unteren Bildschirm:
       - Bestandsaufnahme: welche ES-Dialoge öffnen sich per Taste in Systemliste und Spieleliste

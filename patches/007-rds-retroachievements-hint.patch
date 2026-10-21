@@ -1,0 +1,30 @@
+diff --git a/es-app/src/guis/GuiRetroAchievements.cpp b/es-app/src/guis/GuiRetroAchievements.cpp
+index 9feed2614..2001ae101 100644
+--- a/es-app/src/guis/GuiRetroAchievements.cpp
++++ b/es-app/src/guis/GuiRetroAchievements.cpp
+@@ -1,3 +1,7 @@
++#include "RdsScreens.h"
++#include "SystemConf.h"
++#include "utils/StringUtil.h"
++#include "guis/GuiMsgBox.h"
+ #include "guis/GuiInstall.h"
+ #include "guis/GuiMsgBox.h"
+ #include "guis/GuiRetroAchievements.h"
+@@ -23,6 +27,17 @@
+ 
+ void GuiRetroAchievements::show(Window* window)
+ {
++	// RDS: im Dual-Build fehlt die Entwickler-Kennung für diese Abfrage (Fehler 401).
++	// Die Erfolge zeigt stattdessen das Kontrollcenter (Seite 3).
++	if (RdsScreens::active())
++	{
++		bool de = Utils::String::startsWith(SystemConf::getInstance()->get("system.language"), "de");
++		window->pushGui(new GuiMsgBox(window, de ?
++			"Deine Erfolge, dein Fortschritt und alle RetroAchievements des laufenden Spiels findest du im Kontrollcenter:\nAnbernic-Taste → Seite 3 (L1/R1)." :
++			"Your achievements, progress and all RetroAchievements of the running game are in the Control Center:\nAnbernic button → page 3 (L1/R1).",
++			_("OK")));
++		return;
++	}
+ 	window->pushGui(new GuiLoading<RetroAchievementInfo>(window, _("PLEASE WAIT"), 
+ 		[window](auto gui)
+ 		{

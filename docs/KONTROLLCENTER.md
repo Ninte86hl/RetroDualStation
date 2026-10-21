@@ -570,3 +570,11 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
 - **Lautstärke:** `gpio-keys-volume` (KEY_VOLUMEUP/DOWN) wird nur mitgelesen; 0,15 s nach dem Druck liest das CC
   `wpctl get-volume` und zeigt 1,6 s einen Balken oben. Mehrere Drücke ziehen den Balken mit.
 - **Installer:** schaltet RetroAchievements nicht mehr ab; ein von früher gemerkter Wert wird einmalig zurückgegeben.
+
+### Vibration (21.10.2026)
+- Der eingebaute Joypad kann Force Feedback (`FF_RUMBLE`); das CC legt per `EVIOCSFF` einen kurzen Effekt an und spielt ihn mit `EV_FF` ab.
+- Stärken (am Gerät abgestimmt, 21.10.2026): **Öffnen** (CC, Gameswitcher, Power-Menü) 0xB000 / 85 ms,
+  **Antippen** 0xA000 / 60 ms (Seitenwechsel L1/R1 und Wischen, jede Touch-Fläche im CC, Spielwahl im Gameswitcher,
+  Aktion auf der Seite „Spiel“, Bestätigen im Power-Menü). **Erfolg freigeschaltet:** doppelter Impuls.
+  Zu kurze Impulse hört man nur, man spürt sie nicht.
+- Schalter oben im CC (Symbol Gerät mit Wellen, durchgestrichen = aus), gespeichert als `"haptics"` in `controlcenter.json`.

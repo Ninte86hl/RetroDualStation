@@ -1265,6 +1265,43 @@ CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gam
 SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
 
 
+# Stärke, Dauer (ms) – kleine Motoren brauchen Anlaufzeit, sonst hört man sie nur
+HAPTIC = {"power": (0xFFFF, 110), "open": (0xB000, 85), "tap": (0xA000, 60)}
+_haptic_fd = [None]
+
+
+def haptic(kind="open"):
+    """Kurzer Vibrationsimpuls über Force Feedback des eingebauten Joypads (FF_RUMBLE)."""
+    if not HAPTIC_ON[0]:
+        return
+    strong, ms = HAPTIC.get(kind, HAPTIC["open"])
+    try:
+        if _haptic_fd[0] is None:
+            dev = next(("/dev/input/" + p.split("/")[4] for p in glob.glob("/sys/class/input/event*/device/name")
+                        if (rd(p) or "").strip() == JOYPAD_NAME), None)
+            if not dev:
+                return
+            _haptic_fd[0] = os.open(dev, os.O_RDWR)
+        fd = _haptic_fd[0]
+        buf = bytearray(struct.pack("HhHHHHH2xHH", 0x50, -1, 0, 0, 0, ms, 0, strong, strong).ljust(48, b"\0"))
+        fcntl.ioctl(fd, 0x40304580, buf)                     # EVIOCSFF: Effekt anlegen
+        eid = struct.unpack_from("h", buf, 2)[0]
+        os.write(fd, EVENT.pack(0, 0, 0x15, eid, 1))         # EV_FF: abspielen
+        def free():
+            time.sleep(ms / 1000 + 0.2)
+            try:
+                fcntl.ioctl(fd, 0x40044581, eid)             # EVIOCRMFF: Effekt freigeben
+            except OSError:
+                pass
+        threading.Thread(target=free, daemon=True).start()
+    except OSError as exc:
+        log("Vibration nicht möglich:", exc)
+        _haptic_fd[0] = None
+
+
+HAPTIC_ON = [True]
+
+
 def inject_keys(seq):
     """Tastendrücke ins eingebaute Joypad einspeisen (sehen alle Programme wie echte Drücke).
     seq: Liste aus (code, wert) oder Pausen in Sekunden (float)."""
@@ -2692,6 +2729,7 @@ class ControlCenter:
 
     def __init__(self):
         self.cfg = load_config()
+        HAPTIC_ON[0] = self.cfg.get("haptics", True)
         LANG[0] = ui_language()
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
@@ -2787,6 +2825,12 @@ class ControlCenter:
         if i != self.perf:
             self.perf = i
             perf_set(i)
+
+    def toggle_haptics(self):
+        HAPTIC_ON[0] = not HAPTIC_ON[0]
+        self.cfg["haptics"] = HAPTIC_ON[0]
+        save_config(self.cfg)
+        haptic("open")                                       # beim Einschalten spürbar bestätigen
 
     def toggle_theme(self):
         name = "light" if self.T is THEMES["dark"] else "dark"
@@ -2947,7 +2991,7 @@ class ControlCenter:
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
         elif kind == "top":
-            self.top_sel = max(-1, min(1, self.top_sel + dx))
+            self.top_sel = max(-1, min(2, self.top_sel + dx))
 
     def confirm(self):
         if self.kbd:
@@ -2988,12 +3032,15 @@ class ControlCenter:
         elif kind == "top":
             if self.top_sel == -1:
                 return "power"
-            self.toggle_theme() if self.top_sel == 0 else self.next_accent()
+            (self.toggle_theme, self.next_accent, self.toggle_haptics)[self.top_sel]()
 
     def turn_page(self, d):
         if self.sub:
             return
-        self.page = max(0, min(len(PAGES) - 1, self.page + d))
+        new = max(0, min(len(PAGES) - 1, self.page + d))
+        if new != self.page:
+            haptic("tap")
+        self.page = new
 
     # -- Bedienung mit Touch (Pixel des Bildschirms) --
     def touch_down(self, px, py):
@@ -3056,6 +3103,8 @@ class ControlCenter:
             hit = self._hit(x0, y0)
             if not hit:
                 return
+            if hit[0] not in ("gact",):                    # Aktionen der Seite „Spiel“ vibrieren in game_act
+                haptic("tap")
             kind, val = hit
             if kind == "perf":
                 self.focus = self.rows().index(("perf", None))
@@ -3071,7 +3120,7 @@ class ControlCenter:
                 self.page = val
             elif kind == "top":
                 self.focus, self.top_sel = 0, val
-                self.toggle_theme() if val == 0 else self.next_accent()
+                (self.toggle_theme, self.next_accent, self.toggle_haptics)[val]()
             elif kind == "power_btn":
                 return "power"
             elif kind == "quit":
@@ -3253,11 +3302,18 @@ class ControlCenter:
 
         # Darstellung: Hell/Dunkel und Akzentfarbe
         top_focus = self.rows()[self.focus][0] == "top"
-        for i in (1, 0):
+        for i in (2, 1, 0):
             x -= 54
             cx = x + 27
             P.circle(cx, 97, 27, T["pill"])
-            if i == 0:   # Mond (Dunkel) bzw. Sonne mit Strahlen (Hell)
+            if i == 2:   # Vibration: Gerät mit Wellen, aus = durchgestrichen
+                col = T["text"] if HAPTIC_ON[0] else T["muted"]
+                P.rrect(cx - 6, 85, 12, 24, 3, col)
+                for sgn in (-1, 1):
+                    P.rrect(cx + sgn * 12 - 1.5, 91, 3, 12, 1.5, col)
+                if not HAPTIC_ON[0]:
+                    P.poly([(cx - 15, 83), (cx - 12, 80), (cx + 15, 109), (cx + 12, 112)], col)
+            elif i == 0:   # Mond (Dunkel) bzw. Sonne mit Strahlen (Hell)
                 if self.T is THEMES["dark"]:
                     P.circle(cx, 97, 12, T["text"])
                     P.circle(cx + 6, 92, 10, T["pill"])
@@ -4079,6 +4135,7 @@ class PowerMenu:
 
     def confirm(self):
         """A gedrückt. Gibt False zurück wenn das Menü geschlossen werden soll."""
+        haptic("tap")
         if self.state == self.STATE_MAIN:
             key, _label, cmd, has_sub = POWER_ITEMS[self.focus]
             if key == "power_es":
@@ -4695,6 +4752,8 @@ def main():
                 hit = next((h[4] for h in reversed(cc.hits)
                             if h[0] <= dx <= h[0] + h[2] and h[1] <= dy <= h[1] + h[3]), None)
                 if hit and hit[0] == "gs":
+                    if hit[1] != cc.switcher.sel:
+                        haptic("tap")
                     if hit[1] == cc.switcher.sel:
                         gs_act(False)
                     else:
@@ -4796,6 +4855,8 @@ def main():
             set_grab(False)
             pauser.resume()
         else:
+            if view in ("cc", "power", "switcher"):
+                haptic("open")                       # kurzes Feedback beim Öffnen (überall gleich)
             if not ui.view:
                 if cc.screen_bottom_off and cc.screen_auto:   # automatisch abgedunkelt → für die Anzeige an
                     cc.screen_on()
@@ -4853,6 +4914,7 @@ def main():
         sw = cc.switcher
         if not sw.items:
             return
+        haptic("tap")
         item = sw.items[sw.sel]
         cur = cc.game
         same = cur and (cur.get("rom") or rom_of(cur["pid"])) == item["rom"]
@@ -4915,6 +4977,7 @@ def main():
         g = cc.game
         if not g or cc.gbusy:
             return
+        haptic("tap")
         emu = g["emu"]
 
         def finish(msg):
@@ -5414,6 +5477,9 @@ def main():
                 cc.toast_now = cc.toasts.pop(0)
                 cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 1.5)
                 ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
+                if cc.toast_now["kind"] == "cheevo":       # Erfolg: doppelter Impuls („ta-dam“)
+                    haptic("open")
+                    threading.Timer(0.22, haptic, args=("open",)).start()
             if ui.view == "cc" and cc.page == 1 and (cc.gbusy or (cc.gmsg and time.monotonic() - cc.gmsg[1] < 4.5)):
                 state["dirty"] = True
             if home_down["pending"] is not None \
