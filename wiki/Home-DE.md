@@ -9,7 +9,7 @@
 | [Kontrollcenter](Kontrollcenter) | Schnelleinstellungen, Seite „Spiel“, Speicherplätze, Power-Menü – über jedem Spiel |
 | [Gameswitcher](Gameswitcher) | Zwischen den letzten Spielen wechseln und weitermachen |
 | [RetroAchievements](RetroAchievements-DE) | Fortschritt, alle Erfolge, Meldung beim Freischalten |
-| [Themes](Themes-DE) | canvas-ds mit fünf Ansichten, Artwork-Standard |
+| [canvas-ds (Theme)](Themes-DE) | canvas-ds mit fünf Ansichten, Artwork-Standard |
 | [Artwork Manager](Artwork-Manager-DE) | Boxart, Icon und Hero direkt am Gerät |
 | [Gut zu wissen](Gut-zu-wissen) | Tipps, Einschränkungen, Fehlerbehebung |
 | [Roadmap](Roadmap-DE) | Was fertig ist und was kommt |

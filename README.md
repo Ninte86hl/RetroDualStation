@@ -21,15 +21,6 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 *Tap a title to switch.*
 
 <details open>
-<summary><b>Game list – canvas-ds</b></summary>
-
-<p align="center"><img src="docs/screenshots/canvas-view-gamecarousel.png" alt="Game list – canvas-ds" width="480"></p>
-
-Five views made for two screens, hero image and video on top. → [more](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Themes)
-
-</details>
-
-<details>
 <summary><b>Control Center</b></summary>
 
 <p align="center"><img src="docs/screenshots/cc-unten.png" alt="Control Center" width="400"> <img src="docs/tour/tour-spiel.png" alt="Game page" width="400"></p>
@@ -63,7 +54,7 @@ Progress and all achievements in the Control Center, notification on top of the 
 | | Stock ROCKNIX | RetroDualStation |
 |---|---|---|
 | EmulationStation | one screen | **both screens** |
-| Themes | single-screen | dual-screen themes like **canvas-ds** |
+| Themes | single-screen | dual-screen themes like **[canvas-ds](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Themes)** |
 | Artwork | scraper images | boxart, icon and hero per game via the **Artwork Manager** – right on the device |
 | Bottom screen in games | RetroArch touch menu only | **Control Center** everywhere – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Going back | – | one tap in **Ports** |

@@ -9,7 +9,7 @@
 | [Control Center](Control-Center) | Quick settings, game page, save slots, power menu – over every game |
 | [Game Switcher](Game-Switcher) | Jump between recent games and continue where you left off |
 | [RetroAchievements](RetroAchievements) | Progress, all achievements, unlock notification |
-| [Themes](Themes) | canvas-ds with five game list views, artwork standard |
+| [canvas-ds (Theme)](Themes) | canvas-ds with five game list views, artwork standard |
 | [Artwork Manager](Artwork-Manager) | Boxart, icon and hero right on the device |
 | [Good to know](Good-to-know) | Tips, limitations, troubleshooting |
 | [Roadmap](Roadmap) | What's done and what's next |
