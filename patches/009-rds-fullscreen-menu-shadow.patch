@@ -1,18 +1,39 @@
 diff --git a/es-core/src/components/MenuComponent.cpp b/es-core/src/components/MenuComponent.cpp
-index 3f482b206..7461ff2cd 100644
+index 3f482b206..6661e9082 100644
 --- a/es-core/src/components/MenuComponent.cpp
 +++ b/es-core/src/components/MenuComponent.cpp
-@@ -425,7 +425,12 @@ void MenuComponent::onSizeChanged()
+@@ -374,6 +374,21 @@ float MenuComponent::getButtonGridHeight() const
+ 	return (mButtonGrid ? mButtonGrid->getSize().y() : menuTheme->Text.font->getHeight() + BUTTON_GRID_VERT_PADDING);	
+ }
+ 
++void MenuComponent::render(const Transform4x4f& parentTrans)
++{
++	// RDS: Rahmen und Schatten des Menüs dürfen nicht auf den anderen Bildschirm ragen
++	// (fiel bei Vollbild-Menüs auf kleinen Bildschirmen auf, z. B. RG DS 640x480).
++	if (!RdsScreens::active())
++	{
++		GuiComponent::render(parentTrans);
++		return;
++	}
++	const auto& m = RdsScreens::menu();
++	Renderer::pushClipRect((int)m.x, (int)m.y, (int)m.w, (int)m.h);
++	GuiComponent::render(parentTrans);
++	Renderer::popClipRect();
++}
++
+ void MenuComponent::updateSize()
  {
- 	GuiComponent::onSizeChanged();
- 
--	mBackground.fitTo(mSize, Vector3f::Zero(), Vector2f(-32, -32));
-+	// RDS: Vollbild-Menüs (kleine Bildschirme, z. B. RG DS 640x480) füllen den Menübereich ganz aus –
-+	// der Schatten des Rahmens (32 px Rand) ragte sonst auf den anderen Bildschirm.
-+	if (RdsScreens::active() && Renderer::ScreenSettings::fullScreenMenus())
-+		mBackground.fitTo(mSize, Vector3f::Zero(), Vector2f(0, 0));
-+	else
-+		mBackground.fitTo(mSize, Vector3f::Zero(), Vector2f(-32, -32));
- 
- 	// update grid row/col sizes
- 	mGrid.setRowHeight(0, TITLE_HEIGHT, false);
+ 	// GPI
+diff --git a/es-core/src/components/MenuComponent.h b/es-core/src/components/MenuComponent.h
+index 4416d19f2..96338df75 100644
+--- a/es-core/src/components/MenuComponent.h
++++ b/es-core/src/components/MenuComponent.h
+@@ -22,6 +22,8 @@ std::shared_ptr<ImageComponent> makeArrow(Window* window);
+ class MenuComponent : public GuiComponent
+ {
+ public:
++	void render(const Transform4x4f& parentTrans) override;   // RDS: auf den Menü-Bildschirm begrenzen
++
+ 	MenuComponent(Window* window, 
+ 		const std::string& title, const std::shared_ptr<Font>& titleFont = Font::get(FONT_SIZE_LARGE),
+ 		const std::string& subTitle = "", bool tabbedUI = true);
