@@ -1,8 +1,8 @@
 #!/bin/bash
-# ROCKNIX DualStation – Deinstallation
+# RDS – Deinstallation
 # Aufruf: systemd-run --no-block /bin/bash /storage/rgds-test/uninstall.sh
 # Schaltet auf das Original-ROCKNIX-ES zurueck und entfernt alle Dateien
-# von ROCKNIX DualStation. Spiele, Medien und Gamelists bleiben unberuehrt.
+# von RDS. Spiele, Medien und Gamelists bleiben unberuehrt.
 
 DEST=/storage/rgds-test
 PORTS=/storage/roms/ports
@@ -11,10 +11,11 @@ LOG=/storage/dualstation-uninstall.log
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
-log "=== Deinstallation ROCKNIX DualStation $(cat $DEST/VERSION 2>/dev/null) ==="
+log "=== Deinstallation RDS $(cat $DEST/VERSION 2>/dev/null) ==="
 
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
-for f in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh" "Artwork Manager.sh"; do
+for f in "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh" "Uninstall RDS.sh" "Install RDS.sh" "Artwork Manager.sh" \
+         "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do   # alte Namen bis v13.1
     rm -f "$PORTS/$f" && log "entfernt: $PORTS/$f"
 done
 
@@ -40,7 +41,8 @@ rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Dat
 import sys, xml.etree.ElementTree as ET
 f = sys.argv[1]
 tree = ET.parse(f); root = tree.getroot()
-drop = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh", "./Artwork Manager.sh"}
+drop = {"./RDS Dual-Screen ES.sh", "./RDS Single-Screen ES.sh", "./Uninstall RDS.sh", "./Install RDS.sh", "./Artwork Manager.sh",
+        "./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh", "./Install ROCKNIX DualStation.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in drop]:
     root.remove(g)
 tree.write(f, encoding="utf-8", xml_declaration=True)

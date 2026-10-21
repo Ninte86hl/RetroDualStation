@@ -1,5 +1,5 @@
 #!/bin/bash
-# ROCKNIX DualStation – Installation
+# RDS – Installation
 # Aufruf: systemd-run --no-block /bin/bash <ports>/.dualstation/install.sh <ports>
 #
 # 1. Pruefen: RG DS Plus oder RG DS (DSI-1 + DSI-2 gleich gross), ES-Binary laeuft auf
@@ -26,11 +26,11 @@ msgbox()  { curl -s -m 3 -X POST -H 'Content-Type: text/plain' --data "$1" http:
 
 fail() {
     log "ABBRUCH: $1"
-    msgbox "ROCKNIX DualStation: $1 Nothing was changed. Log: $LOG"
+    msgbox "RDS: $1 Nothing was changed. Log: $LOG"
     exit 1
 }
 
-log "=== Installation ROCKNIX DualStation $VERSION ==="
+log "=== Installation RDS $VERSION ==="
 log "Quelle: $SRC"
 grep -E '^(NAME|VERSION|VERSION_ID|BUILD_ID)=' /etc/os-release 2>/dev/null | while read -r l; do log "os-release: $l"; done
 
@@ -87,7 +87,7 @@ if [ -n "$MISSING" ]; then
 fi
 log "ES-Binary: $BIN, Bibliotheken ok"
 
-notify "Installing ROCKNIX DualStation – EmulationStation will restart in a moment..."
+notify "Installing RDS – EmulationStation will restart in a moment..."
 sleep 2
 
 # --- 2. Dateien kopieren ---
@@ -137,25 +137,46 @@ if [ -d "$SRC/theme/canvas-ds-rgds-plus" ]; then
     log "Theme kopiert: canvas-ds-rgds-plus (Standard im Dual-Modus: $(cat "$DEST/theme.dual"))"
 fi
 
-# Icons für die Ports-Einträge (gamelist.xml ergänzen, vorhandene Einträge bleiben)
+# Ports-Einträge vor v14 hießen anders (ROCKNIX DualStation / RGDS) – alte Dateien entfernen
+for old in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do
+    [ -f "$PORTS/$old" ] && rm -f "$PORTS/$old" && log "alter Ports-Eintrag entfernt: $old"
+done
+
+# Ports-Liste: Name, Beschreibung, Version, Datum, Entwickler und Icon (gamelist.xml; andere Einträge bleiben)
+RDSDATE="$(cat "$SRC/DATE" 2>/dev/null | tr -d '\n')"
 if [ -d "$SRC/images" ]; then
     mkdir -p "$PORTS/images"
     cp "$SRC"/images/rds-*.png "$PORTS/images/"
-    python3 - "$PORTS/gamelist.xml" <<'PY' 2>>"$LOG"
+    python3 - "$PORTS/gamelist.xml" "$VERSION" "${RDSDATE:-$(date +%Y%m%d)}" <<'PY' 2>>"$LOG"
 import os, sys, xml.etree.ElementTree as ET
-f = sys.argv[1]
+f, version, date = sys.argv[1], sys.argv[2], sys.argv[3]
 root = ET.parse(f).getroot() if os.path.exists(f) and os.path.getsize(f) else ET.Element("gameList")
-entries = {"RGDS Dual-Screen ES.sh": ("Dual-Screen ES", "rds-dual.png"),
-           "RGDS Single-Screen ES.sh": ("Single-Screen ES", "rds-single.png"),
-           "Uninstall ROCKNIX DualStation.sh": ("Uninstall ROCKNIX DualStation", "rds-uninstall.png"),
-           "Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png")}
-for script, (name, img) in entries.items():
+old = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh",
+       "./Install ROCKNIX DualStation.sh"}
+for g in [g for g in root.findall("game") if g.findtext("path") in old]:
+    root.remove(g)
+v = "RDS %s" % version
+entries = {
+    "RDS Dual-Screen ES.sh": ("RDS Dual-Screen ES", "rds-dual.png",
+        "Startet EmulationStation über beide Bildschirme (RetroDualStation). / Runs EmulationStation across both screens."),
+    "RDS Single-Screen ES.sh": ("RDS Single-Screen ES", "rds-single.png",
+        "Zurück zum Original-ES von ROCKNIX auf einem Bildschirm, z. B. zum Scrapen. / Back to stock ROCKNIX ES on one screen, e.g. for scraping."),
+    "Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png",
+        "Boxart, Icon und Hero-Bild für deine Spiele direkt am Gerät suchen und anpassen. / Find and fit boxart, icons and hero images on the device."),
+    "Uninstall RDS.sh": ("Uninstall RDS", "rds-uninstall.png",
+        "Entfernt RDS und stellt das Original-ES samt Theme wieder her. Spiele und Spielstände bleiben. / Removes RDS and restores stock ES; games and saves stay."),
+    "Install RDS.sh": ("Install RDS", "rds-install.png",
+        "Installiert oder aktualisiert RDS (RetroDualStation). / Installs or updates RDS."),
+}
+for script, (name, img, desc) in entries.items():
     path = "./" + script
     g = next((g for g in root.findall("game") if g.findtext("path") == path), None)
     if g is None:
         g = ET.SubElement(root, "game")
         ET.SubElement(g, "path").text = path
-    for tag, val in (("name", name), ("image", "./images/" + img), ("thumbnail", "./images/" + img)):
+    for tag, val in (("name", name), ("desc", "%s\n\n%s" % (v, desc)), ("image", "./images/" + img),
+                     ("thumbnail", "./images/" + img), ("releasedate", date + "T000000"),
+                     ("developer", "Ninte86hl"), ("publisher", "RetroDualStation"), ("genre", "Tool")):
         e = g.find(tag)
         if e is None:
             e = ET.SubElement(g, tag)
@@ -163,7 +184,7 @@ for script, (name, img) in entries.items():
 ET.indent(root)
 ET.ElementTree(root).write(f, encoding="utf-8", xml_declaration=True)
 PY
-    log "Icons fuer Ports-Eintraege gesetzt"
+    log "Ports-Liste: Namen, Beschreibung, Version und Icons gesetzt"
 fi
 
 # --- 2b. Kontrollcenter ---
@@ -336,7 +357,7 @@ if [ -z "$PSXCORE" ] || [ ! -f "/usr/lib/libretro/${PSXCORE}_libretro.so" ]; the
 fi
 
 # --- 3. Installer entfernen und auf Dual umschalten ---
-rm -f "$PORTS/Install ROCKNIX DualStation.sh"
+rm -f "$PORTS/Install RDS.sh" "$PORTS/Install ROCKNIX DualStation.sh"
 rm -rf "$SRC"
 log "Installer-Dateien entfernt"
 

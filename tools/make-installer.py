@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Baut die Installations-ZIP von ROCKNIX DualStation.
+"""Baut die Installations-ZIP von RetroDualStation (RDS).
 
 Aufruf (im Repo-Ordner):
     python3 tools/make-installer.py <ES-Binary> <version> [<canvas-ds-ZIP>]
@@ -16,9 +16,9 @@ Beispiel:
 Das Binary wird im Paket immer als "emulationstation-rgds" abgelegt
 (ohne Versionsnummer); die Version steht nur in .dualstation/VERSION.
 
-Ergebnis: rocknix-dualstation-<version>.zip
+Ergebnis: retrodualstation-<version>.zip
 Inhalt (wird in den Ordner "ports" auf der SD-Karte entpackt):
-    Install ROCKNIX DualStation.sh
+    Install RDS.sh
     .dualstation/   install.sh, VERSION, Binary, rgds-test/, ports/, theme/, controlcenter/
 """
 import os, sys, zipfile
@@ -38,7 +38,7 @@ canvas = args[2] if len(args) == 3 else None
 artwork_repo, pillow = opts.get("--artwork"), opts.get("--pillow")
 binname = "emulationstation-rgds"
 
-out = os.path.join(repo, f"rocknix-dualstation-{version}.zip")
+out = os.path.join(repo, f"retrodualstation-{version}.zip")
 EXEC, FILE = 0o100755 << 16, 0o100644 << 16
 
 def add(z, src, arc, mode):
@@ -49,18 +49,20 @@ def add(z, src, arc, mode):
         z.writestr(info, f.read())
 
 with zipfile.ZipFile(out, "w") as z:
-    add(z, os.path.join(repo, "installer", "Install ROCKNIX DualStation.sh"), "Install ROCKNIX DualStation.sh", EXEC)
+    add(z, os.path.join(repo, "installer", "Install RDS.sh"), "Install RDS.sh", EXEC)
     p = ".dualstation/"
     add(z, os.path.join(repo, "installer", "payload", "install.sh"), p + "install.sh", EXEC)
     z.writestr(zipfile.ZipInfo(p + "VERSION"), version + "\n")
+    import datetime
+    z.writestr(zipfile.ZipInfo(p + "DATE"), datetime.date.today().strftime("%Y%m%d") + "\n")   # Release-Datum (Ports-Liste)
     add(z, binary, p + binname, EXEC)
     for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh"):
         add(z, os.path.join(repo, "device", "rgds-test", f), p + "rgds-test/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "uninstall.sh"), p + "rgds-test/uninstall.sh", EXEC)
-    for f in ("RGDS Dual-Screen ES.sh", "RGDS Single-Screen ES.sh"):
+    for f in ("RDS Dual-Screen ES.sh", "RDS Single-Screen ES.sh"):
         add(z, os.path.join(repo, "device", "ports", f), p + "ports/" + f, EXEC)
-    add(z, os.path.join(repo, "installer", "payload", "ports", "Uninstall ROCKNIX DualStation.sh"),
-        p + "ports/Uninstall ROCKNIX DualStation.sh", EXEC)
+    add(z, os.path.join(repo, "installer", "payload", "ports", "Uninstall RDS.sh"),
+        p + "ports/Uninstall RDS.sh", EXEC)
     theme = os.path.join(repo, "theme", "dii-ess-aye-rgds-plus")
     for root, dirs, files in os.walk(theme):
         dirs.sort()

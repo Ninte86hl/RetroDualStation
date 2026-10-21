@@ -1,5 +1,5 @@
 #!/bin/bash
-# ROCKNIX DualStation – Installer (Ports-Eintrag)
+# RDS (RetroDualStation) – Installer (Ports-Eintrag)
 # Die eigentliche Arbeit macht .dualstation/install.sh ausserhalb von ES,
 # weil ES waehrend der Installation neu gestartet wird.
 DIR="$(cd "$(dirname "$0")" && pwd)"
