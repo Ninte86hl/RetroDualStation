@@ -246,11 +246,11 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
     # DraStic: Menü und Vorspulen auf Tasten, die das RG DS Plus nicht hat (R3 und den fehlenden rechten Stick)
     # → nur über das Kontrollcenter erreichbar, L3 bleibt frei. Einmalig, mit Sicherung.
-    # Nur RG DS Plus: das RG DS hat R3 und den rechten Stick – dort bleibt die ROCKNIX-Belegung
-    # (Menü L3, Vorspulen R3); das Kontrollcenter liest die Belegung aus drastic.cfg.
+    # Gilt auch fürs RG DS: dort lag das Menü sonst auf der Anbernic-Taste (gehört dem CC);
+    # R3 und der rechte Stick werden in DS-Spielen nicht gebraucht.
     DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
     DCFG=/storage/.config/drastic/config/drastic.cfg
-    if [ "$DEVICE" = "RG DS Plus" ] && [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+    if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
         cp "$DCFG" "$DCFG.vor-rds-kuerzel"
         sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 1154/' "$DCFG"
@@ -264,15 +264,6 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         ( . /etc/profile >/dev/null 2>&1; set_setting global.savestates auto ) >/dev/null 2>&1
         echo "$SSOLD" > "$SSMARK"
         log "ES: Savestate-Manager aus (vorher: ${SSOLD:-Standard})"
-    fi
-    # RG DS: ROCKNIX legt das DraStic-Menü (controls_b) auf die Anbernic-Taste (1034) – die gehört dem
-    # Kontrollcenter. Menü wie in controls_a auf L3 (1035); das CC löst es darüber aus. Einmalig, mit Sicherung.
-    if [ "$DEVICE" = "RG DS" ] && [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null \
-       && grep -q '^controls_b\[CONTROL_INDEX_MENU\] = 1034' "$DCFG"; then
-        cp "$DCFG" "$DCFG.vor-rds-kuerzel"
-        sed -i 's/^controls_b\[CONTROL_INDEX_MENU\] = 1034/controls_b[CONTROL_INDEX_MENU] = 1035/' "$DCFG"
-        date > "$DMARK"
-        log "DraStic (RG DS): Menue von der Anbernic-Taste auf L3"
     fi
     # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
     # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
