@@ -92,7 +92,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Kontrollcenter: Zuklappen/Aufklappen berücksichtigen (Pause bleibt bis zum Aufklappen;
       „Unterer Screen aus“ nach dem Aufklappen beibehalten bzw. bewusst wieder einschalten)
 - [ ] Kontrollcenter: „Läuft gerade“ über die ES-Schnittstelle `http://localhost:1234/runningGame`
-- [ ] Vibration (21.10.2026): kurzes Feedback in Gameswitcher, CC und Power-Menü – prüfen, ob das RG DS Plus einen Motor hat; mit Schalter
+- [x] Vibration (21.10.2026): kurzes Feedback in Gameswitcher, CC und Power-Menü, Schalter oben im CC
 - [ ] Kontrollcenter: Log-Manager für einfache Fehlersuche – Logs von Kontrollcenter, ES,
       RetroArch, DraStic, System an einer Stelle ansehen; „Fehlerbericht erstellen“ packt sie
       in eine Datei (z. B. `/storage/logs/`), die man per Netzwerkfreigabe holen kann
