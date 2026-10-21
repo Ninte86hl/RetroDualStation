@@ -11,6 +11,20 @@ from the Control Center with **Select**.
 
 ---
 
+## 0. Your entries in Ports
+
+After installing, you'll find RDS in **Ports** by these icons:
+
+| | Entry | What for |
+|:-:|---|---|
+| <img src="icons/rds-install.png" width="48"> | **Install RDS** | Installs or updates RDS |
+| <img src="icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES across both screens |
+| <img src="icons/rds-single.png" width="48"> | **RDS Single-Screen** | Stock ES on one screen, e.g. for scraping |
+| <img src="icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, icons and hero images on the device |
+| <img src="icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Back to stock; games and saves stay |
+
+---
+
 ## 1. The two special buttons
 
 <p align="center"><img src="tour/geraet-tasten-en.png" alt="Anbernic button and Home button on the RG DS Plus" width="560"></p>

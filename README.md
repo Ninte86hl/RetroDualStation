@@ -65,28 +65,31 @@ Progress and all achievements in the Control Center, notification on top of the 
 
 ## Installation
 
-1. Download **`rocknix-dualstation-v13.1.zip`** (includes canvas-ds) from the
-   [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest).
+1. Download **`retrodualstation-v14.zip`** (includes canvas-ds) from the [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
-3. In ES open **Ports** → **Install ROCKNIX DualStation**.
+3. In ES open **Ports** → <img src="docs/icons/rds-install.png" width="24"> **Install RDS**.
 
 The installer checks your device and ROCKNIX version first and changes nothing if they don't match.
-Afterwards **Ports** has *RGDS Dual-Screen ES*, *RGDS Single-Screen ES* and *Uninstall*.
-Updating works the same way.
+Updating works the same way. Afterwards **Ports** has:
+
+| | Entry | What for |
+|:-:|---|---|
+| <img src="docs/icons/rds-install.png" width="48"> | **Install RDS** | Installs or updates RDS |
+| <img src="docs/icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES across both screens |
+| <img src="docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Stock ES on one screen, e.g. for scraping |
+| <img src="docs/icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, icons and hero images on the device |
+| <img src="docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Back to stock; games and saves stay |
 
 <details>
 <summary>ROMs on an ext4 partition? Copy the ZIP over the network</summary>
 
 ```bash
-scp rocknix-dualstation-v13.1.zip root@<IP>:/storage/roms/ports/
+scp retrodualstation-v14.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip rocknix-dualstation-v13.1.zip && rm rocknix-dualstation-v13.1.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip retrodualstation-v14.zip && rm retrodualstation-v14.zip"
 ```
 </details>
-
-**Uninstall:** *Ports → Uninstall ROCKNIX DualStation* restores stock ES and its theme.
-Games, media, game lists and saves are not touched.
 
 Technical details and manual installation: [docs/TECHNICAL.md](docs/TECHNICAL.md)
 
