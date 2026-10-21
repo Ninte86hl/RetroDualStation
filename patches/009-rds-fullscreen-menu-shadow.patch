@@ -37,3 +37,23 @@ index 4416d19f2..96338df75 100644
  	MenuComponent(Window* window, 
  		const std::string& title, const std::shared_ptr<Font>& titleFont = Font::get(FONT_SIZE_LARGE),
  		const std::string& subTitle = "", bool tabbedUI = true);
+diff --git a/es-core/src/renderers/Renderer.cpp b/es-core/src/renderers/Renderer.cpp
+index c5d5f8788..b46619120 100644
+--- a/es-core/src/renderers/Renderer.cpp
++++ b/es-core/src/renderers/Renderer.cpp
+@@ -1,3 +1,4 @@
++#include "RdsScreens.h"
+ #include "renderers/Renderer.h"
+ 
+ #include "Renderer_GL21.h"
+@@ -1123,6 +1124,10 @@ namespace Renderer
+ 			return menus == "true";
+ 
+ 		//return true;
++		// RDS: im Dual-Modus normale (zentrierte) Menüs wie auf dem RG DS Plus –
++		// Vollbild-Menüs auf 640x480 (RG DS) ragten über den oberen Bildschirm hinaus
++		if (RdsScreens::active())
++			return false;
+ 		return isSmallScreen();
+ 	}
+ 
