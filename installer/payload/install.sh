@@ -162,9 +162,11 @@ RDSDATE="$(cat "$SRC/DATE" 2>/dev/null | tr -d '\n')"
 if [ -d "$SRC/images" ]; then
     mkdir -p "$PORTS/images"
     cp "$SRC"/images/rds-*.png "$PORTS/images/"
-    python3 - "$PORTS/gamelist.xml" "$VERSION" "${RDSDATE:-$(date +%Y%m%d)}" <<'PY' 2>>"$LOG"
+    RDSLANG="$( . /etc/profile >/dev/null 2>&1; get_setting system.language )"
+    python3 - "$PORTS/gamelist.xml" "$VERSION" "${RDSDATE:-$(date +%Y%m%d)}" "$RDSLANG" <<'PY' 2>>"$LOG"
 import os, sys, xml.etree.ElementTree as ET
 f, version, date = sys.argv[1], sys.argv[2], sys.argv[3]
+de = (sys.argv[4] if len(sys.argv) > 4 else "").startswith("de")   # Sprache von ES bei der Installation
 root = ET.parse(f).getroot() if os.path.exists(f) and os.path.getsize(f) else ET.Element("gameList")
 old = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./RDS Dual-Screen ES.sh", "./RDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh",
        "./Install ROCKNIX DualStation.sh"}
@@ -189,7 +191,7 @@ for script, (name, img, desc) in entries.items():
     if g is None:
         g = ET.SubElement(root, "game")
         ET.SubElement(g, "path").text = path
-    for tag, val in (("name", name), ("desc", "%s\n\n%s" % (v, desc)), ("image", "./images/" + img),
+    for tag, val in (("name", name), ("desc", "%s\n\n%s" % (v, desc.split(" / ")[0 if de else 1])), ("image", "./images/" + img),
                      ("thumbnail", "./images/" + img), ("releasedate", date + "T000000"),
                      ("developer", "Ninte86hl"), ("publisher", "RetroDualStation"), ("genre", "Tool")):
         e = g.find(tag)
