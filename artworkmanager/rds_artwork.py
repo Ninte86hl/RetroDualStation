@@ -33,7 +33,7 @@ from rds_cc import (Overlay, Pen, Keyboard, THEMES, load_config, log, grab,   # 
                     open_event, read_events, find_event, abs_range, TouchReader,
                     EV_SYN, EV_KEY, EV_ABS, ABS_HAT0X, ABS_HAT0Y, DPAD,
                     BTN_SOUTH, BTN_EAST, BTN_NORTH, BTN_WEST, BTN_TL, BTN_TR, BTN_START,
-                    BTN_MODE, BTN_Z, BTN_SELECT, JOYPAD_NAME, HOME_NAME, TOUCH_NAME, PI)
+                    BTN_MODE, BTN_Z, BTN_SELECT, JOYPAD_NAME, HOME_NAMES, find_event, open_touch, PI)
 from PIL import Image                                 # noqa: E402
 
 from rocknixds_artwork_manager.app_controller import AppController          # noqa: E402
@@ -2188,8 +2188,8 @@ def main():
         a.start()
 
     joy = open_event(JOYPAD_NAME)
-    home = open_event(HOME_NAME)
-    tfd = open_event(TOUCH_NAME)
+    home = next((fd for fd in (open_event(n) for n in HOME_NAMES if find_event(n)) if fd is not None), None)
+    tfd = open_touch()   # bei zwei Touchscreens (RG DS) der untere
     touch = TouchReader(tfd, a.cfg) if tfd is not None else None
     grabbed = [fd for fd in (joy, home, tfd) if fd is not None]
     for fd in grabbed:

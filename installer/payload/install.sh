@@ -265,6 +265,15 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         echo "$SSOLD" > "$SSMARK"
         log "ES: Savestate-Manager aus (vorher: ${SSOLD:-Standard})"
     fi
+    # RG DS: ROCKNIX legt das DraStic-Menü (controls_b) auf die Anbernic-Taste (1034) – die gehört dem
+    # Kontrollcenter. Menü wie in controls_a auf L3 (1035); das CC löst es darüber aus. Einmalig, mit Sicherung.
+    if [ "$DEVICE" = "RG DS" ] && [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null \
+       && grep -q '^controls_b\[CONTROL_INDEX_MENU\] = 1034' "$DCFG"; then
+        cp "$DCFG" "$DCFG.vor-rds-kuerzel"
+        sed -i 's/^controls_b\[CONTROL_INDEX_MENU\] = 1034/controls_b[CONTROL_INDEX_MENU] = 1035/' "$DCFG"
+        date > "$DMARK"
+        log "DraStic (RG DS): Menue von der Anbernic-Taste auf L3"
+    fi
     # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
     # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
     if [ -f "$DEST/retroachievements.before" ]; then
