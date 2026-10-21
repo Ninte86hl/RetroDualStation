@@ -5105,6 +5105,14 @@ def main():
             # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
             cmd = {"save": f"SAVE_STATE_SLOT {cc.slot}", "load": f"LOAD_STATE_SLOT {cc.slot}",
                    "shot": "SCREENSHOT"}[key]
+            if key == "shot":
+                # Ordner fehlt bei frischem ROCKNIX → RetroArch speichert sonst nichts.
+                # Erst nach dem Schließen auslösen, damit das Spielbild (nicht die Pause) drauf ist.
+                os.makedirs("/storage/roms/screenshots", exist_ok=True)
+                toggle("cc")
+                threading.Timer(0.4, ra_command, args=(cmd,)).start()
+                log("Seite Spiel:", cmd)
+                return
             ra_command(cmd)
             log("Seite Spiel:", cmd, "Slot", cc.slot)
             toggle("cc")                     # erledigt → zurück ins Spiel
