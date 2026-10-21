@@ -92,6 +92,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Kontrollcenter: Zuklappen/Aufklappen berücksichtigen (Pause bleibt bis zum Aufklappen;
       „Unterer Screen aus“ nach dem Aufklappen beibehalten bzw. bewusst wieder einschalten)
 - [ ] Kontrollcenter: „Läuft gerade“ über die ES-Schnittstelle `http://localhost:1234/runningGame`
+- [~] FPS-Symbol auf der Seite „Spiel“ – verworfen (21.10.2026): CC kann FPS nicht messen; RetroArch bräuchte die abgeschaltete Bildschirmschrift (Meldungen), DraStic hat keine Anzeige. DSperate: Anbernic + Y.
 - [x] Vibration (21.10.2026): kurzes Feedback in Gameswitcher, CC und Power-Menü, Schalter oben im CC
 - [ ] Kontrollcenter: Log-Manager für einfache Fehlersuche – Logs von Kontrollcenter, ES,
       RetroArch, DraStic, System an einer Stelle ansehen; „Fehlerbericht erstellen“ packt sie
