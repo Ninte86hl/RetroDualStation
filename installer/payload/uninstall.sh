@@ -14,7 +14,7 @@ log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 log "=== Deinstallation RDS $(cat $DEST/VERSION 2>/dev/null) ==="
 
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
-for f in "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh" "Uninstall RDS.sh" "Install RDS.sh" "Artwork Manager.sh" \
+for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install RDS.sh" "Artwork Manager.sh" \
          "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do   # alte Namen bis v13.1
     rm -f "$PORTS/$f" && log "entfernt: $PORTS/$f"
 done
@@ -41,7 +41,7 @@ rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Dat
 import sys, xml.etree.ElementTree as ET
 f = sys.argv[1]
 tree = ET.parse(f); root = tree.getroot()
-drop = {"./RDS Dual-Screen ES.sh", "./RDS Single-Screen ES.sh", "./Uninstall RDS.sh", "./Install RDS.sh", "./Artwork Manager.sh",
+drop = {"./RDS Dual-Screen.sh", "./RDS Single-Screen.sh", "./Uninstall RDS.sh", "./Install RDS.sh", "./Artwork Manager.sh",
         "./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh", "./Install ROCKNIX DualStation.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in drop]:
     root.remove(g)

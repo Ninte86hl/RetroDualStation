@@ -59,7 +59,7 @@ with zipfile.ZipFile(out, "w") as z:
     for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh"):
         add(z, os.path.join(repo, "device", "rgds-test", f), p + "rgds-test/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "uninstall.sh"), p + "rgds-test/uninstall.sh", EXEC)
-    for f in ("RDS Dual-Screen ES.sh", "RDS Single-Screen ES.sh"):
+    for f in ("RDS Dual-Screen.sh", "RDS Single-Screen.sh"):
         add(z, os.path.join(repo, "device", "ports", f), p + "ports/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "ports", "Uninstall RDS.sh"),
         p + "ports/Uninstall RDS.sh", EXEC)

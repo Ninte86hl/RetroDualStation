@@ -138,7 +138,8 @@ if [ -d "$SRC/theme/canvas-ds-rgds-plus" ]; then
 fi
 
 # Ports-Einträge vor v14 hießen anders (ROCKNIX DualStation / RGDS) – alte Dateien entfernen
-for old in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do
+for old in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh" \
+           "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh"; do
     [ -f "$PORTS/$old" ] && rm -f "$PORTS/$old" && log "alter Ports-Eintrag entfernt: $old"
 done
 
@@ -151,15 +152,15 @@ if [ -d "$SRC/images" ]; then
 import os, sys, xml.etree.ElementTree as ET
 f, version, date = sys.argv[1], sys.argv[2], sys.argv[3]
 root = ET.parse(f).getroot() if os.path.exists(f) and os.path.getsize(f) else ET.Element("gameList")
-old = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh",
+old = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./RDS Dual-Screen ES.sh", "./RDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh",
        "./Install ROCKNIX DualStation.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in old]:
     root.remove(g)
 v = "RDS %s" % version
 entries = {
-    "RDS Dual-Screen ES.sh": ("RDS Dual-Screen ES", "rds-dual.png",
+    "RDS Dual-Screen.sh": ("RDS Dual-Screen", "rds-dual.png",
         "Startet EmulationStation über beide Bildschirme (RetroDualStation). / Runs EmulationStation across both screens."),
-    "RDS Single-Screen ES.sh": ("RDS Single-Screen ES", "rds-single.png",
+    "RDS Single-Screen.sh": ("RDS Single-Screen", "rds-single.png",
         "Zurück zum Original-ES von ROCKNIX auf einem Bildschirm, z. B. zum Scrapen. / Back to stock ROCKNIX ES on one screen, e.g. for scraping."),
     "Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png",
         "Boxart, Icon und Hero-Bild für deine Spiele direkt am Gerät suchen und anpassen. / Find and fit boxart, icons and hero images on the device."),
