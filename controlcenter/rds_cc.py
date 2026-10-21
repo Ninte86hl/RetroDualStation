@@ -4856,7 +4856,7 @@ def main():
             pauser.resume()
         else:
             if view in ("cc", "power", "switcher"):
-                haptic("power" if view == "power" else "open")   # kurzes Feedback beim Öffnen
+                haptic("open")                       # kurzes Feedback beim Öffnen (überall gleich)
             if not ui.view:
                 if cc.screen_bottom_off and cc.screen_auto:   # automatisch abgedunkelt → für die Anzeige an
                     cc.screen_on()

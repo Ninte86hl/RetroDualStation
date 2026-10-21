@@ -573,7 +573,7 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
 
 ### Vibration (21.10.2026)
 - Der eingebaute Joypad kann Force Feedback (`FF_RUMBLE`); das CC legt per `EVIOCSFF` einen kurzen Effekt an und spielt ihn mit `EV_FF` ab.
-- Stärken (am Gerät abgestimmt, 21.10.2026): **Power-Menü** 0xFFFF / 110 ms, **CC und Gameswitcher öffnen** 0xB000 / 85 ms,
+- Stärken (am Gerät abgestimmt, 21.10.2026): **Öffnen** (CC, Gameswitcher, Power-Menü) 0xB000 / 85 ms,
   **Antippen** 0xA000 / 60 ms (Seitenwechsel L1/R1 und Wischen, jede Touch-Fläche im CC, Spielwahl im Gameswitcher,
   Aktion auf der Seite „Spiel“, Bestätigen im Power-Menü). **Erfolg freigeschaltet:** doppelter Impuls.
   Zu kurze Impulse hört man nur, man spürt sie nicht.
