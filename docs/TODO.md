@@ -159,6 +159,15 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] DraStic testen: Auto-Speichern/Laden, Tastaturtasten als Kürzel
 - ~~DraStic: großes Pausemenü / eigene DraStic-UI~~ – verworfen 20.10.2026 (Reverse Engineering, Lizenz, Aufwand)
 
+### Normales RG DS (Plan 21.10.2026)
+- Gleiches ROCKNIX-Image (RK3566-Build, SoC rk3568) → **kein zweiter ES-Build**, Patches 001–008 gelten für beide
+- Erkennung über den Device Tree: RG DS Plus = Modell `Anbernic RG DS Plus`, compatible `anbernic,rg-ds-plus` (Ausgabe DSI-2 u. a., 1024 × 768); normales RG DS: Werte von einem Tester holen
+- [ ] Geräteprofil: Auflösung, Ausgabenamen, Tastencodes, Helligkeitspfade, Vibration ja/nein
+- [ ] Installer: beide Modelle zulassen, `screens.cfg` und Tastenschema je Profil
+- [ ] Kontrollcenter/Gameswitcher: feste 1024 × 768 und Ausgabenamen durch das Profil ersetzen, Layout auf 640 × 480 skalieren (Hauptarbeit; dabei in Module aufteilen)
+- [ ] canvas-ds und Artwork Manager auf 640 × 480 prüfen
+- [ ] Test auf echtem RG DS (Tester nötig)
+
 ### Themes & Geräte
 - [ ] dii-ess-aye: eigene Ansichten wie bei canvas-ds
 - [ ] Version für das normale RG DS (640×480)
