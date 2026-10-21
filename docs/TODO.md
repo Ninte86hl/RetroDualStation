@@ -14,6 +14,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 > zu nutzen – Bedienung wie vom Smartphone gewohnt, schnell, mit Touch und Tasten. Sicherheit
 > vor Funktionsumfang: stabile ROCKNIX-Basis, jederzeit mit einem Tipp zurück.
 
+## Grundsatz Community (21.10.2026)
+- Hinweise und Tipps aus der Community, die die Entwicklung weiterbringen, werden **immer** in CREDITS.md (Abschnitt „Community“) mit Name und Link zum Issue genannt – Transparenz und Rückmeldung an die Community.
+
 ## Bedienregeln (gelten für alle Oberflächen)
 
 - **Hinweiszeilen:** Taste/Bedienelement **fett**, danach „– Erklärung“, mehrere Einträge mit „·“ getrennt.

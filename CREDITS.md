@@ -57,6 +57,15 @@ canvas-ds is licensed under **CC BY-NC-SA**; the overlay is shared under the
 same terms. Only the 7 changed layout files are included – the theme itself
 comes from the original project.
 
+## Community – your tips shape RDS
+
+Every hint that helps the project is credited here. Thank you for taking the time!
+
+- **[maniman303](https://github.com/maniman303)** – in [issue #5](https://github.com/Ninte86hl/RetroDualStation/issues/5)
+  pointed out that RDS was tied to the RG DS Plus screen size. That led to the screen areas
+  (`screens.cfg`, theme variables) and made the **RG DS support in v14** possible. Also shared his
+  IGDB/SteamGridDB scraper work as an alternative to ScreenScraper.
+
 ## Libraries and tools
 
 - **[Sway](https://swaywm.org) / wlroots** – the Wayland compositor that
