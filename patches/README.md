@@ -17,6 +17,8 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `005-rds-theme-screen-vars.patch` – theme variables for the screen areas
   (`${screen.top.relx}`, `${screen.bottom.relwidth}`, … – see [docs/THEMES.md](../docs/THEMES.md)).
 - `006-rds-no-es-volume-popup.patch` – no ES volume popup in dual mode (the Control Center shows volume on top).
+- `007-rds-retroachievements-hint.patch` – the ES *RetroAchievements* menu shows a hint to page 3 of the Control Center
+  instead of the 401 error (the dual build has no developer credentials for that request).
 
 ## Usage
 
@@ -28,7 +30,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all six** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all seven** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating

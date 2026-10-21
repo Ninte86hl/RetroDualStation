@@ -160,8 +160,8 @@ Spiele, Medien, Spielelisten und Spielstände bleiben unberührt.
 
 - **Kein ScreenScraper** in der Dual-Version – die Zugangsdaten gibt es nur für den offiziellen
   ROCKNIX-Build. Zum Scrapen per Ports auf *Single* und zurück.
-- **RetroAchievements** funktionieren im Spiel; der Eintrag *RetroAchievements* im ES-Hauptmenü zeigt
-  einen Fehler (gleicher Grund) – stattdessen Seite 3 im Kontrollcenter nutzen.
+- **RetroAchievements** funktionieren im Spiel; der Eintrag *RetroAchievements* im ES-Hauptmenü verweist auf
+  Seite 3 im Kontrollcenter (diese ES-Ansicht kann der Dual-Build nicht abfragen).
 - PS1: Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - DS über RetroArch-Cores ist ungetestet; DraStic und DSperate funktionieren.
 - Touch in DraStic reagiert nicht? **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).
