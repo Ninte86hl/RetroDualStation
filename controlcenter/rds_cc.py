@@ -4786,8 +4786,33 @@ def grab(fd, on):
 
 # ------------------------------------------------------------------- main ----
 
+MAKO_CFG = "/storage/.config/mako/config"
+MAKO_RULE = '\n# RetroDualStation\n[summary~="^(Brightness|Volume):"]\ninvisible=1\n'
+
+
+def mako_hide_osd():
+    """ROCKNIX-Anzeige für Helligkeit/Lautstärke ausblenden (die zeigt das CC oben).
+    Bei frischem ROCKNIX entsteht die mako-Config erst nach der Installation – daher bei jedem Start prüfen."""
+    def work():
+        for _ in range(60):                       # bis zu 5 min auf die Datei warten
+            if os.path.exists(MAKO_CFG):
+                break
+            time.sleep(5)
+        try:
+            if "RetroDualStation" not in (rd(MAKO_CFG) or ""):
+                with open(MAKO_CFG, "a") as f:
+                    f.write(MAKO_RULE)
+                subprocess.run(["makoctl", "reload"], timeout=3, capture_output=True,
+                               env=dict(os.environ, XDG_RUNTIME_DIR="/var/run/0-runtime-dir"))
+                log("mako: Helligkeit/Lautstärke-Anzeige von ROCKNIX ausgeblendet")
+        except Exception as exc:
+            log("mako:", exc)
+    threading.Thread(target=work, daemon=True).start()
+
+
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
+    mako_hide_osd()
     cc = ControlCenter()
     state = {"dirty": False}
 
