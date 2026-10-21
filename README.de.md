@@ -7,7 +7,7 @@ Dual-Screen-EmulationStation für das **Anbernic RG DS Plus**, aufgebaut auf **R
 
 🇬🇧 [English version](README.md) · 🧭 [Kurze Tour](https://github.com/Ninte86hl/RetroDualStation/wiki/Tour-DE)
 
-<p align="center"><img src="docs/screenshots/rds-mockup.png" alt="RetroDualStation auf einem Dual-Screen-Handheld" width="440"></p>
+<p align="center"><img src="docs/screenshots/rds-mockup.webp" alt="RetroDualStation auf einem Dual-Screen-Handheld" width="440"></p>
 
 ---
 
