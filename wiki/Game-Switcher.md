@@ -5,4 +5,4 @@
 Works with RetroArch, DraStic, DSperate and PortMaster. Switching takes about 5 seconds –
 a loading screen covers both screens and the sound stays muted until you're back in the game.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/game-switcher.png" width="480"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/game-switcher.png" width="480"></p>

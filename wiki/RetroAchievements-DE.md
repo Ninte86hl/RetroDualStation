@@ -6,4 +6,4 @@ Seite 3 im [Kontrollcenter](Kontrollcenter) zeigt Konto, Fortschritt des aktuell
 - Ein neuer Erfolg erscheint kurz oben über dem Spiel, mit doppeltem Vibrationsimpuls.
 - Funktioniert in Spielen über RetroArch; Hardcore und Softcore werden angezeigt.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-ra.png" width="480"> <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-toast.png" width="480"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-ra.png" width="480"> <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-toast.png" width="480"></p>

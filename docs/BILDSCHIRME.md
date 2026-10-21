@@ -1,6 +1,6 @@
 # Konzept: Bildschirm-Bereiche in ES
 
-Stand: 20.10.2026 · Anlass: [Issue #5](https://github.com/Ninte86hl/rocknix-dualstation/issues/5) · Noch kein Code.
+Stand: 20.10.2026 · Anlass: [Issue #5](https://github.com/Ninte86hl/RetroDualStation/issues/5) · Noch kein Code.
 
 ## Ausgangslage
 

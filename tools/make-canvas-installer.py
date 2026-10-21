@@ -49,7 +49,7 @@ notice = f"""canvas-ds – RG DS Plus (ROCKNIX DualStation)
 canvas-ds by toniremi (https://github.com/toniremi/canvas-ds, commit {commit}),
 based on Canvas by Siddy212, artwork and layouts by fagnerpc, system icons by
 Zoidburg13. Adapted to the RG DS Plus (2048 x 768) by Ninte86hl with the
-overlay from https://github.com/Ninte86hl/rocknix-dualstation, shared with
+overlay from https://github.com/Ninte86hl/RetroDualStation, shared with
 toniremi's permission.
 
 License: Creative Commons BY-NC-SA (https://creativecommons.org/licenses/by-nc-sa/2.0/)

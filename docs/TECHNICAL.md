@@ -47,7 +47,7 @@ docs/zwischenstand-*.md      technical analysis and project log (German)
 
 
 Download the source code and **`emulationstation-rgds`** from the
-[latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest),
+[latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest),
 then from the source folder:
 
 ```bash

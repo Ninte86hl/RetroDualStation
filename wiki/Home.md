@@ -14,4 +14,4 @@
 | [Good to know](Good-to-know) | Tips, limitations, troubleshooting |
 | [Roadmap](Roadmap) | What's done and what's next |
 
-Installation: see the [README](https://github.com/Ninte86hl/rocknix-dualstation#installation) · Downloads: [Releases](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest) · Technical details: [TECHNICAL.md](https://github.com/Ninte86hl/rocknix-dualstation/blob/main/docs/TECHNICAL.md)
+Installation: see the [README](https://github.com/Ninte86hl/RetroDualStation#installation) · Downloads: [Releases](https://github.com/Ninte86hl/RetroDualStation/releases/latest) · Technical details: [TECHNICAL.md](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TECHNICAL.md)

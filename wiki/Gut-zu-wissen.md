@@ -7,4 +7,4 @@
 - **Touch in DraStic reagiert nicht?** **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).
 - **Zurück zum Original:** *Ports → RGDS Single-Screen ES*; *Uninstall* stellt Original-ES samt Theme wieder her – Spiele, Medien, Spielelisten und Spielstände bleiben unberührt.
 
-Technik und manuelle Installation: [TECHNIK.md](https://github.com/Ninte86hl/rocknix-dualstation/blob/main/docs/TECHNIK.md)
+Technik und manuelle Installation: [TECHNIK.md](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TECHNIK.md)

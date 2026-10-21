@@ -26,11 +26,11 @@ New achievements and the volume briefly appear on the top screen over the game.
 
 | | | |
 |:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-main.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-wifi.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-bluetooth.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-main.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-wifi.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-bluetooth.png"> |
 | **Control Center** over a paused game | **Wi-Fi** – saved networks on top | **Bluetooth** – pair controllers directly |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-keyboard.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-power.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-spiel.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-keyboard.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-power.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-spiel.png"> |
 | **On-screen keyboard** | **Power menu** | **Game page** |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-slots.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-toast.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-tasten.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-slots.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-toast.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-tasten.png"> |
 | **Save slots** with preview | **Notification** on top | **Button layout** per system |
 
 English or German, following the ES language.

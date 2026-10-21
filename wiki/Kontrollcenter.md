@@ -26,11 +26,11 @@ Neue Erfolge und die Lautstärke erscheinen kurz auf dem oberen Bildschirm über
 
 | | | |
 |:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-main.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-wifi.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-bluetooth.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-main.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-wifi.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-bluetooth.png"> |
 | **Kontrollcenter** über einem pausierten Spiel | **WLAN** – gespeicherte Netze oben | **Bluetooth** – Controller direkt koppeln |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-keyboard.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/screenshots/control-center-power.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-spiel.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-keyboard.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/control-center-power.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-spiel.png"> |
 | **Bildschirmtastatur** | **Power-Menü** | **Seite „Spiel“** |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-slots.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-toast.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-tasten.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-slots.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-toast.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-tasten.png"> |
 | **Speicherplätze** mit Vorschaubild | **Meldung** oben | **Tastenbelegung** je System |
 
 Deutsch oder Englisch, je nach ES-Sprache.

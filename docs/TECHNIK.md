@@ -48,7 +48,7 @@ docs/zwischenstand-*.md      technische Analyse und Projektstand
 
 
 Quellcode und **`emulationstation-rgds`** aus dem
-[aktuellen Release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
+[aktuellen Release](https://github.com/Ninte86hl/RetroDualStation/releases/latest)
 herunterladen, dann aus dem Quellcode-Ordner:
 
 ```bash

@@ -18,4 +18,4 @@
 - [Gut zu wissen](Gut-zu-wissen)
 - [Roadmap](Roadmap-DE)
 
-[GitHub-Repo](https://github.com/Ninte86hl/rocknix-dualstation) · [Releases](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
+[GitHub-Repo](https://github.com/Ninte86hl/RetroDualStation) · [Releases](https://github.com/Ninte86hl/RetroDualStation/releases/latest)

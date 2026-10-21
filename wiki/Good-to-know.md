@@ -7,4 +7,4 @@
 - **DraStic touch not responding?** Set **Follow 3D Renderer** to *Auto* (also happens on stock ROCKNIX).
 - **Back to stock:** *Ports → RGDS Single-Screen ES*; *Uninstall* restores stock ES and theme – games, media, game lists and saves stay untouched.
 
-Technical details and manual installation: [TECHNICAL.md](https://github.com/Ninte86hl/rocknix-dualstation/blob/main/docs/TECHNICAL.md)
+Technical details and manual installation: [TECHNICAL.md](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TECHNICAL.md)

@@ -25,7 +25,7 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 
 <p align="center"><img src="docs/screenshots/cc-unten.png" alt="Control Center" width="400"> <img src="docs/tour/tour-spiel.png" alt="Game page" width="400"></p>
 
-**Anbernic button** – quick settings, save slots with pictures, fast forward, power menu – over any game. → [more](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Control-Center)
+**Anbernic button** – quick settings, save slots with pictures, fast forward, power menu – over any game. → [more](https://github.com/Ninte86hl/RetroDualStation/wiki/Control-Center)
 
 </details>
 
@@ -34,7 +34,7 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 
 <p align="center"><img src="docs/screenshots/gs-unten.png" alt="Game switcher" width="480"></p>
 
-**Hold Home** – jump between recent games and continue exactly where you left off. → [more](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Game-Switcher)
+**Hold Home** – jump between recent games and continue exactly where you left off. → [more](https://github.com/Ninte86hl/RetroDualStation/wiki/Game-Switcher)
 
 </details>
 
@@ -43,18 +43,18 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 
 <p align="center"><img src="docs/tour/tour-ra.png" alt="RetroAchievements" width="480"></p>
 
-Progress and all achievements in the Control Center, notification on top of the game. → [more](https://github.com/Ninte86hl/rocknix-dualstation/wiki/RetroAchievements)
+Progress and all achievements in the Control Center, notification on top of the game. → [more](https://github.com/Ninte86hl/RetroDualStation/wiki/RetroAchievements)
 
 </details>
 
-📖 All features, buttons and tips: **[Wiki](https://github.com/Ninte86hl/rocknix-dualstation/wiki)** · [Roadmap](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Roadmap) · [Good to know](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Good-to-know)
+📖 All features, buttons and tips: **[Wiki](https://github.com/Ninte86hl/RetroDualStation/wiki)** · [Roadmap](https://github.com/Ninte86hl/RetroDualStation/wiki/Roadmap) · [Good to know](https://github.com/Ninte86hl/RetroDualStation/wiki/Good-to-know)
 
 ## What's different?
 
 | | Stock ROCKNIX | RetroDualStation |
 |---|---|---|
 | EmulationStation | one screen | **both screens** |
-| Themes | single-screen | dual-screen themes like **[canvas-ds](https://github.com/Ninte86hl/rocknix-dualstation/wiki/Themes)** |
+| Themes | single-screen | dual-screen themes like **[canvas-ds](https://github.com/Ninte86hl/RetroDualStation/wiki/Themes)** |
 | Artwork | scraper images | boxart, icon and hero per game via the **Artwork Manager** – right on the device |
 | Bottom screen in games | RetroArch touch menu only | **Control Center** everywhere – ES, RetroArch, DraStic, DSperate, PortMaster |
 | Going back | – | one tap in **Ports** |
@@ -62,7 +62,7 @@ Progress and all achievements in the Control Center, notification on top of the 
 ## Installation
 
 1. Download **`rocknix-dualstation-v13.1.zip`** (includes canvas-ds) from the
-   [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest).
+   [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
 3. In ES open **Ports** → **Install ROCKNIX DualStation**.
 

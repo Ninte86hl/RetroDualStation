@@ -70,7 +70,7 @@ screens).
 Requires ROCKNIX DualStation to be installed.
 
 1. Download **`canvas-ds-rgds-plus-v9.zip`** from the
-   [latest release](https://github.com/Ninte86hl/rocknix-dualstation/releases/latest)
+   [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest)
    (about 180 MB – the complete theme including toniremi's artwork).
 2. Unpack it into the **`ports`** folder of your ROMs.
 3. Start **Ports → Install canvas-ds theme**. ES restarts and shows a

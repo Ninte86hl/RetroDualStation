@@ -13,7 +13,7 @@ Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge-I
 
 | | | |
 |:-:|:-:|:-:|
-| <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-artwork-liste.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-artwork-spiel.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/rocknix-dualstation/main/docs/tour/tour-artwork-editor.png"> |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-artwork-liste.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-artwork-spiel.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-artwork-editor.png"> |
 | **Spieleliste** | **Spiel** mit Live-Vorschau | **Icon-Editor** |
 
-Alle Tasten: [kurze Tour](https://github.com/Ninte86hl/rocknix-dualstation/blob/main/docs/TOUR.de.md#5-artwork-manager) · PC-Version: [RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager)
+Alle Tasten: [kurze Tour](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TOUR.de.md#5-artwork-manager) · PC-Version: [RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager)
