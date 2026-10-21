@@ -36,7 +36,7 @@ It is a free, open add-on: install it via **Ports**, switch back to stock ES wit
 
 <p align="center"><img src="docs/screenshots/gs-unten.png" alt="Game switcher" width="480"></p>
 
-**Hold Home** – jump between recent games and continue exactly where you left off. → [more](https://github.com/Ninte86hl/RetroDualStation/wiki/Game-Switcher)
+**Hold Home** – jump between recent games and continue exactly where you left off. A switch takes about 5 seconds: every game is started through ES as usual, so the emulator loads fresh each time. → [more](https://github.com/Ninte86hl/RetroDualStation/wiki/Game-Switcher)
 
 </details>
 

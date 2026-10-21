@@ -36,7 +36,7 @@ Ein freies Add-on: Installation über **Ports**, zurück zum Original-ES mit ein
 
 <p align="center"><img src="docs/screenshots/gs-unten.png" alt="Gameswitcher" width="480"></p>
 
-**Home halten** – zwischen den letzten Spielen wechseln und genau dort weitermachen. → [mehr](https://github.com/Ninte86hl/RetroDualStation/wiki/Gameswitcher)
+**Home halten** – zwischen den letzten Spielen wechseln und genau dort weitermachen. Ein Wechsel dauert etwa 5 Sekunden: Jedes Spiel wird wie gewohnt über ES gestartet, der Emulator lädt also jedes Mal neu. → [mehr](https://github.com/Ninte86hl/RetroDualStation/wiki/Gameswitcher)
 
 </details>
 
