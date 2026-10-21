@@ -559,3 +559,14 @@ Das CC drückt dafür die im Emulator eingestellte Taste – auch Tasten, die da
   DuckStation, Dolphin, melonDS, **DSperate** (`[cheevos] enabled` in dsperate.ini), AetherSX2, SkyEmu. DraStic: nein.
 - **Plan:** Stufe 1 RetroArch (über den Proxy). Stufe 2 DSperate prüfen (eigene Anmeldung; geht es über den Proxy?).
   Andere Standalone-Emulatoren zeigen auf Seite 3 einen Hinweis.
+
+### RetroAchievements und Lautstärke – Umsetzung Stufe 1 (21.10.2026)
+- **Seite 3:** Konto (Name, Punkte Softcore/Hardcore nach ES-Einstellung), Spielkarte (Icon aus dem Artwork Manager,
+  „n von m Erfolgen · Punkte“, Balken), Liste offene → geschaffte Erfolge mit Abzeichen (▲ ▼ blättern).
+  Nicht unterstützte ROM-Version (Spiel-ID ≥ 100000000) → Hinweis auf „Supported Game Hashes“.
+  Andere Emulatoren → Hinweis aufs Emulator-Menü.
+- **Freischalt-Meldung:** Hintergrund-Thread fragt `/_ui/state` alle 1,5 s ab (nur RetroArch), neue Einträge in `unlocks` →
+  Meldung 5 s oben (schmale Ebene `toast`, Spiel bleibt sichtbar).
+- **Lautstärke:** `gpio-keys-volume` (KEY_VOLUMEUP/DOWN) wird nur mitgelesen; 0,15 s nach dem Druck liest das CC
+  `wpctl get-volume` und zeigt 1,6 s einen Balken oben. Mehrere Drücke ziehen den Balken mit.
+- **Installer:** schaltet RetroAchievements nicht mehr ab; ein von früher gemerkter Wert wird einmalig zurückgegeben.

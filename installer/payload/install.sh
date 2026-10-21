@@ -196,9 +196,8 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
                -e 's/^confirm_close = .*/confirm_close = "false"/' \
                -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' \
                -e 's/^video_font_enable = .*/video_font_enable = "false"/' \
-               -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' \
-               -e 's/^cheevos_enable = .*/cheevos_enable = "false"/' "$RACFG"
-        log "RetroArch: Rueckfragen, Einblendungen und RetroAchievements aus"
+               -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' "$RACFG"
+        log "RetroArch: Rueckfragen und Einblendungen aus (Erfolgsmeldung zeigt das Kontrollcenter)"
     fi
     # Einheitliche Kürzel (Anbernic + R1 Vorspulen, R2 Speichern, L2 Laden, X Menü, Y FPS, Start Beenden).
     # Nur einmal pro Gerät (Merker), vorher Sicherung; eigene spätere Änderungen bleiben unangetastet.
@@ -235,12 +234,17 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         date > "$DMARK"
         log "DraStic: Menue auf R3, Vorspulen auf rechten Stick (nur ueber das CC)"
     fi
-    # RetroAchievements vorerst aus (kommen später über das Kontrollcenter); alten Wert merken
-    if [ ! -f "$DEST/retroachievements.before" ]; then
-        ( . /etc/profile >/dev/null 2>&1; get_setting global.retroachievements ) > "$DEST/retroachievements.before" 2>/dev/null
+    # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
+    # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
+    if [ -f "$DEST/retroachievements.before" ]; then
+        RAOLD="$(cat "$DEST/retroachievements.before" 2>/dev/null)"
+        RANOW="$( . /etc/profile >/dev/null 2>&1; get_setting global.retroachievements )"
+        if [ "$RANOW" = "0" ] && [ -n "$RAOLD" ] && [ "$RAOLD" != "0" ]; then
+            ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements "$RAOLD" ) >/dev/null 2>&1
+            log "ES: RetroAchievements wieder wie vor RetroDualStation ($RAOLD)"
+        fi
+        rm -f "$DEST/retroachievements.before"
     fi
-    ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements 0 ) >/dev/null 2>&1
-    log "ES: RetroAchievements aus (vorher: $(cat "$DEST/retroachievements.before" 2>/dev/null))"
 
     MAKOCFG=/storage/.config/mako/config
     if [ -f "$MAKOCFG" ] && ! grep -q 'RetroDualStation' "$MAKOCFG"; then

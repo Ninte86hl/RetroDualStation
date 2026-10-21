@@ -230,7 +230,14 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Tasten": "Buttons", "Spieltasten": "Game buttons",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!",
+    "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
+    "Hardcore an": "Hardcore on", "blättern": "scroll", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
+    "Anmeldung fehlgeschlagen – Konto in ES prüfen.": "Login failed – check the account in ES.",
+    "Erfolge erscheinen hier, sobald ein Spiel läuft.": "Achievements appear here once a game is running.",
+    "Für %s im Menü des Emulators.": "For %s in the emulator's own menu.",
+    "Diese ROM-Version wird von RetroAchievements nicht unterstützt.": "This ROM version is not supported by RetroAchievements.",
+    "Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes": "Supported versions: retroachievements.org → game → Supported Game Hashes", "Tasten": "Buttons", "Spieltasten": "Game buttons",
     "Kürzel": "Shortcuts", "Original": "Original", "Steuerkreuz": "D-pad", "Menü": "Menu", "Zurückspulen": "Rewind",
     "Bildschirme tauschen": "Swap screens", "Mikrofon": "Microphone", "Layout +": "Layout +",
     "Layout −": "Layout −", "Vorspulen (halten)": "Fast forward (hold)", "Pause": "Pause", "FPS": "FPS", "Analogsticks": "Analog sticks",
@@ -615,6 +622,10 @@ class Pen:
                 cairo.cairo_set_line_width(cr, max(3, 5 * scale) * s)
                 self.color(c)
                 cairo.cairo_stroke(cr)
+        elif kind == "trophy":
+            self.poly([(cx - 14, cy - 14), (cx + 14, cy - 14), (cx + 10, cy + 2), (cx - 10, cy + 2)], c)
+            self.rrect(cx - 3, cy + 2, 6, 8, 2, c)
+            self.rrect(cx - 10, cy + 10, 20, 5, 2, c)
         elif kind == "help":                      # Gamepad
             self.rrect(cx - 24, cy - 12, 48, 26, 13, c)
             self.rrect(cx - 15, cy - 2, 10, 3, 1.5, "000000")
@@ -824,6 +835,32 @@ def volume_get():
     out = run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
     m = re.search(r"([\d.]+)", out or "")
     return min(100, round(float(m.group(1)) * 100)) if m else None
+
+
+VOLUME_NAME = os.environ.get("RDS_CC_VOLKEYS", "gpio-keys-volume")
+KEY_VOLUMEDOWN, KEY_VOLUMEUP = 114, 115
+RA_PROXY_STATE = "http://127.0.0.1:4874/_ui/state"
+RA_BADGES = "/storage/thumbnails/cheevos/badges"
+TOAST_H = 150          # Höhe der Meldung oben in Bildschirm-Pixeln
+
+
+def ra_state():
+    """Zustand des ROCKNIX-RetroAchievements-Proxys (läuft nur während RetroArch) oder None."""
+    try:
+        import urllib.request
+        with urllib.request.urlopen(RA_PROXY_STATE, timeout=1.5) as r:
+            return json.loads(r.read().decode("utf-8", "replace"))
+    except Exception:
+        return None
+
+
+def ra_badge(badge, locked=False):
+    p = os.path.join(RA_BADGES, "%s%s.png" % (badge, "_lock" if locked else ""))
+    return p if badge and os.path.exists(p) else None
+
+
+def volume_muted():
+    return "MUTED" in (run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]) or "")
 
 
 def volume_set(pct):
@@ -2656,6 +2693,11 @@ class ControlCenter:
         self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
         self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
         self.ghelp = False        # Tastenbelegung offen
+        self.toasts = []          # wartende Meldungen oben: {"kind": "volume"|"cheevo", ...}
+        self.toast_now = None     # angezeigte Meldung
+        self.toast_until = 0.0
+        self.ra = None            # letzter Stand des RetroAchievements-Proxys
+        self.ra_sel = 0
         self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -2829,6 +2871,9 @@ class ControlCenter:
             return
         if self.sub:
             self.sub.nav(dx, dy)
+            return
+        if self.page == 2:
+            self.ra_sel = max(0, self.ra_sel + dy)
             return
         if self.page == 1 and self.ghelp:
             return
@@ -3051,6 +3096,8 @@ class ControlCenter:
             self._draw_quick(P)
         elif self.page == 1:
             self._draw_game(P)
+        elif self.page == 2:
+            self._draw_ra(P)
         else:
             self._draw_placeholder(P)
         # Fußzeile mit Seitenpunkten
@@ -3062,6 +3109,8 @@ class ControlCenter:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
         elif self.page == 1 and self.ghelp:
             left = [("B", "zurück")]
+        elif self.page == 2 and self.ra:
+            left = [("▲ ▼", "blättern"), ("L1 / R1", "Seite wechseln")]
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
@@ -3444,6 +3493,129 @@ class ControlCenter:
             P.text(tr(label), 19, 671, y, T["muted"], raw=True)
             P.text(keys, 19, 1186, y, A if "Anbernic" in keys else T["text"], bold=True, align="r", raw=True)
             y += 40
+
+    def _ra_rows(self):
+        st = self.ra or {}
+        unl = st.get("unlocks") or {}
+        achs = [a for a in st.get("achievements") or [] if a.get("id") != 101000001]
+        locked = [a for a in achs if str(a.get("id")) not in unl]
+        done = [a for a in achs if str(a.get("id")) in unl]
+        return locked + done, unl
+
+    def _draw_ra(self, P):
+        """Seite 3: RetroAchievements des laufenden Spiels (Daten vom ROCKNIX-Proxy)."""
+        T, A = self.T, self.accent
+        g = self.game or {}
+        st = self.ra if g.get("emu") == "RetroArch" else None
+        if not g:
+            P.text("Kein Spiel läuft", 40, 630, 420, T["text"], bold=True, align="c")
+            P.text("Erfolge erscheinen hier, sobald ein Spiel läuft.", 22, 630, 470, T["muted"], align="c")
+            return
+        if g.get("emu") != "RetroArch":
+            P.text("RetroAchievements", 40, 630, 400, T["text"], bold=True, align="c", raw=True)
+            P.text(tr("Für %s im Menü des Emulators.") % g.get("emu", ""), 22, 630, 450, T["muted"], align="c", raw=True)
+            return
+        if not st or st.get("login_status") != "ok":
+            msg = "Anmeldung fehlgeschlagen – Konto in ES prüfen." if (st or {}).get("login_status") == "failed" \
+                else "Verbinde mit RetroAchievements …"
+            P.text("RetroAchievements", 40, 630, 400, T["text"], bold=True, align="c", raw=True)
+            P.text(msg, 22, 630, 450, T["muted"], align="c")
+            return
+        user, game = st.get("user") or {}, st.get("game") or {}
+        # Kopf: Konto
+        name = user.get("name") or ""
+        P.circle(80, 95, 34, mix(T["tile"], A, 0.3))
+        P.text(name[:1].upper(), 30, 80, 106, "ffffff", bold=True, align="c", raw=True)
+        P.text(name, 28, 130, 88, T["text"], bold=True, raw=True)
+        hc = re.search(r"^global\.retroachievements\.hardcore=1", rd("/storage/.config/system/configs/system.cfg") or "", re.M)
+        pts = user.get("score") if hc else user.get("softcore_score")
+        P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 18, 130, 118, T["muted"], raw=True)
+        label = tr("Hardcore an") if hc else tr("Softcore")
+        pw = P.width(label, 18, bold=True, raw=True) + 48
+        P.rrect(1215 - pw, 70, pw, 54, 27, mix(T["tile"], A, 0.35 if hc else 0.12))
+        P.text(label, 18, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+        # Spielkarte
+        rows, unl = self._ra_rows()
+        P.rrect(45, 165, 1170, 190, 28, T["card"])
+        icon = self._game_icon()
+        if not (icon and P.image(icon, 70, 190, 140, 140, 24)):
+            P.rrect(70, 190, 140, 140, 24, T["tile"])
+            P.logo(95, 225, 80, T["muted"], T["tile"])
+        unsupported = (game.get("id") or 0) >= 100000000 or not rows
+        title = g.get("name") or game.get("title") or ""
+        while P.width(title, 30, bold=True, raw=True) > 940 and len(title) > 4:
+            title = title[:-2]
+        P.text(title, 30, 240, 225, T["text"], bold=True, raw=True)
+        if unsupported:
+            P.text(tr("Diese ROM-Version wird von RetroAchievements nicht unterstützt."), 18, 240, 262, T["muted"], raw=True)
+            P.text(tr("Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes"), 16, 240, 296, T["muted"], raw=True)
+            return
+        n_done = sum(1 for a in rows if str(a.get("id")) in unl)
+        p_done = sum(a.get("points") or 0 for a in rows if str(a.get("id")) in unl)
+        p_all = sum(a.get("points") or 0 for a in rows)
+        P.text("%d %s %d %s  ·  %d / %d %s" % (n_done, tr("von"), len(rows), tr("Erfolgen"), p_done, p_all, tr("Punkte")),
+               18, 240, 260, T["muted"], raw=True)
+        frac = n_done / len(rows) if rows else 0
+        P.rrect(240, 285, 940, 18, 9, T["seg"])
+        if frac:
+            P.rrect(240, 285, max(18, 940 * frac), 18, 9, A)
+        P.text("%d %%" % round(frac * 100), 17, 1180, 325, T["muted"], align="r", raw=True)
+        # Liste: offene zuerst, dann geschaffte
+        self.ra_sel = min(self.ra_sel, len(rows) - 1)
+        first = max(0, min(self.ra_sel - 1, len(rows) - 4))
+        y = 380
+        for i, a in enumerate(rows[first:first + 4], start=first):
+            done = str(a.get("id")) in unl
+            sel = i == self.ra_sel
+            P.rrect(45, y, 1170, 92, 20, A if sel else mix(T["tile"], A, 0.22))
+            b = ra_badge(a.get("badge"), locked=not done)
+            if not (b and P.image(b, 58, y + 10, 72, 72, 14)):
+                P.rrect(58, y + 10, 72, 72, 14, A if done else T["seg"])
+                P.game_icon("trophy", 94, y + 46, "ffffff" if done else T["muted"])
+            tc = "ffffff" if sel else T["text"]
+            t = a.get("title") or ""
+            while P.width(t, 20, bold=True, raw=True) > 900 and len(t) > 4:
+                t = t[:-2]
+            P.text(t, 20, 150, y + 38, tc, bold=True, raw=True)
+            d = a.get("desc") or ""
+            while P.width(d, 16, raw=True) > 920 and len(d) > 4:
+                d = d[:-2]
+            P.text(d, 16, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
+            P.text(("✓ " if False else "") + "%d P" % (a.get("points") or 0), 19, 1190, y + 54,
+                   "ffffff" if (sel or done) else T["muted"], bold=True, align="r", raw=True)
+            y += 102
+
+    def paint_toast(self, cr, w, h):
+        """Schmale Meldung oben über dem Spiel (Lautstärke oder freigeschalteter Erfolg)."""
+        P = Pen(cr, w, h)
+        P.s, P.ox, P.oy = w / 1260, 0, 0          # Entwurf 1260 breit, Höhe frei
+        T, A = self.T, self.accent
+        t = self.toast_now or {}
+        if t.get("kind") == "volume":
+            bw, x = 560, 630 - 280
+            P.rrect(x, 22, bw, 112, 56, "1c1c1c", 0.9)
+            # Lautsprecher
+            P.rrect(x + 46, 64, 16, 28, 4, "ffffff")
+            P.poly([(x + 58, 64), (x + 78, 48), (x + 78, 108), (x + 58, 92)], "ffffff")
+            if t.get("muted") or not t.get("value"):
+                P.game_icon("quit", x + 100, 78, "ffffff", scale=0.5)
+            P.rrect(x + 120, 70, 330, 16, 8, "4a4a4a")
+            P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
+            P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, "ffffff", bold=True, align="r", raw=True)
+            return
+        if t.get("kind") == "cheevo":
+            x, bw = 230, 800
+            P.rrect(x, 14, bw, 128, 34, "1c1c1c", 0.92)
+            b = ra_badge(t.get("badge"))
+            if not (b and P.image(b, x + 20, 30, 96, 96, 16)):
+                P.rrect(x + 20, 30, 96, 96, 16, A)
+                P.game_icon("trophy", x + 68, 78, "ffffff")
+            P.text(tr("Erfolg freigeschaltet!"), 18, x + 140, 58, A, bold=True)
+            title = t.get("title") or ""
+            while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
+                title = title[:-2]
+            P.text(title, 28, x + 140, 96, "ffffff", bold=True, raw=True)
+            P.text(t.get("sub") or "", 17, x + 140, 126, "bdbdbd", raw=True)
 
     def _session(self):
         """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
@@ -3981,6 +4153,7 @@ class Overlay:
         self.pending_view = None
         self._mm = None
         self.top = None   # Fläche auf dem oberen Bildschirm (Ladebildschirm)
+        self.toast = None # schmale Meldung oben (Lautstärke, Erfolge)
 
         self.registry = marshal(self.display, 1, IF_REGISTRY, ("n", None))
         G = CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_char_p, c_uint32)
@@ -4170,8 +4343,10 @@ class Overlay:
     def top_output(self):
         return next((o for o, n in reversed(list(self.outputs.items())) if n == TOP_OUTPUT), None)
 
-    def show_top(self, painter):
-        self.hide_top()
+    def show_top(self, painter, slot="top", height=None):
+        """Fläche auf dem oberen Bildschirm. slot="toast" mit height: schmaler Streifen oben
+        (durchsichtig außerhalb der Meldung, das Spiel bleibt sichtbar)."""
+        self.hide_top(slot)
         out = self.top_output()
         if not out:
             return
@@ -4184,21 +4359,25 @@ class Overlay:
         def configure(_d, lsurf, serial, w, h):
             try:
                 marshal(lsurf, 6, None, ("u", serial))
-                t["size"] = (w or 1024, h or 768)
-                self.redraw_top()
+                t["size"] = (w or 1024, h or (height or 768))
+                self.redraw_top(slot)
             except Exception as exc:
                 log("Fehler oben:", exc)
         listen(t["lsurf"],
                CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_uint32, c_uint32)(configure),
                CFUNCTYPE(None, c_void_p, c_void_p)(lambda *a: None))
-        marshal(t["lsurf"], 1, None, ("u", ANCHOR_ALL))
-        marshal(t["lsurf"], 2, None, ("i", -1))
+        if height:
+            marshal(t["lsurf"], 0, None, ("u", 0), ("u", int(height)))   # volle Breite, feste Höhe
+            marshal(t["lsurf"], 1, None, ("u", 1 | 4 | 8))                # oben, links, rechts
+        else:
+            marshal(t["lsurf"], 1, None, ("u", ANCHOR_ALL))
+            marshal(t["lsurf"], 2, None, ("i", -1))
         marshal(t["surface"], 6, None)
         wl.wl_display_flush(self.display)
-        self.top = t
+        setattr(self, slot, t)
 
-    def redraw_top(self):
-        t = self.top
+    def redraw_top(self, slot="top"):
+        t = getattr(self, slot, None)
         if not (t and t["size"]):
             return
         w, h = t["size"]
@@ -4230,8 +4409,9 @@ class Overlay:
         t["mm"] = mm
         wl.wl_display_flush(self.display)
 
-    def hide_top(self):
-        t, self.top = self.top, None
+    def hide_top(self, slot="top"):
+        t = getattr(self, slot, None)
+        setattr(self, slot, None)
         if not t:
             return
         marshal(t["lsurf"], 7, None, destroy=True)
@@ -4451,6 +4631,7 @@ def main():
         pads[joy] = {"name": JOYPAD_NAME, "path": find_event(JOYPAD_NAME), "ext": False,
                      "range": abs_range(joy, ABS_X)}
     home = open_event(HOME_NAME)
+    vol = open_event(VOLUME_NAME)      # nur mitlesen (kein Grab): ROCKNIX regelt, wir zeigen an
     pwr = open_event(POWER_NAME)
     pwr_down_at = None   # Zeitstempel des Drückens (für Kurz/Lang)
     tfd = open_event(TOUCH_NAME)
@@ -4771,6 +4952,48 @@ def main():
 
         threading.Thread(target=work, daemon=True).start()
 
+    def volume_toast():
+        t = {"kind": "volume", "value": volume_get() or 0, "muted": volume_muted()}
+        if cc.toast_now and cc.toast_now.get("kind") == "volume":
+            cc.toast_now = t                              # Balken mitziehen, Anzeige verlängern
+            cc.toast_until = time.monotonic() + 1.6
+            cc.toast_dirty = True
+        else:
+            cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "volume"] + [t]
+
+    def cheevo_watch():
+        """Fragt während RetroArch-Spielen den ROCKNIX-Proxy ab und meldet neue Erfolge."""
+        known = {"game": None, "ids": set()}
+        while True:
+            g = cc.game
+            if not (g and g.get("emu") == "RetroArch"):
+                known["game"], cc.ra = None, None
+                time.sleep(3)
+                continue
+            st = ra_state()
+            if st:
+                if st != cc.ra and ui.view == "cc" and cc.page == 2:
+                    state["dirty"] = True
+                cc.ra = st
+                gid = (st.get("game") or {}).get("id")
+                ids = set((st.get("unlocks") or {}).keys())
+                if gid != known["game"]:
+                    known["game"], known["ids"] = gid, ids        # Ausgangsstand: nichts melden
+                else:
+                    new = ids - known["ids"]
+                    known["ids"] = ids
+                    achs = {str(a.get("id")): a for a in st.get("achievements") or []}
+                    total = len(achs)
+                    for i in sorted(new):
+                        a = achs.get(i, {})
+                        cc.toasts.append({"kind": "cheevo", "badge": a.get("badge"), "title": a.get("title"),
+                                          "sub": "%d %s  ·  %d / %d" % (a.get("points") or 0, tr("Punkte"),
+                                                                       len(ids), total)})
+                        log("Erfolg freigeschaltet:", a.get("title"))
+            time.sleep(1.5)
+
+    threading.Thread(target=cheevo_watch, daemon=True).start()
+
     def do_quit():
         game = cc.game
         if ui.view:
@@ -4966,12 +5189,13 @@ def main():
                             cc.screen_on()
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
-            fds = [fd for fd in [home, pwr, tfd] + list(pads) if fd is not None]
+            fds = [fd for fd in [home, pwr, tfd, vol] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
                 or (home_down["t"] is not None and not home_down["fired"]) \
                 or home_down["pending"] is not None \
-                or cc.gbusy or (cc.gmsg is not None and time.monotonic() - cc.gmsg[1] < 4.5)
+                or cc.gbusy or (cc.gmsg is not None and time.monotonic() - cc.gmsg[1] < 4.5) \
+                or cc.toast_now is not None or bool(cc.toasts)
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == tfd:
@@ -5007,6 +5231,9 @@ def main():
                                 if not home_down["fired"]:
                                     home_down["pending"] = time.monotonic()   # kurz: auf zweiten Druck warten
                                 home_down["t"] = None
+                        elif fd == vol:
+                            if typ == EV_KEY and code in (KEY_VOLUMEUP, KEY_VOLUMEDOWN) and value in (1, 2):
+                                threading.Timer(0.15, volume_toast).start()   # ROCKNIX hat dann schon geregelt
                         elif fd == pwr:
                             KEY_POWER = 116
                             if typ == EV_KEY and code == KEY_POWER:
@@ -5069,6 +5296,18 @@ def main():
                     state["dirty"] = True
             if scrolling:
                 state["dirty"] = True
+            # Meldungen oben (Lautstärke, Erfolge): eine nach der anderen, nie über Ladebildschirm/Tour
+            now = time.monotonic()
+            if cc.toast_now and now >= cc.toast_until:
+                ui.hide_top("toast")
+                cc.toast_now = None
+            if cc.toast_now and getattr(cc, "toast_dirty", False):
+                cc.toast_dirty = False
+                ui.redraw_top("toast")
+            if not cc.toast_now and cc.toasts and ui.top is None:
+                cc.toast_now = cc.toasts.pop(0)
+                cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 5.0)
+                ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
             if ui.view == "cc" and cc.page == 1 and (cc.gbusy or (cc.gmsg and time.monotonic() - cc.gmsg[1] < 4.5)):
                 state["dirty"] = True
             if home_down["pending"] is not None \
