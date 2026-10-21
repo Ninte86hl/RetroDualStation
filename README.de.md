@@ -5,7 +5,7 @@
 Dual-Screen-EmulationStation für das **Anbernic RG DS Plus**, aufgebaut auf **ROCKNIX**.
 *Früher „ROCKNIX DualStation“.*
 
-🇬🇧 [English version](README.md) · 🧭 [Kurze Tour](docs/TOUR.de.md)
+🇬🇧 [English version](README.md) · 🧭 [Kurze Tour](https://github.com/Ninte86hl/RetroDualStation/wiki/Tour-DE)
 
 ---
 

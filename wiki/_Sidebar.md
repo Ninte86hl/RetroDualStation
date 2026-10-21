@@ -1,5 +1,6 @@
 **🇬🇧 English**
 - [Home](Home)
+- [Quick tour](Tour)
 - [Control Center](Control-Center)
 - [Game Switcher](Game-Switcher)
 - [RetroAchievements](RetroAchievements)
@@ -10,6 +11,7 @@
 
 **🇩🇪 Deutsch**
 - [Start](Home-DE)
+- [Kurze Tour](Tour-DE)
 - [Kontrollcenter](Kontrollcenter)
 - [Gameswitcher](Gameswitcher)
 - [RetroAchievements](RetroAchievements-DE)

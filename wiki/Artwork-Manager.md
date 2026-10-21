@@ -16,4 +16,4 @@ Start it from **Ports → Artwork Manager**. It fills in **boxart**, **cartridge
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-artwork-liste.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-artwork-spiel.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-artwork-editor.png"> |
 | **Game list** | **Game** with live preview | **Icon editor** |
 
-All buttons: [quick tour](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TOUR.md#5-artwork-manager) · PC version: [RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager)
+All buttons: [quick tour](Tour#5-artwork-manager) · PC version: [RocknixDS Artwork Manager](https://github.com/Ninte86hl/RocknixDS-Artwork-Manager)

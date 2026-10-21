@@ -6,6 +6,7 @@
 
 | Funktion | |
 |---|---|
+| [Kurze Tour](Tour-DE) | Alle Tasten und Funktionen in wenigen Schritten, mit Bildern |
 | [Kontrollcenter](Kontrollcenter) | Schnelleinstellungen, Seite „Spiel“, Speicherplätze, Power-Menü – über jedem Spiel |
 | [Gameswitcher](Gameswitcher) | Zwischen den letzten Spielen wechseln und weitermachen |
 | [RetroAchievements](RetroAchievements-DE) | Fortschritt, alle Erfolge, Meldung beim Freischalten |

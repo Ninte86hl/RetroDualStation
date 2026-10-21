@@ -6,6 +6,7 @@
 
 | Feature | |
 |---|---|
+| [Quick tour](Tour) | All buttons and features in a few steps, with pictures |
 | [Control Center](Control-Center) | Quick settings, game page, save slots, power menu – over every game |
 | [Game Switcher](Game-Switcher) | Jump between recent games and continue where you left off |
 | [RetroAchievements](RetroAchievements) | Progress, all achievements, unlock notification |
