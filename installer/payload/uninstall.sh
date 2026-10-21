@@ -52,6 +52,7 @@ systemctl stop rds-controlcenter 2>/dev/null
 rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlcenter.service" \
       "$SYSD"/*.target.wants/rds-resume.service "$SYSD/rds-resume.service" \
       /storage/.config/logind.conf.d/rds-logind-powerkey.conf
+SS="$(cat /storage/.config/retrodualstation/savestates.done 2>/dev/null)"   # vor dem Löschen merken
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
 systemctl daemon-reload
 systemctl kill -s HUP systemd-logind 2>/dev/null
@@ -59,6 +60,7 @@ RA="$(cat "$DEST/retroachievements.before" 2>/dev/null)"
 [ -n "$RA" ] && ( . /etc/profile >/dev/null 2>&1; set_setting global.retroachievements "$RA" ) >/dev/null 2>&1
 BS="$(cat "$DEST/bottomscreen.before" 2>/dev/null)"
 ( . /etc/profile >/dev/null 2>&1; [ "$BS" = none ] && BS=vc; set_setting rocknix.bottomscreen.type "${BS:-vc}" ) >/dev/null 2>&1
+[ -n "$SS" ] && ( . /etc/profile >/dev/null 2>&1; set_setting global.savestates "$SS" ) >/dev/null 2>&1
 sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d' /storage/.config/sway/config 2>/dev/null
 sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>/dev/null
 log "Kontrollcenter und Geraeteeinstellungen entfernt"

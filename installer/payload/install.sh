@@ -249,6 +249,14 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         date > "$DMARK"
         log "DraStic: Menue auf R3, Vorspulen auf rechten Stick (nur ueber das CC)"
     fi
+    # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
+    SSMARK=/storage/.config/retrodualstation/savestates.done
+    if [ ! -f "$SSMARK" ]; then
+        SSOLD="$( . /etc/profile >/dev/null 2>&1; get_setting global.savestates )"
+        ( . /etc/profile >/dev/null 2>&1; set_setting global.savestates auto ) >/dev/null 2>&1
+        echo "$SSOLD" > "$SSMARK"
+        log "ES: Savestate-Manager aus (vorher: ${SSOLD:-Standard})"
+    fi
     # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
     # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
     if [ -f "$DEST/retroachievements.before" ]; then

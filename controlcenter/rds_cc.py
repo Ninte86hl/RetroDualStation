@@ -4630,6 +4630,36 @@ EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
 
 
+def find_events(name):
+    """Alle Eingabegeräte mit diesem Namen: [(event-Pfad, Sysfs-Pfad)]."""
+    found, block_name, sysfs = [], None, ""
+    with open("/proc/bus/input/devices") as f:
+        for line in f:
+            if line.startswith("N: Name="):
+                block_name, sysfs = line.split("=", 1)[1].strip().strip('"'), ""
+            elif line.startswith("S: Sysfs="):
+                sysfs = line.split("=", 1)[1].strip()
+            elif line.startswith("H: Handlers=") and block_name == name:
+                ev = next((p for p in line.split("=", 1)[1].split() if p.startswith("event")), None)
+                if ev:
+                    found.append(("/dev/input/" + ev, sysfs))
+    return found
+
+
+# Unterer Touchscreen, wenn es mehrere gibt (RG DS: oben i2c-3, unten i2c-5 = fe5e0000.i2c, getestet 21.10.2026)
+TOUCH_BOTTOM_BUS = os.environ.get("RDS_CC_TOUCH_BUS", "fe5e0000.i2c")
+
+
+def open_touch():
+    devs = find_events(TOUCH_NAME)
+    if not devs:
+        log("Eingabegerät nicht gefunden:", TOUCH_NAME)
+        return None
+    path = devs[0][0] if len(devs) == 1 else next((p for p, s in devs if TOUCH_BOTTOM_BUS in s), devs[-1][0])
+    log("Touch (unten):", path, "von", len(devs))
+    return os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+
+
 def find_event(name):
     block_name = None
     with open("/proc/bus/input/devices") as f:
@@ -4809,7 +4839,7 @@ def main():
     vol = open_event(VOLUME_NAME)      # nur mitlesen (kein Grab): ROCKNIX regelt, wir zeigen an
     pwr = open_event(POWER_NAME)
     pwr_down_at = None   # Zeitstempel des Drückens (für Kurz/Lang)
-    tfd = open_event(TOUCH_NAME)
+    tfd = open_touch()
     touch = TouchReader(tfd, cc.cfg) if tfd is not None else None
     mode_down = combo = False
     grabbed = False
