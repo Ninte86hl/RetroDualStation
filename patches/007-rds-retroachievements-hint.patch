@@ -1,5 +1,5 @@
 diff --git a/es-app/src/guis/GuiRetroAchievements.cpp b/es-app/src/guis/GuiRetroAchievements.cpp
-index 9feed2614..4a8a56314 100644
+index 9feed2614..764e23b66 100644
 --- a/es-app/src/guis/GuiRetroAchievements.cpp
 +++ b/es-app/src/guis/GuiRetroAchievements.cpp
 @@ -1,3 +1,8 @@
@@ -11,7 +11,7 @@ index 9feed2614..4a8a56314 100644
  #include "guis/GuiInstall.h"
  #include "guis/GuiMsgBox.h"
  #include "guis/GuiRetroAchievements.h"
-@@ -23,6 +28,19 @@
+@@ -23,6 +28,20 @@
  
  void GuiRetroAchievements::show(Window* window)
  {
@@ -19,13 +19,14 @@ index 9feed2614..4a8a56314 100644
 +	// Die Erfolge zeigt stattdessen das Kontrollcenter (Seite 3).
 +	if (RdsScreens::active())
 +	{
-+		// Statt der Übersicht (braucht die Kennung) direkt die Einstellungen (Anmeldung, Hardcore …) öffnen
-+		// und kurz auf das Kontrollcenter hinweisen.
++		// Statt der Übersicht (braucht die Kennung) direkt die Einstellungen (Anmeldung, Hardcore …) öffnen.
 +		bool de = Utils::String::startsWith(SystemConf::getInstance()->get("system.language"), "de");
-+		window->pushGui(new GuiRetroAchievementsSettings(window));
-+		window->displayNotificationMessage(de ?
++		// Hinweis als Untertitel im Menü selbst: erscheint nur hier, überdeckt nichts
++		auto settings = new GuiRetroAchievementsSettings(window);
++		settings->setSubTitle(de ?
 +			"Erfolge und Fortschritt: Kontrollcenter (Anbernic-Taste) → Seite 3" :
-+			"Achievements and progress: Control Center (Anbernic button) → page 3", 6000);
++			"Achievements and progress: Control Center (Anbernic button) → page 3");
++		window->pushGui(settings);
 +		return;
 +	}
  	window->pushGui(new GuiLoading<RetroAchievementInfo>(window, _("PLEASE WAIT"), 
