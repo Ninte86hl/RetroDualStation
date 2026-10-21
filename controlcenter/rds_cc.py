@@ -1750,11 +1750,7 @@ def ra_shortcuts():
         b = btn(key)
         if b:
             rows.append((label, (hk + " + " if hk else "") + b))
-    combo = cfg.get("input_menu_toggle_gamepad_combo", "0")
-    if combo not in ("0", ""):
-        rows.append(("Menü (Kombination)", {"1": "▼ + L1 + R1 + Y", "2": "L3 + R3", "3": "L1 + R1 + Start + Select",
-                              "4": "Start + Select", "5": "L3 + R1", "6": "L1 + R1",
-                              "7": "Start halten", "8": "Select halten", "9": "▼ + Select"}.get(combo, "Kombination " + combo)))
+    # Menü-Kombination von RetroArch bewusst nicht anzeigen: unser Konzept ist Anbernic + X bzw. die Kachel
     return rows
 
 
