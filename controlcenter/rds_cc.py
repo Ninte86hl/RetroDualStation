@@ -232,7 +232,8 @@ EN = {
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
     "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!",
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
-    "Hardcore an": "Hardcore on", "blättern": "scroll", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
+    "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
+    "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
     "Anmeldung fehlgeschlagen – Konto in ES prüfen.": "Login failed – check the account in ES.",
     "Erfolge erscheinen hier, sobald ein Spiel läuft.": "Achievements appear here once a game is running.",
     "Für %s im Menü des Emulators.": "For %s in the emulator's own menu.",
@@ -2698,6 +2699,7 @@ class ControlCenter:
         self.toast_until = 0.0
         self.ra = None            # letzter Stand des RetroAchievements-Proxys
         self.ra_sel = 0
+        self.ra_detail = False    # Erfolg geöffnet (A)
         self.ghint = not os.path.exists(GAME_HINT_DONE)   # Hinweis beim ersten Öffnen der Seite
         self.loading = None   # (Eintrag, neu_starten) während eines Wechsels
         self.hits = []          # (x, y, w, h, aktion) in Entwurfs-Koordinaten
@@ -2779,6 +2781,7 @@ class ControlCenter:
         self.slot_pick = None
         self.del_confirm = None
         self.ghelp = False
+        self.ra_detail = False
         self.back()
 
     def back(self):
@@ -2796,6 +2799,9 @@ class ControlCenter:
             return True
         if self.ghelp:
             self.ghelp = False
+            return True
+        if self.ra_detail:
+            self.ra_detail = False
             return True
         return False
 
@@ -2921,6 +2927,9 @@ class ControlCenter:
         if self.sub:
             self.sub.confirm()
             return
+        if self.page == 2 and self.ra and self._ra_rows()[0]:
+            self.ra_detail = not self.ra_detail
+            return
         if self.page == 1 and self.ghint and self.game:
             self.hint_done()
             return
@@ -3038,6 +3047,10 @@ class ControlCenter:
                 return "power"
             elif kind == "quit":
                 return "quit"
+            elif kind == "ra_row":
+                self.ra_sel, self.ra_detail = val, True
+            elif kind == "ra_close":
+                self.ra_detail = False
             elif kind == "ghint":
                 self.hint_done()
             elif kind == "gact" and not self.gbusy:
@@ -3109,8 +3122,10 @@ class ControlCenter:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
         elif self.page == 1 and self.ghelp:
             left = [("B", "zurück")]
+        elif self.page == 2 and self.ra and self.ra_detail:
+            left = [("▲ ▼", "nächster Erfolg"), ("A / B", "zurück")]
         elif self.page == 2 and self.ra:
-            left = [("▲ ▼", "blättern"), ("L1 / R1", "Seite wechseln")]
+            left = [("▲ ▼", "blättern"), ("A", "öffnen"), ("L1 / R1", "Seite wechseln")]
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
@@ -3121,7 +3136,8 @@ class ControlCenter:
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
         P.hint(left, 17, 45, 835, T["muted"], T["text"])
-        right = [("Select", "Tour")] if (self.slot_pick is not None or self.ghelp) else [("Select", "Tour"), ("B", "Schließen")]
+        right = [("Select", "Tour")] if (self.slot_pick is not None or self.ghelp or (self.page == 2 and self.ra_detail)) \
+            else [("Select", "Tour"), ("B", "Schließen")]
         P.hint(right, 17, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
@@ -3560,8 +3576,11 @@ class ControlCenter:
         if frac:
             P.rrect(240, 285, max(18, 940 * frac), 18, 9, A)
         P.text("%d %%" % round(frac * 100), 17, 1180, 325, T["muted"], align="r", raw=True)
-        # Liste: offene zuerst, dann geschaffte
         self.ra_sel = min(self.ra_sel, len(rows) - 1)
+        if self.ra_detail:
+            self._draw_ra_detail(P, rows[self.ra_sel], unl)
+            return
+        # Liste: offene zuerst, dann geschaffte
         first = max(0, min(self.ra_sel - 1, len(rows) - 4))
         y = 380
         for i, a in enumerate(rows[first:first + 4], start=first):
@@ -3581,9 +3600,59 @@ class ControlCenter:
             while P.width(d, 16, raw=True) > 920 and len(d) > 4:
                 d = d[:-2]
             P.text(d, 16, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
-            P.text(("✓ " if False else "") + "%d P" % (a.get("points") or 0), 19, 1190, y + 54,
+            P.text("%d P" % (a.get("points") or 0), 19, 1190, y + 54,
                    "ffffff" if (sel or done) else T["muted"], bold=True, align="r", raw=True)
+            self.hits.append((45, y, 1170, 92, ("ra_row", i)))
             y += 102
+
+    def _wrap(self, P, text, size, width, lines=4):
+        out, cur = [], ""
+        for word in (text or "").split():
+            t = (cur + " " + word).strip()
+            if P.width(t, size, raw=True) <= width:
+                cur = t
+            else:
+                out.append(cur)
+                cur = word
+        if cur:
+            out.append(cur)
+        if len(out) > lines:
+            out = out[:lines]
+            out[-1] = out[-1].rstrip(".,") + " …"
+        return out
+
+    def _draw_ra_detail(self, P, a, unl):
+        """Ein Erfolg geöffnet: großes Abzeichen, was zu tun ist, Punkte, Seltenheit, Datum."""
+        T, A = self.T, self.accent
+        done = unl.get(str(a.get("id")))
+        P.rrect(45, 380, 1170, 400, 28, T["card"])
+        b = ra_badge(a.get("badge"), locked=not done)
+        if not (b and P.image(b, 75, 410, 170, 170, 24)):
+            P.rrect(75, 410, 170, 170, 24, A if done else T["seg"])
+            P.game_icon("trophy", 160, 495, "ffffff" if done else T["muted"])
+        x = 280
+        t = a.get("title") or ""
+        while P.width(t, 30, bold=True, raw=True) > 900 and len(t) > 4:
+            t = t[:-2]
+        P.text(t, 30, x, 450, T["text"], bold=True, raw=True)
+        y = 495
+        for line in self._wrap(P, a.get("desc"), 21, 900, 4):
+            P.text(line, 21, x, y, T["muted"], raw=True)
+            y += 34
+        info = ["%d %s" % (a.get("points") or 0, tr("Punkte"))]
+        rar = a.get("rarity")
+        if rar not in (None, ""):
+            info.append(tr("%s %% der Spieler") % ("%.1f" % float(rar)).rstrip("0").rstrip("."))
+        P.text("  ·  ".join(info), 19, x, 680, T["text"], bold=True, raw=True)
+        if done:
+            when = done.get("when")
+            ds = time.strftime("%d.%m.%Y %H:%M", time.localtime(int(when))) if str(when).isdigit() else ""
+            label = tr("Freigeschaltet") + (" " + ds if ds else "") + (" · Hardcore" if done.get("hardcore") else "")
+            P.rrect(x, 705, P.width(label, 17, bold=True, raw=True) + 40, 44, 22, A)
+            P.text(label, 17, x + 20, 734, "ffffff", bold=True, raw=True)
+        else:
+            P.text(tr("Noch offen"), 17, x, 734, T["muted"], bold=True)
+        self.hits.append((45, 380, 1170, 400, ("ra_close", None)))
 
     def paint_toast(self, cr, w, h):
         """Schmale Meldung oben über dem Spiel (Lautstärke oder freigeschalteter Erfolg)."""
@@ -4965,6 +5034,10 @@ def main():
         """Fragt während RetroArch-Spielen den ROCKNIX-Proxy ab und meldet neue Erfolge."""
         known = {"game": None, "ids": set()}
         while True:
+            if os.path.exists("/tmp/rds-toast-test"):          # Testmeldung: touch /tmp/rds-toast-test
+                os.remove("/tmp/rds-toast-test")
+                cc.toasts.append({"kind": "cheevo", "badge": None, "title": "Test: Erfolg freigeschaltet",
+                                  "sub": "10 %s  ·  1 / 1" % tr("Punkte")})
             g = cc.game
             if not (g and g.get("emu") == "RetroArch"):
                 known["game"], cc.ra = None, None
