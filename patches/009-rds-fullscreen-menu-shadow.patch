@@ -1,0 +1,18 @@
+diff --git a/es-core/src/components/MenuComponent.cpp b/es-core/src/components/MenuComponent.cpp
+index 3f482b206..7461ff2cd 100644
+--- a/es-core/src/components/MenuComponent.cpp
++++ b/es-core/src/components/MenuComponent.cpp
+@@ -425,7 +425,12 @@ void MenuComponent::onSizeChanged()
+ {
+ 	GuiComponent::onSizeChanged();
+ 
+-	mBackground.fitTo(mSize, Vector3f::Zero(), Vector2f(-32, -32));
++	// RDS: Vollbild-Menüs (kleine Bildschirme, z. B. RG DS 640x480) füllen den Menübereich ganz aus –
++	// der Schatten des Rahmens (32 px Rand) ragte sonst auf den anderen Bildschirm.
++	if (RdsScreens::active() && Renderer::ScreenSettings::fullScreenMenus())
++		mBackground.fitTo(mSize, Vector3f::Zero(), Vector2f(0, 0));
++	else
++		mBackground.fitTo(mSize, Vector3f::Zero(), Vector2f(-32, -32));
+ 
+ 	// update grid row/col sizes
+ 	mGrid.setRowHeight(0, TITLE_HEIGHT, false);
