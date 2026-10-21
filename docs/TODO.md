@@ -166,7 +166,8 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Installer: beide Modelle zulassen, `screens.cfg` und Tastenschema je Profil
 - [ ] Kontrollcenter/Gameswitcher: feste 1024 × 768 und Ausgabenamen durch das Profil ersetzen, Layout auf 640 × 480 skalieren (Hauptarbeit; dabei in Module aufteilen)
 - [ ] canvas-ds und Artwork Manager auf 640 × 480 prüfen
-- [ ] Test auf echtem RG DS (Tester nötig)
+- [x] Test auf echtem RG DS (21.10.2026, eigenes Gerät)
+- Entscheidung 21.10.2026: ES-Menüschrift auf dem RG DS bleibt größer als maßstabsgetreu (ES-Regel für Bildschirme ≤ 480 px) – bewusste Usability-Entscheidung, Menüs scrollen dafür
 
 ### Themes & Geräte
 - [ ] dii-ess-aye: eigene Ansichten wie bei canvas-ds
