@@ -1361,11 +1361,16 @@ class App:
             return
         if self.view == "game" and self.batch:
             wait = self.bq_pending()
+
+            def finish():
+                self.batch_end()
+                self.flush = True       # Warteschlange jetzt abarbeiten, danach ES neu laden
             self.ask("Batch beenden?",
-                     [f"{wait} vorgemerkte Spiele werden noch fertig gespeichert." if wait
-                      else "Bisher vorgemerkte Spiele sind gespeichert.",
-                      "Die restlichen Spiele kannst du später erneut per Batch bearbeiten."],
-                     "Beenden", self.batch_end)
+                     [f"{wait} Spiele in der Warteschlange werden jetzt gespeichert" if wait
+                      else "Alle vorgemerkten Spiele sind schon gespeichert",
+                      "und direkt in EmulationStation eingetragen.",
+                      "Die übrigen Spiele kannst du später per Batch bearbeiten."],
+                     "Speichern & beenden", finish, yes_key="Start", no_label="Weiter")
             return
         if self.view == "search":
             self.view = "game"
@@ -1465,8 +1470,9 @@ class App:
         self.open_system(h["si"], then=then)
 
     # -- Rückfrage (A = ja, B = nein) --
-    def ask(self, title, lines, yes_label, on_yes, on_no=None):
-        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes, "on_no": on_no}
+    def ask(self, title, lines, yes_label, on_yes, on_no=None, yes_key="A", no_label="Abbrechen"):
+        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes, "on_no": on_no,
+                        "key": yes_key, "no": no_label}
 
     def answer(self, yes):
         c, self.confirm = self.confirm, None
@@ -1691,8 +1697,9 @@ class App:
         if self.busy or self.saving:
             return
         if self.confirm:
-            if code in (BTN_EAST, BTN_SOUTH):
-                self.answer(code == BTN_EAST)
+            yes = BTN_START if self.confirm.get("key") == "Start" else BTN_EAST
+            if code in (yes, BTN_SOUTH):
+                self.answer(code == yes)
             return
         if code == BTN_SOUTH:
             self.back()
@@ -2022,10 +2029,10 @@ class App:
         for n, line in enumerate(c["lines"]):
             P.text(line, 25, 630, 350 + n * 42, T["muted"], align="c", raw=True)
         P.rrect(160, 540, 450, 90, 26, A)
-        P.hint([("A", c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
+        P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
         self.hits.append((160, 540, 450, 90, ("confirm", True)))
         P.rrect(650, 540, 450, 90, 26, T["tile"])
-        P.hint([("B", "Abbrechen")], 27, 875, 597, T["text"], T["text"], align="c")
+        P.hint([("B", c.get("no", "Abbrechen"))], 27, 875, 597, T["text"], T["text"], align="c")
         self.hits.append((650, 540, 450, 90, ("confirm", False)))
 
     def draw_saving(self, P, sv):
@@ -2371,10 +2378,22 @@ def main():
     rep = {"dir": None, "next": 0.0}
     try:
         while not a.quit or a.bq_pending():
+            if getattr(a, "flush", False):
+                if a.bq_pending():
+                    a.busy = f"Speichere noch {a.bq_pending()} …"
+                    a.dirty = True
+                else:
+                    a.flush = False
+                    a.busy = None
+                    if a.changed:   # ES zeigt die neuen Artworks sofort
+                        subprocess.run(["curl", "-fsS", "--max-time", "5", "http://localhost:1234/reloadgames"],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    a.say("Warteschlange gespeichert und in EmulationStation eingetragen")
+                    a.dirty = True
             if a.quit and a.bq_pending():
                 a.busy = f"Speichere noch {a.bq_pending()} …"   # Home: offene Spiele erst fertig speichern
                 a.dirty = True
-            elif a.busy and str(a.busy).startswith("Speichere noch"):
+            elif a.busy and str(a.busy).startswith("Speichere noch") and not getattr(a, "flush", False):
                 a.busy = None
             if a.bq_fail and not a.bq_pending():
                 fails, a.bq_fail = a.bq_fail, []
