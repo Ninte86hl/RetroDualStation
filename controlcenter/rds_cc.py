@@ -874,6 +874,101 @@ def ra_badge(badge, locked=False):
     return p if badge and os.path.exists(p) else None
 
 
+# ------------------------------------------------ RetroAchievements für DSperate --
+# DSperate spricht direkt mit RetroAchievements (kein ROCKNIX-Proxy). Das CC baut daraus denselben
+# Zustand wie beim Proxy: Spiel-ID über den NDS-Hash (wie rcheevos), Erfolgsliste und eigene
+# Freischaltungen über die Schnittstelle der Emulatoren – mit dem Token, das ES bei der Anmeldung
+# in system.cfg abgelegt hat. Neue Erfolge stehen in /var/log/exec.log: "cheevos: Titel -- Beschreibung".
+RA_REQ = "https://retroachievements.org/dorequest.php"
+EXEC_LOG = "/var/log/exec.log"
+_nds_cache = {}
+
+
+def nds_ra_hash(path):
+    """RetroAchievements-Hash einer NDS-ROM (rcheevos: Kopf 0x160, ARM9, ARM7, Icon 0xA00)."""
+    import hashlib
+    if path in _nds_cache:
+        return _nds_cache[path]
+    h = None
+    try:
+        with open(path, "rb") as f:
+            hdr = f.read(0x200)
+            if len(hdr) == 0x200:
+                u32 = lambda o: struct.unpack_from("<I", hdr, o)[0]
+                if u32(0) == 0x2E2E2E2E and u32(0x20) == 0x4000:   # SuperCard-Kopf übergehen
+                    pass
+                m = hashlib.md5(hdr[:0x160])
+                for off, size in ((u32(0x20), u32(0x2C)), (u32(0x30), u32(0x3C))):
+                    if size > 16 * 1024 * 1024:
+                        raise ValueError("ARM-Code zu groß")
+                    f.seek(off); m.update(f.read(size))
+                icon = u32(0x68)
+                if icon:
+                    f.seek(icon); m.update(f.read(0xA00))
+                h = m.hexdigest()
+    except Exception as exc:
+        log("NDS-Hash:", exc)
+    _nds_cache[path] = h
+    return h
+
+
+def ra_request(**params):
+    import urllib.parse, urllib.request
+    req = urllib.request.Request(RA_REQ + "?" + urllib.parse.urlencode(params),
+                                 headers={"User-Agent": "RetroDualStation/" + VERSION})
+    with urllib.request.urlopen(req, timeout=6) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
+def ra_badge_fetch(name):
+    """Erfolgsbild in den Ordner des ROCKNIX-Proxys laden (falls noch nicht da)."""
+    import urllib.request
+    os.makedirs(RA_BADGES, exist_ok=True)
+    for suffix in ("", "_lock"):
+        dst = os.path.join(RA_BADGES, "%s%s.png" % (name, suffix))
+        if name and not os.path.exists(dst):
+            try:
+                req = urllib.request.Request("https://media.retroachievements.org/Badge/%s%s.png" % (name, suffix),
+                                             headers={"User-Agent": "RetroDualStation/" + VERSION})
+                with urllib.request.urlopen(req, timeout=6) as r, open(dst + ".tmp", "wb") as f:
+                    f.write(r.read())
+                os.replace(dst + ".tmp", dst)
+            except Exception:
+                pass
+
+
+def dsp_ra_state(rom):
+    """Zustand wie beim ROCKNIX-Proxy für ein DSperate-Spiel – oder None."""
+    cfg = rd("/storage/.config/system/configs/system.cfg") or ""
+    get = lambda k: (re.search(r"^%s=(.*)$" % re.escape(k), cfg, re.M) or [None, ""])[1].strip()
+    user, token = get("global.retroachievements.username"), get("global.retroachievements.token")
+    if get("global.retroachievements") != "1" or not (user and token):
+        return {"login_status": "failed"}
+    h = nds_ra_hash(rom)
+    gid = (ra_request(r="gameid", m=h) or {}).get("GameID") if h else 0
+    if not gid:
+        return {"login_status": "ok", "user": {"name": user}, "game": {"id": 0, "title": ""}, "achievements": [], "unlocks": {}}
+    login = ra_request(r="login2", u=user, t=token) or {}
+    patch = (ra_request(r="patch", u=user, t=token, g=gid) or {}).get("PatchData") or {}
+    sess = ra_request(r="startsession", u=user, t=token, g=gid) or {}
+    hc = re.search(r"^global\.retroachievements\.hardcore=1", cfg, re.M)
+    unl = {str(u.get("ID")): u.get("When") for u in (sess.get("HardcoreUnlocks" if hc else "Unlocks") or [])}
+    if not hc:
+        unl.update({str(u.get("ID")): u.get("When") for u in (sess.get("HardcoreUnlocks") or [])})
+    achs = []
+    for a in patch.get("Achievements") or []:
+        if a.get("Flags") != 3:            # nur offizielle Erfolge
+            continue
+        achs.append({"id": a.get("ID"), "title": a.get("Title"), "desc": a.get("Description"),
+                     "points": a.get("Points"), "badge": a.get("BadgeName")})
+    threading.Thread(target=lambda: [ra_badge_fetch(a["badge"]) for a in achs], daemon=True).start()
+    return {"login_status": "ok",
+            "user": {"name": login.get("User") or user, "score": login.get("Score"),
+                     "softcore_score": login.get("SoftcoreScore")},
+            "game": {"id": gid, "title": patch.get("Title") or ""},
+            "achievements": achs, "unlocks": unl, "source": "dsperate"}
+
+
 def volume_muted():
     return "MUTED" in (run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]) or "")
 
@@ -3674,12 +3769,12 @@ class ControlCenter:
         """Seite 3: RetroAchievements des laufenden Spiels (Daten vom ROCKNIX-Proxy)."""
         T, A = self.T, self.accent
         g = self.game or {}
-        st = self.ra if g.get("emu") == "RetroArch" else None
+        st = self.ra if g.get("emu") in ("RetroArch", "DSperate") else None
         if not g:
             P.text("Kein Spiel läuft", 40, 630, 420, T["text"], bold=True, align="c")
             P.text("Erfolge erscheinen hier, sobald ein Spiel läuft.", 22, 630, 470, T["muted"], align="c")
             return
-        if g.get("emu") != "RetroArch":
+        if g.get("emu") not in ("RetroArch", "DSperate"):
             P.text("RetroAchievements", 40, 630, 400, T["text"], bold=True, align="c", raw=True)
             P.text(tr("Für %s im Menü des Emulators.") % g.get("emu", ""), 22, 630, 450, T["muted"], align="c", raw=True)
             return
@@ -5282,6 +5377,48 @@ def main():
         else:
             cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "volume"] + [t]
 
+    def dsperate_cheevos(g, known):
+        """DSperate: Zustand einmal je Spiel holen, dann exec.log auf neue Erfolge mitlesen."""
+        d = known.get("dsp")
+        if not d or d["rom"] != g.get("rom"):
+            try:
+                pos = os.path.getsize(EXEC_LOG)
+            except OSError:
+                pos = 0
+            d = known["dsp"] = {"rom": g.get("rom"), "pos": pos, "next": 0}
+            cc.ra = None
+        if cc.ra is None and time.monotonic() >= d["next"]:
+            try:
+                cc.ra = dsp_ra_state(g.get("rom") or "")
+                log("RetroAchievements (DSperate):", (cc.ra.get("game") or {}).get("title") or "kein Spiel erkannt")
+            except Exception as exc:
+                log("RetroAchievements (DSperate):", exc)
+                d["next"] = time.monotonic() + 30          # später erneut versuchen
+            state["dirty"] = True
+        try:
+            with open(EXEC_LOG, "r", errors="replace") as f:
+                f.seek(d["pos"])
+                lines = f.readlines()
+                d["pos"] = f.tell()
+        except OSError:
+            return
+        for line in lines:
+            m = re.match(r"cheevos: (.+?) -- (.+)$", line.strip())
+            if not m or m.group(2).startswith(("achievements active", "RetroAchievements does not")) \
+                    or m.group(1).startswith(("Signed in", "No achievements")):
+                continue
+            title, desc = m.group(1), m.group(2)
+            st = cc.ra or {}
+            a = next((x for x in st.get("achievements") or [] if x.get("title") == title), {})
+            if a and st.get("unlocks") is not None:
+                st["unlocks"][str(a.get("id"))] = "jetzt"
+            total = len(st.get("achievements") or [])
+            sub = "%d %s  ·  %d / %d" % (a.get("points") or 0, tr("Punkte"), len(st.get("unlocks") or {}), total) \
+                if a else desc
+            cc.toasts.append({"kind": "cheevo", "badge": a.get("badge"), "title": title, "sub": sub})
+            log("Erfolg freigeschaltet (DSperate):", title)
+            state["dirty"] = True
+
     def cheevo_watch():
         """Fragt während RetroArch-Spielen den ROCKNIX-Proxy ab und meldet neue Erfolge."""
         known = {"game": None, "ids": set()}
@@ -5291,8 +5428,13 @@ def main():
                 cc.toasts.append({"kind": "cheevo", "badge": None, "title": "Test: Erfolg freigeschaltet",
                                   "sub": "10 %s  ·  1 / 1" % tr("Punkte")})
             g = cc.game
+            if g and g.get("emu") == "DSperate":
+                dsperate_cheevos(g, known)
+                time.sleep(1.5)
+                continue
             if not (g and g.get("emu") == "RetroArch"):
                 known["game"], cc.ra = None, None
+                known.pop("dsp", None)
                 time.sleep(3)
                 continue
             st = ra_state()
