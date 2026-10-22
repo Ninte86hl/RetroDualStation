@@ -231,7 +231,7 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", 
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
     "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
     "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
@@ -3923,6 +3923,22 @@ class ControlCenter:
             P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
             P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, "ffffff", bold=True, align="r", raw=True)
             return
+        if t.get("kind") == "battery":          # Warnung bei niedrigem Akku (20 / 10 / 5 %)
+            lvl = t.get("level") or 0
+            col = "f5be1e" if lvl > 10 else "e5383b"
+            head = tr("Akku fast leer") if lvl <= 5 else tr("Akku schwach")
+            sub = tr("Jetzt laden – sonst geht das Gerät gleich aus") if lvl <= 5 else tr("Bitte bald laden")
+            bw = int(max(P.width(head + "  %d %%" % lvl, 28, bold=True, raw=True), P.width(sub, 18, raw=True))) + 170
+            x = 630 - bw // 2
+            P.rrect(x, 18, bw, 120, 40, "1c1c1c", 0.92)
+            # Batterie-Symbol
+            P.rrect(x + 34, 54, 66, 40, 9, "ffffff")
+            P.rrect(x + 39, 59, 56, 30, 6, "1c1c1c")
+            P.rrect(x + 100, 66, 8, 16, 3, "ffffff")
+            P.rrect(x + 43, 63, max(6, 48 * lvl / 100), 22, 4, col)
+            P.text("%s  %d %%" % (head, lvl), 28, x + 130, 70, col, bold=True, raw=True)
+            P.text(sub, 18, x + 130, 104, "bdbdbd", raw=True)
+            return
         if t.get("kind") == "info":             # kurze Rückmeldung, z. B. „Vorspulen umgeschaltet“
             text = tr(t.get("text") or "")
             bw = int(P.width(text, 26, bold=True, raw=True)) + 150
@@ -5461,6 +5477,46 @@ def main():
 
     threading.Thread(target=cheevo_watch, daemon=True).start()
 
+    def battery_watch():
+        """Warnt bei 20, 10 und 5 % Akku (nur beim Entladen) mit einer Meldung oben."""
+        warned = set()
+        while True:
+            if os.path.exists("/tmp/rds-battery-test"):     # Test: echo 5 > /tmp/rds-battery-test
+                lvl = int((rd("/tmp/rds-battery-test") or "20").strip() or 20)
+                os.remove("/tmp/rds-battery-test")
+                cc.toasts.append({"kind": "battery", "level": lvl})
+                if lvl <= 10:
+                    haptic("open")
+                    threading.Timer(0.25, haptic, args=("open",)).start()
+            try:
+                lvl, charging = battery()
+                status = ""
+                for d in glob.glob("/sys/class/power_supply/*"):
+                    if rd(d + "/type") == "Battery":
+                        status = rd(d + "/status") or ""
+                if lvl is None or charging or status in ("Full", "Charging"):
+                    warned.clear()                      # beim Laden zurücksetzen
+                else:
+                    warned -= {s for s in warned if lvl > s + 2}   # wieder über der Schwelle (z. B. nach Laden)
+                    for step in (5, 10, 20):
+                        if lvl <= step and step not in warned:
+                            warned |= {s for s in (5, 10, 20) if s >= step}   # höhere Stufen nicht nachholen
+                            cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "battery"] + \
+                                [{"kind": "battery", "level": lvl}]
+                            log("Akku-Warnung:", lvl, "%")
+                            if step <= 10:
+                                haptic("open")
+                                threading.Timer(0.25, haptic, args=("open",)).start()
+                            break
+            except Exception as exc:
+                log("Akku-Warnung:", exc)
+            for _ in range(15):                          # alle 30 s prüfen, Testdatei alle 2 s
+                if os.path.exists("/tmp/rds-battery-test"):
+                    break
+                time.sleep(2)
+
+    threading.Thread(target=battery_watch, daemon=True).start()
+
     def do_quit():
         game = cc.game
         if ui.view:
@@ -5784,7 +5840,7 @@ def main():
                 ui.redraw_top("toast")
             if not cc.toast_now and cc.toasts and ui.top is None:
                 cc.toast_now = cc.toasts.pop(0)
-                cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 1.5)
+                cc.toast_until = now + {"volume": 1.6, "battery": 4.0}.get(cc.toast_now["kind"], 1.5)
                 ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
                 if cc.toast_now["kind"] == "cheevo":       # Erfolg: doppelter Impuls („ta-dam“)
                     haptic("open")
