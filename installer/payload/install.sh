@@ -315,6 +315,13 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         echo "$AHOLD" > "$AHMARK"
         log "RetroArch: automatische Hotkeys von ROCKNIX aus (vorher: ${AHOLD:-Standard})"
     fi
+    # DSperate auf dem RG DS Plus: Der Treiber spiegelt links/rechts des Sticks auf die Achsen des
+    # fehlenden rechten Sticks – der Touch-Cursor (stylus_axis = right) wanderte beim Steuern mit.
+    if [ "$DEVICE" = "RG DS Plus" ] && [ -f /storage/.config/dsperate/dsperate.ini ] && ! pidof dsperate >/dev/null \
+       && grep -q '^stylus_axis = right' /storage/.config/dsperate/dsperate.ini; then
+        sed -i 's/^stylus_axis = right/stylus_axis = none/' /storage/.config/dsperate/dsperate.ini
+        log "DSperate (RG DS Plus): Touch-Cursor auf dem Phantom-Stick aus"
+    fi
     # DSperate: eigene Erfolgsmeldung aus – die Meldung oben kommt einheitlich vom Kontrollcenter
     DSPINI=/storage/.config/dsperate/dsperate.ini
     if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null && grep -q '^toasts = true' "$DSPINI"; then
