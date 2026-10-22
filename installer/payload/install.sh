@@ -322,6 +322,16 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         sed -i 's/^stylus_axis = right/stylus_axis = none/' /storage/.config/dsperate/dsperate.ini
         log "DSperate (RG DS Plus): Touch-Cursor auf dem Phantom-Stick aus"
     fi
+    # ES auf dem RG DS Plus: dieselben Phantom-Achsen kamen in ES als zweiter Stick an – zwei Bewegungen
+    # und zwei Loslass-Signale je Stickdruck, das Karussell der Systemliste blieb dabei stehen.
+    # Nur den Phantom-Stick des eingebauten Joypads austragen (vorher einmal sichern).
+    ESINPUT=/storage/.emulationstation/es_input.cfg
+    if [ "$DEVICE" = "RG DS Plus" ] && [ -f "$ESINPUT" ] \
+       && sed -n '/deviceName="retrogame_joypad"/,/<\/inputConfig>/p' "$ESINPUT" | grep -q rightanalog; then
+        [ -f "$ESINPUT.before-rds" ] || cp "$ESINPUT" "$ESINPUT.before-rds"
+        sed -i '/deviceName="retrogame_joypad"/,/<\/inputConfig>/{/rightanalog/d}' "$ESINPUT"
+        log "ES (RG DS Plus): Phantom-Stick aus der Tastenbelegung entfernt"
+    fi
     # DSperate: eigene Erfolgsmeldung aus – die Meldung oben kommt einheitlich vom Kontrollcenter
     DSPINI=/storage/.config/dsperate/dsperate.ini
     if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null && grep -q '^toasts = true' "$DSPINI"; then
