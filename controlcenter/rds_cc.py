@@ -231,7 +231,7 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Vorspulen umgeschaltet": "Fast forward toggled", "Zeitlupe umgeschaltet": "Slow motion toggled",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
     "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
     "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
@@ -5137,7 +5137,7 @@ def main():
                 how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
                 log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
                 if how and key == "ff":
-                    info_toast("Vorspulen umgeschaltet")
+                    info_toast("Fast Forward")
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key in ("menu", "ff"):
@@ -5148,7 +5148,7 @@ def main():
                 ok = dsperate_press("pause" if key == "menu" else "fast_forward_toggle")
                 log("Seite Spiel: DSperate", key, "ok" if ok else "nicht belegt")
                 if ok and key == "ff":
-                    info_toast("Vorspulen umgeschaltet")
+                    info_toast("Fast Forward")
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
@@ -5159,7 +5159,7 @@ def main():
                 ok = ra_command(cmd) is not None
                 log("Seite Spiel:", cmd)
                 if ok and key in ("ff", "slow"):
-                    info_toast("Vorspulen umgeschaltet" if key == "ff" else "Zeitlupe umgeschaltet", key)
+                    info_toast("Fast Forward" if key == "ff" else "Slow Motion", key)
             threading.Thread(target=later, daemon=True).start()
             return
         if key == "setslot":
@@ -5364,7 +5364,7 @@ def main():
                         how = drastic_press(what)
                         log("Kürzel DraStic:", what, "über", how or "nichts")
                         if how and what == "FAST_FORWARD":
-                            info_toast("Vorspulen umgeschaltet")
+                            info_toast("Fast Forward")
                     threading.Thread(target=run, daemon=True).start()
             return
         if not ui.view:
