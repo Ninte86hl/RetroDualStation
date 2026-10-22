@@ -5586,6 +5586,18 @@ def main():
         quit_game(game)
         cc.game = None
 
+    def combo_feedback(code):
+        """Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)."""
+        if code not in (BTN_TR, 313, 312) or ui.view or time.monotonic() <= INJECTING[0]:
+            return
+        g0 = running_game()
+        log("Kürzel beobachtet:", code, (g0 or {}).get("emu"))
+        if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
+            if code == BTN_TR:
+                speed_event("ff", g0)
+            else:
+                info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
+
     def handle_joy(typ, code, value, pad):
         nonlocal mode_down, combo
         if pad["ext"] and typ == EV_KEY and code in (BTN_SOUTH, BTN_EAST):
@@ -5615,16 +5627,8 @@ def main():
             return
         if mode_down:
             combo = True  # Teil einer Tastenkombination
-            # Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)
-            if typ == EV_KEY and value == 1 and code in (BTN_TR, 313, 312) and not ui.view \
-                    and time.monotonic() > INJECTING[0]:
-                g0 = running_game()
-                log("Kürzel beobachtet:", code, (g0 or {}).get("emu"))
-                if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
-                    if code == BTN_TR:
-                        speed_event("ff", g0)
-                    else:
-                        info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
+            if typ == EV_KEY and value == 1:
+                combo_feedback(code)
             # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
             if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
                 g = running_game()
@@ -5879,6 +5883,7 @@ def main():
                                 continue
                             if wake["swallow"] and value == 1 and typ == EV_KEY:
                                 wake["combo"] = True   # zweite Taste während Anbernic gehalten
+                                combo_feedback(code)   # unterer Screen dunkel (RetroArch): Kürzel trotzdem melden
                                 continue
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
