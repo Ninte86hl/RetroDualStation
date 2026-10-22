@@ -2348,15 +2348,17 @@ class App:
         if self.view not in ("game", "search") or not self.rom:
             open_items = self.retry_load() if not self.bq_pending() else []
             if not open_items:
-                P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
-                P.text("RetroDualStation", 32, 630, 490, "bdbdbd", align="c", raw=True)
+                P.logo(630 - 230 * 150 / 130 / 2, 210, 150, "ffffff", "000000")
+                P.text("Artwork Manager", 64, 630, 470, "ffffff", bold=True, align="c", raw=True)
+                P.text("RetroDualStation", 32, 630, 530, "bdbdbd", align="c", raw=True)
                 return
             # nach leerem Akku / Neustart: offene Warteliste als Liste im Stil des unteren Bildschirms
             T, A = self.T, self.accent
             P.fill_all(T["bg"])
             names = {x["key"]: x["name"] for x in self.systems or []}
             n = len(open_items)
-            P.text(f"Nicht gespeichert", 40, 40, 70, T["text"], bold=True, raw=True)
+            P.logo(40, 34, 50, T["text"], T["bg"])
+            P.text("Nicht gespeichert", 40, 40 + 230 * 50 / 130 + 24, 74, T["text"], bold=True, raw=True)
             P.text(f"{n} {'Spiel' if n == 1 else 'Spiele'}", 26, 1220, 70, T["muted"], align="r", raw=True)
             shown = open_items[:9]
             for i, r in enumerate(shown):
