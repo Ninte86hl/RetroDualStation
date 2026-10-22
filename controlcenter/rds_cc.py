@@ -1738,9 +1738,30 @@ class Switcher:
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
-            while time.time() < deadline and not running_game():
+            g = None
+            while time.time() < deadline:
+                g = running_game()
+                if g:
+                    break
                 time.sleep(0.25)
-            time.sleep(2.5)
+            # statt fest 2,5 s: warten, bis Sway ein Fenster dieses Prozesses kennt (max. 2,5 s)
+            env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+            wend = time.time() + 2.5
+            found = False
+            while g and time.time() < wend:
+                try:
+                    tree = subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                          capture_output=True, text=True).stdout
+                    if '"pid": %d,' % g["pid"] in tree:
+                        found = True
+                        break
+                except Exception:
+                    break
+                time.sleep(0.15)
+            if found:
+                time.sleep(0.8)   # Luft fürs Autoload, bevor der Ladebildschirm geht
+            else:
+                time.sleep(max(0.0, wend - time.time()))
             log("Gameswitcher: %s bereit nach %.1f s" % (emu, time.monotonic() - t0))
 
     def launch(self, item, fresh, current=None):
