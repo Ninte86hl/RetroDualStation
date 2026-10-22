@@ -1738,6 +1738,12 @@ class Switcher:
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
+            try:
+                base_pids = set(re.findall(r'"pid": (\d+)', subprocess.run(
+                    ["swaymsg", "-t", "get_tree"], timeout=2, capture_output=True, text=True,
+                    env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout))
+            except Exception:
+                base_pids = set()
             g = None
             while time.time() < deadline:
                 g = running_game()
@@ -1752,12 +1758,16 @@ class Switcher:
                 try:
                     tree = subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
                                           capture_output=True, text=True).stdout
-                    if '"pid": %d,' % g["pid"] in tree:
+                    # neues Fenster = eine PID, die vor dem Start noch keins hatte
+                    # (die Fenster-PID ist nicht immer die vom Spielprozess)
+                    if set(re.findall(r'"pid": (\d+)', tree)) - base_pids:
                         found = True
                         break
                 except Exception:
                     break
                 time.sleep(0.15)
+            log("Gameswitcher: %s-Fenster %s nach %.1f s" % (emu, "da" if found else "nicht erkannt",
+                                                               time.monotonic() - t0))
             if found:
                 time.sleep(0.8)   # Luft fürs Autoload, bevor der Ladebildschirm geht
             else:
