@@ -985,6 +985,7 @@ class App:
                     self.bq_lock.wait(0.5)
                 job = self.bq.pop(0)
                 self.bq_active = 1
+                self.bq_current = job["title"]
             try:
                 with self.app_lock:
                     self.save_artwork(job["rom"], job["chosen"], job["system"])
@@ -1083,6 +1084,11 @@ class App:
         self.scroll = min(self.scroll, self.sel)
         if not self.bq:
             self.queue_close()
+
+    def saving_label(self):
+        title = getattr(self, "bq_current", None) if self.bq_active else None
+        n = self.bq_pending()
+        return f"Speichere {title} … (noch {n})" if title else f"Speichere noch {n} …"
 
     def queue_up(self):
         """Y: gewähltes Spiel eine Stelle nach oben (ganz oben → ans Ende)."""
@@ -2453,7 +2459,7 @@ def main():
         while not a.quit or a.bq_pending():
             if getattr(a, "flush", False):
                 if a.bq_pending():
-                    a.busy = f"Speichere noch {a.bq_pending()} …"
+                    a.busy = a.saving_label()
                     a.dirty = True
                 else:
                     a.flush = False
@@ -2468,7 +2474,7 @@ def main():
                     a.dirty = True
             if a.quit and a.bq_pending():
                 a.flush = True
-                a.busy = f"Speichere noch {a.bq_pending()} …"   # Home: offene Spiele erst fertig speichern
+                a.busy = a.saving_label()   # Home: offene Spiele erst fertig speichern
                 a.dirty = True
             elif a.busy and str(a.busy).startswith("Speichere noch") and not getattr(a, "flush", False):
                 a.busy = None
