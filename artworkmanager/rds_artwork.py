@@ -2218,13 +2218,16 @@ class App:
             info.append(f"Batch {b['pos'] + 1} / {len(b['queue'])}")
         if self.bq_pending():
             info.append(f"{self.bq_pending()} in Arbeit")
-        if pages > 1 and self.view == "game":
-            info.append(f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
+        page = f"Seite {self.idx[kind] // PAGE + 1} / {pages}" if pages > 1 and self.view == "game" else ""
         if self.top_mode == "mix":
             self.draw_mix(P)
             if info:
                 P.text(" · ".join(info), 22, 1220, 40, "ffffff", align="r", raw=True)
+            if page:   # Seite unten links, etwas größer
+                P.text(page, 28, 40, 928, "ffffff", bold=True, raw=True)
             return
+        if page:
+            P.text(page, 28, 40, 928, "ffffff", bold=True, raw=True)
         if info:
             P.text(" · ".join(info), 22, 1220, 40, "bdbdbd", align="r", raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
@@ -2239,7 +2242,7 @@ class App:
         if c and self.chosen.get(kind) is c:
             P.rrect(1000, 870, 220, 56, 28, "2bb673")
             P.text("✓ übernommen", 24, 1110, 906, "ffffff", bold=True, align="c", raw=True)
-        P.hint([("R3", "Mix-Ansicht")], 18, 40, 925, "8a8a8a", "bdbdbd")
+        P.hint([("R3", "Mix-Ansicht")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
     def cover(self, P, path, x, y, w, h):
@@ -2330,8 +2333,8 @@ class App:
             P.text("  " + state, 24, 700 + w, y, "bdbdbd", raw=True)
             y += 46
         if self.chosen:
-            P.hint([("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
-        P.hint([("L3", "Suche aktualisieren"), ("R3", "Großansicht")], 18, 1225, 925, "8a8a8a", "bdbdbd", align="r")
+            P.hint([("Start", "In Warteschlange" if self.batch else "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
+        P.hint([("L3", "Suche aktualisieren"), ("R3", "Großansicht")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
 # ------------------------------------------------------------------ main ----
