@@ -231,7 +231,7 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Verbunden": "Connected", "Getrennt": "Disconnected", "Akku voll": "Battery full", "Keine Erfolge für dieses Spiel": "No achievements for this game", "Erfolge": "achievements", "WLAN verbunden": "Wi-Fi connected", "WLAN getrennt": "Wi-Fi disconnected", "Kopfhörer": "Headphones", "Lautsprecher": "Speaker", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
     "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
     "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
@@ -608,6 +608,33 @@ class Pen:
                 self.poly([(cx - 9, cy - 3), (cx + 9, cy - 3), (cx, cy + 6)], c)
             else:
                 self.poly([(cx - 9, cy - 10), (cx + 9, cy - 10), (cx, cy - 19)], c)
+        elif kind == "pad":                       # Controller
+            self.rrect(cx - 22, cy - 11, 44, 22, 11, c)
+            self.rrect(cx - 14, cy - 2, 10, 4, 1, "1c1c1c")
+            self.rrect(cx - 11, cy - 5, 4, 10, 1, "1c1c1c")
+            self.circle(cx + 9, cy - 2, 2.6, "1c1c1c")
+            self.circle(cx + 14, cy + 3, 2.6, "1c1c1c")
+        elif kind == "wifi":                      # WLAN: Punkt + Bögen
+            self.circle(cx, cy + 12, 3.5, c)
+            for r, w in ((9, 3.5), (16, 3.5), (23, 3.5)):
+                cr2 = self.cr
+                cairo.cairo_new_path(cr2)
+                cairo.cairo_arc(cr2, self.X(cx), self.Y(cy + 12), r * self.s, -2.36, -0.79)
+                self.color(c)
+                cairo.cairo_set_line_width(cr2, w * self.s)
+                cairo.cairo_stroke(cr2)
+        elif kind == "phones":                    # Kopfhörer
+            cr2 = self.cr
+            cairo.cairo_new_path(cr2)
+            cairo.cairo_arc(cr2, self.X(cx), self.Y(cy + 2), 15 * self.s, 3.14159, 0)
+            self.color(c)
+            cairo.cairo_set_line_width(cr2, 4 * self.s)
+            cairo.cairo_stroke(cr2)
+            self.rrect(cx - 19, cy, 8, 15, 3, c)
+            self.rrect(cx + 11, cy, 8, 15, 3, c)
+        elif kind == "battery":                   # voller Akku
+            self.rrect(cx - 18, cy - 10, 32, 20, 4, c)
+            self.rrect(cx + 14, cy - 4, 4, 8, 1, c)
         elif kind == "bolt":                      # Laden (Blitz)
             self.poly([(cx + 3, cy - 18), (cx - 10, cy + 3), (cx - 1, cy + 3), (cx - 4, cy + 18),
                        (cx + 10, cy - 3), (cx + 1, cy - 3)], c)
@@ -5022,6 +5049,18 @@ def speed_event(kind, game):
     info_toast(text, icon)
 
 
+RA_SLOT = {"pid": None, "slot": 0}
+
+
+def ra_slot_step(game, d):
+    """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: state_slot aus retroarch.cfg."""
+    if RA_SLOT["pid"] != game.get("pid"):
+        m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
+        RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
+    RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")
+
+
 def info_toast(text, icon="ff"):
     """Kurze Meldung oben über dem Spiel (Rückmeldung zu Kacheln und Kürzeln)."""
     if INFO_TOAST:
@@ -5123,6 +5162,8 @@ def main():
                     grab(fd, on)
             grabbed = on
 
+    pad_scan = {"done": False}       # beim ersten Durchlauf (Start) nichts melden
+
     def scan_pads():
         """Externe Controller erkennen (auch später verbundene) bzw. entfernen."""
         known = {v["path"]: fd for fd, v in pads.items()}
@@ -5136,11 +5177,15 @@ def main():
                 continue
             pads[fd] = {"name": name, "path": path, "ext": True, "range": abs_range(fd, ABS_X)}
             log("Controller verbunden:", name, "->", path)
+            if pad_scan["done"]:
+                info_toast("%s: %s" % (tr("Verbunden"), name), "pad")
             if grabbed:
                 grab(fd, True)
         for path, fd in known.items():
             if path not in found and pads[fd]["ext"]:
+                info_toast("%s: %s" % (tr("Getrennt"), pads[fd]["name"]), "pad")
                 drop_pad(fd)
+        pad_scan["done"] = True
 
     def drop_pad(fd):
         info = pads.pop(fd, None)
@@ -5461,6 +5506,17 @@ def main():
         else:
             cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "volume"] + [t]
 
+    def ra_start_toast(st):
+        """Beim Spielstart: Stand der Erfolge bzw. Hinweis, dass die ROM nicht unterstützt wird."""
+        if not st or st.get("login_status") != "ok":
+            return
+        achs = [a for a in st.get("achievements") or [] if a.get("id") != 101000001]
+        if not (st.get("game") or {}).get("id") or not achs:
+            info_toast("Keine Erfolge für dieses Spiel", "trophy")
+        else:
+            done = sum(1 for a in achs if str(a.get("id")) in (st.get("unlocks") or {}))
+            info_toast("%d / %d %s" % (done, len(achs), tr("Erfolge")), "trophy")
+
     def dsperate_cheevos(g, known):
         """DSperate: Zustand einmal je Spiel holen, dann exec.log auf neue Erfolge mitlesen."""
         d = known.get("dsp")
@@ -5475,6 +5531,7 @@ def main():
             try:
                 cc.ra = dsp_ra_state(g.get("rom") or "")
                 log("RetroAchievements (DSperate):", (cc.ra.get("game") or {}).get("title") or "kein Spiel erkannt")
+                ra_start_toast(cc.ra)
             except Exception as exc:
                 log("RetroAchievements (DSperate):", exc)
                 d["next"] = time.monotonic() + 30          # später erneut versuchen
@@ -5530,6 +5587,7 @@ def main():
                 ids = set((st.get("unlocks") or {}).keys())
                 if gid != known["game"]:
                     known["game"], known["ids"] = gid, ids        # Ausgangsstand: nichts melden
+                    ra_start_toast(st)
                 else:
                     new = ids - known["ids"]
                     known["ids"] = ids
@@ -5554,6 +5612,7 @@ def main():
         """Warnt bei 20, 10 und 5 % Akku (nur beim Entladen) mit einer Meldung oben."""
         warned = set()
         was_plugged = {"v": True}                      # beim Start nicht melden
+        full_said = {"v": True}
         while True:
             if os.path.exists("/tmp/rds-battery-test"):     # Test: echo 5 > /tmp/rds-battery-test
                 lvl = int((rd("/tmp/rds-battery-test") or "20").strip() or 20)
@@ -5576,6 +5635,11 @@ def main():
                         os.write(WAKE_W, b"x")
                     except OSError:
                         pass
+                if plugged and lvl is not None and (lvl >= 100 or status == "Full") and not full_said["v"]:
+                    full_said["v"] = True
+                    info_toast("Akku voll", "battery")
+                if not plugged:
+                    full_said["v"] = False
                 was_plugged["v"] = plugged
                 if lvl is None or charging or status in ("Full", "Charging"):
                     warned.clear()                      # beim Laden zurücksetzen
@@ -5606,6 +5670,42 @@ def main():
 
     threading.Thread(target=battery_watch, daemon=True).start()
 
+    def link_watch():
+        """WLAN getrennt/verbunden und Kopfhörer ein/aus (Zustandswechsel, nicht beim Start)."""
+        last = {"wifi": None, "hp": None}
+        hp_dev = next((p for p in glob.glob("/sys/class/input/event*/device/name")
+                       if "headphone" in (rd(p) or "").lower()), None)
+        hp_fd = None
+        if hp_dev:
+            try:
+                hp_fd = os.open("/dev/input/" + hp_dev.split("/")[4], os.O_RDONLY)
+                buf = bytearray(8)
+                fcntl.ioctl(hp_fd, 0x8008451b, buf)            # EVIOCGSW: Schalter-Zustände
+                last["hp"] = bool(buf[0] & 0x04)               # SW_HEADPHONE_INSERT = 2
+            except OSError:
+                hp_fd = None
+        while True:
+            try:
+                st = (rd("/sys/class/net/wlan0/operstate") or "").strip()
+                up = st == "up"
+                if last["wifi"] is not None and up != last["wifi"]:
+                    info_toast("WLAN verbunden" if up else "WLAN getrennt", "wifi")
+                last["wifi"] = up
+                if hp_fd is not None:
+                    buf = bytearray(8)
+                    fcntl.ioctl(hp_fd, 0x8008451b, buf)
+                    hp = bool(buf[0] & 0x04)
+                    if hp != last["hp"]:
+                        threading.Timer(0.3, lambda h=hp: info_toast(
+                            "%s · %d %%" % (tr("Kopfhörer") if h else tr("Lautsprecher"), volume_get() or 0),
+                            "phones")).start()
+                    last["hp"] = hp
+            except Exception as exc:
+                log("Verbindungswächter:", exc)
+            time.sleep(1.5)
+
+    threading.Thread(target=link_watch, daemon=True).start()
+
     def do_quit():
         game = cc.game
         if ui.view:
@@ -5615,6 +5715,11 @@ def main():
 
     def combo_feedback(code):
         """Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)."""
+        if code in (546, 547) and not ui.view and time.monotonic() > INJECTING[0]:     # Anbernic + ◀ / ▶
+            g1 = running_game()
+            if g1 and g1["emu"] == "RetroArch":
+                ra_slot_step(g1, -1 if code == 546 else 1)
+            return
         if code not in (BTN_TR, 313, 312) or ui.view or time.monotonic() <= INJECTING[0]:
             return
         g0 = running_game()
@@ -5656,6 +5761,8 @@ def main():
             combo = True  # Teil einer Tastenkombination
             if typ == EV_KEY and value == 1:
                 combo_feedback(code)
+            elif typ == EV_ABS and code == ABS_HAT0X and value:
+                combo_feedback(546 if value < 0 else 547)
             # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
             if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
                 g = running_game()
@@ -5911,6 +6018,10 @@ def main():
                             if wake["swallow"] and value == 1 and typ == EV_KEY:
                                 wake["combo"] = True   # zweite Taste während Anbernic gehalten
                                 combo_feedback(code)   # unterer Screen dunkel (RetroArch): Kürzel trotzdem melden
+                                continue
+                            if wake["swallow"] and typ == EV_ABS and code == ABS_HAT0X and value:
+                                wake["combo"] = True
+                                combo_feedback(546 if value < 0 else 547)
                                 continue
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
