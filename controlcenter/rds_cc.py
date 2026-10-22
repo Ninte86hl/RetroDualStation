@@ -5424,6 +5424,27 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
+    snav = {ABS_X: 0, ABS_Y: 0}
+
+    def stick_nav(code, value, pad):
+        """Linker Stick als Steuerkreuz (nur bei offenem Overlay; im Spiel gehört der Stick dem Spiel).
+        Schwelle 60 %, zurück erst unter 40 % – Stick-Drift löst nichts aus."""
+        lo, hi = pad["range"]
+        n = (value - (lo + hi) / 2) / ((hi - lo) / 2 or 1)
+        cur = snav[code]
+        d = cur if cur and n * cur > 0.4 else (1 if n > 0.6 else -1 if n < -0.6 else 0)
+        if d == cur:
+            return
+        snav[code] = d
+        hat = ABS_HAT0X if code == ABS_X else ABS_HAT0Y
+        if d:
+            handle_joy(EV_ABS, hat, d, pad)
+            rep["ev"] = (EV_ABS, hat, d, pad)          # halten = weiterschalten wie beim Steuerkreuz
+            rep["next"] = time.monotonic() + 0.4
+            state["dirty"] = True
+        elif rep["ev"] and rep["ev"][1] == hat:
+            rep["ev"] = None
+
     home_down = {"t": None, "fired": False, "pending": None}
 
     def home_short():
@@ -5859,6 +5880,8 @@ def main():
         if typ == EV_ABS and code not in (ABS_HAT0X, ABS_HAT0Y):
             if code == ABS_X:
                 handle_stick(value, pad["range"])
+            if code in (ABS_X, ABS_Y) and ui.view and not cc.kbd and not mode_down:
+                stick_nav(code, value, pad)   # linker Stick navigiert wie das Steuerkreuz
             return   # Sticks/Trigger nie als Tastendruck werten (Drift stört sonst die Home-Taste)   # Sticks nie als Tastendruck werten (sonst stört Stick-Drift die Anbernic-Taste)
         if typ == EV_KEY and code == BTN_MODE:
             if value == 1:
