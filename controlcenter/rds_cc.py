@@ -5240,6 +5240,9 @@ def main():
                             sw.ready = True
                         threading.Thread(target=work, daemon=True).start()
                         return
+                if view == "cc":
+                    # im Spiel zuerst die Seite „Spiel“, in ES die Schnelleinstellungen
+                    cc.page = 1 if (cc.game or {}).get("emu") in GAME_ACTIONS else 0
                 pauser.pause(cc.game)
             if ui.view == "tour" and view != "tour":
                 ui.hide_top()
