@@ -5158,7 +5158,11 @@ def main():
     INFO_TOAST[:] = [cc]
     state = {"dirty": False}
 
+    gs_swipe = {"from": None, "last": (0, 0)}
+
     def on_touch(kind, x, y):
+        if kind in ("down", "move"):
+            gs_swipe["last"] = (x, y)
         if ui.view == "loading":
             return
         if ui.view == "tour":
@@ -5171,8 +5175,21 @@ def main():
                     state["dirty"] = True
             return
         if ui.view == "switcher":
+            if kind == "down" and cc.pen:
+                gs_swipe["from"] = cc.pen.to_design(x, y)
             if kind == "up" and cc.pen:
-                dx, dy = cc.pen.to_design(x, y)
+                dx, dy = cc.pen.to_design(*gs_swipe["last"])   # „up“ liefert keine Position
+                start, gs_swipe["from"] = gs_swipe["from"], None
+                if start and abs(dx - start[0]) > 80 and abs(dx - start[0]) > abs(dy - start[1]):
+                    # Wischen: nach links = nächste Kachel, nach rechts = vorige
+                    sw = cc.switcher
+                    if sw.items:
+                        new = max(0, min(len(sw.items) - 1, sw.sel + (1 if dx < start[0] else -1)))
+                        if new != sw.sel:
+                            sw.sel = new
+                            haptic("tap")
+                    state["dirty"] = True
+                    return
                 hit = next((h[4] for h in reversed(cc.hits)
                             if h[0] <= dx <= h[0] + h[2] and h[1] <= dy <= h[1] + h[3]), None)
                 if hit and hit[0] == "gs":
@@ -5378,6 +5395,7 @@ def main():
         sw.launch(item, fresh, current=cur)
 
     stick = {"dir": 0, "next": 0.0}
+    rep = {"ev": None, "next": 0.0}   # gehaltene Richtungstaste (Wiederholung)
 
     def handle_stick(value, rng):
         """Linker Stick links/rechts: Cursor in der Tastatur bewegen (mit Wiederholung)."""
@@ -6021,7 +6039,7 @@ def main():
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
+            busy = rep["ev"] or stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
                 or (home_down["t"] is not None and not home_down["fired"]) \
                 or home_down["pending"] is not None \
                 or cc.gbusy or (cc.gmsg is not None and time.monotonic() - cc.gmsg[1] < 4.5) \
@@ -6111,6 +6129,15 @@ def main():
                                 wake["combo"] = True
                                 combo_feedback(546 if value < 0 else 547)
                                 continue
+                            is_dir = (typ == EV_ABS and code in (ABS_HAT0X, ABS_HAT0Y)) or (typ == EV_KEY and code in DPAD)
+                            if is_dir:
+                                if (value != 0 if typ == EV_ABS else value == 1) and ui.view \
+                                        and ui.view not in ("tour", "loading") and not mode_down:
+                                    # gedrückt halten: nach 0,4 s automatisch weiterschalten
+                                    rep["ev"] = (typ, code, value, pads[fd])
+                                    rep["next"] = time.monotonic() + 0.4
+                                elif rep["ev"] and rep["ev"][1] == code:
+                                    rep["ev"] = None
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
                     # ein Fehler darf das Kontrollcenter nicht beenden
@@ -6120,6 +6147,15 @@ def main():
                 # Bildschirm war kurz weg (z. B. beim Hochfahren aus- und eingeschaltet): wieder anzeigen
                 view, ui.pending_view = ui.pending_view, None
                 ui.show(view)
+            if rep["ev"] and (not ui.view or ui.view in ("tour", "loading")):
+                rep["ev"] = None
+            if rep["ev"] and time.monotonic() >= rep["next"]:
+                rep["next"] = time.monotonic() + 0.12
+                try:
+                    handle_joy(*rep["ev"])
+                except Exception:
+                    rep["ev"] = None
+                state["dirty"] = True
             if stick["dir"] and cc.kbd and ui.view and time.monotonic() >= stick["next"]:
                 cc.kbd.cursor(stick["dir"])
                 stick["next"] = time.monotonic() + 0.12

@@ -861,7 +861,7 @@ class App:
         elif i >= first + tile_geom(kind)[3]:
             first = i - tile_geom(kind)[3] + 1
         self.gscroll[kind] = first
-        self.want_previews()
+        self.preview_at = time.monotonic() + 0.25   # erst laden, wenn man kurz stehen bleibt
         self.top_dirty = True
 
     def step(self, d):
@@ -1552,6 +1552,11 @@ class App:
         elif code in (BTN_TL, BTN_TR):
             d = -1 if code == BTN_TL else 1
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
+        elif code in (312, 313) and self.view == "game":   # L2 / R2: eine Seite Bilder weiter
+            d = -1 if code == 312 else 1
+            self.step(d * tile_geom(self.kind_key())[3])
+        elif code in (312, 313) and self.view != "editor":
+            self.move((-1 if code == 312 else 1) * ROWS)
         elif code == BTN_START and self.view == "game":
             self.transfer()
         elif code == BTN_THUMBL and self.view == "game":
@@ -2003,7 +2008,7 @@ class App:
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
         pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil",
+        self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil", "L2 / R2", "Seite",
                                *(("Select", "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
         label = f"Start  Speichern ({len(self.chosen)})"
@@ -2195,10 +2200,11 @@ def main():
     for fd in grabbed:
         grab(fd, True)          # Eingaben gehören nur dem Manager (ES und Kontrollcenter ruhen)
     kbd_open = [False]
+    rep = {"dir": None, "next": 0.0}
     try:
         while not a.quit:
             fds = [fd for fd in grabbed]
-            busy = a.busy or a.saving or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
+            busy = rep["dir"] or getattr(a, "preview_at", None) or a.busy or a.saving or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
             for fd in ui.pump(0.1 if busy else 0.5, fds):
                 try:
                     if fd == tfd:
@@ -2208,6 +2214,13 @@ def main():
                                 on_touch(t[0], *touch.to_surface(t[1], t[2], *ui.size))
                         continue
                     for typ, code, value in read_events(fd):
+                        if typ == EV_ABS and code in (ABS_HAT0X, ABS_HAT0Y):
+                            d = (1 if value > 0 else -1) if value else 0
+                            rep["dir"] = ((d, 0) if code == ABS_HAT0X else (0, d)) if d else None
+                            rep["next"] = time.monotonic() + 0.4
+                        elif typ == EV_KEY and code in DPAD and value in (0, 1):
+                            rep["dir"] = DPAD[code] if value == 1 else None
+                            rep["next"] = time.monotonic() + 0.4
                         if fd == home and typ == EV_KEY and code == BTN_Z and value == 1:
                             a.quit = True                         # Home: Manager beenden
                             continue
@@ -2244,6 +2257,14 @@ def main():
                 except Exception:
                     log("Fehler (läuft weiter):\n" + traceback.format_exc().rstrip())
                     a.dirty = True
+            if getattr(a, "preview_at", None) and time.monotonic() >= a.preview_at:
+                a.preview_at = None
+                a.want_previews()
+                a.dirty = True
+            if rep["dir"] and time.monotonic() >= rep["next"]:
+                rep["next"] = time.monotonic() + 0.12   # gedrückt halten: weiterschalten
+                (a.kbd.nav if a.kbd else a.on_dir)(*rep["dir"])
+                a.dirty = True
             if a.kbd and a.kbd.tick():
                 a.dirty = True
             if a.saving and a.saving.get("done") and time.monotonic() > a.saving_until:
