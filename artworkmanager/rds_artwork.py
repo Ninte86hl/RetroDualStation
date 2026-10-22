@@ -2210,7 +2210,7 @@ class App:
         kind = self.kind_key()
         c = self.cand()
         b = self.batch
-        # oben rechts: Batch-Stand, Warteschlange und Seite der Bilder
+        # unten links: Seite der Bilder, Batch-Stand und Warteschlange
         items = self.cands.get(kind) or []
         pages = (len(items) + PAGE - 1) // PAGE
         info = []
@@ -2218,18 +2218,16 @@ class App:
             info.append(f"Batch {b['pos'] + 1} / {len(b['queue'])}")
         if self.bq_pending():
             info.append(f"{self.bq_pending()} in Arbeit")
-        page = f"Seite {self.idx[kind] // PAGE + 1} / {pages}" if pages > 1 and self.view == "game" else ""
+        if pages > 1 and self.view == "game":
+            info.insert(0, f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
+        line = " · ".join(info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
         if self.top_mode == "mix":
             self.draw_mix(P)
-            if info:
-                P.text(" · ".join(info), 22, 1220, 40, "ffffff", align="r", raw=True)
-            if page:   # Seite unten links, etwas größer
-                P.text(page, 28, 40, 928, "ffffff", bold=True, raw=True)
+            if line:
+                P.text(line, 28, 40, 928, "ffffff", bold=True, raw=True)
             return
-        if page:
-            P.text(page, 28, 40, 928, "ffffff", bold=True, raw=True)
-        if info:
-            P.text(" · ".join(info), 22, 1220, 40, "bdbdbd", align="r", raw=True)
+        if line:
+            P.text(line, 28, 40, 928, "ffffff", bold=True, raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
         P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
         P.unclip()
