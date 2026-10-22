@@ -5545,6 +5545,11 @@ def main():
 
     threading.Thread(target=cheevo_watch, daemon=True).start()
 
+    def charger_charging():
+        """Ladegerät eingesteckt (RG DS Plus: power_supply/charger, online=1)."""
+        return any((rd(d + "/online") or "").strip() == "1" for d in glob.glob("/sys/class/power_supply/*")
+                   if rd(d + "/type") in ("USB", "Mains"))
+
     def battery_watch():
         """Warnt bei 20, 10 und 5 % Akku (nur beim Entladen) mit einer Meldung oben."""
         warned = set()
@@ -5563,10 +5568,14 @@ def main():
                 for d in glob.glob("/sys/class/power_supply/*"):
                     if rd(d + "/type") == "Battery":
                         status = rd(d + "/status") or ""
-                plugged = bool(charging or status in ("Full", "Charging"))
+                plugged = bool(charging or status in ("Full", "Charging") or charger_charging())
                 if plugged and not was_plugged.get("v", True) and lvl is not None:
                     cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "charging"] + [{"kind": "charging", "level": lvl}]
                     log("Wird geladen:", lvl, "%")
+                    try:
+                        os.write(WAKE_W, b"x")
+                    except OSError:
+                        pass
                 was_plugged["v"] = plugged
                 if lvl is None or charging or status in ("Full", "Charging"):
                     warned.clear()                      # beim Laden zurücksetzen
@@ -5584,10 +5593,16 @@ def main():
                             break
             except Exception as exc:
                 log("Akku-Warnung:", exc)
-            for _ in range(15):                          # alle 30 s prüfen, Testdatei alle 2 s
+            for _ in range(30):                          # alle 30 s prüfen; Testdatei und Ladegerät jede Sekunde
                 if os.path.exists("/tmp/rds-battery-test"):
                     break
-                time.sleep(2)
+                online = any((rd(d + "/online") or "").strip() == "1" for d in glob.glob("/sys/class/power_supply/*")
+                             if rd(d + "/type") in ("USB", "Mains"))
+                if online and not was_plugged.get("v", True):
+                    break                                # Ladegerät eingesteckt → sofort melden
+                if not online and was_plugged.get("v") and not charger_charging():
+                    was_plugged["v"] = False             # abgezogen
+                time.sleep(1)
 
     threading.Thread(target=battery_watch, daemon=True).start()
 
