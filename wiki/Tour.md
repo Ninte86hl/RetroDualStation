@@ -93,7 +93,8 @@ DraStic has no button combinations: save and load are on R2 and L2, menu and fas
 
 Your account, your progress in the running game and all achievements – **A** opens one with description,
 points and rarity. A new achievement briefly appears **on top of the game**, and so does the **volume** on Vol+ / Vol−.
-Sign in in ES: *Game settings → RetroAchievements settings*. Supported: RetroArch games.
+Achievements are shown **only here, while a game is running** – the ES game list (X → game options) has no achievement entry in dual mode.
+Sign in in ES: *Game settings → RetroAchievements settings*. Supported: RetroArch and DSperate games.
 
 ---
 

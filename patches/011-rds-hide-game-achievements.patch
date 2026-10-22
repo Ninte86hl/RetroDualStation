@@ -1,0 +1,15 @@
+diff --git a/es-app/src/guis/GuiGameOptions.cpp b/es-app/src/guis/GuiGameOptions.cpp
+index 1f50dce..5a1e7fd 100644
+--- a/es-app/src/guis/GuiGameOptions.cpp
++++ b/es-app/src/guis/GuiGameOptions.cpp
+@@ -111,7 +111,9 @@ GuiGameOptions::GuiGameOptions(Window* window, FileData* game) : GuiComponent(wi
+ 			});
+ 		}
+ 
+-		if (hasCheevos)
++		// RDS: im Dual-Modus ausgeblendet – die Übersicht braucht eine Entwickler-Kennung, die der Dual-Build
++		// nicht hat; die Erfolge zeigt das Kontrollcenter (Seite 3) im Spiel.
++		if (hasCheevos && !RdsScreens::active())
+ 		{
+ 			if (!game->isFeatureSupported(EmulatorFeatures::cheevos))
+ 			{

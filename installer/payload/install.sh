@@ -241,6 +241,9 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         log "Sway: Fake_Keyboard an seat0"
     fi
     swaymsg seat seat0 attach "4660:22136:Fake_Keyboard" >/dev/null 2>&1   # sofort wirksam
+    if [ -f "$SWAYCFG" ] && ! grep -q 'RDS_Keys' "$SWAYCFG"; then
+        printf '\n# RetroDualStation: virtuelle Tasten des Kontrollcenters an die Spiele\nseat seat0 attach "21060:21297:RDS_Keys"\n' >> "$SWAYCFG"
+    fi
 
     # RetroArch: keine Rückfragen bei Neustart/Beenden, keine Speicherstand-Einblendung (Gameswitcher)
     RACFG=/storage/.config/retroarch/retroarch.cfg
@@ -282,18 +285,19 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
         log "Kuerzel: einheitliches Schema gesetzt (Sicherungen *.vor-rds-kuerzel)"
     fi
-    # DraStic: Menü und Vorspulen auf Tasten, die das RG DS Plus nicht hat (R3 und den fehlenden rechten Stick)
-    # → nur über das Kontrollcenter erreichbar, L3 bleibt frei. Einmalig, mit Sicherung.
-    # Gilt auch fürs RG DS: dort lag das Menü sonst auf der Anbernic-Taste (gehört dem CC);
-    # R3 und der rechte Stick werden in DS-Spielen nicht gebraucht.
+    # DraStic: Menü und Vorspulen auf Tasten, die es am Gerät nicht gibt – F11 (324) und F12 (325)
+    # der virtuellen Tastatur des Kontrollcenters. Stick, L3 und R3 bleiben frei; die Anbernic-Taste
+    # gehört dem CC. (Bis v14: R3 und Phantom-Achse – auf dem RG DS Plus sprang Vorspulen beim
+    # Linksdrücken an.) Einmal je Gerät (Merker v2), Sicherung nur bei der ersten Umstellung.
     DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
+    DMARK2=/storage/.config/retrodualstation/drastic-kuerzel-v2.done
     DCFG=/storage/.config/drastic/config/drastic.cfg
-    if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
-        cp "$DCFG" "$DCFG.vor-rds-kuerzel"
-        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
-                  -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 1154/' "$DCFG"
-        date > "$DMARK"
-        log "DraStic: Menue auf R3, Vorspulen auf rechten Stick (nur ueber das CC)"
+    if [ ! -f "$DMARK2" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        [ -f "$DMARK" ] || cp "$DCFG" "$DCFG.vor-rds-kuerzel"
+        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 324/' \
+                  -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 325/' "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
+        log "DraStic: Menue auf F11, Vorspulen auf F12 (virtuelle Tasten, nur ueber das CC)"
     fi
     # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
     SSMARK=/storage/.config/retrodualstation/savestates.done
@@ -310,6 +314,29 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         ( . /etc/profile >/dev/null 2>&1; set_setting system.autohotkeys 0 ) >/dev/null 2>&1
         echo "$AHOLD" > "$AHMARK"
         log "RetroArch: automatische Hotkeys von ROCKNIX aus (vorher: ${AHOLD:-Standard})"
+    fi
+    # DSperate auf dem RG DS Plus: Der Treiber spiegelt links/rechts des Sticks auf die Achsen des
+    # fehlenden rechten Sticks – der Touch-Cursor (stylus_axis = right) wanderte beim Steuern mit.
+    if [ "$DEVICE" = "RG DS Plus" ] && [ -f /storage/.config/dsperate/dsperate.ini ] && ! pidof dsperate >/dev/null \
+       && grep -q '^stylus_axis = right' /storage/.config/dsperate/dsperate.ini; then
+        sed -i 's/^stylus_axis = right/stylus_axis = none/' /storage/.config/dsperate/dsperate.ini
+        log "DSperate (RG DS Plus): Touch-Cursor auf dem Phantom-Stick aus"
+    fi
+    # ES auf dem RG DS Plus: dieselben Phantom-Achsen kamen in ES als zweiter Stick an – zwei Bewegungen
+    # und zwei Loslass-Signale je Stickdruck, das Karussell der Systemliste blieb dabei stehen.
+    # Nur den Phantom-Stick des eingebauten Joypads austragen (vorher einmal sichern).
+    ESINPUT=/storage/.emulationstation/es_input.cfg
+    if [ "$DEVICE" = "RG DS Plus" ] && [ -f "$ESINPUT" ] \
+       && sed -n '/deviceName="retrogame_joypad"/,/<\/inputConfig>/p' "$ESINPUT" | grep -q rightanalog; then
+        [ -f "$ESINPUT.before-rds" ] || cp "$ESINPUT" "$ESINPUT.before-rds"
+        sed -i '/deviceName="retrogame_joypad"/,/<\/inputConfig>/{/rightanalog/d}' "$ESINPUT"
+        log "ES (RG DS Plus): Phantom-Stick aus der Tastenbelegung entfernt"
+    fi
+    # DSperate: eigene Erfolgsmeldung aus – die Meldung oben kommt einheitlich vom Kontrollcenter
+    DSPINI=/storage/.config/dsperate/dsperate.ini
+    if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null && grep -q '^toasts = true' "$DSPINI"; then
+        sed -i 's/^toasts = true/toasts = false/' "$DSPINI"
+        log "DSperate: eigene Erfolgsmeldung aus (zeigt das Kontrollcenter)"
     fi
     # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
     # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.

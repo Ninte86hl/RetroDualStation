@@ -231,7 +231,7 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Verbunden": "Connected", "Getrennt": "Disconnected", "Akku voll": "Battery full", "Keine Erfolge für dieses Spiel": "No achievements for this game", "Erfolge": "achievements", "WLAN verbunden": "Wi-Fi connected", "WLAN getrennt": "Wi-Fi disconnected", "Kopfhörer": "Headphones", "Lautsprecher": "Speaker", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
     "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
     "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
@@ -597,6 +597,47 @@ class Pen:
         if kind == "ff":
             for dx in (-14, 6):
                 self.poly([(cx + dx - 6, cy - 14), (cx + dx + 14, cy), (cx + dx - 6, cy + 14)], c)
+        elif kind == "play":                      # normale Geschwindigkeit
+            self.poly([(cx - 9, cy - 15), (cx + 15, cy), (cx - 9, cy + 15)], c)
+        elif kind in ("save", "load"):            # Pfeil nach unten (speichern) bzw. oben (laden) in eine Schale
+            self.rrect(cx - 16, cy + 10, 32, 5, 2, c)
+            self.rrect(cx - 16, cy + 2, 5, 13, 2, c)
+            self.rrect(cx + 11, cy + 2, 5, 13, 2, c)
+            self.rrect(cx - 2.5, cy - 15, 5, 17, 2, c)
+            if kind == "save":
+                self.poly([(cx - 9, cy - 3), (cx + 9, cy - 3), (cx, cy + 6)], c)
+            else:
+                self.poly([(cx - 9, cy - 10), (cx + 9, cy - 10), (cx, cy - 19)], c)
+        elif kind == "pad":                       # Controller
+            self.rrect(cx - 22, cy - 11, 44, 22, 11, c)
+            self.rrect(cx - 14, cy - 2, 10, 4, 1, "1c1c1c")
+            self.rrect(cx - 11, cy - 5, 4, 10, 1, "1c1c1c")
+            self.circle(cx + 9, cy - 2, 2.6, "1c1c1c")
+            self.circle(cx + 14, cy + 3, 2.6, "1c1c1c")
+        elif kind == "wifi":                      # WLAN: Punkt + Bögen
+            self.circle(cx, cy + 12, 3.5, c)
+            for r, w in ((9, 3.5), (16, 3.5), (23, 3.5)):
+                cr2 = self.cr
+                cairo.cairo_new_path(cr2)
+                cairo.cairo_arc(cr2, self.X(cx), self.Y(cy + 12), r * self.s, -2.36, -0.79)
+                self.color(c)
+                cairo.cairo_set_line_width(cr2, w * self.s)
+                cairo.cairo_stroke(cr2)
+        elif kind == "phones":                    # Kopfhörer
+            cr2 = self.cr
+            cairo.cairo_new_path(cr2)
+            cairo.cairo_arc(cr2, self.X(cx), self.Y(cy + 2), 15 * self.s, 3.14159, 0)
+            self.color(c)
+            cairo.cairo_set_line_width(cr2, 4 * self.s)
+            cairo.cairo_stroke(cr2)
+            self.rrect(cx - 19, cy, 8, 15, 3, c)
+            self.rrect(cx + 11, cy, 8, 15, 3, c)
+        elif kind == "battery":                   # voller Akku
+            self.rrect(cx - 18, cy - 10, 32, 20, 4, c)
+            self.rrect(cx + 14, cy - 4, 4, 8, 1, c)
+        elif kind == "bolt":                      # Laden (Blitz)
+            self.poly([(cx + 3, cy - 18), (cx - 10, cy + 3), (cx - 1, cy + 3), (cx - 4, cy + 18),
+                       (cx + 10, cy - 3), (cx + 1, cy - 3)], c)
         elif kind == "shot":
             self.rrect(cx - 22, cy - 13, 44, 30, 6, c)
             self.rrect(cx - 8, cy - 19, 16, 8, 3, c)
@@ -798,6 +839,37 @@ def load_config():
         return {}
 
 
+# Helligkeit und Lautstärke dauerhaft wie ROCKNIX speichern (sonst stellt ROCKNIX beim Start seine Werte her).
+# ROCKNIX: display.brightness = erstes Backlight (backlight0 = unten), display.brightness2 = backlight1 (oben),
+# audio.volume = Lautstärke – jeweils in Prozent. Geschrieben wird verzögert, nicht bei jedem Reglerschritt.
+_persist = {"pending": {}, "timer": None}
+
+
+def persist_setting(key, pct, backlights):
+    if key == "vol":
+        name = "audio.volume"
+    else:
+        bl = backlights[key][1].name if 0 <= key < len(backlights) else ""
+        n = re.sub(r"\D", "", bl)
+        name = "display.brightness" if n in ("", "0") else "display.brightness%d" % (int(n) + 1)
+    _persist["pending"][name] = int(pct)
+    if _persist["timer"]:
+        _persist["timer"].cancel()
+
+    def flush():
+        items, _persist["pending"] = _persist["pending"], {}
+        cmd = "; ".join("set_setting %s %d" % (k, v) for k, v in items.items())
+        try:
+            subprocess.run(["sh", "-c", ". /etc/profile >/dev/null 2>&1; " + cmd], timeout=10,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            log("Gespeichert:", ", ".join("%s=%d" % kv for kv in items.items()))
+        except Exception as exc:
+            log("Speichern der Einstellung:", exc)
+    _persist["timer"] = threading.Timer(1.5, flush)
+    _persist["timer"].daemon = True
+    _persist["timer"].start()
+
+
 class Backlight:
     def __init__(self, name):
         self.name = name
@@ -872,6 +944,101 @@ def ra_state():
 def ra_badge(badge, locked=False):
     p = os.path.join(RA_BADGES, "%s%s.png" % (badge, "_lock" if locked else ""))
     return p if badge and os.path.exists(p) else None
+
+
+# ------------------------------------------------ RetroAchievements für DSperate --
+# DSperate spricht direkt mit RetroAchievements (kein ROCKNIX-Proxy). Das CC baut daraus denselben
+# Zustand wie beim Proxy: Spiel-ID über den NDS-Hash (wie rcheevos), Erfolgsliste und eigene
+# Freischaltungen über die Schnittstelle der Emulatoren – mit dem Token, das ES bei der Anmeldung
+# in system.cfg abgelegt hat. Neue Erfolge stehen in /var/log/exec.log: "cheevos: Titel -- Beschreibung".
+RA_REQ = "https://retroachievements.org/dorequest.php"
+EXEC_LOG = "/var/log/exec.log"
+_nds_cache = {}
+
+
+def nds_ra_hash(path):
+    """RetroAchievements-Hash einer NDS-ROM (rcheevos: Kopf 0x160, ARM9, ARM7, Icon 0xA00)."""
+    import hashlib
+    if path in _nds_cache:
+        return _nds_cache[path]
+    h = None
+    try:
+        with open(path, "rb") as f:
+            hdr = f.read(0x200)
+            if len(hdr) == 0x200:
+                u32 = lambda o: struct.unpack_from("<I", hdr, o)[0]
+                if u32(0) == 0x2E2E2E2E and u32(0x20) == 0x4000:   # SuperCard-Kopf übergehen
+                    pass
+                m = hashlib.md5(hdr[:0x160])
+                for off, size in ((u32(0x20), u32(0x2C)), (u32(0x30), u32(0x3C))):
+                    if size > 16 * 1024 * 1024:
+                        raise ValueError("ARM-Code zu groß")
+                    f.seek(off); m.update(f.read(size))
+                icon = u32(0x68)
+                if icon:
+                    f.seek(icon); m.update(f.read(0xA00))
+                h = m.hexdigest()
+    except Exception as exc:
+        log("NDS-Hash:", exc)
+    _nds_cache[path] = h
+    return h
+
+
+def ra_request(**params):
+    import urllib.parse, urllib.request
+    req = urllib.request.Request(RA_REQ + "?" + urllib.parse.urlencode(params),
+                                 headers={"User-Agent": "RetroDualStation/" + VERSION})
+    with urllib.request.urlopen(req, timeout=6) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
+def ra_badge_fetch(name):
+    """Erfolgsbild in den Ordner des ROCKNIX-Proxys laden (falls noch nicht da)."""
+    import urllib.request
+    os.makedirs(RA_BADGES, exist_ok=True)
+    for suffix in ("", "_lock"):
+        dst = os.path.join(RA_BADGES, "%s%s.png" % (name, suffix))
+        if name and not os.path.exists(dst):
+            try:
+                req = urllib.request.Request("https://media.retroachievements.org/Badge/%s%s.png" % (name, suffix),
+                                             headers={"User-Agent": "RetroDualStation/" + VERSION})
+                with urllib.request.urlopen(req, timeout=6) as r, open(dst + ".tmp", "wb") as f:
+                    f.write(r.read())
+                os.replace(dst + ".tmp", dst)
+            except Exception:
+                pass
+
+
+def dsp_ra_state(rom):
+    """Zustand wie beim ROCKNIX-Proxy für ein DSperate-Spiel – oder None."""
+    cfg = rd("/storage/.config/system/configs/system.cfg") or ""
+    get = lambda k: (re.search(r"^%s=(.*)$" % re.escape(k), cfg, re.M) or [None, ""])[1].strip()
+    user, token = get("global.retroachievements.username"), get("global.retroachievements.token")
+    if get("global.retroachievements") != "1" or not (user and token):
+        return {"login_status": "failed"}
+    h = nds_ra_hash(rom)
+    gid = (ra_request(r="gameid", m=h) or {}).get("GameID") if h else 0
+    if not gid:
+        return {"login_status": "ok", "user": {"name": user}, "game": {"id": 0, "title": ""}, "achievements": [], "unlocks": {}}
+    login = ra_request(r="login2", u=user, t=token) or {}
+    patch = (ra_request(r="patch", u=user, t=token, g=gid) or {}).get("PatchData") or {}
+    sess = ra_request(r="startsession", u=user, t=token, g=gid) or {}
+    hc = re.search(r"^global\.retroachievements\.hardcore=1", cfg, re.M)
+    unl = {str(u.get("ID")): u.get("When") for u in (sess.get("HardcoreUnlocks" if hc else "Unlocks") or [])}
+    if not hc:
+        unl.update({str(u.get("ID")): u.get("When") for u in (sess.get("HardcoreUnlocks") or [])})
+    achs = []
+    for a in patch.get("Achievements") or []:
+        if a.get("Flags") != 3:            # nur offizielle Erfolge
+            continue
+        achs.append({"id": a.get("ID"), "title": a.get("Title"), "desc": a.get("Description"),
+                     "points": a.get("Points"), "badge": a.get("BadgeName")})
+    threading.Thread(target=lambda: [ra_badge_fetch(a["badge"]) for a in achs], daemon=True).start()
+    return {"login_status": "ok",
+            "user": {"name": login.get("User") or user, "score": login.get("Score"),
+                     "softcore_score": login.get("SoftcoreScore")},
+            "game": {"id": gid, "title": patch.get("Title") or ""},
+            "achievements": achs, "unlocks": unl, "source": "dsperate"}
 
 
 def volume_muted():
@@ -1216,8 +1383,8 @@ TOUR = [
               (("Power lang", "Power long"), ("sofort Ruhemodus", "sleep immediately"))]},
     {"title": ("Kontrollcenter", "Control Center"),
      "img": ("tour-kontrollcenter.png", "tour-kontrollcenter.png"),
-     "lines": [("Helligkeit oben und unten, Lautstärke und Leistung.",
-                "Top and bottom brightness, volume and performance."),
+     "lines": [("Helligkeit oben und unten, Lautstärke und Leistung (gilt bis zum nächsten Spielstart).",
+                "Top and bottom brightness, volume and performance (until the next game starts)."),
                ("WLAN, Bluetooth, unteren Screen ausschalten und Ruhemodus.",
                 "Wi-Fi, Bluetooth, bottom screen off and sleep."),
                ("Im Spiel pausiert das Spiel, solange das Kontrollcenter offen ist.",
@@ -1245,8 +1412,10 @@ TOUR = [
               ("Anbernic + Start", ("Spiel beenden", "quit game"))]},
     {"title": ("RetroAchievements", "RetroAchievements"),
      "img": ("tour-ra.png", "tour-ra.png"),
-     "lines": [("Seite 3 im Kontrollcenter: dein Konto, der Fortschritt im Spiel und alle Erfolge.",
-                "Page 3 of the Control Center: your account, your progress and all achievements."),
+     "lines": [("Im Spiel, Seite 3 im Kontrollcenter: dein Konto, der Fortschritt und alle Erfolge.",
+                "In game, page 3 of the Control Center: your account, your progress and all achievements."),
+               ("Erfolge gibt es nur hier – nicht in der ES-Spieleliste.",
+                "Achievements are only shown here – not in the ES game list."),
                ("Ein neuer Erfolg erscheint kurz oben über dem Spiel.",
                 "A new achievement briefly appears on top of the game."),
                ("Anmelden in ES: Spieleinstellungen → RetroAchievements-Einstellungen.",
@@ -1329,6 +1498,10 @@ def haptic(kind="open"):
 HAPTIC_ON = [True]
 
 
+INJECTING = [0.0]
+TIMING = {}   # Zeitmessungen fürs Log (Öffnen, Beenden)
+
+
 def inject_keys(seq):
     """Tastendrücke ins eingebaute Joypad einspeisen (sehen alle Programme wie echte Drücke).
     seq: Liste aus (code, wert) oder Pausen in Sekunden (float)."""
@@ -1337,6 +1510,7 @@ def inject_keys(seq):
     if not dev:
         return False
     fd = os.open(dev, os.O_WRONLY)
+    INJECTING[0] = time.monotonic() + 0.6          # eigene Drücke nicht als Nutzer-Kürzel werten
     try:
         for item in seq:
             if isinstance(item, float):
@@ -1351,7 +1525,47 @@ def inject_keys(seq):
             os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
             os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
     finally:
+        INJECTING[0] = time.monotonic() + 0.4
         os.close(fd)
+    return True
+
+
+# Virtuelle Tastatur "RDS Keys" (uinput): Tasten, die es am Gerät nicht gibt (F11/F12).
+# DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F11 = 324, F12 = 325, getestet 22.10.2026)
+# und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
+VKEY_ID = "21060:21297:RDS_Keys"
+SDL_TO_EVDEV = {68: 87, 69: 88}          # SDL-Scancode F11/F12 → evdev KEY_F11/KEY_F12
+_vkey = {"fd": None}
+
+
+def vkey_open():
+    if _vkey["fd"] is not None:
+        return _vkey["fd"]
+    try:
+        fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+        fcntl.ioctl(fd, 0x40045564, EV_KEY)                     # UI_SET_EVBIT
+        for code in SDL_TO_EVDEV.values():
+            fcntl.ioctl(fd, 0x40045565, code)                   # UI_SET_KEYBIT
+        os.write(fd, struct.pack("80sHHHHi", b"RDS Keys", 0x06, 0x5244, 0x5331, 1, 0) + b"\0" * (64 * 4 * 4))
+        fcntl.ioctl(fd, 0x5501)                                 # UI_DEV_CREATE
+        _vkey["fd"] = fd
+        log("Virtuelle Tastatur angelegt (RDS Keys)")
+        for delay in (1.0, 4.0):   # Sway braucht einen Moment, bis das Gerät bekannt ist
+            threading.Timer(delay, sway_cmd, args=('seat seat0 attach "%s"' % VKEY_ID,)).start()
+    except OSError as exc:
+        log("Virtuelle Tastatur nicht möglich:", exc)
+    return _vkey["fd"]
+
+
+def vkey_press(code):
+    fd = vkey_open()
+    if fd is None:
+        return False
+    # nicht vor jedem Druck neu zuordnen: das Neu-Anhängen an seat0 verschluckt den folgenden Druck
+    for val in (1, 0):
+        os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
+        os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
+        time.sleep(0.12)
     return True
 
 
@@ -1526,9 +1740,40 @@ class Switcher:
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
-            while time.time() < deadline and not running_game():
+            try:
+                base_pids = set(re.findall(r'"pid": (\d+)', subprocess.run(
+                    ["swaymsg", "-t", "get_tree"], timeout=2, capture_output=True, text=True,
+                    env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout))
+            except Exception:
+                base_pids = set()
+            g = None
+            while time.time() < deadline:
+                g = running_game()
+                if g:
+                    break
                 time.sleep(0.25)
-            time.sleep(2.5)
+            # statt fest 2,5 s: warten, bis Sway ein Fenster dieses Prozesses kennt (max. 2,5 s)
+            env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+            wend = time.time() + 2.5
+            found = False
+            while g and time.time() < wend:
+                try:
+                    tree = subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                          capture_output=True, text=True).stdout
+                    # neues Fenster = eine PID, die vor dem Start noch keins hatte
+                    # (die Fenster-PID ist nicht immer die vom Spielprozess)
+                    if set(re.findall(r'"pid": (\d+)', tree)) - base_pids:
+                        found = True
+                        break
+                except Exception:
+                    break
+                time.sleep(0.15)
+            log("Gameswitcher: %s-Fenster %s nach %.1f s" % (emu, "da" if found else "nicht erkannt",
+                                                               time.monotonic() - t0))
+            if found:
+                time.sleep(0.8)   # Luft fürs Autoload, bevor der Ladebildschirm geht
+            else:
+                time.sleep(max(0.0, wend - time.time()))
             log("Gameswitcher: %s bereit nach %.1f s" % (emu, time.monotonic() - t0))
 
     def launch(self, item, fresh, current=None):
@@ -1780,6 +2025,9 @@ def drastic_press(name, dflt=None):
     v = int(m.group(1)) if m else dflt
     if v is None:
         return None
+    if 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:          # Tastatur-Taste (virtuell)
+        vkey_press(SDL_TO_EVDEV[v - 256])
+        return "Taste F%d" % (v - 256 - 57)
     if 1024 <= v < 1024 + len(JOY_CODES):
         code = JOY_CODES[v - 1024]
         inject_keys([(code, 1), 0.12, (code, 0)])
@@ -1875,8 +2123,10 @@ def drastic_shortcuts():
         if 1024 <= v < 1100:
             name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
+        elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
+            rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1"}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
-            rows.append((label, tr("nur über das CC")))
+            rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
@@ -2758,9 +3008,17 @@ class ControlCenter:
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
+        # Zuletzt im CC gewählte Helligkeit wiederherstellen: ES schreibt beim Beenden/Neustart seine alten
+        # Werte in system.cfg zurück (display.brightness2 ging so verloren) – das CC merkt sich die Werte selbst.
+        for i, (_label, b) in enumerate(self.backlights):
+            v = self.cfg.get("bright_" + b.name)
+            if isinstance(v, int) and 5 <= v <= 100:
+                b.set(v)
+                persist_setting(i, v, self.backlights)
+                log("Helligkeit wiederhergestellt:", b.name, v, "%")
         self.page = 0
         self.focus = 1          # Zeile auf Seite 1 (0 = Darstellung oben)
-        self.top_sel = 0        # -1 = Power, 0 = Hell/Dunkel, 1 = Akzentfarbe
+        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration
         self.tile = 0           # Spalte in der Kachelzeile
         self.values = {}
         self.perf = 1
@@ -2842,6 +3100,11 @@ class ControlCenter:
                 self.vol_sent = now
         else:
             self.backlights[key][1].set(pct)
+            self.cfg["bright_" + self.backlights[key][1].name] = pct
+            if final or time.monotonic() - getattr(self, "_cfg_saved", 0) > 1.0:
+                save_config(self.cfg)
+                self._cfg_saved = time.monotonic()
+        persist_setting(key, pct, self.backlights)
 
     def set_perf(self, i):
         i = max(0, min(len(PERF_MODES) - 1, i))
@@ -3014,7 +3277,7 @@ class ControlCenter:
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
         elif kind == "top":
-            self.top_sel = max(-1, min(2, self.top_sel + dx))
+            self.top_sel = max(0, min(2, self.top_sel + dx))
 
     def confirm(self):
         if self.kbd:
@@ -3349,15 +3612,7 @@ class ControlCenter:
             self.hits.append((x - 4, 66, 62, 62, ("top", i)))
             x -= 14
 
-        # Power-Kreis ganz rechts in der Kopfzeile
-        x -= 54
-        pcx = x + 27
-        P.circle(pcx, 97, 27, T["pill"])
-        P.power_icon(pcx, 97, 14, T["text"], width=3)
-        if top_focus and self.top_sel == -1:
-            self._focus_ring(P, x, 70, 54, 54, 27)
-        self.hits.append((x - 4, 66, 62, 62, ("power_btn", None)))
-        x -= 14
+        # (Power-Kreis entfernt 22.10.2026 – Power-Menü über die Ein/Aus-Taste; Platz für das spätere Einstellungsmenü)
 
         # Titel mit Logo mittig zwischen Datum und rechter Gruppe (passt sich der Sprache an)
         room_l, room_r = left_end + 24, x - 10
@@ -3630,12 +3885,12 @@ class ControlCenter:
         """Seite 3: RetroAchievements des laufenden Spiels (Daten vom ROCKNIX-Proxy)."""
         T, A = self.T, self.accent
         g = self.game or {}
-        st = self.ra if g.get("emu") == "RetroArch" else None
+        st = self.ra if g.get("emu") in ("RetroArch", "DSperate") else None
         if not g:
             P.text("Kein Spiel läuft", 40, 630, 420, T["text"], bold=True, align="c")
             P.text("Erfolge erscheinen hier, sobald ein Spiel läuft.", 22, 630, 470, T["muted"], align="c")
             return
-        if g.get("emu") != "RetroArch":
+        if g.get("emu") not in ("RetroArch", "DSperate"):
             P.text("RetroAchievements", 40, 630, 400, T["text"], bold=True, align="c", raw=True)
             P.text(tr("Für %s im Menü des Emulators.") % g.get("emu", ""), 22, 630, 450, T["muted"], align="c", raw=True)
             return
@@ -3784,6 +4039,49 @@ class ControlCenter:
             P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
             P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, "ffffff", bold=True, align="r", raw=True)
             return
+        if t.get("kind") == "battery":          # Warnung bei niedrigem Akku (20 / 10 / 5 %)
+            lvl = t.get("level") or 0
+            col = "f5be1e" if lvl > 10 else "e5383b"
+            head = tr("Akku fast leer") if lvl <= 5 else tr("Akku schwach")
+            sub = tr("Jetzt laden – sonst geht das Gerät gleich aus") if lvl <= 5 else tr("Bitte bald laden")
+            hs, ss = 28, 18
+            while hs > 18 and max(P.width(head + "  %d %%" % lvl, hs, bold=True, raw=True),
+                                  P.width(sub, ss, raw=True)) + 170 > 1220:   # lange Übersetzungen: kleiner
+                hs, ss = hs - 2, max(14, ss - 1)
+            bw = int(max(P.width(head + "  %d %%" % lvl, hs, bold=True, raw=True), P.width(sub, ss, raw=True))) + 170
+            x = 630 - bw // 2
+            P.rrect(x, 18, bw, 120, 40, "1c1c1c", 0.92)
+            # Batterie-Symbol
+            P.rrect(x + 34, 54, 66, 40, 9, "ffffff")
+            P.rrect(x + 39, 59, 56, 30, 6, "1c1c1c")
+            P.rrect(x + 100, 66, 8, 16, 3, "ffffff")
+            P.rrect(x + 43, 63, max(6, 48 * lvl / 100), 22, 4, col)
+            P.text("%s  %d %%" % (head, lvl), hs, x + 130, 70, col, bold=True, raw=True)
+            P.text(sub, ss, x + 130, 104, "bdbdbd", raw=True)
+            return
+        if t.get("kind") == "charging":         # Ladegerät angeschlossen
+            lvl = t.get("level") or 0
+            text = "%s  %d %%" % (tr("Wird geladen"), lvl)
+            fs = 26
+            while fs > 16 and P.width(text, fs, bold=True, raw=True) + 150 > 1220:
+                fs -= 2
+            bw = int(P.width(text, fs, bold=True, raw=True)) + 150
+            x = 630 - bw // 2
+            P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
+            P.game_icon("bolt", x + 62, 78, "2db67a")
+            P.text(text, fs, x + 110, 88, "ffffff", bold=True, raw=True)
+            return
+        if t.get("kind") == "info":             # kurze Rückmeldung, z. B. „Vorspulen umgeschaltet“
+            text = tr(t.get("text") or "")
+            fs = 26
+            while fs > 16 and P.width(text, fs, bold=True, raw=True) + 150 > 1220:
+                fs -= 2
+            bw = int(P.width(text, fs, bold=True, raw=True)) + 150
+            x = 630 - bw // 2
+            P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
+            P.game_icon(t.get("icon") or "ff", x + 62, 78, A, scale=0.75)
+            P.text(text, fs, x + 110, 88, "ffffff", bold=True, raw=True)
+            return
         if t.get("kind") == "cheevo":
             x, bw = 230, 800
             P.rrect(x, 14, bw, 128, 34, "1c1c1c", 0.92)
@@ -3796,7 +4094,12 @@ class ControlCenter:
             while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
                 title = title[:-2]
             P.text(title, 28, x + 140, 96, "ffffff", bold=True, raw=True)
-            P.text(t.get("sub") or "", 17, x + 140, 126, "bdbdbd", raw=True)
+            sub = t.get("sub") or ""
+            while P.width(sub, 17, raw=True) > bw - 170 and len(sub) > 4:   # Beschreibung bleibt im Kasten
+                sub = sub[:-2]
+            if sub != (t.get("sub") or ""):
+                sub = sub.rstrip() + "…"
+            P.text(sub, 17, x + 140, 126, "bdbdbd", raw=True)
 
     def _session(self):
         """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
@@ -4506,6 +4809,9 @@ class Overlay:
         if old:
             marshal(old, 0, None, destroy=True)
         self._mm = mm
+        if TIMING.get("open"):                    # Zeitmessung: Tastendruck → erstes fertiges Bild
+            v, t0 = TIMING.pop("open")
+            log("Zeit: %s offen nach %d ms" % (v, (time.monotonic() - t0) * 1000))
         wl.wl_display_flush(self.display)
 
     def hide(self, quiet=False):
@@ -4806,13 +5112,74 @@ def mako_hide_osd():
     threading.Thread(target=work, daemon=True).start()
 
 
+INFO_TOAST = []   # wird in main() auf cc.toasts gesetzt
+
+
+WAKE_R, WAKE_W = os.pipe()          # weckt die Hauptschleife, wenn eine Meldung ansteht
+os.set_blocking(WAKE_R, False)
+SPEED = {"pid": None, "mode": "normal"}   # nur mitgezählt – je Spiel neu
+
+
+# DSperate blendet Vorspulen, Speichern und Laden selbst ein (nicht abschaltbar, Stand 22.10.2026) –
+# dort keine eigene Meldung, sonst doppelt. Erfolgsmeldungen kommen trotzdem vom CC.
+OWN_OSD_EMUS = {"DSperate"}
+
+
+def speed_event(kind, game):
+    """Vorspulen/Zeitlupe umgeschaltet: Zustand mitzählen und anzeigen (Fast Forward / Slow Motion / Normal)."""
+    pid = (game or {}).get("pid")
+    if SPEED["pid"] != pid:
+        SPEED.update(pid=pid, mode="normal")
+    SPEED["mode"] = "normal" if SPEED["mode"] == kind else kind
+    if (game or {}).get("emu") in OWN_OSD_EMUS:
+        return
+    text, icon = {"ff": ("Fast Forward", "ff"), "slow": ("Slow Motion", "slow")}.get(SPEED["mode"], ("Normal Speed", "play"))
+    info_toast(text, icon)
+
+
+RA_SLOT = {"pid": None, "slot": 0}
+
+
+def ra_slot_step(game, d):
+    """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: state_slot aus retroarch.cfg."""
+    if RA_SLOT["pid"] != game.get("pid"):
+        m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
+        RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
+    RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")
+
+
+def info_toast(text, icon="ff"):
+    """Kurze Meldung oben über dem Spiel (Rückmeldung zu Kacheln und Kürzeln)."""
+    if INFO_TOAST:
+        cc = INFO_TOAST[0]
+        new = {"kind": "info", "text": text, "icon": icon}
+        if cc.toast_now and cc.toast_now.get("kind") == "info":
+            cc.toast_now = new                       # direkt ersetzen (z. B. Fast Forward → Normal Speed)
+            cc.toast_until = time.monotonic() + 1.5
+            cc.toast_dirty = True
+        else:
+            cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "info"] + [new]
+        log("Meldung:", text)
+        try:
+            os.write(WAKE_W, b"x")
+        except OSError:
+            pass
+
+
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
     mako_hide_osd()
+    vkey_open()
     cc = ControlCenter()
+    INFO_TOAST[:] = [cc]
     state = {"dirty": False}
 
+    gs_swipe = {"from": None, "last": (0, 0)}
+
     def on_touch(kind, x, y):
+        if kind in ("down", "move"):
+            gs_swipe["last"] = (x, y)
         if ui.view == "loading":
             return
         if ui.view == "tour":
@@ -4825,8 +5192,21 @@ def main():
                     state["dirty"] = True
             return
         if ui.view == "switcher":
+            if kind == "down" and cc.pen:
+                gs_swipe["from"] = cc.pen.to_design(x, y)
             if kind == "up" and cc.pen:
-                dx, dy = cc.pen.to_design(x, y)
+                dx, dy = cc.pen.to_design(*gs_swipe["last"])   # „up“ liefert keine Position
+                start, gs_swipe["from"] = gs_swipe["from"], None
+                if start and abs(dx - start[0]) > 80 and abs(dx - start[0]) > abs(dy - start[1]):
+                    # Wischen: nach links = nächste Kachel, nach rechts = vorige
+                    sw = cc.switcher
+                    if sw.items:
+                        new = max(0, min(len(sw.items) - 1, sw.sel + (1 if dx < start[0] else -1)))
+                        if new != sw.sel:
+                            sw.sel = new
+                            haptic("tap")
+                    state["dirty"] = True
+                    return
                 hit = next((h[4] for h in reversed(cc.hits)
                             if h[0] <= dx <= h[0] + h[2] and h[1] <= dy <= h[1] + h[3]), None)
                 if hit and hit[0] == "gs":
@@ -4887,6 +5267,8 @@ def main():
                     grab(fd, on)
             grabbed = on
 
+    pad_scan = {"done": False}       # beim ersten Durchlauf (Start) nichts melden
+
     def scan_pads():
         """Externe Controller erkennen (auch später verbundene) bzw. entfernen."""
         known = {v["path"]: fd for fd, v in pads.items()}
@@ -4900,11 +5282,15 @@ def main():
                 continue
             pads[fd] = {"name": name, "path": path, "ext": True, "range": abs_range(fd, ABS_X)}
             log("Controller verbunden:", name, "->", path)
+            if pad_scan["done"]:
+                info_toast("%s: %s" % (tr("Verbunden"), name), "pad")
             if grabbed:
                 grab(fd, True)
         for path, fd in known.items():
             if path not in found and pads[fd]["ext"]:
+                info_toast("%s: %s" % (tr("Getrennt"), pads[fd]["name"]), "pad")
                 drop_pad(fd)
+        pad_scan["done"] = True
 
     def drop_pad(fd):
         info = pads.pop(fd, None)
@@ -4918,6 +5304,8 @@ def main():
     pauser = Pauser()
 
     def toggle(view):
+        if ui.view != view:
+            TIMING["open"] = (view, time.monotonic())
         if ui.pending_view and not ui.view:
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
@@ -4959,6 +5347,9 @@ def main():
                             sw.ready = True
                         threading.Thread(target=work, daemon=True).start()
                         return
+                if view == "cc":
+                    # im Spiel zuerst die Seite „Spiel“, in ES die Schnelleinstellungen
+                    cc.page = 1 if (cc.game or {}).get("emu") in GAME_ACTIONS else 0
                 pauser.pause(cc.game)
             if ui.view == "tour" and view != "tour":
                 ui.hide_top()
@@ -5021,6 +5412,7 @@ def main():
         sw.launch(item, fresh, current=cur)
 
     stick = {"dir": 0, "next": 0.0}
+    rep = {"ev": None, "next": 0.0}   # gehaltene Richtungstaste (Wiederholung)
 
     def handle_stick(value, rng):
         """Linker Stick links/rechts: Cursor in der Tastatur bewegen (mit Wiederholung)."""
@@ -5034,6 +5426,27 @@ def main():
                 stick["next"] = time.monotonic() + 0.4
                 state["dirty"] = True
 
+    snav = {ABS_X: 0, ABS_Y: 0}
+
+    def stick_nav(code, value, pad):
+        """Linker Stick als Steuerkreuz (nur bei offenem Overlay; im Spiel gehört der Stick dem Spiel).
+        Schwelle 60 %, zurück erst unter 40 % – Stick-Drift löst nichts aus."""
+        lo, hi = pad["range"]
+        n = (value - (lo + hi) / 2) / ((hi - lo) / 2 or 1)
+        cur = snav[code]
+        d = cur if cur and n * cur > 0.4 else (1 if n > 0.6 else -1 if n < -0.6 else 0)
+        if d == cur:
+            return
+        snav[code] = d
+        hat = ABS_HAT0X if code == ABS_X else ABS_HAT0Y
+        if d:
+            handle_joy(EV_ABS, hat, d, pad)
+            rep["ev"] = (EV_ABS, hat, d, pad)          # halten = weiterschalten wie beim Steuerkreuz
+            rep["next"] = time.monotonic() + 0.4
+            state["dirty"] = True
+        elif rep["ev"] and rep["ev"][1] == hat:
+            rep["ev"] = None
+
     home_down = {"t": None, "fired": False, "pending": None}
 
     def home_short():
@@ -5043,11 +5456,16 @@ def main():
             return          # in ES: kurz drücken tut nichts (Gameswitcher nur durch 2 s Halten)
         log("Home kurz: speichern und zurück zu ES –", game["name"])
         def work():
+            t0 = time.monotonic()
             try:
                 cc.switcher.capture(game)
             except Exception:
                 log("Home kurz: Speichern fehlgeschlagen:\n" + traceback.format_exc().rstrip())
+            t1 = time.monotonic()
             quit_game(game)
+            while os.path.exists("/proc/%d" % game["pid"]) and time.monotonic() - t1 < 20:
+                time.sleep(0.05)
+            log("Zeit: Home kurz – speichern %d ms, beenden %d ms" % ((t1 - t0) * 1000, (time.monotonic() - t1) * 1000))
         threading.Thread(target=work, daemon=True).start()
 
     def game_act(key):
@@ -5069,9 +5487,11 @@ def main():
         if emu == "DraStic" and key in ("menu", "ff"):
             toggle("cc")
             def later():
-                time.sleep(0.3)
+                time.sleep(0.5)                      # DraStic läuft wieder und hat den Fokus zurück
                 how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
                 log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
+                if how and key == "ff":
+                    speed_event("ff", g)
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key in ("menu", "ff"):
@@ -5081,6 +5501,8 @@ def main():
                 # „pause“ öffnet bei DSperate das Menü; Vorspulen über das Umschalt-Kürzel
                 ok = dsperate_press("pause" if key == "menu" else "fast_forward_toggle")
                 log("Seite Spiel: DSperate", key, "ok" if ok else "nicht belegt")
+                if ok and key == "ff":
+                    speed_event("ff", g)
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
@@ -5088,8 +5510,10 @@ def main():
             cmd = {"ff": "FAST_FORWARD", "slow": "SLOWMOTION", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
             def later():
                 time.sleep(0.3)
-                ra_command(cmd)
+                ok = ra_command(cmd) is not None
                 log("Seite Spiel:", cmd)
+                if ok and key in ("ff", "slow"):
+                    speed_event(key, g)
             threading.Thread(target=later, daemon=True).start()
             return
         if key == "setslot":
@@ -5107,11 +5531,14 @@ def main():
                 os.makedirs("/storage/roms/screenshots", exist_ok=True)
                 toggle("cc")
                 threading.Timer(0.4, ra_command, args=(cmd,)).start()
+                threading.Timer(0.6, info_toast, args=("Screenshot gespeichert", "shot")).start()
                 log("Seite Spiel:", cmd)
                 return
-            ra_command(cmd)
+            ok = ra_command(cmd) is not None
             log("Seite Spiel:", cmd, "Slot", cc.slot)
             toggle("cc")                     # erledigt → zurück ins Spiel
+            if ok:
+                info_toast("Gespeichert" if key == "save" else "Geladen", "save" if key == "save" else "load")
             return
 
         toggle("cc")                         # schließen: Pause und Grab aufheben, dann auslösen
@@ -5197,6 +5624,10 @@ def main():
                             os.remove(fb)                        # war vorher leer
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 log("Seite Spiel:", emu, key, "→", msg)
+                if msg in ("Gespeichert", "Geladen") and emu not in OWN_OSD_EMUS:
+                    info_toast(msg, "save" if key == "save" else "load")
+                elif msg == "Screenshot gespeichert":
+                    info_toast(msg, "shot")
             except Exception:
                 log("Seite Spiel: Fehler\n" + traceback.format_exc().rstrip())
             finish(msg)
@@ -5212,6 +5643,60 @@ def main():
         else:
             cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "volume"] + [t]
 
+    def ra_start_toast(st):
+        """Beim Spielstart: Stand der Erfolge bzw. Hinweis, dass die ROM nicht unterstützt wird."""
+        if not st or st.get("login_status") != "ok":
+            return
+        achs = [a for a in st.get("achievements") or [] if a.get("id") != 101000001]
+        if not (st.get("game") or {}).get("id") or not achs:
+            info_toast("Keine Erfolge für dieses Spiel", "trophy")
+        else:
+            done = sum(1 for a in achs if str(a.get("id")) in (st.get("unlocks") or {}))
+            info_toast("%d / %d %s" % (done, len(achs), tr("Erfolge")), "trophy")
+
+    def dsperate_cheevos(g, known):
+        """DSperate: Zustand einmal je Spiel holen, dann exec.log auf neue Erfolge mitlesen."""
+        d = known.get("dsp")
+        if not d or d["rom"] != g.get("rom"):
+            try:
+                pos = os.path.getsize(EXEC_LOG)
+            except OSError:
+                pos = 0
+            d = known["dsp"] = {"rom": g.get("rom"), "pos": pos, "next": 0}
+            cc.ra = None
+        if cc.ra is None and time.monotonic() >= d["next"]:
+            try:
+                cc.ra = dsp_ra_state(g.get("rom") or "")
+                log("RetroAchievements (DSperate):", (cc.ra.get("game") or {}).get("title") or "kein Spiel erkannt")
+                ra_start_toast(cc.ra)
+            except Exception as exc:
+                log("RetroAchievements (DSperate):", exc)
+                d["next"] = time.monotonic() + 30          # später erneut versuchen
+            state["dirty"] = True
+        try:
+            with open(EXEC_LOG, "r", errors="replace") as f:
+                f.seek(d["pos"])
+                lines = f.readlines()
+                d["pos"] = f.tell()
+        except OSError:
+            return
+        for line in lines:
+            m = re.match(r"cheevos: (.+?) -- (.+)$", line.strip())
+            if not m or m.group(2).startswith(("achievements active", "RetroAchievements does not")) \
+                    or m.group(1).startswith(("Signed in", "No achievements")):
+                continue
+            title, desc = m.group(1), m.group(2)
+            st = cc.ra or {}
+            a = next((x for x in st.get("achievements") or [] if x.get("title") == title), {})
+            if a and st.get("unlocks") is not None:
+                st["unlocks"][str(a.get("id"))] = "jetzt"
+            total = len(st.get("achievements") or [])
+            sub = "%d %s  ·  %d / %d" % (a.get("points") or 0, tr("Punkte"), len(st.get("unlocks") or {}), total) \
+                if a else desc
+            cc.toasts.append({"kind": "cheevo", "badge": a.get("badge"), "title": title, "sub": sub})
+            log("Erfolg freigeschaltet (DSperate):", title)
+            state["dirty"] = True
+
     def cheevo_watch():
         """Fragt während RetroArch-Spielen den ROCKNIX-Proxy ab und meldet neue Erfolge."""
         known = {"game": None, "ids": set()}
@@ -5221,8 +5706,13 @@ def main():
                 cc.toasts.append({"kind": "cheevo", "badge": None, "title": "Test: Erfolg freigeschaltet",
                                   "sub": "10 %s  ·  1 / 1" % tr("Punkte")})
             g = cc.game
+            if g and g.get("emu") == "DSperate":
+                dsperate_cheevos(g, known)
+                time.sleep(1.5)
+                continue
             if not (g and g.get("emu") == "RetroArch"):
                 known["game"], cc.ra = None, None
+                known.pop("dsp", None)
                 time.sleep(3)
                 continue
             st = ra_state()
@@ -5234,6 +5724,7 @@ def main():
                 ids = set((st.get("unlocks") or {}).keys())
                 if gid != known["game"]:
                     known["game"], known["ids"] = gid, ids        # Ausgangsstand: nichts melden
+                    ra_start_toast(st)
                 else:
                     new = ids - known["ids"]
                     known["ids"] = ids
@@ -5249,12 +5740,148 @@ def main():
 
     threading.Thread(target=cheevo_watch, daemon=True).start()
 
+    def charger_charging():
+        """Ladegerät eingesteckt (RG DS Plus: power_supply/charger, online=1)."""
+        return any((rd(d + "/online") or "").strip() == "1" for d in glob.glob("/sys/class/power_supply/*")
+                   if rd(d + "/type") in ("USB", "Mains"))
+
+    def battery_watch():
+        """Warnt bei 20, 10 und 5 % Akku (nur beim Entladen) mit einer Meldung oben."""
+        warned = set()
+        was_plugged = {"v": True}                      # beim Start nicht melden
+        full_said = {"v": True}
+        while True:
+            if os.path.exists("/tmp/rds-battery-test"):     # Test: echo 5 > /tmp/rds-battery-test
+                lvl = int((rd("/tmp/rds-battery-test") or "20").strip() or 20)
+                os.remove("/tmp/rds-battery-test")
+                cc.toasts.append({"kind": "battery", "level": lvl})
+                if lvl <= 10:
+                    haptic("open")
+                    threading.Timer(0.25, haptic, args=("open",)).start()
+            try:
+                lvl, charging = battery()
+                status = ""
+                for d in glob.glob("/sys/class/power_supply/*"):
+                    if rd(d + "/type") == "Battery":
+                        status = rd(d + "/status") or ""
+                plugged = bool(charging or status in ("Full", "Charging") or charger_charging())
+                if plugged and not was_plugged.get("v", True) and lvl is not None:
+                    cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "charging"] + [{"kind": "charging", "level": lvl}]
+                    log("Wird geladen:", lvl, "%")
+                    try:
+                        os.write(WAKE_W, b"x")
+                    except OSError:
+                        pass
+                if plugged and lvl is not None and (lvl >= 100 or status == "Full") and not full_said["v"]:
+                    full_said["v"] = True
+                    info_toast("Akku voll", "battery")
+                if not plugged:
+                    full_said["v"] = False
+                was_plugged["v"] = plugged
+                if lvl is None or charging or status in ("Full", "Charging"):
+                    warned.clear()                      # beim Laden zurücksetzen
+                else:
+                    warned -= {s for s in warned if lvl > s + 2}   # wieder über der Schwelle (z. B. nach Laden)
+                    for step in (5, 10, 20):
+                        if lvl <= step and step not in warned:
+                            warned |= {s for s in (5, 10, 20) if s >= step}   # höhere Stufen nicht nachholen
+                            cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "battery"] + \
+                                [{"kind": "battery", "level": lvl}]
+                            log("Akku-Warnung:", lvl, "%")
+                            if step <= 10:
+                                haptic("open")
+                                threading.Timer(0.25, haptic, args=("open",)).start()
+                            break
+            except Exception as exc:
+                log("Akku-Warnung:", exc)
+            for _ in range(30):                          # alle 30 s prüfen; Testdatei und Ladegerät jede Sekunde
+                if os.path.exists("/tmp/rds-battery-test"):
+                    break
+                online = any((rd(d + "/online") or "").strip() == "1" for d in glob.glob("/sys/class/power_supply/*")
+                             if rd(d + "/type") in ("USB", "Mains"))
+                if online and not was_plugged.get("v", True):
+                    break                                # Ladegerät eingesteckt → sofort melden
+                if not online and was_plugged.get("v") and not charger_charging():
+                    was_plugged["v"] = False             # abgezogen
+                time.sleep(1)
+
+    threading.Thread(target=battery_watch, daemon=True).start()
+
+    def link_watch():
+        """WLAN getrennt/verbunden und Kopfhörer ein/aus (Zustandswechsel, nicht beim Start)."""
+        last = {"wifi": None, "hp": None}
+        hp_dev = next((p for p in glob.glob("/sys/class/input/event*/device/name")
+                       if "headphone" in (rd(p) or "").lower()), None)
+        hp_fd = None
+        if hp_dev:
+            try:
+                hp_fd = os.open("/dev/input/" + hp_dev.split("/")[4], os.O_RDONLY)
+                buf = bytearray(8)
+                fcntl.ioctl(hp_fd, 0x8008451b, buf)            # EVIOCGSW: Schalter-Zustände
+                last["hp"] = bool(buf[0] & 0x04)               # SW_HEADPHONE_INSERT = 2
+            except OSError:
+                hp_fd = None
+        while True:
+            try:
+                st = (rd("/sys/class/net/wlan0/operstate") or "").strip()
+                up = st == "up"
+                if last["wifi"] is not None and up != last["wifi"]:
+                    info_toast("WLAN verbunden" if up else "WLAN getrennt", "wifi")
+                last["wifi"] = up
+                if hp_fd is not None:
+                    buf = bytearray(8)
+                    fcntl.ioctl(hp_fd, 0x8008451b, buf)
+                    hp = bool(buf[0] & 0x04)
+                    if hp != last["hp"]:
+                        threading.Timer(0.3, lambda h=hp: info_toast(
+                            "%s · %d %%" % (tr("Kopfhörer") if h else tr("Lautsprecher"), volume_get() or 0),
+                            "phones")).start()
+                    last["hp"] = hp
+                # DSperate schreibt „toasts = true“ erst später (z. B. wenn Erfolge eingeschaltet werden):
+                # eigene Erfolgsmeldung dann aus – oben meldet einheitlich das Kontrollcenter
+                last["n"] = last.get("n", 0) + 1
+                if last["n"] % 20 == 0:
+                    ini = "/storage/.config/dsperate/dsperate.ini"
+                    txt = rd(ini) or ""
+                    if re.search(r"(?m)^toasts\s*=\s*true", txt) and not run(["pidof", "dsperate"]):
+                        wr(ini, re.sub(r"(?m)^toasts\s*=\s*true", "toasts = false", txt))
+                        log("DSperate: eigene Erfolgsmeldung aus (zeigt das Kontrollcenter)")
+            except Exception as exc:
+                log("Verbindungswächter:", exc)
+            time.sleep(1.5)
+
+    threading.Thread(target=link_watch, daemon=True).start()
+
     def do_quit():
         game = cc.game
+        t0 = time.monotonic()
         if ui.view:
             toggle(ui.view)   # schließt CC und hebt die Pause auf
         quit_game(game)
         cc.game = None
+        if game:
+            def measure(pid=game["pid"]):
+                while os.path.exists("/proc/%d" % pid) and time.monotonic() - t0 < 20:
+                    time.sleep(0.05)
+                log("Zeit: %s beendet nach %d ms" % (game["emu"], (time.monotonic() - t0) * 1000))
+            threading.Thread(target=measure, daemon=True).start()
+
+    def combo_feedback(code):
+        """Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)."""
+        if code in (546, 547) and not ui.view and time.monotonic() > INJECTING[0]:     # Anbernic + ◀ / ▶
+            g1 = running_game()
+            if g1 and g1["emu"] == "RetroArch":
+                ra_slot_step(g1, -1 if code == 546 else 1)
+            return
+        if code not in (BTN_TR, 313, 312) or ui.view or time.monotonic() <= INJECTING[0]:
+            return
+        g0 = running_game()
+        log("Kürzel beobachtet:", code, (g0 or {}).get("emu"))
+        if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
+            if code == BTN_TR:
+                speed_event("ff", g0)
+            elif g0["emu"] not in OWN_OSD_EMUS:
+                info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
 
     def handle_joy(typ, code, value, pad):
         nonlocal mode_down, combo
@@ -5264,6 +5891,8 @@ def main():
         if typ == EV_ABS and code not in (ABS_HAT0X, ABS_HAT0Y):
             if code == ABS_X:
                 handle_stick(value, pad["range"])
+            if code in (ABS_X, ABS_Y) and ui.view and not cc.kbd and not mode_down:
+                stick_nav(code, value, pad)   # linker Stick navigiert wie das Steuerkreuz
             return   # Sticks/Trigger nie als Tastendruck werten (Drift stört sonst die Home-Taste)   # Sticks nie als Tastendruck werten (sonst stört Stick-Drift die Anbernic-Taste)
         if typ == EV_KEY and code == BTN_MODE:
             if value == 1:
@@ -5285,6 +5914,19 @@ def main():
             return
         if mode_down:
             combo = True  # Teil einer Tastenkombination
+            if typ == EV_KEY and value == 1:
+                combo_feedback(code)
+            elif typ == EV_ABS and code == ABS_HAT0X and value:
+                combo_feedback(546 if value < 0 else 547)
+            # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
+            if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
+                g = running_game()
+                if g and g["emu"] == "DraStic":
+                    what = "FAST_FORWARD" if code == BTN_TR else "MENU"
+                    def run(what=what):
+                        how = drastic_press(what)
+                        log("Kürzel DraStic:", what, "über", how or "nichts")
+                    threading.Thread(target=run, daemon=True).start()
             return
         if not ui.view:
             return
@@ -5444,15 +6086,21 @@ def main():
                             cc.screen_on()
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
-            fds = [fd for fd in [home, pwr, tfd, vol] + list(pads) if fd is not None]
+            fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
-            busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
+            busy = rep["ev"] or stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
                 or (home_down["t"] is not None and not home_down["fired"]) \
                 or home_down["pending"] is not None \
                 or cc.gbusy or (cc.gmsg is not None and time.monotonic() - cc.gmsg[1] < 4.5) \
                 or cc.toast_now is not None or bool(cc.toasts)
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
+                    if fd == WAKE_R:
+                        try:
+                            os.read(WAKE_R, 64)
+                        except OSError:
+                            pass
+                        continue
                     if fd == tfd:
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                             t = touch.feed(*ev)
@@ -5524,7 +6172,21 @@ def main():
                                 continue
                             if wake["swallow"] and value == 1 and typ == EV_KEY:
                                 wake["combo"] = True   # zweite Taste während Anbernic gehalten
+                                combo_feedback(code)   # unterer Screen dunkel (RetroArch): Kürzel trotzdem melden
                                 continue
+                            if wake["swallow"] and typ == EV_ABS and code == ABS_HAT0X and value:
+                                wake["combo"] = True
+                                combo_feedback(546 if value < 0 else 547)
+                                continue
+                            is_dir = (typ == EV_ABS and code in (ABS_HAT0X, ABS_HAT0Y)) or (typ == EV_KEY and code in DPAD)
+                            if is_dir:
+                                if (value != 0 if typ == EV_ABS else value == 1) and ui.view \
+                                        and ui.view not in ("tour", "loading") and not mode_down:
+                                    # gedrückt halten: nach 0,4 s automatisch weiterschalten
+                                    rep["ev"] = (typ, code, value, pads[fd])
+                                    rep["next"] = time.monotonic() + 0.4
+                                elif rep["ev"] and rep["ev"][1] == code:
+                                    rep["ev"] = None
                             handle_joy(typ, code, value, pads[fd])
                 except Exception:
                     # ein Fehler darf das Kontrollcenter nicht beenden
@@ -5534,6 +6196,15 @@ def main():
                 # Bildschirm war kurz weg (z. B. beim Hochfahren aus- und eingeschaltet): wieder anzeigen
                 view, ui.pending_view = ui.pending_view, None
                 ui.show(view)
+            if rep["ev"] and (not ui.view or ui.view in ("tour", "loading")):
+                rep["ev"] = None
+            if rep["ev"] and time.monotonic() >= rep["next"]:
+                rep["next"] = time.monotonic() + 0.12
+                try:
+                    handle_joy(*rep["ev"])
+                except Exception:
+                    rep["ev"] = None
+                state["dirty"] = True
             if stick["dir"] and cc.kbd and ui.view and time.monotonic() >= stick["next"]:
                 cc.kbd.cursor(stick["dir"])
                 stick["next"] = time.monotonic() + 0.12
@@ -5561,7 +6232,7 @@ def main():
                 ui.redraw_top("toast")
             if not cc.toast_now and cc.toasts and ui.top is None:
                 cc.toast_now = cc.toasts.pop(0)
-                cc.toast_until = now + (1.6 if cc.toast_now["kind"] == "volume" else 1.5)
+                cc.toast_until = now + {"volume": 1.6, "battery": 4.0}.get(cc.toast_now["kind"], 1.5)
                 ui.show_top(cc.paint_toast, slot="toast", height=TOAST_H)
                 if cc.toast_now["kind"] == "cheevo":       # Erfolg: doppelter Impuls („ta-dam“)
                     haptic("open")

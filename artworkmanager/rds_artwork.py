@@ -75,6 +75,7 @@ GAL_Y = 120                                 # Bildleiste
 # Kachelform je Artwork-Stil: (Breite, Höhe) – Hülle hochkant, Cartridge quadratisch, Hero breit
 TILE_SIZE = {"boxart": (330, 495), "cartridge": (370, 370), "image": (385, 125)}
 TILES = 3                                   # immer drei Kacheln, mittig
+PAGE = 12                                   # Bilder pro Seite (L2/R2), teilbar durch 3 und 2
 TILE_GAP = 22
 
 
@@ -482,6 +483,13 @@ class App:
         self.system = None
         self.games = []                               # [(rom, name, status)]
         self.backed_up = set()
+        self.bq = []                                  # Batch-Warteliste: Spiele, die im Hintergrund gespeichert werden
+        self.bq_lock = threading.Condition()
+        self.bq_fail = []                             # Titel, deren Speichern fehlschlug
+        self.bq_active = 0
+        self.app_lock = threading.RLock()
+        self.flush = False                            # Warteschlange jetzt speichern
+        self.after_flush = None
         self.fbneo = None
         self.nointro = {}
         # geöffnetes Spiel
@@ -572,6 +580,9 @@ class App:
 
     def open_system(self, i, batch=False, then=None):
         s = self.systems[i]
+        if self.bq_pending():
+            self.say(f"Speichere noch {self.bq_pending()} Spiele – gleich geht's weiter")
+            return
 
         def go():
             self.app.open_system(s["key"], s["extensions"])
@@ -591,7 +602,15 @@ class App:
                 self.games.append((base, name, status.get(base, 0)))
             self.games.sort(key=lambda g: g[1].casefold())
             self.view, self.sel, self.scroll = "games", 0, 0
-        self.work(f"{s['name']} wird geladen …", go, then=self.start_batch if batch else then)
+
+        def after():
+            if batch:
+                self.start_batch()
+            elif then:
+                then()
+            if not self.batch and not then:   # nur beim normalen Öffnen der Spieleliste
+                self.retry_offer()
+        self.work(f"{s['name']} wird geladen …", go, then=after)
 
     # -- Batch: alle Spiele mit fehlenden Artworks nacheinander --
     def start_batch(self):
@@ -621,13 +640,27 @@ class App:
         else:
             self.batch_end()
 
+    def batch_cancel(self):
+        """B im Beenden-Dialog: Batch abbrechen, Warteliste verwerfen (nichts wird gespeichert)."""
+        with self.bq_lock:
+            dropped, self.bq[:] = list(self.bq), []
+        if dropped:
+            self.retry_save([r for r in self.retry_load()
+                             if not any(r["system"] == j["system"] and r["rom"] == j["rom"] for j in dropped)])
+        self.batch = None
+        self.say(f"Batch abgebrochen · {len(dropped)} Spiele verworfen" if dropped else "Batch abgebrochen")
+        self.leave_game("systems")
+
     def batch_end(self):
         b, self.batch = self.batch, None
         if not b:
             return
         rest = len(b["queue"]) - b["pos"]
-        self.say(f"Batch beendet · {b['saved']} gespeichert · {b['skipped']} übersprungen"
-                 + (f" · {rest} offen" if rest > 0 else ""))
+        wait = self.bq_pending()
+        if wait:
+            self.flush = True
+        self.say(f"Batch beendet · {b['saved']} vorgemerkt · {b['skipped']} übersprungen"
+                 + (f" · {rest} offen" if rest > 0 else "") + (f" · speichere noch {wait} …" if wait else ""))
         self.leave_game("systems")
 
     def leave_game(self, where=None):
@@ -695,7 +728,7 @@ class App:
 
         def go():
             self.current = {}
-            for kind, info in (self.app.existing_artwork(rom) or {}).items():
+            for kind, info in self.existing(rom).items():
                 if info.get("data"):
                     path = PREVIEW_DIR / "current" / f"{kind}.png"
                     try:
@@ -746,7 +779,18 @@ class App:
                 self.say("Keine Artworks gefunden – mit Y anderes Spiel suchen")
             self.kind = next((n for n, (k, _) in enumerate(KINDS) if self.cands.get(k)), 0)
             self.want_previews()
-        self.work("Artworks werden gesucht …", go, then=then)
+            # SteamGridDB ohne eindeutigen Treffer (z. B. mehrere „Resident Evil“): Trefferliste zur Auswahl
+            ask[0] = bool(api and not result.get("steamgriddb") and not forced and not self.batch and not then)
+            if ask[0]:
+                log("SteamGridDB nicht eindeutig – Trefferliste zur Auswahl")
+        ask = [False]
+
+        def after():
+            if ask[0]:
+                self.run_search(self.query, ambiguous=True)
+            elif then:
+                then()
+        self.work("Artworks werden gesucht …", go, then=after)
 
     FILTERS = ["alle", "fehlende", "keine Artworks"]
 
@@ -796,12 +840,15 @@ class App:
         return items[self.idx[kind]] if items else None
 
     def want_previews(self):
-        """Vorschaubilder der sichtbaren Kacheln im Hintergrund laden."""
+        """Vorschaubilder im Hintergrund laden: erst die sichtbaren, dann den Rest der Seite (12)."""
         kind = self.kind_key()
         items = self.cands.get(kind) or []
         first = self.gscroll.get(kind, 0)
         tiles = tile_geom(kind)[3]
         for j in range(max(0, first - 1), min(len(items), first + tiles + 2)):
+            self._load_preview(items[j])
+        start = self.idx.get(kind, 0) // PAGE * PAGE
+        for j in range(start, min(len(items), start + PAGE)):
             self._load_preview(items[j])
 
     def _load_preview(self, item):
@@ -861,7 +908,7 @@ class App:
         elif i >= first + tile_geom(kind)[3]:
             first = i - tile_geom(kind)[3] + 1
         self.gscroll[kind] = first
-        self.want_previews()
+        self.preview_at = time.monotonic() + 0.25   # erst laden, wenn man kurz stehen bleibt
         self.top_dirty = True
 
     def step(self, d):
@@ -894,12 +941,202 @@ class App:
                     self.want_previews()
                     break
             else:
-                self.say("Alle Stile übernommen – mit Start speichern")
+                if self.batch:   # Batch: alles gewählt → automatisch in die Warteschlange, nächstes Spiel
+                    title = self.title
+                    self.bq_add()
+                    self.say(f"{title} in der Warteschlange")
+                else:
+                    self.say("Alle Stile übernommen – mit Start speichern")
+        self.top_dirty = True
+
+    BQ_MAX = 10                                       # höchstens 10 Spiele in der Warteliste
+
+    def existing(self, rom):
+        with self.app_lock:   # nicht zeitgleich mit dem Speichern im Hintergrund
+            return self.app.existing_artwork(rom) or {}
+
+    def bq_pending(self):
+        return len(self.bq) + self.bq_active
+
+    def save_artwork(self, rom, chosen, system, step=lambda t: None):
+        """Gewählte Bilder für rom schreiben und prüfen (mit Sicherung beim ersten Mal je System)."""
+        if self.settings.get("backup") and system not in self.backed_up:
+            step("Sicherung wird erstellt …")
+            b = self.app.backup_artwork()
+            self.backed_up.add(system)
+            log("Sicherung:", b.get("path"))
+        step("Bilder werden zugeschnitten …")
+        from_web = {k: v for k, v in chosen.items() if not v.get("_png")}
+        if from_web:
+            self.app.stage_scraper_artwork(rom, from_web, lambda url: fetch(url))
+        for k, v in chosen.items():           # im Editor gestaltet: fertiges PNG
+            if v.get("_png"):
+                self.app.stage_artwork(rom, k, v["_png"])
+        preview = self.app.preview()
+        media = preview.get("media") or []
+        if not media or (preview.get("set") or {}).get("rom") != rom or (preview.get("xml") or {}).get("games_changed") != 1:
+            raise RuntimeError("Sicherheitsprüfung fehlgeschlagen – nichts geschrieben")
+        step("Wird gespeichert und geprüft …")
+        r = self.app.commit()
+        n = len(media)
+        ok = (r.get("ok") and r.get("stage") == "complete" and r.get("media_verified") == n
+              and r.get("media_errors") == 0 and r.get("xml_games_changed") == 1)
+        if not ok:
+            raise RuntimeError("Speichern nicht vollständig bestätigt")
+        self.changed = True
+        status = self.app.artwork_status()
+        self.games = [(g[0], g[1], status.get(g[0], g[2])) for g in self.games]
+
+    def bq_worker(self):
+        """Arbeitet die Batch-Warteliste der Reihe nach ab (nie zwei Spiele gleichzeitig)."""
+        while True:
+            with self.bq_lock:
+                # im Batch wird nur gesammelt; gespeichert wird beim Beenden, bei 10 Spielen oder Home
+                while not (self.bq and (self.batch is None or self.flush)):
+                    self.bq_lock.wait(0.5)
+                job = self.bq.pop(0)
+                self.bq_active = 1
+                self.bq_current = job["title"]
+            try:
+                with self.app_lock:
+                    self.save_artwork(job["rom"], job["chosen"], job["system"])
+                log("Batch gespeichert:", job["title"])
+                self.retry_save([r for r in self.retry_load()
+                                 if not (r["system"] == job["system"] and r["rom"] == job["rom"])])
+            except Exception:
+                log("Batch-Fehler bei " + job["title"] + ":\n" + traceback.format_exc().rstrip())
+                self.bq_fail.append(job["title"])
+                self.retry_remember(job)
+            finally:
+                with self.bq_lock:
+                    self.bq_active = 0
+                    self.bq_lock.notify_all()
+                self.dirty = self.top_dirty = True
+
+    RETRY = WORK / "retry.json"   # fehlgeschlagene Batch-Spiele mit gewählten Bildern
+
+    def retry_load(self):
+        try:
+            return json.loads(self.RETRY.read_text())
+        except Exception:
+            return []
+
+    def retry_save(self, items):
+        try:
+            if items:
+                self.RETRY.write_text(json.dumps(items))
+            elif self.RETRY.exists():
+                self.RETRY.unlink()
+        except OSError as exc:
+            log("Warteliste nicht gemerkt:", exc)
+
+    def retry_remember(self, job):
+        """Fehlgeschlagenes Spiel samt Auswahl merken (Editor-Bilder ohne Datei bleiben außen vor)."""
+        chosen = {k: {kk: vv for kk, vv in v.items() if not kk.startswith("_")}
+                  for k, v in job["chosen"].items() if not v.get("_png")}
+        if not chosen:
+            return
+        items = [r for r in self.retry_load() if not (r["system"] == job["system"] and r["rom"] == job["rom"])]
+        items.append({"rom": job["rom"], "system": job["system"], "title": job["title"], "chosen": chosen})
+        self.retry_save(items)
+
+    def retry_offer(self):
+        """Nach dem Öffnen eines Systems: gemerkte Fehlschläge erneut speichern?"""
+        key = self.system["key"] if self.system else None
+        mine = [r for r in self.retry_load() if r["system"] == key]
+        if not mine:
+            return
+        rest = [r for r in self.retry_load() if r["system"] != key]
+
+        def again():
+            self.retry_save(rest)
+            with self.bq_lock:
+                if not getattr(self, "bq_thread", None):
+                    self.bq_thread = threading.Thread(target=self.bq_worker, daemon=True)
+                    self.bq_thread.start()
+                self.bq.extend(mine)
+                self.bq_lock.notify_all()
+            self.say(f"{len(mine)} Spiele werden erneut gespeichert")
+
+        names = ", ".join(r["title"] for r in mine[:3]) + (" …" if len(mine) > 3 else "")
+        self.ask(f"{len(mine)} Spiele nicht gespeichert", [names, "Mit deiner Auswahl erneut speichern?"],
+                 "Erneut speichern", again, on_no=lambda: self.retry_save(rest))
+
+    def bq_add(self):
+        """Batch: Spiel in die Warteliste und sofort weiter (gespeichert wird später gesammelt)."""
+        if self.bq_pending() >= self.BQ_MAX:
+            self.say("Warteliste voll – einen Moment, es wird noch gespeichert")
+            return
+        job = {"rom": self.rom, "chosen": dict(self.chosen), "system": self.system["key"], "title": self.title}
+        self.retry_remember(job)   # bis zum Erfolg gemerkt: Abbruch oder leerer Akku verlieren nichts
+        with self.bq_lock:
+            if not getattr(self, "bq_thread", None):
+                self.bq_thread = threading.Thread(target=self.bq_worker, daemon=True)
+                self.bq_thread.start()
+            self.bq.append(job)
+            self.bq_lock.notify_all()
+        self.chosen = {}
+        if self.bq_pending() >= self.BQ_MAX:     # Liste voll: jetzt speichern, danach geht der Batch weiter
+            self.flush = True
+            self.after_flush = lambda: self.batch_next(True)
+        else:
+            self.batch_next(True)
+
+    def queue_remove(self, i):
+        """Spiel aus der Warteliste nehmen (wird nicht gespeichert)."""
+        with self.bq_lock:
+            if not (0 <= i < len(self.bq)):
+                return
+            job = self.bq.pop(i)
+        self.retry_save([r for r in self.retry_load()
+                         if not (r["system"] == job["system"] and r["rom"] == job["rom"])])
+        self.say(f"{job['title']} aus der Warteliste entfernt")
+        self.sel = max(0, min(self.sel, len(self.bq) - 1))
+        self.scroll = min(self.scroll, self.sel)
+        if not self.bq:
+            self.queue_close()
+
+    def saving_label(self):
+        title = getattr(self, "bq_current", None) if self.bq_active else None
+        n = self.bq_pending()
+        return f"Speichere {title} … (noch {n})" if title else f"Speichere noch {n} …"
+
+    def queue_up(self):
+        """Y: gewähltes Spiel eine Stelle nach oben (ganz oben → ans Ende)."""
+        with self.bq_lock:
+            n, i = len(self.bq), self.sel
+            if n < 2 or not 0 <= i < n:
+                return
+            j = i - 1 if i > 0 else n - 1
+            self.bq.insert(j, self.bq.pop(i))
+        self.move(j - i)
+
+    def queue_save(self):
+        """A in der Warteliste: alles jetzt speichern, danach geht der Batch weiter."""
+        self.flush = True
+        self.after_flush = self.queue_close
+
+    def open_queue(self):
+        if not self.bq:
+            self.say("Die Warteliste ist leer")
+            return
+        self.queue_from = (self.sel, self.scroll)
+        self.view, self.sel, self.scroll = "queue", 0, 0
+
+    def queue_close(self):
+        self.sel, self.scroll = getattr(self, "queue_from", (self.sel, 0))
+        self.view = "game"
         self.top_dirty = True
 
     def transfer(self):
+        if self.batch:
+            self.open_queue()
+            return
         if not self.chosen:
             self.say("Erst mit A ein Bild übernehmen, dann mit Start speichern")
+            return
+        if self.batch:
+            self.open_queue()
             return
         rom, chosen, system = self.rom, dict(self.chosen), self.system["key"]
         self.saving = {"title": self.title,
@@ -907,38 +1144,13 @@ class App:
                        "step": "Wird vorbereitet …", "done": False}
 
         def go():
-            if self.settings.get("backup") and system not in self.backed_up:
-                self.saving["step"] = "Sicherung wird erstellt …"
+            def step(t):
+                self.saving["step"] = t
                 self.dirty = True
-                b = self.app.backup_artwork()
-                self.backed_up.add(system)
-                log("Sicherung:", b.get("path"))
-            self.saving["step"] = "Bilder werden zugeschnitten …"
-            self.dirty = True
-            from_web = {k: v for k, v in chosen.items() if not v.get("_png")}
-            if from_web:
-                self.app.stage_scraper_artwork(rom, from_web,
-                                               lambda url: fetch(url))
-            for k, v in chosen.items():           # im Editor gestaltet: fertiges PNG
-                if v.get("_png"):
-                    self.app.stage_artwork(rom, k, v["_png"])
-            preview = self.app.preview()
-            media = preview.get("media") or []
-            if not media or (preview.get("set") or {}).get("rom") != rom or (preview.get("xml") or {}).get("games_changed") != 1:
-                raise RuntimeError("Sicherheitsprüfung fehlgeschlagen – nichts geschrieben")
-            self.saving["step"] = "Wird gespeichert und geprüft …"
-            self.dirty = True
-            r = self.app.commit()
-            n = len(media)
-            ok = (r.get("ok") and r.get("stage") == "complete" and r.get("media_verified") == n
-                  and r.get("media_errors") == 0 and r.get("xml_games_changed") == 1)
-            if not ok:
-                raise RuntimeError("Speichern nicht vollständig bestätigt")
-            self.changed = True
-            status = self.app.artwork_status()
-            self.games = [(g[0], g[1], status.get(g[0], g[2])) for g in self.games]
+            with self.app_lock:
+                self.save_artwork(rom, chosen, system, step)
             self.chosen = {}
-            for kind, info in (self.app.existing_artwork(rom) or {}).items():
+            for kind, info in self.existing(rom).items():
                 if info.get("data"):
                     path = PREVIEW_DIR / "current" / f"{kind}.png"
                     to_png(info["data"], path, 400)
@@ -1114,12 +1326,21 @@ class App:
         self.top_dirty = True
         self.say("Icon aus dem Editor übernommen")
 
+    def refresh_from_list(self):
+        """X in der Trefferliste: zurück zum Spiel und die Suche neu ausführen (für Geräte ohne L3)."""
+        self.view = "game"
+        self.refresh_search()
+
+    def quick_search(self):
+        """Y im Spiel: erst die Trefferliste zum aktuellen Namen, eintippen nur bei Bedarf (Y in der Liste)."""
+        self.run_search(self.query or self.title)
+
     def open_search(self):
         self.kbd = Keyboard(self, "Spiel suchen", self.run_search, secret=False)
         self.kbd.text = self.query or self.title
         self.kbd.cur = len(self.kbd.text)
 
-    def run_search(self, text=None):
+    def run_search(self, text=None, ambiguous=False):
         text = (text if isinstance(text, str) else self.kbd.text if self.kbd else self.query).strip()
         self.kbd = None
         if not text:
@@ -1143,10 +1364,16 @@ class App:
                     m["console"] = r["console"]
                 if r["year"] != "–" and not m["year"]:
                     m["year"] = str(r["year"])
-            self.results = list(merged.values())
+            results = list(merged.values())
+            if ambiguous and len(results) < 2:
+                return                               # nichts zu wählen: bei den gefundenen Bildern bleiben
+            self.results = results
             self.view, self.sel, self.scroll = "search", 0, 0
-            if not self.results:
-                self.say("Keine Treffer – anderen Namen probieren")
+            if ambiguous:
+                self.say("Mehrere Spiele gefunden – bitte das richtige wählen")
+            elif not self.results:
+                self.say("Keine Treffer – anderen Namen eingeben")
+                self.pending = self.open_search
         self.work("Suche läuft …", go)
 
     def pick_result(self, i):
@@ -1166,7 +1393,7 @@ class App:
     def list_len(self):
         return {"systems": len(self.systems), "games": len(self.vgames()), "search": len(self.results),
                 "settings": len(self.setting_rows()), "gsearch": len(self.gresults),
-                "restore": len(self.backups)}.get(self.view, 0)
+                "restore": len(self.backups), "queue": len(self.bq)}.get(self.view, 0)
 
     def move(self, d):
         n = self.list_len()
@@ -1213,7 +1440,20 @@ class App:
             self.top_dirty = True
             return
         if self.view == "game" and self.batch:
-            self.batch_end()
+            wait = self.bq_pending()
+
+            def finish():
+                self.batch_end()        # speichert die Warteliste, danach lädt ES neu
+            self.ask("Batch beenden?",
+                     [f"{wait} {'Spiel' if wait == 1 else 'Spiele'} in der Warteliste." if wait
+                      else "Die Warteliste ist leer.",
+                      "Speichern trägt sie direkt in EmulationStation ein,",
+                      "Abbrechen verwirft sie. Weiter führt zurück zum Batch."],
+                     "Speichern & beenden", finish, no_label="Batch abbrechen",
+                     on_no=self.batch_cancel, alt=("X", "Weiter", lambda: None))
+            return
+        if self.view == "queue":
+            self.queue_close()
             return
         if self.view == "search":
             self.view = "game"
@@ -1241,6 +1481,10 @@ class App:
                     ("B", "Abbrechen", self.back),
                     ("X", "Zurücksetzen", self.editor_reset),
                     ("Y", "Rahmen", self.editor_next_border if len(ed.get("borders") or []) > 1 else None)]
+        if self.view == "queue":
+            return [("A", "Jetzt speichern", self.queue_save if self.bq else None), ("B", "Zurück", self.back),
+                    ("X", "Entfernen", (lambda: self.queue_remove(self.sel)) if self.bq else None),
+                    ("Y", "Nach oben", self.queue_up if len(self.bq) > 1 else None)]
         if self.view == "game":
             kind, c = self.kind_key(), self.cand()
             taken = c is not None and self.chosen.get(kind) is c
@@ -1248,14 +1492,16 @@ class App:
                     ("B", "Batch beenden" if self.batch else "Zurück", self.back),
                     ("X", "Icon-Editor", self.open_editor if self.editor_useful() else None),
 
-                    ("Y", "Spiel suchen", self.open_search)]
+                    ("Y", "Spiel suchen", self.quick_search)]
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen", "gsearch": "Öffnen",
                    "settings": "Ändern", "restore": "Wiederherstellen"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
                 ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else
+                ("X", "Suche aktualisieren", self.refresh_from_list) if self.view == "search" and self.rom else
                 ("X", "Icon-Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
                 ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else
+                ("Y", "Name eingeben", self.open_search) if self.view == "search" else
                 ("Y", "Filter", self.next_filter) if self.view == "games" else ("Y", "", None)]
 
     # -- Spielsuche über alle Systeme --
@@ -1312,13 +1558,17 @@ class App:
         self.open_system(h["si"], then=then)
 
     # -- Rückfrage (A = ja, B = nein) --
-    def ask(self, title, lines, yes_label, on_yes):
-        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes}
+    def ask(self, title, lines, yes_label, on_yes, on_no=None, yes_key="A", no_label="Abbrechen", alt=None):
+        """alt = (Taste, Text, Aktion): optionale dritte Wahl, z. B. X."""
+        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes, "on_no": on_no,
+                        "key": yes_key, "no": no_label, "alt": alt}
 
     def answer(self, yes):
         c, self.confirm = self.confirm, None
         if yes and c:
             c["on_yes"]()
+        elif c and c.get("on_no"):
+            c["on_no"]()
 
     # -- Einstellungen --
     def open_settings(self):
@@ -1536,8 +1786,13 @@ class App:
         if self.busy or self.saving:
             return
         if self.confirm:
-            if code in (BTN_EAST, BTN_SOUTH):
-                self.answer(code == BTN_EAST)
+            yes = BTN_START if self.confirm.get("key") == "Start" else BTN_EAST
+            alt = self.confirm.get("alt")
+            if alt and code == {"X": BTN_NORTH, "Y": BTN_WEST}.get(alt[0]):
+                self.confirm = None
+                alt[2]()
+            elif code in (yes, BTN_SOUTH):
+                self.answer(code == yes)
             return
         if code == BTN_SOUTH:
             self.back()
@@ -1552,12 +1807,21 @@ class App:
         elif code in (BTN_TL, BTN_TR):
             d = -1 if code == BTN_TL else 1
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
+        elif code in (312, 313) and self.view == "game":   # L2 / R2: vorige / nächste Seite (je 12 Bilder)
+            kind = self.kind_key()
+            n = len(self.cands.get(kind) or [])
+            page = self.idx[kind] // PAGE + (-1 if code == 312 else 1)
+            if n and 0 <= page * PAGE < n:
+                self.select(page * PAGE)
+                self.gscroll[kind] = page * PAGE   # Seite beginnt links mit ihrem ersten Bild
+        elif code in (312, 313) and self.view != "editor":
+            self.move((-1 if code == 312 else 1) * ROWS)
         elif code == BTN_START and self.view == "game":
             self.transfer()
         elif code == BTN_THUMBL and self.view == "game":
             self.refresh_search()
         elif code == BTN_THUMBR and self.view == "game":
-            self.top_mode = "single" if self.top_mode == "mix" else "mix"
+            pass                                             # Großansicht entfernt (RG DS Plus hat kein R3)
             self.top_dirty = True
         elif code == BTN_START and self.view == "systems" and self.systems:
             self.activate()                                  # Einzelsuche (prüft die Spieleliste)
@@ -1567,7 +1831,10 @@ class App:
             else:
                 self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
         elif code == BTN_SELECT and self.view == "game" and self.batch:
-            self.batch_next(False)                           # Spiel überspringen
+            if self.chosen:
+                self.bq_add()                                # mit der bisherigen Auswahl einreihen
+            else:
+                self.batch_next(False)                       # nichts gewählt: Spiel überspringen
 
     def on_dir(self, dx, dy):
         if self.busy or self.confirm:
@@ -1586,6 +1853,11 @@ class App:
 
     def on_tap(self, x, y):
         hit = self._hit(x, y)
+        if self.confirm and hit and hit[0] == "confirm_alt":
+            alt, self.confirm = self.confirm.get("alt"), None
+            if alt:
+                alt[2]()
+            return
         if self.confirm and (not hit or hit[0] != "confirm"):
             return
         if not hit or self.busy:
@@ -1737,12 +2009,23 @@ class App:
             self.draw_confirm(P, self.confirm)
             return
         busy, message = self.busy, self.message   # Hintergrund-Threads ändern das jederzeit
+        def fit(text, size, bold, min_w, max_w=1180):
+            """Kasten wächst mit dem Text (jede Sprache); zu lang → Schrift kleiner, nie über den Rand."""
+            while size > 18 and P.width(text, size, bold=bold, raw=True) + 80 > max_w:
+                size -= 2
+            return size, max(min_w, min(max_w, P.width(text, size, bold=bold, raw=True) + 80))
         if busy:
-            P.rrect(230, 380, 800, 150, 30, T["card"])
-            P.text(str(busy), 32, 630, 468, T["text"], bold=True, align="c", raw=True)
+            size, w = fit(str(busy), 32, True, 800)
+            P.rrect(630 - w / 2, 380, w, 150, 30, T["card"])
+            P.clip(630 - w / 2 + 20, 380, w - 40, 150)
+            P.text(str(busy), size, 630, 468, T["text"], bold=True, align="c", raw=True)
+            P.unclip()
         elif message and time.monotonic() - message[1] < 4:
-            P.rrect(130, BAR_Y - 110, 1000, 90, 26, T["card"])
-            P.text(str(message[0]), 28, 630, BAR_Y - 54, T["text"], align="c", raw=True)
+            size, w = fit(str(message[0]), 28, False, 1000)
+            P.rrect(630 - w / 2, BAR_Y - 110, w, 90, 26, T["card"])
+            P.clip(630 - w / 2 + 20, BAR_Y - 110, w - 40, 90)
+            P.text(str(message[0]), size, 630, BAR_Y - 54, T["text"], align="c", raw=True)
+            P.unclip()
 
     INTRO = [
         ("Willkommen", [
@@ -1816,7 +2099,7 @@ class App:
             return
         if self.view == "setup":
             self.draw_setup(P)
-        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore"):
+        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore", "queue"):
             self.draw_list(P)
         elif self.view == "game":
             self.draw_game(P)
@@ -1857,11 +2140,21 @@ class App:
         P.text(c["title"], 36, 630, 280, T["text"], bold=True, align="c", raw=True)
         for n, line in enumerate(c["lines"]):
             P.text(line, 25, 630, 350 + n * 42, T["muted"], align="c", raw=True)
+        alt = c.get("alt")
+        if alt:   # drei Wahlmöglichkeiten nebeneinander
+            boxes = [(140, A, (c.get("key", "A"), c["yes"]), ("confirm", True), "ffffff"),
+                     (470, T["tile"], (alt[0], alt[1]), ("confirm_alt", None), T["text"]),
+                     (800, T["tile"], ("B", c.get("no", "Abbrechen")), ("confirm", False), T["text"])]
+            for x, fill, label, hit, col in boxes:
+                P.rrect(x, 540, 320, 90, 26, fill)
+                P.hint([label], 24, x + 160, 597, col, col, align="c")
+                self.hits.append((x, 540, 320, 90, hit))
+            return
         P.rrect(160, 540, 450, 90, 26, A)
-        P.hint([("A", c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
+        P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
         self.hits.append((160, 540, 450, 90, ("confirm", True)))
         P.rrect(650, 540, 450, 90, 26, T["tile"])
-        P.hint([("B", "Abbrechen")], 27, 875, 597, T["text"], T["text"], align="c")
+        P.hint([("B", c.get("no", "Abbrechen"))], 27, 875, 597, T["text"], T["text"], align="c")
         self.hits.append((650, 540, 450, 90, ("confirm", False)))
 
     def draw_saving(self, P, sv):
@@ -1903,6 +2196,10 @@ class App:
         elif self.view == "restore":
             title, hint = "Sicherung wiederherstellen", hint_parts("▲ ▼", "wählen", "A", "wiederherstellen")
             rows = [(f"{b['name']} · {b['when']}", f"{b['files']} Artworks", None) for b in self.backups]
+        elif self.view == "queue":
+            title, hint = "Warteliste", hint_parts("▲ ▼", "Spiel wählen")
+            names = dict(KINDS)
+            rows = [(j["title"], " · ".join(names.get(k, k) for k in j["chosen"]), None) for j in list(self.bq)]
         elif self.view == "games":
             title, hint = self.system["name"], hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
             if self.gfilter:
@@ -2002,18 +2299,17 @@ class App:
                 P.text("‹", 60, 14, gy + gh / 2 + 20, T["muted"], raw=True)
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
-        pos = f"{cur + 1} / {len(items)} · " if items else ""
-        self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil",
-                               *(("Select", "überspringen") if self.batch else ())), "")
+        self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil", "L2 / R2", "Seite",
+                               *(("Select", "einreihen" if self.chosen else "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
-        label = f"Start  Speichern ({len(self.chosen)})"
+        label = (f"Start  Warteliste ({len(self.bq)})" if self.batch
+                 else f"Start  Speichern ({len(self.chosen)})")
         w = P.width(label, 22, bold=True, raw=True) + 36
-        on = bool(self.chosen)
+        on = bool(self.bq) if self.batch else bool(self.chosen)
         P.rrect(1220 - w, HINT_Y - 30, w, 42, 21, A if on else T["tile"], a=1.0 if on else 0.35)
         P.text(label, 22, 1220 - w / 2, HINT_Y - 2, "ffffff" if on else T["muted"], bold=True, align="c", raw=True)
         if on:
             self.hits.append((1220 - w, HINT_Y - 34, w, 50, ("btn", self.transfer)))
-        P.text(pos.rstrip(" ·"), 22, 1220 - w - 20, HINT_Y, T["muted"], align="r", raw=True)
 
     # oberer Bildschirm
     def fit(self, P, path, x, y, w, h):
@@ -2050,19 +2346,66 @@ class App:
             P.text("Editor-Vorschau", 22, 630, 925, "bdbdbd", align="c", raw=True)
             return
         if self.view not in ("game", "search") or not self.rom:
-            P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
-            P.text("RetroDualStation", 32, 630, 490, "bdbdbd", align="c", raw=True)
+            open_items = self.retry_load() if not self.bq_pending() else []
+            if not open_items:
+                P.logo(630 - 230 * 150 / 130 / 2, 210, 150, "ffffff", "000000")
+                P.text("Artwork Manager", 64, 630, 470, "ffffff", bold=True, align="c", raw=True)
+                P.text("RetroDualStation", 32, 630, 530, "bdbdbd", align="c", raw=True)
+                return
+            # nach leerem Akku / Neustart: offene Warteliste als Liste im Stil des unteren Bildschirms
+            T, A = self.T, self.accent
+            P.fill_all(T["bg"])
+            names = {x["key"]: x["name"] for x in self.systems or []}
+            n = len(open_items)
+            # Kopf wie gewohnt: Logo + Artwork Manager
+            lw = 230 * 50 / 130
+            tw = P.width("Artwork Manager", 40, bold=True, raw=True)
+            x0 = 630 - (lw + 24 + tw) / 2
+            P.logo(x0, 34, 50, T["text"], T["bg"])
+            P.text("Artwork Manager", 40, x0 + lw + 24, 74, T["text"], bold=True, raw=True)
+            # Liste mittig
+            shown = open_items[:8]
+            LX, LW = 180, 900
+            block = 70 + len(shown) * ROW_H
+            y0 = max(130, (951 - block) / 2 + 20)
+            P.text(f"Nicht gespeichert  ·  {n} {'Spiel' if n == 1 else 'Spiele'}", 28, 630, y0 + 30,
+                   "f5be1e", bold=True, align="c", raw=True)
+            for i, r in enumerate(shown):
+                y = y0 + 70 + i * ROW_H
+                P.rrect(LX, y, LW, ROW_H - 8, 18, T["card"])
+                P.rrect(LX, y, 8, ROW_H - 8, 4, A)
+                right = names.get(r["system"], r["system"])
+                rw = P.width(right, 22, raw=True) + 40
+                P.clip(LX + 32, y, LW - 32 - rw, ROW_H)
+                P.text(r["title"], 28, LX + 32, y + (ROW_H - 8) / 2 + 10, T["text"], raw=True)
+                P.unclip()
+                P.text(right, 22, LX + LW - 24, y + (ROW_H - 8) / 2 + 8, T["muted"], align="r", raw=True)
+            more = f"+ {n - len(shown)} weitere  ·  " if n > len(shown) else ""
+            P.text(more + "System öffnen, um sie mit deiner Auswahl zu speichern", 22, 630,
+                   y0 + 70 + len(shown) * ROW_H + 40, T["muted"], align="c", raw=True)
             return
         kind = self.kind_key()
         c = self.cand()
         b = self.batch
+        # unten links: Seite der Bilder, Batch-Stand und Warteschlange
+        items = self.cands.get(kind) or []
+        pages = (len(items) + PAGE - 1) // PAGE
+        info = []
+        if b:
+            info.append(f"Batch {b['pos'] + 1} / {len(b['queue'])}")
+        if self.bq_pending():
+            n = self.bq_pending()
+            info.append(f"{n} {'Spiel' if n == 1 else 'Spiele'} " + ("in Arbeit" if self.flush or not b else "in der Warteliste"))
+        if pages > 1 and self.view == "game":
+            info.insert(0, f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
+        line = " · ".join(info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
         if self.top_mode == "mix":
             self.draw_mix(P)
-            if b:
-                P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "ffffff", align="r", raw=True)
+            if line:
+                P.text(line, 22, 40, 925, "bdbdbd", raw=True)
             return
-        if b:
-            P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "bdbdbd", align="r", raw=True)
+        if line:
+            P.text(line, 22, 40, 925, "bdbdbd", raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
         P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
         P.unclip()
@@ -2075,7 +2418,7 @@ class App:
         if c and self.chosen.get(kind) is c:
             P.rrect(1000, 870, 220, 56, 28, "2bb673")
             P.text("✓ übernommen", 24, 1110, 906, "ffffff", bold=True, align="c", raw=True)
-        P.hint([("R3", "Mix-Ansicht")], 18, 40, 925, "8a8a8a", "bdbdbd")
+        P.hint([("R3", "Mix-Ansicht")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
     def cover(self, P, path, x, y, w, h):
@@ -2166,8 +2509,8 @@ class App:
             P.text("  " + state, 24, 700 + w, y, "bdbdbd", raw=True)
             y += 46
         if self.chosen:
-            P.hint([("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
-        P.hint([("L3", "Suche aktualisieren"), ("R3", "Großansicht")], 18, 1225, 925, "8a8a8a", "bdbdbd", align="r")
+            P.hint([("Select", "einreihen") if self.batch else ("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
+        P.hint([("L3", "Suche aktualisieren")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
 # ------------------------------------------------------------------ main ----
@@ -2195,10 +2538,35 @@ def main():
     for fd in grabbed:
         grab(fd, True)          # Eingaben gehören nur dem Manager (ES und Kontrollcenter ruhen)
     kbd_open = [False]
+    rep = {"dir": None, "next": 0.0}
     try:
-        while not a.quit:
+        while not a.quit or a.bq_pending():
+            if getattr(a, "flush", False):
+                if a.bq_pending():
+                    a.busy = a.saving_label()
+                    a.dirty = True
+                else:
+                    a.flush = False
+                    a.busy = None
+                    if a.after_flush:
+                        nxt, a.after_flush = a.after_flush, None
+                        nxt()
+                    if a.changed:   # ES zeigt die neuen Artworks sofort
+                        subprocess.run(["curl", "-fsS", "--max-time", "5", "http://localhost:1234/reloadgames"],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    a.say("Warteschlange gespeichert und in EmulationStation eingetragen")
+                    a.dirty = True
+            if a.quit and a.bq_pending():
+                a.flush = True
+                a.busy = a.saving_label()   # Home: offene Spiele erst fertig speichern
+                a.dirty = True
+            elif a.busy and str(a.busy).startswith("Speichere ") and not getattr(a, "flush", False):
+                a.busy = None
+            if a.bq_fail and not a.bq_pending():
+                fails, a.bq_fail = a.bq_fail, []
+                a.say("Nicht gespeichert: " + ", ".join(fails[:3]) + (" …" if len(fails) > 3 else ""))
             fds = [fd for fd in grabbed]
-            busy = a.busy or a.saving or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
+            busy = rep["dir"] or getattr(a, "preview_at", None) or a.busy or a.saving or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
             for fd in ui.pump(0.1 if busy else 0.5, fds):
                 try:
                     if fd == tfd:
@@ -2208,6 +2576,13 @@ def main():
                                 on_touch(t[0], *touch.to_surface(t[1], t[2], *ui.size))
                         continue
                     for typ, code, value in read_events(fd):
+                        if typ == EV_ABS and code in (ABS_HAT0X, ABS_HAT0Y):
+                            d = (1 if value > 0 else -1) if value else 0
+                            rep["dir"] = ((d, 0) if code == ABS_HAT0X else (0, d)) if d else None
+                            rep["next"] = time.monotonic() + 0.4
+                        elif typ == EV_KEY and code in DPAD and value in (0, 1):
+                            rep["dir"] = DPAD[code] if value == 1 else None
+                            rep["next"] = time.monotonic() + 0.4
                         if fd == home and typ == EV_KEY and code == BTN_Z and value == 1:
                             a.quit = True                         # Home: Manager beenden
                             continue
@@ -2244,6 +2619,14 @@ def main():
                 except Exception:
                     log("Fehler (läuft weiter):\n" + traceback.format_exc().rstrip())
                     a.dirty = True
+            if getattr(a, "preview_at", None) and time.monotonic() >= a.preview_at:
+                a.preview_at = None
+                a.want_previews()
+                a.dirty = True
+            if rep["dir"] and time.monotonic() >= rep["next"]:
+                rep["next"] = time.monotonic() + 0.12   # gedrückt halten: weiterschalten
+                (a.kbd.nav if a.kbd else a.on_dir)(*rep["dir"])
+                a.dirty = True
             if a.kbd and a.kbd.tick():
                 a.dirty = True
             if a.saving and a.saving.get("done") and time.monotonic() > a.saving_until:

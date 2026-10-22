@@ -5,6 +5,7 @@ DSperate and PortMaster. The game pauses and continues where you left off. Pages
 
 ## Quick settings
 - Brightness for both screens, volume, performance, Wi-Fi, Bluetooth
+- **Performance** applies to the current session: in a game until you quit, in ES until the next game starts. To make it permanent – for all games or per system – set it in ES.
 - **Quit game** – no more shortcuts to remember
 - **Bottom screen off** – play DS games on one screen; the Anbernic button turns it back on. In RetroArch and PortMaster the bottom screen goes dark automatically.
 - **Vibration** – short feedback when opening, switching pages and tapping; switch at the top *(v13.1)*

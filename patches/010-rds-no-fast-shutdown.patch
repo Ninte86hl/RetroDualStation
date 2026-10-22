@@ -1,0 +1,14 @@
+diff --git a/es-app/src/guis/GuiMenu.cpp b/es-app/src/guis/GuiMenu.cpp
+index 21bf3cf..b77a91b 100644
+--- a/es-app/src/guis/GuiMenu.cpp
++++ b/es-app/src/guis/GuiMenu.cpp
+@@ -6028,6 +6028,9 @@ void GuiMenu::openQuitMenu_static(Window *window, bool quickAccessMenu, bool ani
+ 			_("NO"), nullptr));
+ 	}, "iconShutdown");
+ 
++	// RDS: im Dual-Modus kein Schnell-Ausschalten – es überspringt das Speichern der Metadaten
++	// und das saubere Beenden des Kontrollcenters (Sicherheit vor Funktionsumfang)
++	if (!RdsScreens::active())
+ 	s->addWithDescription(_("FAST SHUTDOWN SYSTEM"),_("Shutdown without saving metadata."), nullptr, [window] {
+ 		window->pushGui(new GuiMsgBox(window, _("REALLY SHUTDOWN WITHOUT SAVING METADATA?"), 
+ 			_("YES"), [] { Utils::Platform::quitES(Utils::Platform::QuitMode::FAST_SHUTDOWN); },

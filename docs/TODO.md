@@ -140,7 +140,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
         + **CC anpassen** wie Schnelleinstellungen am Handy: welche Kacheln/Regler sichtbar,
         Reihenfolge; auf der Seite „Spiel“ wählen, welche Kürzel/Funktionen (Savestate laden/
         speichern, Screenshot, Vorspulen …) angezeigt werden
-      - Darstellung folgt Hell/Dunkel und Akzentfarbe des CC (Mockup: docs/kontrollcenter/einstellungen-mockup.png)
+      - Darstellung folgt Hell/Dunkel und Akzentfarbe des CC (Mockup: docs/kontrollcenter/einstellungen-mockup.png; Dual-Screen-Entwurf 21.10.2026 (lokal) – **so freigegeben zur Umsetzung**; Kategorie-Farben: Anzeige blau, Spiele grün, Controller violett, Netzwerk orange, System gelb, RDS rot/weiß)
       - später: RetroAchievements-Anmeldung, Benutzerwechsel
       - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
       - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
@@ -192,6 +192,9 @@ Danach abwägen, was als Nächstes ausgebaut wird.
   – RDS = **R**etro**D**ual**S**tation; Farben Rot · Weiß · Blau (Easter Egg siehe Umbenennung; zufällig auch die Landesfarben Schleswig-Holsteins)
   – Favorit: Variante 3 „Verwoben“ mit Dual-Screen-Handheld
 - [ ] danach: App-Symbol für DualStation Sync und Kontrollcenter ableiten
+
+### Nächste Version (Wunsch 21.10.2026)
+- [ ] ES-Quick-Access/Beenden-Menü: **FAST SHUTDOWN SYSTEM** im Dual-Modus ausblenden (doppelte Option neben *Shutdown system*). Kleiner ES-Patch 010: Eintrag in `GuiMenu.cpp` (Beenden-Menü) nur ohne `RdsScreens::active()` anlegen.
 
 ### Technik & Wartung (beschlossen 21.10.2026)
 - [ ] **v14: RAM sparen im Kontrollcenter/Gameswitcher** – Bildercache (`Pen._png`) beim Schließen leeren und auf ~20 Bilder begrenzen; Zeichenpuffer (`_mm`, oben/Meldungen) beim Verbergen freigeben. Vorher/nachher messen: `ps -o pid,rss,args | grep "[r]ds_cc"`

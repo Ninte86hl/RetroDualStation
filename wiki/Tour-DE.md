@@ -93,7 +93,8 @@ DraStic kennt keine Tastenkombinationen: Dort liegen Speichern und Laden auf R2 
 
 Dein Konto, der Fortschritt im laufenden Spiel und alle Erfolge – **A** öffnet einen Erfolg mit Beschreibung,
 Punkten und Seltenheit. Ein neuer Erfolg erscheint kurz **oben über dem Spiel**, ebenso die **Lautstärke** bei Vol+ / Vol−.
-Anmelden in ES: *Spieleinstellungen → RetroAchievements-Einstellungen*. Unterstützt werden RetroArch-Spiele.
+Erfolge gibt es **nur hier, während ein Spiel läuft** – in der ES-Spieleliste (X → Spieloptionen) gibt es im Dual-Modus keinen Erfolgs-Eintrag.
+Anmelden in ES: *Spieleinstellungen → RetroAchievements-Einstellungen*. Unterstützt werden RetroArch- und DSperate-Spiele.
 
 ---
 

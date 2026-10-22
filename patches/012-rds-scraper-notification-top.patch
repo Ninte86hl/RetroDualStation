@@ -1,0 +1,62 @@
+diff --git a/es-core/src/Window.cpp b/es-core/src/Window.cpp
+index 4dc5186..4c76a63 100644
+--- a/es-core/src/Window.cpp
++++ b/es-core/src/Window.cpp
+@@ -1152,6 +1152,23 @@ void Window::renderAsyncNotifications(const Transform4x4f& trans)
+ 
+ #define PADDING_H  (Renderer::getScreenWidth()*0.01)
+ 
++	// RDS: im Dual-Modus unten mittig auf dem oberen Bildschirm, übereinander nach oben gestapelt –
++	// oben in der Mitte sitzen die Meldungen des Kontrollcenters (Lautstärke, Akku, Erfolge)
++	if (RdsScreens::active())
++	{
++		const auto& top = RdsScreens::top();
++		float y = top.y + top.h * 0.97f;
++		for (auto child : mAsyncNotificationComponent)
++		{
++			auto sz = child->getSize();
++			y -= sz.y();
++			child->setPosition(top.x + (top.w - sz.x()) / 2.0f, y, 0);
++			child->render(trans);
++			y -= top.h * 0.015f;
++		}
++		return;
++	}
++
+ 	float posY = Renderer::getScreenHeight() * 0.02f;
+ 
+ 	bool first = true;
+diff --git a/es-core/src/components/AsyncNotificationComponent.cpp b/es-core/src/components/AsyncNotificationComponent.cpp
+index 3b5d2e5..e21f822 100644
+--- a/es-core/src/components/AsyncNotificationComponent.cpp
++++ b/es-core/src/components/AsyncNotificationComponent.cpp
+@@ -1,4 +1,7 @@
+ #include "AsyncNotificationComponent.h"
++#include "RdsScreens.h"
++#include "resources/Font.h"
++#include <algorithm>
+ #include "ThemeData.h"
+ #include "components/ComponentGrid.h"
+ #include "components/NinePatchComponent.h"
+@@ -21,13 +24,17 @@ AsyncNotificationComponent::AsyncNotificationComponent(Window* window, bool acti
+ 	auto theme = ThemeData::getMenuTheme();
+ 
+ 	// Note : Don't localize this text -> It is only used to guess width calculation for the component.
+-	float width = theme->TextSmall.font->sizeText("TEXT FOR SIZE CALCULATION TEST").x(); // Renderer::getScreenWidth() * 0.14f;											
++	// RDS: im Dual-Modus größer – die Anzeige sitzt unten auf dem oberen Bildschirm (siehe Window.cpp)
++	auto font = RdsScreens::active() ? Font::get(FONT_SIZE_MEDIUM, Font::getDefaultPath(), true) : theme->TextSmall.font;
++	float width = font->sizeText("TEXT FOR SIZE CALCULATION TEST").x(); // Renderer::getScreenWidth() * 0.14f;
++	if (RdsScreens::active())
++		width = std::min(width * 1.4f, RdsScreens::top().w * 0.8f);
+ 
+-	mTitle = std::make_shared<TextComponent>(mWindow, "", theme->TextSmall.font, theme->TextSmall.color, ALIGN_LEFT);
+-	mGameName = std::make_shared<TextComponent>(mWindow, "", theme->TextSmall.font, theme->Text.color, ALIGN_LEFT);
++	mTitle = std::make_shared<TextComponent>(mWindow, "", font, theme->TextSmall.color, ALIGN_LEFT);
++	mGameName = std::make_shared<TextComponent>(mWindow, "", font, theme->Text.color, ALIGN_LEFT);
+ 
+ 	if (actionLine)
+-		mAction = std::make_shared<TextComponent>(mWindow, "", theme->TextSmall.font, theme->Text.color, ALIGN_LEFT);
++		mAction = std::make_shared<TextComponent>(mWindow, "", font, theme->Text.color, ALIGN_LEFT);
+ 
+ 	Vector2f fullSize(width + 2 * PADDING_PX, 2 * PADDING_PX + mTitle->getSize().y() + mGameName->getSize().y() + (mAction == nullptr ? 0 : mAction->getSize().y()));
+ 	Vector2f gridSize(width, mTitle->getSize().y() + mGameName->getSize().y() + (mAction == nullptr ? 0 : mAction->getSize().y()));

@@ -20,6 +20,15 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `007-rds-retroachievements-hint.patch` – the ES *RetroAchievements* menu opens the RetroAchievements settings
   (login, hardcore …) with a subtitle pointing to page 3 of the Control Center, instead of the 401 error
   (the dual build has no developer credentials for the overview).
+- `008-rds-retroachievements-error.patch` – no HTML page as RetroAchievements error message.
+- `009-rds-fullscreen-menu-shadow.patch` – menus stay in their screen area in dual mode (no frame strip on the RG DS).
+- `010-rds-no-fast-shutdown.patch` – *Fast shutdown system* is hidden in dual mode (it skips saving metadata
+  and the clean shutdown of the Control Center).
+- `011-rds-hide-game-achievements.patch` – *View this game's achievements* in the game options (X in the game list)
+  is hidden in dual mode: it only showed "An error occurred" (same missing developer credentials as in 007);
+  the Control Center shows achievements in game (page 3).
+- `012-rds-scraper-notification-top.patch` – background notifications (e.g. scraper progress) in dual mode: larger,
+  centred at the bottom of the top screen, stacked upwards (the top centre belongs to the Control Center's messages).
 
 ## Usage
 
@@ -31,7 +40,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all seven** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all twelve** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating

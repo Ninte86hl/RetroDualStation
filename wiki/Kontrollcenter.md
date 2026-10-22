@@ -5,6 +5,7 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 
 ## Schnelleinstellungen
 - Helligkeit beider Bildschirme, Lautstärke, Leistung, WLAN, Bluetooth
+- **Leistung** gilt für die laufende Sitzung: im Spiel bis zum Beenden, in ES bis zum nächsten Spielstart. Dauerhaft – für alle Spiele oder je System – stellst du sie in ES ein.
 - **Spiel beenden** – keine Tastenkürzel mehr merken
 - **Unterer Screen aus** – DS-Spiele auf einem Bildschirm; die Anbernic-Taste schaltet ihn wieder ein. In RetroArch und PortMaster wird der untere Bildschirm automatisch dunkel.
 - **Vibration** – kurzes Feedback beim Öffnen, Seitenwechsel und Antippen; Schalter oben *(v13.1)*
