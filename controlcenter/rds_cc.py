@@ -839,6 +839,37 @@ def load_config():
         return {}
 
 
+# Helligkeit und Lautstärke dauerhaft wie ROCKNIX speichern (sonst stellt ROCKNIX beim Start seine Werte her).
+# ROCKNIX: display.brightness = erstes Backlight (backlight0 = unten), display.brightness2 = backlight1 (oben),
+# audio.volume = Lautstärke – jeweils in Prozent. Geschrieben wird verzögert, nicht bei jedem Reglerschritt.
+_persist = {"pending": {}, "timer": None}
+
+
+def persist_setting(key, pct, backlights):
+    if key == "vol":
+        name = "audio.volume"
+    else:
+        bl = backlights[key][1].name if 0 <= key < len(backlights) else ""
+        n = re.sub(r"\D", "", bl)
+        name = "display.brightness" if n in ("", "0") else "display.brightness%d" % (int(n) + 1)
+    _persist["pending"][name] = int(pct)
+    if _persist["timer"]:
+        _persist["timer"].cancel()
+
+    def flush():
+        items, _persist["pending"] = _persist["pending"], {}
+        cmd = "; ".join("set_setting %s %d" % (k, v) for k, v in items.items())
+        try:
+            subprocess.run(["sh", "-c", ". /etc/profile >/dev/null 2>&1; " + cmd], timeout=10,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            log("Gespeichert:", ", ".join("%s=%d" % kv for kv in items.items()))
+        except Exception as exc:
+            log("Speichern der Einstellung:", exc)
+    _persist["timer"] = threading.Timer(1.5, flush)
+    _persist["timer"].daemon = True
+    _persist["timer"].start()
+
+
 class Backlight:
     def __init__(self, name):
         self.name = name
@@ -3027,6 +3058,7 @@ class ControlCenter:
                 self.vol_sent = now
         else:
             self.backlights[key][1].set(pct)
+        persist_setting(key, pct, self.backlights)
 
     def set_perf(self, i):
         i = max(0, min(len(PERF_MODES) - 1, i))
