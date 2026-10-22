@@ -2288,7 +2288,8 @@ class App:
         if b:
             info.append(f"Batch {b['pos'] + 1} / {len(b['queue'])}")
         if self.bq_pending():
-            info.append(f"{self.bq_pending()} " + ("in Arbeit" if self.flush or not b else "in der Warteliste"))
+            n = self.bq_pending()
+            info.append(f"{n} {'Spiel' if n == 1 else 'Spiele'} " + ("in Arbeit" if self.flush or not b else "in der Warteliste"))
         if pages > 1 and self.view == "game":
             info.insert(0, f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
         line = " · ".join(info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
