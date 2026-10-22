@@ -5329,7 +5329,7 @@ def main():
         if mode_down:
             combo = True  # Teil einer Tastenkombination
             # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
-            if typ == EV_KEY and code in (BTN_TR, BTN_NORTH) and not ui.view:
+            if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
                 g = running_game()
                 if g and g["emu"] == "DraStic":
                     what = "FAST_FORWARD" if code == BTN_TR else "MENU"
