@@ -1433,7 +1433,7 @@ class App:
                       else "Die Warteliste ist leer",
                       "und direkt in EmulationStation eingetragen.",
                       "Die übrigen Spiele kannst du später per Batch bearbeiten."],
-                     "Speichern & beenden", finish, yes_key="Start", no_label="Weiter")
+                     "Speichern & beenden", finish, no_label="Zurück zum Batch")
             return
         if self.view == "queue":
             self.queue_close()
