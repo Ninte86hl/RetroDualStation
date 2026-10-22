@@ -282,18 +282,25 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
         log "Kuerzel: einheitliches Schema gesetzt (Sicherungen *.vor-rds-kuerzel)"
     fi
-    # DraStic: Menü und Vorspulen auf Tasten, die das RG DS Plus nicht hat (R3 und den fehlenden rechten Stick)
-    # → nur über das Kontrollcenter erreichbar, L3 bleibt frei. Einmalig, mit Sicherung.
-    # Gilt auch fürs RG DS: dort lag das Menü sonst auf der Anbernic-Taste (gehört dem CC);
-    # R3 und der rechte Stick werden in DS-Spielen nicht gebraucht.
+    # DraStic: Menü auf R3, die Anbernic-Taste bleibt beim Kontrollcenter. Einmalig, mit Sicherung.
+    # Vorspulen je Gerät: RG DS → rechter Stick (echter zweiter Stick, in DS-Spielen unbenutzt);
+    # RG DS Plus → L3 (Stick drücken). Achtung: Der Treiber des Plus spiegelt links/rechts des
+    # Sticks auf die Achsen des fehlenden rechten Sticks – dort ausgelöstes Vorspulen (bis v14)
+    # sprang bei jeder Linksbewegung an.
+    if [ "$DEVICE" = "RG DS Plus" ]; then DFF=1035; else DFF=1154; fi
     DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
     DCFG=/storage/.config/drastic/config/drastic.cfg
     if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
         cp "$DCFG" "$DCFG.vor-rds-kuerzel"
         sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
-                  -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 1154/' "$DCFG"
+                  -e "s/^(controls_[ab]\\[CONTROL_INDEX_FAST_FORWARD\\]) = .*/\\1 = $DFF/" "$DCFG"
         date > "$DMARK"
-        log "DraStic: Menue auf R3, Vorspulen auf rechten Stick (nur ueber das CC)"
+        log "DraStic: Menue auf R3, Vorspulen auf $DFF (nur ueber das CC bzw. $([ $DFF = 1035 ] && echo L3 || echo rechter Stick))"
+    elif [ "$DEVICE" = "RG DS Plus" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null \
+         && grep -q '^controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\] = 1154' "$DCFG"; then
+        # Korrektur für Installationen bis v14 (Vorspulen sprang beim Linksdrücken an)
+        sed -i -E 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = 1154/\1 = 1035/' "$DCFG"
+        log "DraStic (RG DS Plus): Vorspulen vom Phantom-Stick auf L3 verlegt"
     fi
     # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
     SSMARK=/storage/.config/retrodualstation/savestates.done
