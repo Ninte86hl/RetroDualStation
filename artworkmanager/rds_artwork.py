@@ -2357,23 +2357,32 @@ class App:
             P.fill_all(T["bg"])
             names = {x["key"]: x["name"] for x in self.systems or []}
             n = len(open_items)
-            P.logo(40, 34, 50, T["text"], T["bg"])
-            P.text("Nicht gespeichert", 40, 40 + 230 * 50 / 130 + 24, 74, T["text"], bold=True, raw=True)
-            P.text(f"{n} {'Spiel' if n == 1 else 'Spiele'}", 26, 1220, 70, T["muted"], align="r", raw=True)
-            shown = open_items[:9]
+            # Kopf wie gewohnt: Logo + Artwork Manager
+            lw = 230 * 50 / 130
+            tw = P.width("Artwork Manager", 40, bold=True, raw=True)
+            x0 = 630 - (lw + 24 + tw) / 2
+            P.logo(x0, 34, 50, T["text"], T["bg"])
+            P.text("Artwork Manager", 40, x0 + lw + 24, 74, T["text"], bold=True, raw=True)
+            # Liste mittig
+            shown = open_items[:8]
+            LX, LW = 180, 900
+            block = 70 + len(shown) * ROW_H
+            y0 = max(130, (951 - block) / 2 + 20)
+            P.text(f"Nicht gespeichert  ·  {n} {'Spiel' if n == 1 else 'Spiele'}", 28, 630, y0 + 30,
+                   "f5be1e", bold=True, align="c", raw=True)
             for i, r in enumerate(shown):
-                y = LIST_Y + i * ROW_H
-                P.rrect(30, y, 1200, ROW_H - 8, 18, T["card"])
-                P.rrect(30, y, 8, ROW_H - 8, 4, A)
+                y = y0 + 70 + i * ROW_H
+                P.rrect(LX, y, LW, ROW_H - 8, 18, T["card"])
+                P.rrect(LX, y, 8, ROW_H - 8, 4, A)
                 right = names.get(r["system"], r["system"])
                 rw = P.width(right, 22, raw=True) + 40
-                P.clip(62, y, 1215 - 62 - rw, ROW_H)
-                P.text(r["title"], 28, 62, y + (ROW_H - 8) / 2 + 10, T["text"], raw=True)
+                P.clip(LX + 32, y, LW - 32 - rw, ROW_H)
+                P.text(r["title"], 28, LX + 32, y + (ROW_H - 8) / 2 + 10, T["text"], raw=True)
                 P.unclip()
-                P.text(right, 22, 1205, y + (ROW_H - 8) / 2 + 8, T["muted"], align="r", raw=True)
+                P.text(right, 22, LX + LW - 24, y + (ROW_H - 8) / 2 + 8, T["muted"], align="r", raw=True)
             more = f"+ {n - len(shown)} weitere  ·  " if n > len(shown) else ""
-            P.text(more + "System öffnen, um sie mit deiner Auswahl zu speichern", 22, 40, HINT_Y,
-                   T["muted"], raw=True)
+            P.text(more + "System öffnen, um sie mit deiner Auswahl zu speichern", 22, 630,
+                   y0 + 70 + len(shown) * ROW_H + 40, T["muted"], align="c", raw=True)
             return
         kind = self.kind_key()
         c = self.cand()
