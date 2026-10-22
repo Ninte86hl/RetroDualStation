@@ -483,6 +483,10 @@ class App:
         self.system = None
         self.games = []                               # [(rom, name, status)]
         self.backed_up = set()
+        self.bq = []                                  # Batch-Warteliste: Spiele, die im Hintergrund gespeichert werden
+        self.bq_lock = threading.Condition()
+        self.bq_fail = []                             # Titel, deren Speichern fehlschlug
+        self.bq_active = 0
         self.fbneo = None
         self.nointro = {}
         # geöffnetes Spiel
@@ -627,8 +631,9 @@ class App:
         if not b:
             return
         rest = len(b["queue"]) - b["pos"]
-        self.say(f"Batch beendet · {b['saved']} gespeichert · {b['skipped']} übersprungen"
-                 + (f" · {rest} offen" if rest > 0 else ""))
+        wait = self.bq_pending()
+        self.say(f"Batch beendet · {b['saved']} vorgemerkt · {b['skipped']} übersprungen"
+                 + (f" · {rest} offen" if rest > 0 else "") + (f" · speichere noch {wait} …" if wait else ""))
         self.leave_game("systems")
 
     def leave_game(self, where=None):
@@ -912,9 +917,81 @@ class App:
                 self.say("Alle Stile übernommen – mit Start speichern")
         self.top_dirty = True
 
+    BQ_MAX = 10                                       # höchstens 10 Spiele in der Warteliste
+
+    def bq_pending(self):
+        return len(self.bq) + self.bq_active
+
+    def save_artwork(self, rom, chosen, system, step=lambda t: None):
+        """Gewählte Bilder für rom schreiben und prüfen (mit Sicherung beim ersten Mal je System)."""
+        if self.settings.get("backup") and system not in self.backed_up:
+            step("Sicherung wird erstellt …")
+            b = self.app.backup_artwork()
+            self.backed_up.add(system)
+            log("Sicherung:", b.get("path"))
+        step("Bilder werden zugeschnitten …")
+        from_web = {k: v for k, v in chosen.items() if not v.get("_png")}
+        if from_web:
+            self.app.stage_scraper_artwork(rom, from_web, lambda url: fetch(url))
+        for k, v in chosen.items():           # im Editor gestaltet: fertiges PNG
+            if v.get("_png"):
+                self.app.stage_artwork(rom, k, v["_png"])
+        preview = self.app.preview()
+        media = preview.get("media") or []
+        if not media or (preview.get("set") or {}).get("rom") != rom or (preview.get("xml") or {}).get("games_changed") != 1:
+            raise RuntimeError("Sicherheitsprüfung fehlgeschlagen – nichts geschrieben")
+        step("Wird gespeichert und geprüft …")
+        r = self.app.commit()
+        n = len(media)
+        ok = (r.get("ok") and r.get("stage") == "complete" and r.get("media_verified") == n
+              and r.get("media_errors") == 0 and r.get("xml_games_changed") == 1)
+        if not ok:
+            raise RuntimeError("Speichern nicht vollständig bestätigt")
+        self.changed = True
+        status = self.app.artwork_status()
+        self.games = [(g[0], g[1], status.get(g[0], g[2])) for g in self.games]
+
+    def bq_worker(self):
+        """Arbeitet die Batch-Warteliste der Reihe nach ab (nie zwei Spiele gleichzeitig)."""
+        while True:
+            with self.bq_lock:
+                while not self.bq:
+                    self.bq_lock.wait()
+                job = self.bq.pop(0)
+                self.bq_active = 1
+            try:
+                self.save_artwork(job["rom"], job["chosen"], job["system"])
+                log("Batch gespeichert:", job["title"])
+            except Exception:
+                log("Batch-Fehler bei " + job["title"] + ":\n" + traceback.format_exc().rstrip())
+                self.bq_fail.append(job["title"])
+            finally:
+                with self.bq_lock:
+                    self.bq_active = 0
+                    self.bq_lock.notify_all()
+                self.dirty = self.top_dirty = True
+
+    def bq_add(self):
+        """Batch: Spiel vormerken und sofort weiter – gespeichert wird im Hintergrund."""
+        if self.bq_pending() >= self.BQ_MAX:
+            self.say("Warteliste voll – einen Moment, es wird noch gespeichert")
+            return
+        job = {"rom": self.rom, "chosen": dict(self.chosen), "system": self.system["key"], "title": self.title}
+        with self.bq_lock:
+            if not getattr(self, "bq_thread", None):
+                self.bq_thread = threading.Thread(target=self.bq_worker, daemon=True)
+                self.bq_thread.start()
+            self.bq.append(job)
+            self.bq_lock.notify_all()
+        self.chosen = {}
+        self.batch_next(True)
+
     def transfer(self):
         if not self.chosen:
             self.say("Erst mit A ein Bild übernehmen, dann mit Start speichern")
+            return
+        if self.batch:
+            self.bq_add()
             return
         rom, chosen, system = self.rom, dict(self.chosen), self.system["key"]
         self.saving = {"title": self.title,
@@ -922,36 +999,10 @@ class App:
                        "step": "Wird vorbereitet …", "done": False}
 
         def go():
-            if self.settings.get("backup") and system not in self.backed_up:
-                self.saving["step"] = "Sicherung wird erstellt …"
+            def step(t):
+                self.saving["step"] = t
                 self.dirty = True
-                b = self.app.backup_artwork()
-                self.backed_up.add(system)
-                log("Sicherung:", b.get("path"))
-            self.saving["step"] = "Bilder werden zugeschnitten …"
-            self.dirty = True
-            from_web = {k: v for k, v in chosen.items() if not v.get("_png")}
-            if from_web:
-                self.app.stage_scraper_artwork(rom, from_web,
-                                               lambda url: fetch(url))
-            for k, v in chosen.items():           # im Editor gestaltet: fertiges PNG
-                if v.get("_png"):
-                    self.app.stage_artwork(rom, k, v["_png"])
-            preview = self.app.preview()
-            media = preview.get("media") or []
-            if not media or (preview.get("set") or {}).get("rom") != rom or (preview.get("xml") or {}).get("games_changed") != 1:
-                raise RuntimeError("Sicherheitsprüfung fehlgeschlagen – nichts geschrieben")
-            self.saving["step"] = "Wird gespeichert und geprüft …"
-            self.dirty = True
-            r = self.app.commit()
-            n = len(media)
-            ok = (r.get("ok") and r.get("stage") == "complete" and r.get("media_verified") == n
-                  and r.get("media_errors") == 0 and r.get("xml_games_changed") == 1)
-            if not ok:
-                raise RuntimeError("Speichern nicht vollständig bestätigt")
-            self.changed = True
-            status = self.app.artwork_status()
-            self.games = [(g[0], g[1], status.get(g[0], g[2])) for g in self.games]
+            self.save_artwork(rom, chosen, system, step)
             self.chosen = {}
             for kind, info in (self.app.existing_artwork(rom) or {}).items():
                 if info.get("data"):
@@ -2089,10 +2140,12 @@ class App:
         if self.top_mode == "mix":
             self.draw_mix(P)
             if b:
-                P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "ffffff", align="r", raw=True)
+                P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}" + (f" · {self.bq_pending()} in Arbeit" if self.bq_pending() else ""),
+                       22, 1220, 40, "ffffff", align="r", raw=True)
             return
         if b:
-            P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}", 22, 1220, 40, "bdbdbd", align="r", raw=True)
+            P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}" + (f" · {self.bq_pending()} in Arbeit" if self.bq_pending() else ""),
+                   22, 1220, 40, "bdbdbd", align="r", raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
         P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
         P.unclip()
@@ -2227,7 +2280,15 @@ def main():
     kbd_open = [False]
     rep = {"dir": None, "next": 0.0}
     try:
-        while not a.quit:
+        while not a.quit or a.bq_pending():
+            if a.quit and a.bq_pending():
+                a.busy = f"Speichere noch {a.bq_pending()} …"   # Home: offene Spiele erst fertig speichern
+                a.dirty = True
+            elif a.busy and str(a.busy).startswith("Speichere noch"):
+                a.busy = None
+            if a.bq_fail and not a.bq_pending():
+                fails, a.bq_fail = a.bq_fail, []
+                a.say("Nicht gespeichert: " + ", ".join(fails[:3]) + (" …" if len(fails) > 3 else ""))
             fds = [fd for fd in grabbed]
             busy = rep["dir"] or getattr(a, "preview_at", None) or a.busy or a.saving or any(v == "…" for v in a.previews.values()) or (a.kbd and a.kbd.hold)
             for fd in ui.pump(0.1 if busy else 0.5, fds):
