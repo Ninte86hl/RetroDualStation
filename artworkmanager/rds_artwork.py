@@ -2158,8 +2158,6 @@ class App:
                 P.text("‹", 60, 14, gy + gh / 2 + 20, T["muted"], raw=True)
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
-        pages = (len(items) + PAGE - 1) // PAGE
-        pos = f"Seite {cur // PAGE + 1} / {pages}" if pages > 1 else ""
         self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil", "L2 / R2", "Seite",
                                *(("Select", "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
@@ -2170,7 +2168,6 @@ class App:
         P.text(label, 22, 1220 - w / 2, HINT_Y - 2, "ffffff" if on else T["muted"], bold=True, align="c", raw=True)
         if on:
             self.hits.append((1220 - w, HINT_Y - 34, w, 50, ("btn", self.transfer)))
-        P.text(pos.rstrip(" ·"), 22, 1220 - w - 20, HINT_Y, T["muted"], align="r", raw=True)
 
     # oberer Bildschirm
     def fit(self, P, path, x, y, w, h):
@@ -2213,15 +2210,23 @@ class App:
         kind = self.kind_key()
         c = self.cand()
         b = self.batch
+        # oben rechts: Batch-Stand, Warteschlange und Seite der Bilder
+        items = self.cands.get(kind) or []
+        pages = (len(items) + PAGE - 1) // PAGE
+        info = []
+        if b:
+            info.append(f"Batch {b['pos'] + 1} / {len(b['queue'])}")
+        if self.bq_pending():
+            info.append(f"{self.bq_pending()} in Arbeit")
+        if pages > 1 and self.view == "game":
+            info.append(f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
         if self.top_mode == "mix":
             self.draw_mix(P)
-            if b:
-                P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}" + (f" · {self.bq_pending()} in Arbeit" if self.bq_pending() else ""),
-                       22, 1220, 40, "ffffff", align="r", raw=True)
+            if info:
+                P.text(" · ".join(info), 22, 1220, 40, "ffffff", align="r", raw=True)
             return
-        if b:
-            P.text(f"Batch {b['pos'] + 1} / {len(b['queue'])}" + (f" · {self.bq_pending()} in Arbeit" if self.bq_pending() else ""),
-                   22, 1220, 40, "bdbdbd", align="r", raw=True)
+        if info:
+            P.text(" · ".join(info), 22, 1220, 40, "bdbdbd", align="r", raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
         P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
         P.unclip()
