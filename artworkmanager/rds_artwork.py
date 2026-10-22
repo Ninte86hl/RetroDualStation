@@ -487,6 +487,7 @@ class App:
         self.bq_lock = threading.Condition()
         self.bq_fail = []                             # Titel, deren Speichern fehlschlug
         self.bq_active = 0
+        self.app_lock = threading.RLock()
         self.fbneo = None
         self.nointro = {}
         # geöffnetes Spiel
@@ -577,6 +578,9 @@ class App:
 
     def open_system(self, i, batch=False, then=None):
         s = self.systems[i]
+        if self.bq_pending():
+            self.say(f"Speichere noch {self.bq_pending()} Spiele – gleich geht's weiter")
+            return
 
         def go():
             self.app.open_system(s["key"], s["extensions"])
@@ -701,7 +705,7 @@ class App:
 
         def go():
             self.current = {}
-            for kind, info in (self.app.existing_artwork(rom) or {}).items():
+            for kind, info in self.existing(rom).items():
                 if info.get("data"):
                     path = PREVIEW_DIR / "current" / f"{kind}.png"
                     try:
@@ -919,6 +923,10 @@ class App:
 
     BQ_MAX = 10                                       # höchstens 10 Spiele in der Warteliste
 
+    def existing(self, rom):
+        with self.app_lock:   # nicht zeitgleich mit dem Speichern im Hintergrund
+            return self.app.existing_artwork(rom) or {}
+
     def bq_pending(self):
         return len(self.bq) + self.bq_active
 
@@ -960,7 +968,8 @@ class App:
                 job = self.bq.pop(0)
                 self.bq_active = 1
             try:
-                self.save_artwork(job["rom"], job["chosen"], job["system"])
+                with self.app_lock:
+                    self.save_artwork(job["rom"], job["chosen"], job["system"])
                 log("Batch gespeichert:", job["title"])
             except Exception:
                 log("Batch-Fehler bei " + job["title"] + ":\n" + traceback.format_exc().rstrip())
@@ -1002,9 +1011,10 @@ class App:
             def step(t):
                 self.saving["step"] = t
                 self.dirty = True
-            self.save_artwork(rom, chosen, system, step)
+            with self.app_lock:
+                self.save_artwork(rom, chosen, system, step)
             self.chosen = {}
-            for kind, info in (self.app.existing_artwork(rom) or {}).items():
+            for kind, info in self.existing(rom).items():
                 if info.get("data"):
                     path = PREVIEW_DIR / "current" / f"{kind}.png"
                     to_png(info["data"], path, 400)
