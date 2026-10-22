@@ -5018,8 +5018,14 @@ def speed_event(kind, game):
 def info_toast(text, icon="ff"):
     """Kurze Meldung oben über dem Spiel (Rückmeldung zu Kacheln und Kürzeln)."""
     if INFO_TOAST:
-        q = INFO_TOAST[0]
-        q[:] = [x for x in q if x.get("kind") != "info"] + [{"kind": "info", "text": text, "icon": icon}]
+        cc = INFO_TOAST[0]
+        new = {"kind": "info", "text": text, "icon": icon}
+        if cc.toast_now and cc.toast_now.get("kind") == "info":
+            cc.toast_now = new                       # direkt ersetzen (z. B. Fast Forward → Normal Speed)
+            cc.toast_until = time.monotonic() + 1.5
+            cc.toast_dirty = True
+        else:
+            cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "info"] + [new]
         log("Meldung:", text)
         try:
             os.write(WAKE_W, b"x")
@@ -5032,7 +5038,7 @@ def main():
     mako_hide_osd()
     vkey_open()
     cc = ControlCenter()
-    INFO_TOAST[:] = [cc.toasts]
+    INFO_TOAST[:] = [cc]
     state = {"dirty": False}
 
     def on_touch(kind, x, y):
@@ -5343,8 +5349,7 @@ def main():
             log("Seite Spiel:", cmd, "Slot", cc.slot)
             toggle("cc")                     # erledigt → zurück ins Spiel
             if ok:
-                info_toast("%s · Slot %d" % (tr("Gespeichert" if key == "save" else "Geladen"), cc.slot),
-                           "save" if key == "save" else "load")
+                info_toast("Gespeichert" if key == "save" else "Geladen", "save" if key == "save" else "load")
             return
 
         toggle("cc")                         # schließen: Pause und Grab aufheben, dann auslösen
@@ -5431,7 +5436,7 @@ def main():
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 log("Seite Spiel:", emu, key, "→", msg)
                 if msg in ("Gespeichert", "Geladen"):
-                    info_toast("%s · Slot %d" % (tr(msg), cc.slot), "save" if key == "save" else "load")
+                    info_toast(msg, "save" if key == "save" else "load")
                 elif msg == "Screenshot gespeichert":
                     info_toast(msg, "shot")
             except Exception:
