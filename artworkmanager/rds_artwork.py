@@ -2347,25 +2347,31 @@ class App:
             return
         if self.view not in ("game", "search") or not self.rom:
             open_items = self.retry_load() if not self.bq_pending() else []
-            y0 = 330 if open_items else 430
-            P.text("Artwork Manager", 64, 630, y0, "ffffff", bold=True, align="c", raw=True)
-            P.text("RetroDualStation", 32, 630, y0 + 60, "bdbdbd", align="c", raw=True)
-            if open_items:   # nach leerem Akku / Neustart: offene Warteliste zusammenfassen
-                names = {x["key"]: x["name"] for x in self.systems or []}
-                per = {}
-                for r in open_items:
-                    per.setdefault(r["system"], []).append(r["title"])
-                P.rrect(180, 470, 900, 90 + 46 * min(3, len(per)), 26, "1c1c1c")
-                n = len(open_items)
-                P.text(f"Noch {n} {'Spiel' if n == 1 else 'Spiele'} nicht gespeichert", 28, 630, 516,
-                       "f5be1e", bold=True, align="c", raw=True)
-                for i, (key, titles) in enumerate(list(per.items())[:3]):
-                    line = f"{names.get(key, key)}: " + ", ".join(titles[:2]) + (f" +{len(titles) - 2}" if len(titles) > 2 else "")
-                    P.clip(200, 530 + i * 46, 860, 46)
-                    P.text(line, 22, 630, 562 + i * 46, "bdbdbd", align="c", raw=True)
-                    P.unclip()
-                P.text("System öffnen, um sie mit deiner Auswahl zu speichern", 20, 630,
-                       530 + 46 * min(3, len(per)) + 70, "8a8a8a", align="c", raw=True)
+            if not open_items:
+                P.text("Artwork Manager", 64, 630, 430, "ffffff", bold=True, align="c", raw=True)
+                P.text("RetroDualStation", 32, 630, 490, "bdbdbd", align="c", raw=True)
+                return
+            # nach leerem Akku / Neustart: offene Warteliste als Liste im Stil des unteren Bildschirms
+            T, A = self.T, self.accent
+            P.fill_all(T["bg"])
+            names = {x["key"]: x["name"] for x in self.systems or []}
+            n = len(open_items)
+            P.text(f"Nicht gespeichert", 40, 40, 70, T["text"], bold=True, raw=True)
+            P.text(f"{n} {'Spiel' if n == 1 else 'Spiele'}", 26, 1220, 70, T["muted"], align="r", raw=True)
+            shown = open_items[:9]
+            for i, r in enumerate(shown):
+                y = LIST_Y + i * ROW_H
+                P.rrect(30, y, 1200, ROW_H - 8, 18, T["card"])
+                P.rrect(30, y, 8, ROW_H - 8, 4, A)
+                right = names.get(r["system"], r["system"])
+                rw = P.width(right, 22, raw=True) + 40
+                P.clip(62, y, 1215 - 62 - rw, ROW_H)
+                P.text(r["title"], 28, 62, y + (ROW_H - 8) / 2 + 10, T["text"], raw=True)
+                P.unclip()
+                P.text(right, 22, 1205, y + (ROW_H - 8) / 2 + 8, T["muted"], align="r", raw=True)
+            more = f"+ {n - len(shown)} weitere  ·  " if n > len(shown) else ""
+            P.text(more + "System öffnen, um sie mit deiner Auswahl zu speichern", 22, 40, HINT_Y,
+                   T["muted"], raw=True)
             return
         kind = self.kind_key()
         c = self.cand()
