@@ -1497,6 +1497,7 @@ HAPTIC_ON = [True]
 
 
 INJECTING = [0.0]
+TIMING = {}   # Zeitmessungen fürs Log (Öffnen, Beenden)
 
 
 def inject_keys(seq):
@@ -4760,6 +4761,9 @@ class Overlay:
         if old:
             marshal(old, 0, None, destroy=True)
         self._mm = mm
+        if TIMING.get("open"):                    # Zeitmessung: Tastendruck → erstes fertiges Bild
+            v, t0 = TIMING.pop("open")
+            log("Zeit: %s offen nach %d ms" % (v, (time.monotonic() - t0) * 1000))
         wl.wl_display_flush(self.display)
 
     def hide(self, quiet=False):
@@ -5235,6 +5239,8 @@ def main():
     pauser = Pauser()
 
     def toggle(view):
+        if ui.view != view:
+            TIMING["open"] = (view, time.monotonic())
         if ui.pending_view and not ui.view:
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
@@ -5363,11 +5369,16 @@ def main():
             return          # in ES: kurz drücken tut nichts (Gameswitcher nur durch 2 s Halten)
         log("Home kurz: speichern und zurück zu ES –", game["name"])
         def work():
+            t0 = time.monotonic()
             try:
                 cc.switcher.capture(game)
             except Exception:
                 log("Home kurz: Speichern fehlgeschlagen:\n" + traceback.format_exc().rstrip())
+            t1 = time.monotonic()
             quit_game(game)
+            while os.path.exists("/proc/%d" % game["pid"]) and time.monotonic() - t1 < 20:
+                time.sleep(0.05)
+            log("Zeit: Home kurz – speichern %d ms, beenden %d ms" % ((t1 - t0) * 1000, (time.monotonic() - t1) * 1000))
         threading.Thread(target=work, daemon=True).start()
 
     def game_act(key):
@@ -5747,10 +5758,17 @@ def main():
 
     def do_quit():
         game = cc.game
+        t0 = time.monotonic()
         if ui.view:
             toggle(ui.view)   # schließt CC und hebt die Pause auf
         quit_game(game)
         cc.game = None
+        if game:
+            def measure(pid=game["pid"]):
+                while os.path.exists("/proc/%d" % pid) and time.monotonic() - t0 < 20:
+                    time.sleep(0.05)
+                log("Zeit: %s beendet nach %d ms" % (game["emu"], (time.monotonic() - t0) * 1000))
+            threading.Thread(target=measure, daemon=True).start()
 
     def combo_feedback(code):
         """Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)."""
