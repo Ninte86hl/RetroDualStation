@@ -1375,7 +1375,8 @@ def vkey_open():
         fcntl.ioctl(fd, 0x5501)                                 # UI_DEV_CREATE
         _vkey["fd"] = fd
         log("Virtuelle Tastatur angelegt (RDS Keys)")
-        threading.Timer(1.0, sway_cmd, args=('seat seat0 attach "%s"' % VKEY_ID,)).start()
+        for delay in (1.0, 4.0):   # Sway braucht einen Moment, bis das Gerät bekannt ist
+            threading.Timer(delay, sway_cmd, args=('seat seat0 attach "%s"' % VKEY_ID,)).start()
     except OSError as exc:
         log("Virtuelle Tastatur nicht möglich:", exc)
     return _vkey["fd"]
@@ -1385,8 +1386,7 @@ def vkey_press(code):
     fd = vkey_open()
     if fd is None:
         return False
-    sway_cmd('seat seat0 attach "%s"' % VKEY_ID)               # nach einem Sway-Reload wieder an seat0
-    time.sleep(0.05)
+    # nicht vor jedem Druck neu zuordnen: das Neu-Anhängen an seat0 verschluckt den folgenden Druck
     for val in (1, 0):
         os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
         os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
@@ -5112,7 +5112,7 @@ def main():
         if emu == "DraStic" and key in ("menu", "ff"):
             toggle("cc")
             def later():
-                time.sleep(0.3)
+                time.sleep(0.5)                      # DraStic läuft wieder und hat den Fokus zurück
                 how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
                 log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
             threading.Thread(target=later, daemon=True).start()
