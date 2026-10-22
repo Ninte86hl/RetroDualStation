@@ -75,6 +75,7 @@ GAL_Y = 120                                 # Bildleiste
 # Kachelform je Artwork-Stil: (Breite, Höhe) – Hülle hochkant, Cartridge quadratisch, Hero breit
 TILE_SIZE = {"boxart": (330, 495), "cartridge": (370, 370), "image": (385, 125)}
 TILES = 3                                   # immer drei Kacheln, mittig
+PAGE = 12                                   # Bilder pro Seite (L2/R2), teilbar durch 3 und 2
 TILE_GAP = 22
 
 
@@ -796,12 +797,15 @@ class App:
         return items[self.idx[kind]] if items else None
 
     def want_previews(self):
-        """Vorschaubilder der sichtbaren Kacheln im Hintergrund laden."""
+        """Vorschaubilder im Hintergrund laden: erst die sichtbaren, dann den Rest der Seite (12)."""
         kind = self.kind_key()
         items = self.cands.get(kind) or []
         first = self.gscroll.get(kind, 0)
         tiles = tile_geom(kind)[3]
         for j in range(max(0, first - 1), min(len(items), first + tiles + 2)):
+            self._load_preview(items[j])
+        start = self.idx.get(kind, 0) // PAGE * PAGE
+        for j in range(start, min(len(items), start + PAGE)):
             self._load_preview(items[j])
 
     def _load_preview(self, item):
@@ -1552,9 +1556,13 @@ class App:
         elif code in (BTN_TL, BTN_TR):
             d = -1 if code == BTN_TL else 1
             self.switch_kind(d) if self.view == "game" else self.move(d * ROWS)
-        elif code in (312, 313) and self.view == "game":   # L2 / R2: eine Seite Bilder weiter
-            d = -1 if code == 312 else 1
-            self.step(d * tile_geom(self.kind_key())[3])
+        elif code in (312, 313) and self.view == "game":   # L2 / R2: vorige / nächste Seite (je 12 Bilder)
+            kind = self.kind_key()
+            n = len(self.cands.get(kind) or [])
+            page = self.idx[kind] // PAGE + (-1 if code == 312 else 1)
+            if n and 0 <= page * PAGE < n:
+                self.select(page * PAGE)
+                self.gscroll[kind] = page * PAGE   # Seite beginnt links mit ihrem ersten Bild
         elif code in (312, 313) and self.view != "editor":
             self.move((-1 if code == 312 else 1) * ROWS)
         elif code == BTN_START and self.view == "game":
@@ -2007,7 +2015,8 @@ class App:
                 P.text("‹", 60, 14, gy + gh / 2 + 20, T["muted"], raw=True)
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
-        pos = f"{cur + 1} / {len(items)} · " if items else ""
+        pages = (len(items) + PAGE - 1) // PAGE
+        pos = f"Seite {cur // PAGE + 1} / {pages}" if pages > 1 else ""
         self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil", "L2 / R2", "Seite",
                                *(("Select", "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
