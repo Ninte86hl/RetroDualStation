@@ -27,6 +27,8 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `011-rds-hide-game-achievements.patch` – *View this game's achievements* in the game options (X in the game list)
   is hidden in dual mode: it only showed "An error occurred" (same missing developer credentials as in 007);
   the Control Center shows achievements in game (page 3).
+- `012-rds-scraper-notification-top.patch` – background notifications (e.g. scraper progress) in dual mode: larger,
+  centred at the bottom of the top screen, stacked upwards (the top centre belongs to the Control Center's messages).
 
 ## Usage
 
@@ -38,7 +40,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all eleven** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all twelve** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating
