@@ -1084,6 +1084,16 @@ class App:
         if not self.bq:
             self.queue_close()
 
+    def queue_up(self):
+        """Y: gewähltes Spiel eine Stelle nach oben (ganz oben → ans Ende)."""
+        with self.bq_lock:
+            n, i = len(self.bq), self.sel
+            if n < 2 or not 0 <= i < n:
+                return
+            j = i - 1 if i > 0 else n - 1
+            self.bq.insert(j, self.bq.pop(i))
+        self.move(j - i)
+
     def queue_save(self):
         """A in der Warteliste: alles jetzt speichern, danach geht der Batch weiter."""
         self.flush = True
@@ -1450,7 +1460,8 @@ class App:
                     ("Y", "Rahmen", self.editor_next_border if len(ed.get("borders") or []) > 1 else None)]
         if self.view == "queue":
             return [("A", "Jetzt speichern", self.queue_save if self.bq else None), ("B", "Zurück", self.back),
-                    ("X", "Entfernen", (lambda: self.queue_remove(self.sel)) if self.bq else None), ("Y", "", None)]
+                    ("X", "Entfernen", (lambda: self.queue_remove(self.sel)) if self.bq else None),
+                    ("Y", "Nach oben", self.queue_up if len(self.bq) > 1 else None)]
         if self.view == "game":
             kind, c = self.kind_key(), self.cand()
             taken = c is not None and self.chosen.get(kind) is c
