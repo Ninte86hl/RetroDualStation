@@ -4042,7 +4042,11 @@ class ControlCenter:
             col = "f5be1e" if lvl > 10 else "e5383b"
             head = tr("Akku fast leer") if lvl <= 5 else tr("Akku schwach")
             sub = tr("Jetzt laden – sonst geht das Gerät gleich aus") if lvl <= 5 else tr("Bitte bald laden")
-            bw = int(max(P.width(head + "  %d %%" % lvl, 28, bold=True, raw=True), P.width(sub, 18, raw=True))) + 170
+            hs, ss = 28, 18
+            while hs > 18 and max(P.width(head + "  %d %%" % lvl, hs, bold=True, raw=True),
+                                  P.width(sub, ss, raw=True)) + 170 > 1220:   # lange Übersetzungen: kleiner
+                hs, ss = hs - 2, max(14, ss - 1)
+            bw = int(max(P.width(head + "  %d %%" % lvl, hs, bold=True, raw=True), P.width(sub, ss, raw=True))) + 170
             x = 630 - bw // 2
             P.rrect(x, 18, bw, 120, 40, "1c1c1c", 0.92)
             # Batterie-Symbol
@@ -4050,25 +4054,31 @@ class ControlCenter:
             P.rrect(x + 39, 59, 56, 30, 6, "1c1c1c")
             P.rrect(x + 100, 66, 8, 16, 3, "ffffff")
             P.rrect(x + 43, 63, max(6, 48 * lvl / 100), 22, 4, col)
-            P.text("%s  %d %%" % (head, lvl), 28, x + 130, 70, col, bold=True, raw=True)
-            P.text(sub, 18, x + 130, 104, "bdbdbd", raw=True)
+            P.text("%s  %d %%" % (head, lvl), hs, x + 130, 70, col, bold=True, raw=True)
+            P.text(sub, ss, x + 130, 104, "bdbdbd", raw=True)
             return
         if t.get("kind") == "charging":         # Ladegerät angeschlossen
             lvl = t.get("level") or 0
             text = "%s  %d %%" % (tr("Wird geladen"), lvl)
-            bw = int(P.width(text, 26, bold=True, raw=True)) + 150
+            fs = 26
+            while fs > 16 and P.width(text, fs, bold=True, raw=True) + 150 > 1220:
+                fs -= 2
+            bw = int(P.width(text, fs, bold=True, raw=True)) + 150
             x = 630 - bw // 2
             P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
             P.game_icon("bolt", x + 62, 78, "2db67a")
-            P.text(text, 26, x + 110, 88, "ffffff", bold=True, raw=True)
+            P.text(text, fs, x + 110, 88, "ffffff", bold=True, raw=True)
             return
         if t.get("kind") == "info":             # kurze Rückmeldung, z. B. „Vorspulen umgeschaltet“
             text = tr(t.get("text") or "")
-            bw = int(P.width(text, 26, bold=True, raw=True)) + 150
+            fs = 26
+            while fs > 16 and P.width(text, fs, bold=True, raw=True) + 150 > 1220:
+                fs -= 2
+            bw = int(P.width(text, fs, bold=True, raw=True)) + 150
             x = 630 - bw // 2
             P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
             P.game_icon(t.get("icon") or "ff", x + 62, 78, A, scale=0.75)
-            P.text(text, 26, x + 110, 88, "ffffff", bold=True, raw=True)
+            P.text(text, fs, x + 110, 88, "ffffff", bold=True, raw=True)
             return
         if t.get("kind") == "cheevo":
             x, bw = 230, 800
@@ -4082,7 +4092,12 @@ class ControlCenter:
             while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
                 title = title[:-2]
             P.text(title, 28, x + 140, 96, "ffffff", bold=True, raw=True)
-            P.text(t.get("sub") or "", 17, x + 140, 126, "bdbdbd", raw=True)
+            sub = t.get("sub") or ""
+            while P.width(sub, 17, raw=True) > bw - 170 and len(sub) > 4:   # Beschreibung bleibt im Kasten
+                sub = sub[:-2]
+            if sub != (t.get("sub") or ""):
+                sub = sub.rstrip() + "…"
+            P.text(sub, 17, x + 140, 126, "bdbdbd", raw=True)
 
     def _session(self):
         """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""

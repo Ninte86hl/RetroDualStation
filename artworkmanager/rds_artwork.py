@@ -1981,12 +1981,23 @@ class App:
             self.draw_confirm(P, self.confirm)
             return
         busy, message = self.busy, self.message   # Hintergrund-Threads ändern das jederzeit
+        def fit(text, size, bold, min_w, max_w=1180):
+            """Kasten wächst mit dem Text (jede Sprache); zu lang → Schrift kleiner, nie über den Rand."""
+            while size > 18 and P.width(text, size, bold=bold, raw=True) + 80 > max_w:
+                size -= 2
+            return size, max(min_w, min(max_w, P.width(text, size, bold=bold, raw=True) + 80))
         if busy:
-            P.rrect(230, 380, 800, 150, 30, T["card"])
-            P.text(str(busy), 32, 630, 468, T["text"], bold=True, align="c", raw=True)
+            size, w = fit(str(busy), 32, True, 800)
+            P.rrect(630 - w / 2, 380, w, 150, 30, T["card"])
+            P.clip(630 - w / 2 + 20, 380, w - 40, 150)
+            P.text(str(busy), size, 630, 468, T["text"], bold=True, align="c", raw=True)
+            P.unclip()
         elif message and time.monotonic() - message[1] < 4:
-            P.rrect(130, BAR_Y - 110, 1000, 90, 26, T["card"])
-            P.text(str(message[0]), 28, 630, BAR_Y - 54, T["text"], align="c", raw=True)
+            size, w = fit(str(message[0]), 28, False, 1000)
+            P.rrect(630 - w / 2, BAR_Y - 110, w, 90, 26, T["card"])
+            P.clip(630 - w / 2 + 20, BAR_Y - 110, w - 40, 90)
+            P.text(str(message[0]), size, 630, BAR_Y - 54, T["text"], align="c", raw=True)
+            P.unclip()
 
     INTRO = [
         ("Willkommen", [
