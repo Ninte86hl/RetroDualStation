@@ -2476,7 +2476,7 @@ def main():
                 a.flush = True
                 a.busy = a.saving_label()   # Home: offene Spiele erst fertig speichern
                 a.dirty = True
-            elif a.busy and str(a.busy).startswith("Speichere noch") and not getattr(a, "flush", False):
+            elif a.busy and str(a.busy).startswith("Speichere ") and not getattr(a, "flush", False):
                 a.busy = None
             if a.bq_fail and not a.bq_pending():
                 fails, a.bq_fail = a.bq_fail, []
