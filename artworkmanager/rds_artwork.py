@@ -640,6 +640,17 @@ class App:
         else:
             self.batch_end()
 
+    def batch_cancel(self):
+        """B im Beenden-Dialog: Batch abbrechen, Warteliste verwerfen (nichts wird gespeichert)."""
+        with self.bq_lock:
+            dropped, self.bq[:] = list(self.bq), []
+        if dropped:
+            self.retry_save([r for r in self.retry_load()
+                             if not any(r["system"] == j["system"] and r["rom"] == j["rom"] for j in dropped)])
+        self.batch = None
+        self.say(f"Batch abgebrochen · {len(dropped)} Spiele verworfen" if dropped else "Batch abgebrochen")
+        self.leave_game("systems")
+
     def batch_end(self):
         b, self.batch = self.batch, None
         if not b:
@@ -1429,11 +1440,12 @@ class App:
             def finish():
                 self.batch_end()        # speichert die Warteliste, danach lädt ES neu
             self.ask("Batch beenden?",
-                     [f"{wait} Spiele in der Warteliste werden jetzt gespeichert" if wait
-                      else "Die Warteliste ist leer",
-                      "und direkt in EmulationStation eingetragen.",
-                      "Die übrigen Spiele kannst du später per Batch bearbeiten."],
-                     "Speichern & beenden", finish, no_label="Zurück zum Batch")
+                     [f"{wait} {'Spiel' if wait == 1 else 'Spiele'} in der Warteliste." if wait
+                      else "Die Warteliste ist leer.",
+                      "Speichern trägt sie direkt in EmulationStation ein,",
+                      "Abbrechen verwirft sie. Weiter führt zurück zum Batch."],
+                     "Speichern & beenden", finish, no_label="Batch abbrechen",
+                     on_no=self.batch_cancel, alt=("X", "Weiter", lambda: None))
             return
         if self.view == "queue":
             self.queue_close()
@@ -1540,9 +1552,10 @@ class App:
         self.open_system(h["si"], then=then)
 
     # -- Rückfrage (A = ja, B = nein) --
-    def ask(self, title, lines, yes_label, on_yes, on_no=None, yes_key="A", no_label="Abbrechen"):
+    def ask(self, title, lines, yes_label, on_yes, on_no=None, yes_key="A", no_label="Abbrechen", alt=None):
+        """alt = (Taste, Text, Aktion): optionale dritte Wahl, z. B. X."""
         self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes, "on_no": on_no,
-                        "key": yes_key, "no": no_label}
+                        "key": yes_key, "no": no_label, "alt": alt}
 
     def answer(self, yes):
         c, self.confirm = self.confirm, None
@@ -1768,7 +1781,11 @@ class App:
             return
         if self.confirm:
             yes = BTN_START if self.confirm.get("key") == "Start" else BTN_EAST
-            if code in (yes, BTN_SOUTH):
+            alt = self.confirm.get("alt")
+            if alt and code == {"X": BTN_NORTH, "Y": BTN_WEST}.get(alt[0]):
+                self.confirm = None
+                alt[2]()
+            elif code in (yes, BTN_SOUTH):
                 self.answer(code == yes)
             return
         if code == BTN_SOUTH:
@@ -1830,6 +1847,11 @@ class App:
 
     def on_tap(self, x, y):
         hit = self._hit(x, y)
+        if self.confirm and hit and hit[0] == "confirm_alt":
+            alt, self.confirm = self.confirm.get("alt"), None
+            if alt:
+                alt[2]()
+            return
         if self.confirm and (not hit or hit[0] != "confirm"):
             return
         if not hit or self.busy:
@@ -2112,6 +2134,16 @@ class App:
         P.text(c["title"], 36, 630, 280, T["text"], bold=True, align="c", raw=True)
         for n, line in enumerate(c["lines"]):
             P.text(line, 25, 630, 350 + n * 42, T["muted"], align="c", raw=True)
+        alt = c.get("alt")
+        if alt:   # drei Wahlmöglichkeiten nebeneinander
+            boxes = [(140, A, (c.get("key", "A"), c["yes"]), ("confirm", True), "ffffff"),
+                     (470, T["tile"], (alt[0], alt[1]), ("confirm_alt", None), T["text"]),
+                     (800, T["tile"], ("B", c.get("no", "Abbrechen")), ("confirm", False), T["text"])]
+            for x, fill, label, hit, col in boxes:
+                P.rrect(x, 540, 320, 90, 26, fill)
+                P.hint([label], 24, x + 160, 597, col, col, align="c")
+                self.hits.append((x, 540, 320, 90, hit))
+            return
         P.rrect(160, 540, 450, 90, 26, A)
         P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
         self.hits.append((160, 540, 450, 90, ("confirm", True)))
