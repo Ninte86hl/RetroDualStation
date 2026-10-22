@@ -1355,6 +1355,45 @@ def inject_keys(seq):
     return True
 
 
+# Virtuelle Tastatur "RDS Keys" (uinput): Tasten, die es am Gerät nicht gibt (F11/F12).
+# DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F11 = 324, F12 = 325, getestet 22.10.2026)
+# und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
+VKEY_ID = "21060:21297:RDS_Keys"
+SDL_TO_EVDEV = {68: 87, 69: 88}          # SDL-Scancode F11/F12 → evdev KEY_F11/KEY_F12
+_vkey = {"fd": None}
+
+
+def vkey_open():
+    if _vkey["fd"] is not None:
+        return _vkey["fd"]
+    try:
+        fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+        fcntl.ioctl(fd, 0x40045564, EV_KEY)                     # UI_SET_EVBIT
+        for code in SDL_TO_EVDEV.values():
+            fcntl.ioctl(fd, 0x40045565, code)                   # UI_SET_KEYBIT
+        os.write(fd, struct.pack("80sHHHHi", b"RDS Keys", 0x06, 0x5244, 0x5331, 1, 0) + b"\0" * (64 * 4 * 4))
+        fcntl.ioctl(fd, 0x5501)                                 # UI_DEV_CREATE
+        _vkey["fd"] = fd
+        log("Virtuelle Tastatur angelegt (RDS Keys)")
+        threading.Timer(1.0, sway_cmd, args=('seat seat0 attach "%s"' % VKEY_ID,)).start()
+    except OSError as exc:
+        log("Virtuelle Tastatur nicht möglich:", exc)
+    return _vkey["fd"]
+
+
+def vkey_press(code):
+    fd = vkey_open()
+    if fd is None:
+        return False
+    sway_cmd('seat seat0 attach "%s"' % VKEY_ID)               # nach einem Sway-Reload wieder an seat0
+    time.sleep(0.05)
+    for val in (1, 0):
+        os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
+        os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
+        time.sleep(0.12)
+    return True
+
+
 def es_launch(rom):
     """Spiel über die ES-Schnittstelle starten (ES wählt Emulator wie beim normalen Start)."""
     try:
@@ -1780,6 +1819,9 @@ def drastic_press(name, dflt=None):
     v = int(m.group(1)) if m else dflt
     if v is None:
         return None
+    if 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:          # Tastatur-Taste (virtuell)
+        vkey_press(SDL_TO_EVDEV[v - 256])
+        return "Taste F%d" % (v - 256 - 57)
     if 1024 <= v < 1024 + len(JOY_CODES):
         code = JOY_CODES[v - 1024]
         inject_keys([(code, 1), 0.12, (code, 0)])
@@ -1875,8 +1917,8 @@ def drastic_shortcuts():
         if 1024 <= v < 1100:
             name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
-        elif 1152 <= v < 1280:
-            rows.append((label, tr("nur über das CC")))
+        elif 1152 <= v < 1280 or (256 <= v < 512 and (v - 256) in SDL_TO_EVDEV):
+            rows.append((label, tr("nur über das CC")))       # Phantom-Achse bzw. virtuelle Taste
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
@@ -4809,6 +4851,7 @@ def mako_hide_osd():
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
     mako_hide_osd()
+    vkey_open()
     cc = ControlCenter()
     state = {"dirty": False}
 

@@ -241,6 +241,9 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         log "Sway: Fake_Keyboard an seat0"
     fi
     swaymsg seat seat0 attach "4660:22136:Fake_Keyboard" >/dev/null 2>&1   # sofort wirksam
+    if [ -f "$SWAYCFG" ] && ! grep -q 'RDS_Keys' "$SWAYCFG"; then
+        printf '\n# RetroDualStation: virtuelle Tasten des Kontrollcenters an die Spiele\nseat seat0 attach "21060:21297:RDS_Keys"\n' >> "$SWAYCFG"
+    fi
 
     # RetroArch: keine Rückfragen bei Neustart/Beenden, keine Speicherstand-Einblendung (Gameswitcher)
     RACFG=/storage/.config/retroarch/retroarch.cfg
@@ -282,25 +285,19 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
         log "Kuerzel: einheitliches Schema gesetzt (Sicherungen *.vor-rds-kuerzel)"
     fi
-    # DraStic: Menü auf R3, die Anbernic-Taste bleibt beim Kontrollcenter. Einmalig, mit Sicherung.
-    # Vorspulen je Gerät: RG DS → rechter Stick (echter zweiter Stick, in DS-Spielen unbenutzt);
-    # RG DS Plus → L3 (Stick drücken). Achtung: Der Treiber des Plus spiegelt links/rechts des
-    # Sticks auf die Achsen des fehlenden rechten Sticks – dort ausgelöstes Vorspulen (bis v14)
-    # sprang bei jeder Linksbewegung an.
-    if [ "$DEVICE" = "RG DS Plus" ]; then DFF=1035; else DFF=1154; fi
+    # DraStic: Menü und Vorspulen auf Tasten, die es am Gerät nicht gibt – F11 (324) und F12 (325)
+    # der virtuellen Tastatur des Kontrollcenters. Stick, L3 und R3 bleiben frei; die Anbernic-Taste
+    # gehört dem CC. (Bis v14: R3 und Phantom-Achse – auf dem RG DS Plus sprang Vorspulen beim
+    # Linksdrücken an.) Einmal je Gerät (Merker v2), Sicherung nur bei der ersten Umstellung.
     DMARK=/storage/.config/retrodualstation/drastic-kuerzel.done
+    DMARK2=/storage/.config/retrodualstation/drastic-kuerzel-v2.done
     DCFG=/storage/.config/drastic/config/drastic.cfg
-    if [ ! -f "$DMARK" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
-        cp "$DCFG" "$DCFG.vor-rds-kuerzel"
-        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 1036/' \
-                  -e "s/^(controls_[ab]\\[CONTROL_INDEX_FAST_FORWARD\\]) = .*/\\1 = $DFF/" "$DCFG"
-        date > "$DMARK"
-        log "DraStic: Menue auf R3, Vorspulen auf $DFF (nur ueber das CC bzw. $([ $DFF = 1035 ] && echo L3 || echo rechter Stick))"
-    elif [ "$DEVICE" = "RG DS Plus" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null \
-         && grep -q '^controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\] = 1154' "$DCFG"; then
-        # Korrektur für Installationen bis v14 (Vorspulen sprang beim Linksdrücken an)
-        sed -i -E 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = 1154/\1 = 1035/' "$DCFG"
-        log "DraStic (RG DS Plus): Vorspulen vom Phantom-Stick auf L3 verlegt"
+    if [ ! -f "$DMARK2" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        [ -f "$DMARK" ] || cp "$DCFG" "$DCFG.vor-rds-kuerzel"
+        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 324/' \
+                  -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 325/' "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
+        log "DraStic: Menue auf F11, Vorspulen auf F12 (virtuelle Tasten, nur ueber das CC)"
     fi
     # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
     SSMARK=/storage/.config/retrodualstation/savestates.done
