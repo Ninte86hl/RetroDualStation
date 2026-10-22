@@ -1248,6 +1248,10 @@ class App:
         self.top_dirty = True
         self.say("Icon aus dem Editor übernommen")
 
+    def quick_search(self):
+        """Y im Spiel: erst die Trefferliste zum aktuellen Namen, eintippen nur bei Bedarf (Y in der Liste)."""
+        self.run_search(self.query or self.title)
+
     def open_search(self):
         self.kbd = Keyboard(self, "Spiel suchen", self.run_search, secret=False)
         self.kbd.text = self.query or self.title
@@ -1285,7 +1289,8 @@ class App:
             if ambiguous:
                 self.say("Mehrere Spiele gefunden – bitte das richtige wählen")
             elif not self.results:
-                self.say("Keine Treffer – anderen Namen probieren")
+                self.say("Keine Treffer – anderen Namen eingeben")
+                self.pending = self.open_search
         self.work("Suche läuft …", go)
 
     def pick_result(self, i):
@@ -1387,7 +1392,7 @@ class App:
                     ("B", "Batch beenden" if self.batch else "Zurück", self.back),
                     ("X", "Icon-Editor", self.open_editor if self.editor_useful() else None),
 
-                    ("Y", "Spiel suchen", self.open_search)]
+                    ("Y", "Spiel suchen", self.quick_search)]
         a_label = {"systems": "Öffnen", "games": "Öffnen", "search": "Auswählen", "gsearch": "Öffnen",
                    "settings": "Ändern", "restore": "Wiederherstellen"}.get(self.view, "")
         return [("A", a_label, self.activate if self.list_len() else None),
@@ -1395,6 +1400,7 @@ class App:
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else
                 ("X", "Icon-Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
                 ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else
+                ("Y", "Name eingeben", self.open_search) if self.view == "search" else
                 ("Y", "Filter", self.next_filter) if self.view == "games" else ("Y", "", None)]
 
     # -- Spielsuche über alle Systeme --
