@@ -926,7 +926,12 @@ class App:
                     self.want_previews()
                     break
             else:
-                self.say("Alle Stile übernommen – mit Start speichern")
+                if self.batch:   # Batch: alles gewählt → automatisch in die Warteschlange, nächstes Spiel
+                    title = self.title
+                    self.bq_add()
+                    self.say(f"{title} in der Warteschlange")
+                else:
+                    self.say("Alle Stile übernommen – mit Start speichern")
         self.top_dirty = True
 
     BQ_MAX = 10                                       # höchstens 10 Spiele in der Warteliste
@@ -2239,10 +2244,10 @@ class App:
         if self.top_mode == "mix":
             self.draw_mix(P)
             if line:
-                P.text(line, 28, 40, 928, "ffffff", bold=True, raw=True)
+                P.text(line, 22, 40, 925, "bdbdbd", raw=True)
             return
         if line:
-            P.text(line, 28, 40, 928, "ffffff", bold=True, raw=True)
+            P.text(line, 22, 40, 925, "bdbdbd", raw=True)
         P.clip(30, 10, 1200 - (160 if b else 0), 70)
         P.text(self.title, 36, 630, 60, "ffffff", bold=True, align="c", raw=True)
         P.unclip()
