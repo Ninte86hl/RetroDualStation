@@ -1,0 +1,53 @@
+diff --git a/es-core/src/InputManager.cpp b/es-core/src/InputManager.cpp
+index 9bb673e..e8d0a83 100644
+--- a/es-core/src/InputManager.cpp
++++ b/es-core/src/InputManager.cpp
+@@ -9,6 +9,7 @@
+ #include <pugixml/src/pugixml.hpp>
+ #include <SDL.h>
+ #include <iostream>
++#include <map>
+ #include <assert.h>
+ #include "Settings.h"
+ #include <algorithm>
+@@ -720,23 +721,28 @@ bool InputManager::parseEvent(const SDL_Event& ev, Window* window)
+ 		{
+ 			int& prevValue = prevAxis->second[ev.jaxis.axis];
+ 
+-			//if it switched boundaries
+-			if ((abs(ev.jaxis.value - initialValue) > DEADZONE) != (abs(prevValue) > DEADZONE))
++			// RDS: Stick reagiert ab ca. 50 % (statt 70 %) und gilt erst unter ca. 35 % als losgelassen –
++			// leichter zu bedienen, Stick-Drift löst trotzdem nichts aus (Hysterese).
++			static std::map<std::pair<int, int>, int> rdsAxisState;
++			const int RDS_ON = 16000, RDS_OFF = 11500;
++			int value = ev.jaxis.value - initialValue;
++			int& state = rdsAxisState[std::make_pair((int)ev.jaxis.which, (int)ev.jaxis.axis)];
++			int normValue = state;
++			if (state == 0)
++				normValue = value > RDS_ON ? 1 : value < -RDS_ON ? -1 : 0;
++			else if (state * value < RDS_OFF)          // zurück unter die Loslass-Schwelle oder Richtung gewechselt
++				normValue = value > RDS_ON ? 1 : value < -RDS_ON ? -1 : 0;
++
++			if (normValue != state)
+ 			{
+-				int normValue;
+-				if (abs(ev.jaxis.value - initialValue) <= DEADZONE)
+-					normValue = 0;
+-				else
+-					if (ev.jaxis.value - initialValue > 0)
+-						normValue = 1;
+-					else
+-						normValue = -1;
+-
++				if (state != 0 && normValue != 0)   // direkt umgeschlagen: erst loslassen melden
++					window->input(getInputConfigByDevice(ev.jaxis.which), Input(ev.jaxis.which, TYPE_AXIS, ev.jaxis.axis, 0, false));
++				state = normValue;
+ 				window->input(getInputConfigByDevice(ev.jaxis.which), Input(ev.jaxis.which, TYPE_AXIS, ev.jaxis.axis, normValue, false));
+ 				causedEvent = true;
+ 			}
+ 
+-			prevValue = ev.jaxis.value - initialValue;
++			prevValue = value;
+ 		}
+ 
+ 		return causedEvent;
