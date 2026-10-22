@@ -48,7 +48,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Priorität (festgelegt 20.10.2026)
 Keine neuen Funktionen, bis diese fertig sind – neue Ideen nur notieren.
-1. ✅ **Etappe 5: Gameswitcher** (fertig 20.10.2026: RetroArch, DraStic, DSperate, Ports; ES-Ketten-Start, Ladebildschirm; Release v11 offen) (Return/Home-Taste, Auto-Speichern/Laden) – Benutzerwechsel erst später mit dem Einstellungsmenü
+1. ✅ **Etappe 5: Gameswitcher** (fertig 20.10.2026: RetroArch, DraStic, DSperate, Ports; ES-Ketten-Start, Ladebildschirm; Release v11 offen) (Return/Home-Taste, Auto-Speichern/Laden) 
    - Liste der zuletzt gespielten Spiele mit **Screenshot vom letzten Zeitpunkt** (beim Auto-Speichern)
    - Tasten: **A** letzten Savestate laden (weiterspielen) · **Y** Spiel neu starten ohne Savestate
      (normaler Spielstand im Spiel/SRAM bleibt unberührt) ·
@@ -118,9 +118,8 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       `set_setting rocknix.bottomscreen.type none` (lowerdeck aus) ·
       mako: `[summary~="^(Brightness|Volume):"] invisible=1` ·
       Deploy-Pfad CC: `/storage/.config/retrodualstation/controlcenter/`
-- [ ] Idee (19.10.2026): Benutzerwechsel im Gameswitcher – je Benutzer eigene Savegames und
-      Speicherstände (z. B. eigene Ordner pro Profil, beim Wechsel umschalten; RetroArch
-      `savefile_directory`/`savestate_directory`, DraStic/DSperate prüfen)
+- [~] Idee (19.10.2026): Benutzerwechsel im Gameswitcher – verworfen (22.10.2026): eigene Ordner pro Profil
+      wären nach dem Deinstallieren von RDS nicht mehr sinnvoll nutzbar (RDS soll restlos entfernbar bleiben)
 - [ ] Idee (20.10.2026, ohne Priorität): **Einrichtungsassistent** beim ersten Start nach der
       Installation – WLAN, Zeitzone, Sprache, Theme, kurze Einführung in Anbernic-/Power-Taste;
       überspringbar, später aus den Einstellungen erneut aufrufbar (Anregung: BananaLinux)
@@ -141,7 +140,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
         Reihenfolge; auf der Seite „Spiel“ wählen, welche Kürzel/Funktionen (Savestate laden/
         speichern, Screenshot, Vorspulen …) angezeigt werden
       - Darstellung folgt Hell/Dunkel und Akzentfarbe des CC (Mockup: docs/kontrollcenter/einstellungen-mockup.png; Dual-Screen-Entwurf 21.10.2026 (lokal) – **so freigegeben zur Umsetzung**; Kategorie-Farben: Anzeige blau, Spiele grün, Controller violett, Netzwerk orange, System gelb, RDS rot/weiß)
-      - später: RetroAchievements-Anmeldung, Benutzerwechsel
+      - später: RetroAchievements-Anmeldung
       - Nur unterer Bildschirm (wie CC); oben optional später Erklärung zur gewählten Einstellung
       - ES-Patch: **Start kurz** → Einstellungsmenü im CC (Nachricht an CC),
         **Start lang** → originales ES-Menü als Rückfall
