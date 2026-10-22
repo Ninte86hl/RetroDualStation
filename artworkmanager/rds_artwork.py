@@ -600,7 +600,15 @@ class App:
                 self.games.append((base, name, status.get(base, 0)))
             self.games.sort(key=lambda g: g[1].casefold())
             self.view, self.sel, self.scroll = "games", 0, 0
-        self.work(f"{s['name']} wird geladen …", go, then=self.start_batch if batch else then)
+
+        def after():
+            if batch:
+                self.start_batch()
+            elif then:
+                then()
+            if not self.batch and not then:   # nur beim normalen Öffnen der Spieleliste
+                self.retry_offer()
+        self.work(f"{s['name']} wird geladen …", go, then=after)
 
     # -- Batch: alle Spiele mit fehlenden Artworks nacheinander --
     def start_batch(self):
@@ -974,11 +982,61 @@ class App:
             except Exception:
                 log("Batch-Fehler bei " + job["title"] + ":\n" + traceback.format_exc().rstrip())
                 self.bq_fail.append(job["title"])
+                self.retry_remember(job)
             finally:
                 with self.bq_lock:
                     self.bq_active = 0
                     self.bq_lock.notify_all()
                 self.dirty = self.top_dirty = True
+
+    RETRY = WORK / "retry.json"   # fehlgeschlagene Batch-Spiele mit gewählten Bildern
+
+    def retry_load(self):
+        try:
+            return json.loads(self.RETRY.read_text())
+        except Exception:
+            return []
+
+    def retry_save(self, items):
+        try:
+            if items:
+                self.RETRY.write_text(json.dumps(items))
+            elif self.RETRY.exists():
+                self.RETRY.unlink()
+        except OSError as exc:
+            log("Warteliste nicht gemerkt:", exc)
+
+    def retry_remember(self, job):
+        """Fehlgeschlagenes Spiel samt Auswahl merken (Editor-Bilder ohne Datei bleiben außen vor)."""
+        chosen = {k: {kk: vv for kk, vv in v.items() if not kk.startswith("_")}
+                  for k, v in job["chosen"].items() if not v.get("_png")}
+        if not chosen:
+            return
+        items = [r for r in self.retry_load() if not (r["system"] == job["system"] and r["rom"] == job["rom"])]
+        items.append({"rom": job["rom"], "system": job["system"], "title": job["title"], "chosen": chosen})
+        self.retry_save(items)
+
+    def retry_offer(self):
+        """Nach dem Öffnen eines Systems: gemerkte Fehlschläge erneut speichern?"""
+        key = self.system["key"] if self.system else None
+        mine = [r for r in self.retry_load() if r["system"] == key]
+        if not mine:
+            return
+        rest = [r for r in self.retry_load() if r["system"] != key]
+
+        def again():
+            self.retry_save(rest)
+            with self.bq_lock:
+                if not getattr(self, "bq_thread", None):
+                    self.bq_thread = threading.Thread(target=self.bq_worker, daemon=True)
+                    self.bq_thread.start()
+                self.bq.extend(mine)
+                self.bq_lock.notify_all()
+            self.say(f"{len(mine)} Spiele werden erneut gespeichert")
+
+        names = ", ".join(r["title"] for r in mine[:3]) + (" …" if len(mine) > 3 else "")
+        self.ask(f"{len(mine)} Spiele nicht gespeichert", [names, "Mit deiner Auswahl erneut speichern?"],
+                 "Erneut speichern", again, on_no=lambda: self.retry_save(rest))
 
     def bq_add(self):
         """Batch: Spiel vormerken und sofort weiter – gespeichert wird im Hintergrund."""
@@ -1393,13 +1451,15 @@ class App:
         self.open_system(h["si"], then=then)
 
     # -- Rückfrage (A = ja, B = nein) --
-    def ask(self, title, lines, yes_label, on_yes):
-        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes}
+    def ask(self, title, lines, yes_label, on_yes, on_no=None):
+        self.confirm = {"title": title, "lines": lines, "yes": yes_label, "on_yes": on_yes, "on_no": on_no}
 
     def answer(self, yes):
         c, self.confirm = self.confirm, None
         if yes and c:
             c["on_yes"]()
+        elif c and c.get("on_no"):
+            c["on_no"]()
 
     # -- Einstellungen --
     def open_settings(self):
