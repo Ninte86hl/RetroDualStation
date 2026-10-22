@@ -1438,6 +1438,9 @@ def haptic(kind="open"):
 HAPTIC_ON = [True]
 
 
+INJECTING = [0.0]
+
+
 def inject_keys(seq):
     """Tastendrücke ins eingebaute Joypad einspeisen (sehen alle Programme wie echte Drücke).
     seq: Liste aus (code, wert) oder Pausen in Sekunden (float)."""
@@ -1446,6 +1449,7 @@ def inject_keys(seq):
     if not dev:
         return False
     fd = os.open(dev, os.O_WRONLY)
+    INJECTING[0] = time.monotonic() + 0.6          # eigene Drücke nicht als Nutzer-Kürzel werten
     try:
         for item in seq:
             if isinstance(item, float):
@@ -4995,6 +4999,8 @@ def mako_hide_osd():
 INFO_TOAST = []   # wird in main() auf cc.toasts gesetzt
 
 
+WAKE_R, WAKE_W = os.pipe()          # weckt die Hauptschleife, wenn eine Meldung ansteht
+os.set_blocking(WAKE_R, False)
 SPEED = {"pid": None, "mode": "normal"}   # nur mitgezählt – je Spiel neu
 
 
@@ -5013,6 +5019,11 @@ def info_toast(text, icon="ff"):
     if INFO_TOAST:
         q = INFO_TOAST[0]
         q[:] = [x for x in q if x.get("kind") != "info"] + [{"kind": "info", "text": text, "icon": icon}]
+        log("Meldung:", text)
+        try:
+            os.write(WAKE_W, b"x")
+        except OSError:
+            pass
 
 
 def main():
@@ -5604,8 +5615,10 @@ def main():
         if mode_down:
             combo = True  # Teil einer Tastenkombination
             # Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)
-            if typ == EV_KEY and value == 1 and code in (BTN_TR, 313, 312) and not ui.view:
+            if typ == EV_KEY and value == 1 and code in (BTN_TR, 313, 312) and not ui.view \
+                    and time.monotonic() > INJECTING[0]:
                 g0 = running_game()
+                log("Kürzel beobachtet:", code, (g0 or {}).get("emu"))
                 if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
                     if code == BTN_TR:
                         speed_event("ff", g0)
@@ -5779,7 +5792,7 @@ def main():
                             cc.screen_on()
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
-            fds = [fd for fd in [home, pwr, tfd, vol] + list(pads) if fd is not None]
+            fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
             busy = stick["dir"] or (cc.kbd and cc.kbd.hold) or scrolling or cc.switcher.busy \
                 or (home_down["t"] is not None and not home_down["fired"]) \
@@ -5788,6 +5801,12 @@ def main():
                 or cc.toast_now is not None or bool(cc.toasts)
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
+                    if fd == WAKE_R:
+                        try:
+                            os.read(WAKE_R, 64)
+                        except OSError:
+                            pass
+                        continue
                     if fd == tfd:
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                             t = touch.feed(*ev)
