@@ -2945,7 +2945,7 @@ class ControlCenter:
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
         self.page = 0
         self.focus = 1          # Zeile auf Seite 1 (0 = Darstellung oben)
-        self.top_sel = 0        # -1 = Power, 0 = Hell/Dunkel, 1 = Akzentfarbe
+        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration
         self.tile = 0           # Spalte in der Kachelzeile
         self.values = {}
         self.perf = 1
@@ -3199,7 +3199,7 @@ class ControlCenter:
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
         elif kind == "top":
-            self.top_sel = max(-1, min(2, self.top_sel + dx))
+            self.top_sel = max(0, min(2, self.top_sel + dx))
 
     def confirm(self):
         if self.kbd:
@@ -3534,15 +3534,7 @@ class ControlCenter:
             self.hits.append((x - 4, 66, 62, 62, ("top", i)))
             x -= 14
 
-        # Power-Kreis ganz rechts in der Kopfzeile
-        x -= 54
-        pcx = x + 27
-        P.circle(pcx, 97, 27, T["pill"])
-        P.power_icon(pcx, 97, 14, T["text"], width=3)
-        if top_focus and self.top_sel == -1:
-            self._focus_ring(P, x, 70, 54, 54, 27)
-        self.hits.append((x - 4, 66, 62, 62, ("power_btn", None)))
-        x -= 14
+        # (Power-Kreis entfernt 22.10.2026 – Power-Menü über die Ein/Aus-Taste; Platz für das spätere Einstellungsmenü)
 
         # Titel mit Logo mittig zwischen Datum und rechter Gruppe (passt sich der Sprache an)
         room_l, room_r = left_end + 24, x - 10
