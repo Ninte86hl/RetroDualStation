@@ -5005,12 +5005,19 @@ os.set_blocking(WAKE_R, False)
 SPEED = {"pid": None, "mode": "normal"}   # nur mitgezählt – je Spiel neu
 
 
+# DSperate blendet Vorspulen, Speichern und Laden selbst ein (nicht abschaltbar, Stand 22.10.2026) –
+# dort keine eigene Meldung, sonst doppelt. Erfolgsmeldungen kommen trotzdem vom CC.
+OWN_OSD_EMUS = {"DSperate"}
+
+
 def speed_event(kind, game):
     """Vorspulen/Zeitlupe umgeschaltet: Zustand mitzählen und anzeigen (Fast Forward / Slow Motion / Normal)."""
     pid = (game or {}).get("pid")
     if SPEED["pid"] != pid:
         SPEED.update(pid=pid, mode="normal")
     SPEED["mode"] = "normal" if SPEED["mode"] == kind else kind
+    if (game or {}).get("emu") in OWN_OSD_EMUS:
+        return
     text, icon = {"ff": ("Fast Forward", "ff"), "slow": ("Slow Motion", "slow")}.get(SPEED["mode"], ("Normal Speed", "play"))
     info_toast(text, icon)
 
@@ -5435,7 +5442,7 @@ def main():
                             os.remove(fb)                        # war vorher leer
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 log("Seite Spiel:", emu, key, "→", msg)
-                if msg in ("Gespeichert", "Geladen"):
+                if msg in ("Gespeichert", "Geladen") and emu not in OWN_OSD_EMUS:
                     info_toast(msg, "save" if key == "save" else "load")
                 elif msg == "Screenshot gespeichert":
                     info_toast(msg, "shot")
@@ -5600,7 +5607,7 @@ def main():
         if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
             if code == BTN_TR:
                 speed_event("ff", g0)
-            else:
+            elif g0["emu"] not in OWN_OSD_EMUS:
                 info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
 
     def handle_joy(typ, code, value, pad):
