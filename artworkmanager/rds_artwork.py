@@ -747,7 +747,18 @@ class App:
                 self.say("Keine Artworks gefunden – mit Y anderes Spiel suchen")
             self.kind = next((n for n, (k, _) in enumerate(KINDS) if self.cands.get(k)), 0)
             self.want_previews()
-        self.work("Artworks werden gesucht …", go, then=then)
+            # SteamGridDB ohne eindeutigen Treffer (z. B. mehrere „Resident Evil“): Trefferliste zur Auswahl
+            ask[0] = bool(api and not result.get("steamgriddb") and not forced and not self.batch and not then)
+            if ask[0]:
+                log("SteamGridDB nicht eindeutig – Trefferliste zur Auswahl")
+        ask = [False]
+
+        def after():
+            if ask[0]:
+                self.run_search(self.query, ambiguous=True)
+            elif then:
+                then()
+        self.work("Artworks werden gesucht …", go, then=after)
 
     FILTERS = ["alle", "fehlende", "keine Artworks"]
 
@@ -1123,7 +1134,7 @@ class App:
         self.kbd.text = self.query or self.title
         self.kbd.cur = len(self.kbd.text)
 
-    def run_search(self, text=None):
+    def run_search(self, text=None, ambiguous=False):
         text = (text if isinstance(text, str) else self.kbd.text if self.kbd else self.query).strip()
         self.kbd = None
         if not text:
@@ -1147,9 +1158,14 @@ class App:
                     m["console"] = r["console"]
                 if r["year"] != "–" and not m["year"]:
                     m["year"] = str(r["year"])
-            self.results = list(merged.values())
+            results = list(merged.values())
+            if ambiguous and len(results) < 2:
+                return                               # nichts zu wählen: bei den gefundenen Bildern bleiben
+            self.results = results
             self.view, self.sel, self.scroll = "search", 0, 0
-            if not self.results:
+            if ambiguous:
+                self.say("Mehrere Spiele gefunden – bitte das richtige wählen")
+            elif not self.results:
                 self.say("Keine Treffer – anderen Namen probieren")
         self.work("Suche läuft …", go)
 
