@@ -24,6 +24,8 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `009-rds-fullscreen-menu-shadow.patch` – menus stay in their screen area in dual mode (no frame strip on the RG DS).
 - `010-rds-no-fast-shutdown.patch` – *Fast shutdown system* is hidden in dual mode (it skips saving metadata
   and the clean shutdown of the Control Center).
+- `011-rds-game-achievements-hint.patch` – *Achievements* in the game options (X in the game list) shows a hint
+  to the Control Center (page 3) instead of "An error occurred" (same missing developer credentials as in 007).
 
 ## Usage
 
@@ -35,7 +37,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all ten** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all eleven** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating
