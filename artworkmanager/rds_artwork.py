@@ -979,6 +979,8 @@ class App:
                 with self.app_lock:
                     self.save_artwork(job["rom"], job["chosen"], job["system"])
                 log("Batch gespeichert:", job["title"])
+                self.retry_save([r for r in self.retry_load()
+                                 if not (r["system"] == job["system"] and r["rom"] == job["rom"])])
             except Exception:
                 log("Batch-Fehler bei " + job["title"] + ":\n" + traceback.format_exc().rstrip())
                 self.bq_fail.append(job["title"])
@@ -1044,6 +1046,7 @@ class App:
             self.say("Warteliste voll – einen Moment, es wird noch gespeichert")
             return
         job = {"rom": self.rom, "chosen": dict(self.chosen), "system": self.system["key"], "title": self.title}
+        self.retry_remember(job)   # bis zum Erfolg gemerkt: Abbruch oder leerer Akku verlieren nichts
         with self.bq_lock:
             if not getattr(self, "bq_thread", None):
                 self.bq_thread = threading.Thread(target=self.bq_worker, daemon=True)
@@ -1357,7 +1360,12 @@ class App:
             self.top_dirty = True
             return
         if self.view == "game" and self.batch:
-            self.batch_end()
+            wait = self.bq_pending()
+            self.ask("Batch beenden?",
+                     [f"{wait} vorgemerkte Spiele werden noch fertig gespeichert." if wait
+                      else "Bisher vorgemerkte Spiele sind gespeichert.",
+                      "Die restlichen Spiele kannst du später erneut per Batch bearbeiten."],
+                     "Beenden", self.batch_end)
             return
         if self.view == "search":
             self.view = "game"
