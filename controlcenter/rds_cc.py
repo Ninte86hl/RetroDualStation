@@ -231,7 +231,7 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!",
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Vorspulen umgeschaltet": "Fast forward toggled", "Zeitlupe umgeschaltet": "Slow motion toggled",
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
     "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
     "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
@@ -3828,6 +3828,14 @@ class ControlCenter:
             P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
             P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, "ffffff", bold=True, align="r", raw=True)
             return
+        if t.get("kind") == "info":             # kurze Rückmeldung, z. B. „Vorspulen umgeschaltet“
+            text = tr(t.get("text") or "")
+            bw = int(P.width(text, 26, bold=True, raw=True)) + 150
+            x = 630 - bw // 2
+            P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
+            P.game_icon(t.get("icon") or "ff", x + 62, 78, A, scale=0.75)
+            P.text(text, 26, x + 110, 88, "ffffff", bold=True, raw=True)
+            return
         if t.get("kind") == "cheevo":
             x, bw = 230, 800
             P.rrect(x, 14, bw, 128, 34, "1c1c1c", 0.92)
@@ -4850,11 +4858,22 @@ def mako_hide_osd():
     threading.Thread(target=work, daemon=True).start()
 
 
+INFO_TOAST = []   # wird in main() auf cc.toasts gesetzt
+
+
+def info_toast(text, icon="ff"):
+    """Kurze Meldung oben über dem Spiel (Rückmeldung zu Kacheln und Kürzeln)."""
+    if INFO_TOAST:
+        q = INFO_TOAST[0]
+        q[:] = [x for x in q if x.get("kind") != "info"] + [{"kind": "info", "text": text, "icon": icon}]
+
+
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
     mako_hide_osd()
     vkey_open()
     cc = ControlCenter()
+    INFO_TOAST[:] = [cc.toasts]
     state = {"dirty": False}
 
     def on_touch(kind, x, y):
@@ -5117,6 +5136,8 @@ def main():
                 time.sleep(0.5)                      # DraStic läuft wieder und hat den Fokus zurück
                 how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
                 log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
+                if how and key == "ff":
+                    info_toast("Vorspulen umgeschaltet")
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key in ("menu", "ff"):
@@ -5126,6 +5147,8 @@ def main():
                 # „pause“ öffnet bei DSperate das Menü; Vorspulen über das Umschalt-Kürzel
                 ok = dsperate_press("pause" if key == "menu" else "fast_forward_toggle")
                 log("Seite Spiel: DSperate", key, "ok" if ok else "nicht belegt")
+                if ok and key == "ff":
+                    info_toast("Vorspulen umgeschaltet")
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
@@ -5133,8 +5156,10 @@ def main():
             cmd = {"ff": "FAST_FORWARD", "slow": "SLOWMOTION", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
             def later():
                 time.sleep(0.3)
-                ra_command(cmd)
+                ok = ra_command(cmd) is not None
                 log("Seite Spiel:", cmd)
+                if ok and key in ("ff", "slow"):
+                    info_toast("Vorspulen umgeschaltet" if key == "ff" else "Zeitlupe umgeschaltet", key)
             threading.Thread(target=later, daemon=True).start()
             return
         if key == "setslot":
@@ -5335,8 +5360,12 @@ def main():
                 g = running_game()
                 if g and g["emu"] == "DraStic":
                     what = "FAST_FORWARD" if code == BTN_TR else "MENU"
-                    threading.Thread(target=lambda: log("Kürzel DraStic:", what, "über",
-                                                         drastic_press(what) or "nichts"), daemon=True).start()
+                    def run(what=what):
+                        how = drastic_press(what)
+                        log("Kürzel DraStic:", what, "über", how or "nichts")
+                        if how and what == "FAST_FORWARD":
+                            info_toast("Vorspulen umgeschaltet")
+                    threading.Thread(target=run, daemon=True).start()
             return
         if not ui.view:
             return
