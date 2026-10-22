@@ -2974,6 +2974,14 @@ class ControlCenter:
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
+        # Zuletzt im CC gewählte Helligkeit wiederherstellen: ES schreibt beim Beenden/Neustart seine alten
+        # Werte in system.cfg zurück (display.brightness2 ging so verloren) – das CC merkt sich die Werte selbst.
+        for i, (_label, b) in enumerate(self.backlights):
+            v = self.cfg.get("bright_" + b.name)
+            if isinstance(v, int) and 5 <= v <= 100:
+                b.set(v)
+                persist_setting(i, v, self.backlights)
+                log("Helligkeit wiederhergestellt:", b.name, v, "%")
         self.page = 0
         self.focus = 1          # Zeile auf Seite 1 (0 = Darstellung oben)
         self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration
@@ -3058,6 +3066,10 @@ class ControlCenter:
                 self.vol_sent = now
         else:
             self.backlights[key][1].set(pct)
+            self.cfg["bright_" + self.backlights[key][1].name] = pct
+            if final or time.monotonic() - getattr(self, "_cfg_saved", 0) > 1.0:
+                save_config(self.cfg)
+                self._cfg_saved = time.monotonic()
         persist_setting(key, pct, self.backlights)
 
     def set_perf(self, i):
