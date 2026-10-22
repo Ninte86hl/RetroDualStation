@@ -488,6 +488,8 @@ class App:
         self.bq_fail = []                             # Titel, deren Speichern fehlschlug
         self.bq_active = 0
         self.app_lock = threading.RLock()
+        self.flush = False                            # Warteschlange jetzt speichern
+        self.after_flush = None
         self.fbneo = None
         self.nointro = {}
         # geöffnetes Spiel
@@ -644,6 +646,8 @@ class App:
             return
         rest = len(b["queue"]) - b["pos"]
         wait = self.bq_pending()
+        if wait:
+            self.flush = True
         self.say(f"Batch beendet · {b['saved']} vorgemerkt · {b['skipped']} übersprungen"
                  + (f" · {rest} offen" if rest > 0 else "") + (f" · speichere noch {wait} …" if wait else ""))
         self.leave_game("systems")
@@ -976,8 +980,9 @@ class App:
         """Arbeitet die Batch-Warteliste der Reihe nach ab (nie zwei Spiele gleichzeitig)."""
         while True:
             with self.bq_lock:
-                while not self.bq:
-                    self.bq_lock.wait()
+                # im Batch wird nur gesammelt; gespeichert wird beim Beenden, bei 10 Spielen oder Home
+                while not (self.bq and (self.batch is None or self.flush)):
+                    self.bq_lock.wait(0.5)
                 job = self.bq.pop(0)
                 self.bq_active = 1
             try:
@@ -1046,7 +1051,7 @@ class App:
                  "Erneut speichern", again, on_no=lambda: self.retry_save(rest))
 
     def bq_add(self):
-        """Batch: Spiel vormerken und sofort weiter – gespeichert wird im Hintergrund."""
+        """Batch: Spiel in die Warteliste und sofort weiter (gespeichert wird später gesammelt)."""
         if self.bq_pending() >= self.BQ_MAX:
             self.say("Warteliste voll – einen Moment, es wird noch gespeichert")
             return
@@ -1059,14 +1064,47 @@ class App:
             self.bq.append(job)
             self.bq_lock.notify_all()
         self.chosen = {}
-        self.batch_next(True)
+        if self.bq_pending() >= self.BQ_MAX:     # Liste voll: jetzt speichern, danach geht der Batch weiter
+            self.flush = True
+            self.after_flush = lambda: self.batch_next(True)
+        else:
+            self.batch_next(True)
+
+    def queue_remove(self, i):
+        """Spiel aus der Warteliste nehmen (wird nicht gespeichert)."""
+        with self.bq_lock:
+            if not (0 <= i < len(self.bq)):
+                return
+            job = self.bq.pop(i)
+        self.retry_save([r for r in self.retry_load()
+                         if not (r["system"] == job["system"] and r["rom"] == job["rom"])])
+        self.say(f"{job['title']} aus der Warteliste entfernt")
+        self.sel = max(0, min(self.sel, len(self.bq) - 1))
+        self.scroll = min(self.scroll, self.sel)
+        if not self.bq:
+            self.queue_close()
+
+    def open_queue(self):
+        if not self.bq:
+            self.say("Die Warteliste ist leer")
+            return
+        self.queue_from = (self.sel, self.scroll)
+        self.view, self.sel, self.scroll = "queue", 0, 0
+
+    def queue_close(self):
+        self.sel, self.scroll = getattr(self, "queue_from", (self.sel, 0))
+        self.view = "game"
+        self.top_dirty = True
 
     def transfer(self):
+        if self.batch:
+            self.open_queue()
+            return
         if not self.chosen:
             self.say("Erst mit A ein Bild übernehmen, dann mit Start speichern")
             return
         if self.batch:
-            self.bq_add()
+            self.open_queue()
             return
         rom, chosen, system = self.rom, dict(self.chosen), self.system["key"]
         self.saving = {"title": self.title,
@@ -1318,7 +1356,7 @@ class App:
     def list_len(self):
         return {"systems": len(self.systems), "games": len(self.vgames()), "search": len(self.results),
                 "settings": len(self.setting_rows()), "gsearch": len(self.gresults),
-                "restore": len(self.backups)}.get(self.view, 0)
+                "restore": len(self.backups), "queue": len(self.bq)}.get(self.view, 0)
 
     def move(self, d):
         n = self.list_len()
@@ -1368,14 +1406,16 @@ class App:
             wait = self.bq_pending()
 
             def finish():
-                self.batch_end()
-                self.flush = True       # Warteschlange jetzt abarbeiten, danach ES neu laden
+                self.batch_end()        # speichert die Warteliste, danach lädt ES neu
             self.ask("Batch beenden?",
-                     [f"{wait} Spiele in der Warteschlange werden jetzt gespeichert" if wait
-                      else "Alle vorgemerkten Spiele sind schon gespeichert",
+                     [f"{wait} Spiele in der Warteliste werden jetzt gespeichert" if wait
+                      else "Die Warteliste ist leer",
                       "und direkt in EmulationStation eingetragen.",
                       "Die übrigen Spiele kannst du später per Batch bearbeiten."],
                      "Speichern & beenden", finish, yes_key="Start", no_label="Weiter")
+            return
+        if self.view == "queue":
+            self.queue_close()
             return
         if self.view == "search":
             self.view = "game"
@@ -1403,6 +1443,9 @@ class App:
                     ("B", "Abbrechen", self.back),
                     ("X", "Zurücksetzen", self.editor_reset),
                     ("Y", "Rahmen", self.editor_next_border if len(ed.get("borders") or []) > 1 else None)]
+        if self.view == "queue":
+            return [("A", "", None), ("B", "Zurück", self.back),
+                    ("X", "Entfernen", (lambda: self.queue_remove(self.sel)) if self.bq else None), ("Y", "", None)]
         if self.view == "game":
             kind, c = self.kind_key(), self.cand()
             taken = c is not None and self.chosen.get(kind) is c
@@ -1743,7 +1786,10 @@ class App:
             else:
                 self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
         elif code == BTN_SELECT and self.view == "game" and self.batch:
-            self.batch_next(False)                           # Spiel überspringen
+            if self.chosen:
+                self.bq_add()                                # mit der bisherigen Auswahl einreihen
+            else:
+                self.batch_next(False)                       # nichts gewählt: Spiel überspringen
 
     def on_dir(self, dx, dy):
         if self.busy or self.confirm:
@@ -1992,7 +2038,7 @@ class App:
             return
         if self.view == "setup":
             self.draw_setup(P)
-        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore"):
+        elif self.view in ("systems", "games", "search", "settings", "gsearch", "restore", "queue"):
             self.draw_list(P)
         elif self.view == "game":
             self.draw_game(P)
@@ -2079,6 +2125,10 @@ class App:
         elif self.view == "restore":
             title, hint = "Sicherung wiederherstellen", hint_parts("▲ ▼", "wählen", "A", "wiederherstellen")
             rows = [(f"{b['name']} · {b['when']}", f"{b['files']} Artworks", None) for b in self.backups]
+        elif self.view == "queue":
+            title, hint = "Warteliste", hint_parts("▲ ▼", "wählen", "X", "entfernen", "B", "zurück zum Batch")
+            names = dict(KINDS)
+            rows = [(j["title"], " · ".join(names.get(k, k) for k in j["chosen"]), None) for j in list(self.bq)]
         elif self.view == "games":
             title, hint = self.system["name"], hint_parts("▲ ▼", "Spiel wählen", "L / R", "Seite")
             if self.gfilter:
@@ -2179,11 +2229,12 @@ class App:
             if len(items) > first + tiles:
                 P.text("›", 60, 1246, gy + gh / 2 + 20, T["muted"], align="r", raw=True)
         self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil", "L2 / R2", "Seite",
-                               *(("Select", "überspringen") if self.batch else ())), "")
+                               *(("Select", "einreihen" if self.chosen else "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
-        label = f"Start  {'In Warteschlange' if self.batch else 'Speichern'} ({len(self.chosen)})"
+        label = (f"Start  Warteliste ({len(self.bq)})" if self.batch
+                 else f"Start  Speichern ({len(self.chosen)})")
         w = P.width(label, 22, bold=True, raw=True) + 36
-        on = bool(self.chosen)
+        on = bool(self.bq) if self.batch else bool(self.chosen)
         P.rrect(1220 - w, HINT_Y - 30, w, 42, 21, A if on else T["tile"], a=1.0 if on else 0.35)
         P.text(label, 22, 1220 - w / 2, HINT_Y - 2, "ffffff" if on else T["muted"], bold=True, align="c", raw=True)
         if on:
@@ -2237,7 +2288,7 @@ class App:
         if b:
             info.append(f"Batch {b['pos'] + 1} / {len(b['queue'])}")
         if self.bq_pending():
-            info.append(f"{self.bq_pending()} in Arbeit")
+            info.append(f"{self.bq_pending()} " + ("in Arbeit" if self.flush or not b else "in der Warteliste"))
         if pages > 1 and self.view == "game":
             info.insert(0, f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
         line = " · ".join(info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
@@ -2351,7 +2402,7 @@ class App:
             P.text("  " + state, 24, 700 + w, y, "bdbdbd", raw=True)
             y += 46
         if self.chosen:
-            P.hint([("Start", "In Warteschlange" if self.batch else "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
+            P.hint([("Select", "einreihen") if self.batch else ("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
         P.hint([("L3", "Suche aktualisieren"), ("R3", "Großansicht")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
@@ -2390,12 +2441,16 @@ def main():
                 else:
                     a.flush = False
                     a.busy = None
+                    if a.after_flush:
+                        nxt, a.after_flush = a.after_flush, None
+                        nxt()
                     if a.changed:   # ES zeigt die neuen Artworks sofort
                         subprocess.run(["curl", "-fsS", "--max-time", "5", "http://localhost:1234/reloadgames"],
                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     a.say("Warteschlange gespeichert und in EmulationStation eingetragen")
                     a.dirty = True
             if a.quit and a.bq_pending():
+                a.flush = True
                 a.busy = f"Speichere noch {a.bq_pending()} …"   # Home: offene Spiele erst fertig speichern
                 a.dirty = True
             elif a.busy and str(a.busy).startswith("Speichere noch") and not getattr(a, "flush", False):
