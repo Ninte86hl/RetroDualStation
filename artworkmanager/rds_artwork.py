@@ -2163,7 +2163,7 @@ class App:
         self.bar(P, hint_parts("▲ ▼" if vertical else "◀ ▶", "Bild wählen", "L / R", "Artwork-Stil", "L2 / R2", "Seite",
                                *(("Select", "überspringen") if self.batch else ())), "")
         # rechts: Start = Speichern (auch antippbar), daneben der Stand
-        label = f"Start  Speichern ({len(self.chosen)})"
+        label = f"Start  {'In Warteschlange' if self.batch else 'Speichern'} ({len(self.chosen)})"
         w = P.width(label, 22, bold=True, raw=True) + 36
         on = bool(self.chosen)
         P.rrect(1220 - w, HINT_Y - 30, w, 42, 21, A if on else T["tile"], a=1.0 if on else 0.35)
