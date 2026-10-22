@@ -40,7 +40,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [x] Issue #5 (maniman303): Artwork-Standard dokumentiert (`docs/ARTWORK.md`, 20.10.2026)
 - [ ] Issue #5: ScreenScraper-Dev-Kennung beantragt (20.10.2026, Forum „ScreenScraper WebAPI“) – danach ES-Build über GitHub Actions mit Secret
 - [x] Issue #5: Bildschirm-Bereiche im ES-Patch (Patch 004/005, getestet 20.10.2026); Konzept: [BILDSCHIRME.md](BILDSCHIRME.md)
-- [ ] Artwork Manager: libretro-Thumbnails als Quelle ohne Schlüssel
+- [~] Artwork Manager: libretro-Thumbnails als Quelle ohne Schlüssel – verworfen (22.10.2026): ScreenScraper im Dual-Build (v15) findet die Bilder und legt eine korrekte gamelist.xml an
 - [ ] Issue #5 beantworten, sobald Punkte stehen
 - [ ] Artwork Manager: SGDB-Wiederholung bei Zeitüberschreitung, M3U in Unterordnern
 - [ ] PC-Programm: Linux-Test, Windows-Passwort-Login
