@@ -1326,6 +1326,11 @@ class App:
         self.top_dirty = True
         self.say("Icon aus dem Editor übernommen")
 
+    def refresh_from_list(self):
+        """X in der Trefferliste: zurück zum Spiel und die Suche neu ausführen (für Geräte ohne L3)."""
+        self.view = "game"
+        self.refresh_search()
+
     def quick_search(self):
         """Y im Spiel: erst die Trefferliste zum aktuellen Namen, eintippen nur bei Bedarf (Y in der Liste)."""
         self.run_search(self.query or self.title)
@@ -1493,6 +1498,7 @@ class App:
         return [("A", a_label, self.activate if self.list_len() else None),
                 ("B⌂" if self.view == "systems" else "B", "Beenden" if self.view == "systems" else "Zurück", self.back),
                 ("X", "Einstellungen", self.open_settings) if self.view == "systems" else
+                ("X", "Suche aktualisieren", self.refresh_from_list) if self.view == "search" and self.rom else
                 ("X", "Icon-Editor", self.game_to_editor) if self.view == "games" and self.games else ("X", "", None),
                 ("Y", "Spiel suchen", self.open_global_search) if self.view == "systems" else
                 ("Y", "Name eingeben", self.open_search) if self.view == "search" else
@@ -1815,7 +1821,7 @@ class App:
         elif code == BTN_THUMBL and self.view == "game":
             self.refresh_search()
         elif code == BTN_THUMBR and self.view == "game":
-            self.top_mode = "single" if self.top_mode == "mix" else "mix"
+            pass                                             # Großansicht entfernt (RG DS Plus hat kein R3)
             self.top_dirty = True
         elif code == BTN_START and self.view == "systems" and self.systems:
             self.activate()                                  # Einzelsuche (prüft die Spieleliste)
@@ -2469,7 +2475,7 @@ class App:
             y += 46
         if self.chosen:
             P.hint([("Select", "einreihen") if self.batch else ("Start", "Speichern")], 24, 700, y + 30, "bdbdbd", "ffffff")
-        P.hint([("L3", "Suche aktualisieren"), ("R3", "Großansicht")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
+        P.hint([("L3", "Suche aktualisieren")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
 # ------------------------------------------------------------------ main ----
