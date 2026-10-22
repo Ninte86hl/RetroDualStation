@@ -24,8 +24,9 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
 - `009-rds-fullscreen-menu-shadow.patch` – menus stay in their screen area in dual mode (no frame strip on the RG DS).
 - `010-rds-no-fast-shutdown.patch` – *Fast shutdown system* is hidden in dual mode (it skips saving metadata
   and the clean shutdown of the Control Center).
-- `011-rds-game-achievements-hint.patch` – *Achievements* in the game options (X in the game list) shows a hint
-  to the Control Center (page 3) instead of "An error occurred" (same missing developer credentials as in 007).
+- `011-rds-hide-game-achievements.patch` – *View this game's achievements* in the game options (X in the game list)
+  is hidden in dual mode: it only showed "An error occurred" (same missing developer credentials as in 007);
+  the Control Center shows achievements in game (page 3).
 
 ## Usage
 
