@@ -1917,8 +1917,10 @@ def drastic_shortcuts():
         if 1024 <= v < 1100:
             name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
-        elif 1152 <= v < 1280 or (256 <= v < 512 and (v - 256) in SDL_TO_EVDEV):
-            rows.append((label, tr("nur über das CC")))       # Phantom-Achse bzw. virtuelle Taste
+        elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
+            rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1"}.get(k, tr("nur über das CC"))))
+        elif 1152 <= v < 1280:
+            rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
