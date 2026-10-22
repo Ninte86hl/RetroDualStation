@@ -334,9 +334,19 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
     fi
     # DSperate: eigene Erfolgsmeldung aus – die Meldung oben kommt einheitlich vom Kontrollcenter
     DSPINI=/storage/.config/dsperate/dsperate.ini
-    if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null && grep -q '^toasts = true' "$DSPINI"; then
-        sed -i 's/^toasts = true/toasts = false/' "$DSPINI"
-        log "DSperate: eigene Erfolgsmeldung aus (zeigt das Kontrollcenter)"
+    if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null; then
+        if grep -q '^toasts = true' "$DSPINI"; then
+            sed -i 's/^toasts = true/toasts = false/' "$DSPINI"
+            log "DSperate: eigene Erfolgsmeldung aus (zeigt das Kontrollcenter)"
+        elif ! grep -q '^toasts' "$DSPINI"; then
+            # frische Konfiguration ohne Zeile (Standard: an) – im Abschnitt [cheevos] ergänzen
+            if grep -q '^\[cheevos\]' "$DSPINI"; then
+                sed -i '/^\[cheevos\]/a toasts = false' "$DSPINI"
+            else
+                printf '\n[cheevos]\ntoasts = false\n' >> "$DSPINI"
+            fi
+            log "DSperate: eigene Erfolgsmeldung aus (Zeile ergänzt)"
+        fi
     fi
     # RetroAchievements: seit v13 über das Kontrollcenter unterstützt – nicht mehr abschalten.
     # Frühere Versionen hatten sie abgeschaltet: den damals gemerkten Wert einmalig zurückgeben.
