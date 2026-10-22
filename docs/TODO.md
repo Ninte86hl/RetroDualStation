@@ -130,7 +130,9 @@ Danach abwägen, was als Nächstes ausgebaut wird.
       - **Anzeige:** Theme, Theme je Modus (Dual/Single), Bildschirmschoner
       - **Spiele & Emulatoren:** Standard-Emulator/Core je System, Emulator-Einstellungen,
         Systeme ein-/ausblenden
-      - **Controller:** Tastenbelegung, „Als Spieler 1 verwenden“
+      - **Controller:** nur **Tastenbelegung** (Entscheidung 22.10.2026) – alle Anzeigen folgen der
+        Einstellung dynamisch: Hinweiszeilen, Tastenseite und Tour im CC, Gameswitcher, Power-Menü,
+        Artwork Manager und Meldungen zeigen immer die tatsächlich belegten Tasten
       - **Netzwerk:** WLAN, Bluetooth, SSH/Samba ein/aus
       - **System:** Updates, Systeminfo, Speicherplatz, Sprache, Zeitzone/Uhrzeit,
         Energie (automatischer Ruhemodus)
