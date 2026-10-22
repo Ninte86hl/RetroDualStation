@@ -1084,6 +1084,11 @@ class App:
         if not self.bq:
             self.queue_close()
 
+    def queue_save(self):
+        """A in der Warteliste: alles jetzt speichern, danach geht der Batch weiter."""
+        self.flush = True
+        self.after_flush = self.queue_close
+
     def open_queue(self):
         if not self.bq:
             self.say("Die Warteliste ist leer")
@@ -1444,7 +1449,7 @@ class App:
                     ("X", "Zurücksetzen", self.editor_reset),
                     ("Y", "Rahmen", self.editor_next_border if len(ed.get("borders") or []) > 1 else None)]
         if self.view == "queue":
-            return [("A", "", None), ("B", "Zurück", self.back),
+            return [("A", "Jetzt speichern", self.queue_save if self.bq else None), ("B", "Zurück", self.back),
                     ("X", "Entfernen", (lambda: self.queue_remove(self.sel)) if self.bq else None), ("Y", "", None)]
         if self.view == "game":
             kind, c = self.kind_key(), self.cand()
@@ -2126,7 +2131,7 @@ class App:
             title, hint = "Sicherung wiederherstellen", hint_parts("▲ ▼", "wählen", "A", "wiederherstellen")
             rows = [(f"{b['name']} · {b['when']}", f"{b['files']} Artworks", None) for b in self.backups]
         elif self.view == "queue":
-            title, hint = "Warteliste", hint_parts("▲ ▼", "wählen", "X", "entfernen", "B", "zurück zum Batch")
+            title, hint = "Warteliste", hint_parts("▲ ▼", "Spiel wählen")
             names = dict(KINDS)
             rows = [(j["title"], " · ".join(names.get(k, k) for k in j["chosen"]), None) for j in list(self.bq)]
         elif self.view == "games":
