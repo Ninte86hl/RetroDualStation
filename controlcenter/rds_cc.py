@@ -1464,6 +1464,7 @@ def inject_keys(seq):
             os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
             os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
     finally:
+        INJECTING[0] = time.monotonic() + 0.4
         os.close(fd)
     return True
 
