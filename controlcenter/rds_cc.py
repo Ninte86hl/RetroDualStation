@@ -231,7 +231,7 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
-    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
+    "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
     "Hardcore an": "Hardcore on", "blättern": "scroll", "öffnen": "open", "nächster Erfolg": "next achievement",
     "%s %% der Spieler": "%s %% of players", "Freigeschaltet": "Unlocked", "Noch offen": "Not yet unlocked", "Softcore": "Softcore", "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
@@ -597,6 +597,20 @@ class Pen:
         if kind == "ff":
             for dx in (-14, 6):
                 self.poly([(cx + dx - 6, cy - 14), (cx + dx + 14, cy), (cx + dx - 6, cy + 14)], c)
+        elif kind == "play":                      # normale Geschwindigkeit
+            self.poly([(cx - 9, cy - 15), (cx + 15, cy), (cx - 9, cy + 15)], c)
+        elif kind in ("save", "load"):            # Pfeil nach unten (speichern) bzw. oben (laden) in eine Schale
+            self.rrect(cx - 16, cy + 10, 32, 5, 2, c)
+            self.rrect(cx - 16, cy + 2, 5, 13, 2, c)
+            self.rrect(cx + 11, cy + 2, 5, 13, 2, c)
+            self.rrect(cx - 2.5, cy - 15, 5, 17, 2, c)
+            if kind == "save":
+                self.poly([(cx - 9, cy - 3), (cx + 9, cy - 3), (cx, cy + 6)], c)
+            else:
+                self.poly([(cx - 9, cy - 10), (cx + 9, cy - 10), (cx, cy - 19)], c)
+        elif kind == "bolt":                      # Laden (Blitz)
+            self.poly([(cx + 3, cy - 18), (cx - 10, cy + 3), (cx - 1, cy + 3), (cx - 4, cy + 18),
+                       (cx + 10, cy - 3), (cx + 1, cy - 3)], c)
         elif kind == "shot":
             self.rrect(cx - 22, cy - 13, 44, 30, 6, c)
             self.rrect(cx - 8, cy - 19, 16, 8, 3, c)
@@ -3939,6 +3953,15 @@ class ControlCenter:
             P.text("%s  %d %%" % (head, lvl), 28, x + 130, 70, col, bold=True, raw=True)
             P.text(sub, 18, x + 130, 104, "bdbdbd", raw=True)
             return
+        if t.get("kind") == "charging":         # Ladegerät angeschlossen
+            lvl = t.get("level") or 0
+            text = "%s  %d %%" % (tr("Wird geladen"), lvl)
+            bw = int(P.width(text, 26, bold=True, raw=True)) + 150
+            x = 630 - bw // 2
+            P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
+            P.game_icon("bolt", x + 62, 78, "2db67a")
+            P.text(text, 26, x + 110, 88, "ffffff", bold=True, raw=True)
+            return
         if t.get("kind") == "info":             # kurze Rückmeldung, z. B. „Vorspulen umgeschaltet“
             text = tr(t.get("text") or "")
             bw = int(P.width(text, 26, bold=True, raw=True)) + 150
@@ -4972,6 +4995,19 @@ def mako_hide_osd():
 INFO_TOAST = []   # wird in main() auf cc.toasts gesetzt
 
 
+SPEED = {"pid": None, "mode": "normal"}   # nur mitgezählt – je Spiel neu
+
+
+def speed_event(kind, game):
+    """Vorspulen/Zeitlupe umgeschaltet: Zustand mitzählen und anzeigen (Fast Forward / Slow Motion / Normal)."""
+    pid = (game or {}).get("pid")
+    if SPEED["pid"] != pid:
+        SPEED.update(pid=pid, mode="normal")
+    SPEED["mode"] = "normal" if SPEED["mode"] == kind else kind
+    text, icon = {"ff": ("Fast Forward", "ff"), "slow": ("Slow Motion", "slow")}.get(SPEED["mode"], ("Normal Speed", "play"))
+    info_toast(text, icon)
+
+
 def info_toast(text, icon="ff"):
     """Kurze Meldung oben über dem Spiel (Rückmeldung zu Kacheln und Kürzeln)."""
     if INFO_TOAST:
@@ -5248,7 +5284,7 @@ def main():
                 how = drastic_press("MENU" if key == "menu" else "FAST_FORWARD", 1035 if key == "menu" else 1036)
                 log("Seite Spiel: DraStic", key, "über", how or "nichts (nicht belegt)")
                 if how and key == "ff":
-                    info_toast("Fast Forward")
+                    speed_event("ff", g)
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "DSperate" and key in ("menu", "ff"):
@@ -5259,7 +5295,7 @@ def main():
                 ok = dsperate_press("pause" if key == "menu" else "fast_forward_toggle")
                 log("Seite Spiel: DSperate", key, "ok" if ok else "nicht belegt")
                 if ok and key == "ff":
-                    info_toast("Fast Forward")
+                    speed_event("ff", g)
             threading.Thread(target=later, daemon=True).start()
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
@@ -5270,7 +5306,7 @@ def main():
                 ok = ra_command(cmd) is not None
                 log("Seite Spiel:", cmd)
                 if ok and key in ("ff", "slow"):
-                    info_toast("Fast Forward" if key == "ff" else "Slow Motion", key)
+                    speed_event(key, g)
             threading.Thread(target=later, daemon=True).start()
             return
         if key == "setslot":
@@ -5288,11 +5324,15 @@ def main():
                 os.makedirs("/storage/roms/screenshots", exist_ok=True)
                 toggle("cc")
                 threading.Timer(0.4, ra_command, args=(cmd,)).start()
+                threading.Timer(0.6, info_toast, args=("Screenshot gespeichert", "shot")).start()
                 log("Seite Spiel:", cmd)
                 return
-            ra_command(cmd)
+            ok = ra_command(cmd) is not None
             log("Seite Spiel:", cmd, "Slot", cc.slot)
             toggle("cc")                     # erledigt → zurück ins Spiel
+            if ok:
+                info_toast("%s · Slot %d" % (tr("Gespeichert" if key == "save" else "Geladen"), cc.slot),
+                           "save" if key == "save" else "load")
             return
 
         toggle("cc")                         # schließen: Pause und Grab aufheben, dann auslösen
@@ -5378,6 +5418,10 @@ def main():
                             os.remove(fb)                        # war vorher leer
                     msg = ("Gespeichert" if key == "save" else "Geladen") if ok else "Fehlgeschlagen"
                 log("Seite Spiel:", emu, key, "→", msg)
+                if msg in ("Gespeichert", "Geladen"):
+                    info_toast("%s · Slot %d" % (tr(msg), cc.slot), "save" if key == "save" else "load")
+                elif msg == "Screenshot gespeichert":
+                    info_toast(msg, "shot")
             except Exception:
                 log("Seite Spiel: Fehler\n" + traceback.format_exc().rstrip())
             finish(msg)
@@ -5480,6 +5524,7 @@ def main():
     def battery_watch():
         """Warnt bei 20, 10 und 5 % Akku (nur beim Entladen) mit einer Meldung oben."""
         warned = set()
+        was_plugged = {"v": True}                      # beim Start nicht melden
         while True:
             if os.path.exists("/tmp/rds-battery-test"):     # Test: echo 5 > /tmp/rds-battery-test
                 lvl = int((rd("/tmp/rds-battery-test") or "20").strip() or 20)
@@ -5494,6 +5539,11 @@ def main():
                 for d in glob.glob("/sys/class/power_supply/*"):
                     if rd(d + "/type") == "Battery":
                         status = rd(d + "/status") or ""
+                plugged = bool(charging or status in ("Full", "Charging"))
+                if plugged and not was_plugged.get("v", True) and lvl is not None:
+                    cc.toasts[:] = [x for x in cc.toasts if x.get("kind") != "charging"] + [{"kind": "charging", "level": lvl}]
+                    log("Wird geladen:", lvl, "%")
+                was_plugged["v"] = plugged
                 if lvl is None or charging or status in ("Full", "Charging"):
                     warned.clear()                      # beim Laden zurücksetzen
                 else:
@@ -5553,6 +5603,14 @@ def main():
             return
         if mode_down:
             combo = True  # Teil einer Tastenkombination
+            # Rückmeldung zu den einheitlichen Kürzeln (die Emulatoren führen sie selbst aus)
+            if typ == EV_KEY and value == 1 and code in (BTN_TR, 313, 312) and not ui.view:
+                g0 = running_game()
+                if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
+                    if code == BTN_TR:
+                        speed_event("ff", g0)
+                    else:
+                        info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
             # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
             if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
                 g = running_game()
@@ -5561,8 +5619,6 @@ def main():
                     def run(what=what):
                         how = drastic_press(what)
                         log("Kürzel DraStic:", what, "über", how or "nichts")
-                        if how and what == "FAST_FORWARD":
-                            info_toast("Fast Forward")
                     threading.Thread(target=run, daemon=True).start()
             return
         if not ui.view:
