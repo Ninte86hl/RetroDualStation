@@ -5837,6 +5837,15 @@ def main():
                             "%s · %d %%" % (tr("Kopfhörer") if h else tr("Lautsprecher"), volume_get() or 0),
                             "phones")).start()
                     last["hp"] = hp
+                # DSperate schreibt „toasts = true“ erst später (z. B. wenn Erfolge eingeschaltet werden):
+                # eigene Erfolgsmeldung dann aus – oben meldet einheitlich das Kontrollcenter
+                last["n"] = last.get("n", 0) + 1
+                if last["n"] % 20 == 0:
+                    ini = "/storage/.config/dsperate/dsperate.ini"
+                    txt = rd(ini) or ""
+                    if re.search(r"(?m)^toasts\s*=\s*true", txt) and not run(["pidof", "dsperate"]):
+                        wr(ini, re.sub(r"(?m)^toasts\s*=\s*true", "toasts = false", txt))
+                        log("DSperate: eigene Erfolgsmeldung aus (zeigt das Kontrollcenter)")
             except Exception as exc:
                 log("Verbindungswächter:", exc)
             time.sleep(1.5)
