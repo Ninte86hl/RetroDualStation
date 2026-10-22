@@ -100,7 +100,8 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [ ] Kontrollcenter: Log-Manager für einfache Fehlersuche – Logs von Kontrollcenter, ES,
       RetroArch, DraStic, System an einer Stelle ansehen; „Fehlerbericht erstellen“ packt sie
       in eine Datei (z. B. `/storage/logs/`), die man per Netzwerkfreigabe holen kann
-- [ ] Kontrollcenter: „Als Spieler 1 verwenden“ für Controller im Bluetooth-Untermenü
+- [ ] Bluetooth-Controller wird **automatisch Spieler 1**, sobald er verbunden ist – ohne eigene Option
+      (Entscheidung 22.10.2026; geringer Nutzen, da die RG-DS-Reihe keinen TV-Ausgang hat, aber bequem)
       (ES übergibt die Zuordnung per `--controllers` an runemu → setsettings →
       `input_playerN_joypad_index`, wirkt nur bei RetroArch; DraStic/DSperate prüfen)
 - [ ] Kontrollcenter: Koppeln während eines Spiels – runemu beendet `rocknix-bluetooth-agent`
