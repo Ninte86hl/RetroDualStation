@@ -299,6 +299,20 @@ EN_AM = {
     "SteamGridDB-Key gespeichert": "SteamGridDB key saved", "SteamGridDB-Key entfernt": "SteamGridDB key removed",
     "Sicherheitsprüfung fehlgeschlagen – nichts geschrieben": "Safety check failed – nothing was written",
     "Speichern nicht vollständig bestätigt": "Saving could not be fully verified",
+    # Batch-Warteliste (v15)
+    "Warteliste": "Waiting list", "Jetzt speichern": "Save now", "Entfernen": "Remove", "Nach oben": "Move up",
+    "Name eingeben": "Enter name", "Batch beenden?": "End batch?", "Speichern & beenden": "Save & finish",
+    "Batch abbrechen": "Cancel batch", "Batch abgebrochen": "Batch cancelled",
+    "Die Warteliste ist leer": "The waiting list is empty", "Die Warteliste ist leer.": "The waiting list is empty.",
+    "Speichern trägt sie direkt in EmulationStation ein,": "Save adds them to EmulationStation right away,",
+    "Abbrechen verwirft sie. Weiter führt zurück zum Batch.": "Cancel discards them. Continue returns to the batch.",
+    "Warteliste voll – einen Moment, es wird noch gespeichert": "Waiting list full – one moment, still saving",
+    "Erneut speichern": "Save again", "Mit deiner Auswahl erneut speichern?": "Save again with your selection?",
+    "Warteschlange gespeichert und in EmulationStation eingetragen": "Waiting list saved and added to EmulationStation",
+    "Keine Bilder gefunden – mit Y anderes Spiel suchen": "No images found – press Y to search for another game",
+    "Mehrere Spiele gefunden – bitte das richtige wählen": "Several games found – please choose the right one",
+    "Keine Treffer – anderen Namen eingeben": "No results – enter a different name",
+    "System öffnen, um sie mit deiner Auswahl zu speichern": "Open the system to save them with your selection",
 }
 EN_AM_PATTERNS = [
     (r"^(.*) · (alle|fehlende|keine Artworks)$",
@@ -324,6 +338,24 @@ EN_AM_PATTERNS = [
      lambda m: f"Batch finished · {m[1]} saved · {m[2]} skipped" + (f" · {m[3]} open" if m[3] else "")),
     (r"^(\d+ / \d+) · einmalige Frage$", lambda m: f"{m[1]} · asked once"),
     (r"^Fehler: (.*)$", lambda m: f"Error: {m[1]}"),
+    (r"^Speichere noch (\d+) Spiele – gleich geht's weiter$", lambda m: f"Still saving {m[1]} games – continuing shortly"),
+    (r"^Batch abgebrochen · (\d+) Spiele verworfen$", lambda m: f"Batch cancelled · {m[1]} games discarded"),
+    (r"^Batch beendet · (\d+) vorgemerkt · (\d+) übersprungen(?: · (\d+) offen)?(?: · speichere noch (\d+) …)?$",
+     lambda m: f"Batch finished · {m[1]} queued · {m[2]} skipped" + (f" · {m[3]} open" if m[3] else "")
+     + (f" · still saving {m[4]} …" if m[4] else "")),
+    (r"^(\d+) Spiele werden erneut gespeichert$", lambda m: f"Saving {m[1]} games again"),
+    (r"^(\d+) Spiele nicht gespeichert$", lambda m: f"{m[1]} games not saved"),
+    (r"^(\d+) (Spiel|Spiele) in der Warteliste\.$", lambda m: f"{m[1]} {'game' if m[2] == 'Spiel' else 'games'} in the waiting list."),
+    (r"^(\d+) (Spiel|Spiele) (in Arbeit|in der Warteliste)$",
+     lambda m: f"{m[1]} {'game' if m[2] == 'Spiel' else 'games'} " + ("in progress" if m[3] == "in Arbeit" else "in the waiting list")),
+    (r"^Nicht gespeichert  ·  (\d+) (Spiel|Spiele)$", lambda m: f"Not saved  ·  {m[1]} {'game' if m[2] == 'Spiel' else 'games'}"),
+    (r"^Nicht gespeichert: (.*)$", lambda m: f"Not saved: {m[1]}"),
+    (r"^\+ (\d+) weitere  ·  (.*)$", lambda m: f"+ {m[1]} more  ·  " + am_tr(m[2])),
+    (r"^Speichere (.+) … \(noch (\d+)\)$", lambda m: f"Saving {m[1]} … ({m[2]} left)"),
+    (r"^Speichere noch (\d+) …$", lambda m: f"Still saving {m[1]} …"),
+    (r"^(.+) aus der Warteliste entfernt$", lambda m: f"{m[1]} removed from the waiting list"),
+    (r"^Start  Warteliste \((\d+)\)$", lambda m: f"Start  Waiting list ({m[1]})"),
+    (r"^Seite (\d+ / \d+)$", lambda m: f"Page {m[1]}"),
 ]
 
 
@@ -2418,7 +2450,7 @@ class App:
             info.append(f"{n} {'Spiel' if n == 1 else 'Spiele'} " + ("in Arbeit" if self.flush or not b else "in der Warteliste"))
         if pages > 1 and self.view == "game":
             info.insert(0, f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
-        line = " · ".join(info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
+        line = " · ".join(am_tr(x) for x in info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
         if self.top_mode == "mix":
             self.draw_mix(P)
             if line:
