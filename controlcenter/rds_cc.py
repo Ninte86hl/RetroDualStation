@@ -3006,10 +3006,10 @@ class Keyboard:
 
 
 # Akzentfarben nach dem Vorbild der 16 Profilfarben von Nintendo DS / DSi (gleiche Reihenfolge).
-# Sehr helle DS-Töne leicht abgedunkelt, damit weiße Schrift auf der Akzentfarbe lesbar bleibt;
+# Helle DS-Töne im Original: auf hellen Akzenten wird die Schrift automatisch dunkel (on_acc);
 # die bisherigen sechs Farben sind enthalten (gespeicherte Einstellungen bleiben gültig).
-DS_COLORS = [("Grau", "61829a"), ("Braun", "ba4900"), ("Rot", "e5383b"), ("Rosa", "e55fc9"),
-             ("Orange", "f08c00"), ("Gelb", "d4a300"), ("Hellgrün", "74b300"), ("Grün", "2bb673"),
+DS_COLORS = [("Grau", "61829a"), ("Braun", "ba4900"), ("Rot", "e5383b"), ("Rosa", "f080d8"),
+             ("Orange", "f08c00"), ("Gelb", "f0d000"), ("Hellgrün", "98d600"), ("Grün", "2bb673"),
              ("Dunkelgrün", "00843d"), ("Türkis", "1fa98f"), ("Hellblau", "2f9fe0"), ("Blau", "3d7bff"),
              ("Dunkelblau", "2f45c2"), ("Lila", "9b5de5"), ("Violett", "b43fd6"), ("Magenta", "e64980")]
 
@@ -3125,12 +3125,22 @@ def theme_palette():
             tile = _mixhex(bg, tint, 0.25)
         muted = _mixhex(text, bg, 0.3)
         return {"bg": bg, "card": card, "tile": tile, "seg": _mixhex(bg, tint, 0.2 if sel else 0.07),
-                "track": _mixhex(bg, tint, 0.5 if sel else 0.2), "focus": _mixhex(bg, text, 0.15),
+                # leere Reglerstrecke neutral (dunkler/heller Grund), damit die gefüllte Akzentstrecke sich abhebt
+                "track": _mixhex(bg, "000000", 0.35) if dark else _mixhex(bg, text, 0.18),
+                "focus": _mixhex(bg, text, 0.15),
                 "text": text, "muted": muted, "on_bg": text, "on_text": bg, "pill": card,
                 "dot": _mixhex(bg, tint, 0.6), "_dark": dark, "_scheme": m.group(1)}
     except Exception as exc:
         log("Theme-Palette:", exc)
         return None
+
+
+def on_acc(a):
+    """Schriftfarbe auf einer Akzentfläche: dunkel auf hellen Akzenten (Pastel, Gelb …), sonst weiß."""
+    try:
+        return "1c1c1c" if _lum(a) > 0.42 else "ffffff"
+    except Exception:
+        return "ffffff"
 
 
 def user_accent(cfg):
@@ -3363,6 +3373,17 @@ class ControlCenter:
                 # Automatisch: Hell/Dunkel und – bei farbigen Schemata – auch der Akzent kommen aus dem Theme
                 self.T = theme_palette() or THEMES[theme_auto_name()]   # Versuch: volle Theme-Farben
                 self.accent = theme_accent() or user_accent(self.cfg)
+                if self.T.get("_scheme") and self.T.get("_dark"):
+                    # Akzent im gleichen Farbton wie ein dunkler Hintergrund (Sony: Dunkelblau auf Blau) hebt sich
+                    # nicht ab → aufhellen. Andere Farbtöne (Famicom: Gold auf Rot) und helle Schemata bleiben original.
+                    import colorsys
+                    hue = lambda h: colorsys.rgb_to_hsv(*(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)))[0] * 360
+                    d = abs(hue(self.accent) - hue(self.T["bg"]))
+                    if min(d, 360 - d) < 30:
+                        for _ in range(6):
+                            if _contrast(self.accent, self.T["bg"]) >= 3.0:
+                                break
+                            self.accent = _mixhex(self.accent, "ffffff", 0.2)
             elif hasattr(self, "accent"):
                 self.accent = user_accent(self.cfg)
         if hasattr(self, "accent") and (self.T, self.accent) != before:
@@ -3806,8 +3827,8 @@ class ControlCenter:
         x = 40
         for key, label, act, primary in buttons:
             P.rrect(x, 800, bw, 90, 26, A if primary else T["tile"])
-            P.hint([(key, label)], 26, x + bw / 2, 855, "ffffff" if primary else T["text"],
-                   "ffffff" if primary else T["text"], align="c")
+            P.hint([(key, label)], 26, x + bw / 2, 855, on_acc(A) if primary else T["text"],
+                   on_acc(A) if primary else T["text"], align="c")
             self.hits.append((x, 800, bw, 90, ("tour", act)))
             x += bw + 20
 
@@ -3869,7 +3890,7 @@ class ControlCenter:
                     P.sun(cx, 97, T["text"])
                 if self.cfg.get("theme") == "auto":     # Automatisch: kleines „A“ am Symbol
                     P.circle(cx + 18, 116, 11, A)
-                    P.text("A", 14, cx + 18, 121, "ffffff", bold=True, align="c", raw=True)
+                    P.text("A", 14, cx + 18, 121, on_acc(A), bold=True, align="c", raw=True)
             else:
                 P.circle(cx, 97, 13, A)
             if top_focus and self.top_sel == i:
@@ -3922,7 +3943,7 @@ class ControlCenter:
             P.text(sub, 19, 187, 253, T["muted"])
             gfocus = self.rows()[self.focus][0] == "game"
             P.rrect(955, 181, 233, 63, 32, A, a=1.0 if gfocus else 0.45)
-            P.text("Spiel beenden", 21, 1071, 220, "ffffff", bold=True, align="c")
+            P.text("Spiel beenden", 21, 1071, 220, on_acc(A), bold=True, align="c")
             if gfocus:
                 self._focus_ring(P, 955, 181, 233, 63, 32)
             self.hits.append((955, 175, 233, 75, ("quit", None)))
@@ -3960,7 +3981,7 @@ class ControlCenter:
             sx = 372 + i * 279
             active = i == self.perf
             P.rrect(sx, y + 14, 269, 61, 16, A if active else mix(T["seg"], A, 0.12))
-            P.text(name, 20, sx + 134, y + 52, "ffffff" if active else T["text"],
+            P.text(name, 20, sx + 134, y + 52, on_acc(A) if active else T["text"],
                    bold=active, align="c")
             if focused and i == self.perf_sel:
                 self._focus_ring(P, sx, y + 14, 269, 61, 16)
@@ -3979,14 +4000,14 @@ class ControlCenter:
             tx = 45 + i * (tw + gap)
             fill = A if states[i] else mix(T["tile"], A, 0.22)
             P.rrect(tx, ry, tw, th, 24, fill)
-            tc = "ffffff" if states[i] else T["text"]
+            tc = on_acc(A) if states[i] else T["text"]
             sub = self._tile_detail(i)
             P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
             if sub:
                 P.text(sub, 19, tx + 25, ry + 96, mix(tc, fill, 0.25))
             if i < 2:   # WLAN/BT Untermenü-Pfeil
-                P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
-                P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
+                P.circle(tx + tw - 38, ry + 38, 22, mix(fill, on_acc(A) if states[i] else T["text"], 0.18))
+                P.chevron(tx + tw - 34, ry + 38, 9, on_acc(A) if states[i] else T["text"])
                 self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
             if focused and i == self.tile:
                 self._focus_ring(P, tx, ry, tw, th, 24)
@@ -4044,7 +4065,7 @@ class ControlCenter:
                 cy = 670                                  # Symbolreihe unten über der Fußzeile
                 sel = i == self.gsel
                 P.circle(cx, cy, 50, A if sel else mix(T["tile"], A, 0.22))
-                P.game_icon(key, cx, cy, "ffffff" if sel else T["text"])
+                P.game_icon(key, cx, cy, on_acc(A) if sel else T["text"])
                 if sel:
                     self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
                 P.text(label, 19, cx, cy + 86, T["muted"], align="c")
@@ -4070,7 +4091,7 @@ class ControlCenter:
         T, A = self.T, self.accent
         sel = i == self.gsel
         fill = A if sel else mix(T["tile"], A, 0.22)      # angesteuert = Akzentfarbe wie im CC
-        tc, mc = ("ffffff", mix("ffffff", A, 0.25)) if sel else (T["text"], T["muted"])
+        tc, mc = (on_acc(A), mix(on_acc(A), A, 0.25)) if sel else (T["text"], T["muted"])
         P.rrect(x, y, w, h, 24, fill)
         arrow = (self.game or {}).get("emu") in SLOT_EMUS
         if shot and P.image(shot, x, y, w, h, 24):
@@ -4178,7 +4199,7 @@ class ControlCenter:
         pw = P.width(label, 18, bold=True, raw=True) + 48
         if hc:   # Hardcore: Akzentfarbe mit weißer Schrift – lesbar in Hell und Dunkel
             P.rrect(1215 - pw, 70, pw, 54, 27, A)
-            P.text(label, 19, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+            P.text(label, 19, 1215 - pw / 2, 104, on_acc(A), bold=True, align="c", raw=True)
         else:
             P.rrect(1215 - pw, 70, pw, 54, 27, T["pill"])
             P.text(label, 19, 1215 - pw / 2, 104, T["text"], bold=True, align="c", raw=True)
@@ -4223,7 +4244,7 @@ class ControlCenter:
             if not (b and P.image(b, 58, y + 10, 72, 72, 14)):
                 P.rrect(58, y + 10, 72, 72, 14, A if done else T["seg"])
                 P.game_icon("trophy", 94, y + 46, "ffffff" if done else T["muted"])
-            tc = "ffffff" if sel else T["text"]
+            tc = on_acc(A) if sel else T["text"]
             t = a.get("title") or ""
             while P.width(t, 20, bold=True, raw=True) > 900 and len(t) > 4:
                 t = t[:-2]
@@ -4231,9 +4252,9 @@ class ControlCenter:
             d = a.get("desc") or ""
             while P.width(d, 16, raw=True) > 920 and len(d) > 4:
                 d = d[:-2]
-            P.text(d, 19, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
+            P.text(d, 19, 150, y + 66, mix(on_acc(A), A, 0.3) if sel else T["muted"], raw=True)
             P.text("%d P" % (a.get("points") or 0), 19, 1190, y + 54,
-                   "ffffff" if (sel or done) else T["muted"], bold=True, align="r", raw=True)
+                   on_acc(A) if (sel or done) else T["muted"], bold=True, align="r", raw=True)
             self.hits.append((45, y, 1170, 92, ("ra_row", i)))
             y += 102
 
@@ -4281,7 +4302,7 @@ class ControlCenter:
             ds = time.strftime("%d.%m.%Y %H:%M", time.localtime(int(when))) if str(when).isdigit() else ""
             label = tr("Freigeschaltet") + (" " + ds if ds else "") + (" · Hardcore" if done.get("hardcore") else "")
             P.rrect(x, 705, P.width(label, 17, bold=True, raw=True) + 40, 44, 22, A)
-            P.text(label, 19, x + 20, 734, "ffffff", bold=True, raw=True)
+            P.text(label, 19, x + 20, 734, on_acc(A), bold=True, raw=True)
         else:
             P.text(tr("Noch offen"), 19, x, 734, T["muted"], bold=True)
         self.hits.append((45, 380, 1170, 400, ("ra_close", None)))
@@ -4359,7 +4380,7 @@ class ControlCenter:
             b = ra_badge(t.get("badge"))
             if not (b and P.image(b, x + 20, 30, 96, 96, 16)):
                 P.rrect(x + 20, 30, 96, 96, 16, A)
-                P.game_icon("trophy", x + 68, 78, "ffffff")
+                P.game_icon("trophy", x + 68, 78, on_acc(A))
             P.text(tr("Erfolg freigeschaltet!"), 19, x + 140, 58, A, bold=True)
             title = t.get("title") or ""
             while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
@@ -4463,7 +4484,7 @@ class ControlCenter:
             P.text(line, 21, 85, y, T["muted"])
             y += 42
         P.rrect(85, 530, 260, 64, 32, A)
-        P.text("Verstanden", 22, 215, 571, "ffffff", bold=True, align="c")
+        P.text("Verstanden", 22, 215, 571, on_acc(A), bold=True, align="c")
         self._focus_ring(P, 85, 530, 260, 64, 32)
         self.hits.append((45, 200, 1170, 420, ("ghint", None)))
 
@@ -4660,7 +4681,7 @@ class ControlCenter:
         for j2, (key, label) in enumerate(btns):
             x = bx + j2 * 280
             P.rrect(x + 10, 822, 260, 72, 36, A if j2 == 0 else T["card"])
-            P.text(f"{key}  {tr(label)}", 21, x + 140, 866, "ffffff" if j2 == 0 else T["text"], bold=j2 == 0, align="c", raw=True)
+            P.text(f"{key}  {tr(label)}", 21, x + 140, 866, on_acc(A) if j2 == 0 else T["text"], bold=j2 == 0, align="c", raw=True)
             self.hits.append((x + 10, 818, 260, 80, ("gs_btn", key)))
         if it.get("emu") in ("PortMaster",):
             P.text("Spielstand über das Spiel selbst", 19, 630, 930, T["muted"], align="c")
@@ -4840,7 +4861,7 @@ class PowerMenu:
                     P.rrect(bxi, byi, cbw, 90, 20, T["bg"])
                     P.rrect(bxi, byi, cbw, 90, 20, T["dot"], stroke=2)
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
-                       "ffffff" if active else T["muted"], bold=active, align="c")
+                       on_acc(accent) if active else T["muted"], bold=active, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
             P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 18, W / 2, H - 36,
                    T["muted"], T["text"], align="c")
@@ -4860,7 +4881,7 @@ class PowerMenu:
                     P.rrect(bx, by, bw, bh, 24, T["bg"])
                     P.rrect(bx, by, bw, bh, 24, T["dot"], stroke=2)
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
-                       "ffffff" if active else T["muted"], bold=active, align="c")
+                       on_acc(accent) if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
             P.hint([("B", "Zurück")], 19, W / 2, H - 36, T["muted"], T["text"], align="c")
 
@@ -4878,11 +4899,11 @@ class PowerMenu:
                     P.rrect(bx, by, bw, bh, 24, T["bg"])
                     P.rrect(bx, by, bw, bh, 24, T["dot"], stroke=2)
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
-                       "ffffff" if active else T["muted"], bold=active, align="c")
+                       on_acc(accent) if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
                 if has_sub:
                     # Pfeil rechts innen im Button
-                    tc = "ffffff" if active else T["muted"]
+                    tc = on_acc(accent) if active else T["muted"]
                     circ_fill = mix(accent, "000000", 0.18) if active else T["dot"]
                     P.circle(bx + bw - 52, by + bh / 2, 22, circ_fill)
                     P.chevron(bx + bw - 48, by + bh / 2, 9, tc)
