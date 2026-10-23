@@ -3065,7 +3065,13 @@ def theme_accent():
     """Akzentfarbe „Theme“: Auswahlfarbe des Farbschemas (canvas rds: gamelistSelectorColor).
     Grau (kein echter Akzent, z. B. Dark/Light) oder ohne Schema: Rot."""
     try:
-        c = _hexvar(theme_scheme_block(), "gamelistSelectorColor", "systemCarouselSelectorColor")
+        block = theme_scheme_block()
+        # Markenfarbe des Schemas: Menüfarbe, wenn sie farbig ist (Famicom: Rot), sonst die Auswahlfarbe
+        menu = _hexvar(block, "menuBackgroundColor")
+        if menu and max(int(menu[i:i + 2], 16) for i in (0, 2, 4)) - min(int(menu[i:i + 2], 16) for i in (0, 2, 4)) >= 40:
+            c = menu
+        else:
+            c = _hexvar(block, "gamelistSelectorColor", "systemCarouselSelectorColor")
         if c:
             r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
             if max(r, g, b) - min(r, g, b) >= 40:
@@ -3310,10 +3316,15 @@ class ControlCenter:
     def apply_auto_theme(self):
         """Bei „Automatisch“ Hell/Dunkel und bei Akzent „Theme“ die Farbe aus dem ES-Theme übernehmen
         (beim Öffnen und regelmäßig)."""
+        before = (self.T, self.accent)
         if self.cfg.get("theme") == "auto":
             self.T = THEMES[theme_auto_name()]
         if self.cfg.get("accent") == "theme" and not isinstance(self.sub, ColorMenu):
             self.accent = theme_accent()
+        if (self.T, self.accent) != before:
+            m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
+            log("Theme-Automatik: Schema %s → %s, Akzent %s" % (m.group(1) if m else "?",
+                "hell" if self.T is THEMES["light"] else "dunkel", self.accent))
 
     def toggle_theme(self):
         # Dunkel → Hell → Automatisch (nach dem Farbschema des ES-Themes) → Dunkel
