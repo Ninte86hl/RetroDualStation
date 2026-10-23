@@ -71,6 +71,8 @@ Every hint that helps the project is credited here. Thank you for taking the tim
 - **[Sway](https://swaywm.org) / wlroots** – the Wayland compositor that
   makes the dual-screen layout possible.
 - **[SDL](https://www.libsdl.org)** – used by EmulationStation for video and input.
+- **[iiSU Asset Tool](https://github.com/viik4/iisu-asset-tool)** by viik4 (MIT) – the iiSU platform
+  borders used by the Artwork Manager's icon editor ship with RDS.
 
 ## Hardware
 

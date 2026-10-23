@@ -363,6 +363,19 @@ OWN = WORK / "eigene"                       # eigene Bilder: eigene/, eigene/<sy
 OWN_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 
 
+def safe_border_download(url):
+    """Einzelne Rahmen laden – nie das große iiSU-Archiv (Rahmen kommen mit dem Installer).
+    Feste Zeitgrenze und Größenlimit, damit das Gerät nicht hängen bleibt."""
+    if url.endswith(".zip"):
+        raise RuntimeError("iiSU-Archiv wird auf dem Gerät nicht geladen")
+    from urllib.request import Request, urlopen
+    with urlopen(Request(url, headers={"User-Agent": "RetroDualStation"}), timeout=10) as r:
+        data = r.read(5 * 1024 * 1024 + 1)
+    if len(data) > 5 * 1024 * 1024:
+        raise RuntimeError("Rahmen zu groß")
+    return data
+
+
 def fetch(url):
     """Bild holen: eigene Datei (file://) direkt, sonst über den Zwischenspeicher aus dem Netz."""
     if url.startswith("file://"):
@@ -1247,7 +1260,7 @@ class App:
                 if not border_candidates(WORK / "data", system):
                     self.busy = "iiSU-Rahmen werden geladen … (nur beim ersten Mal)"
                     self.dirty = True
-                prepare_iisu_borders(WORK / "data", system)
+                prepare_iisu_borders(WORK / "data", system, download=safe_border_download)
             except Exception as exc:
                 log("Rahmen nicht ladbar:", exc)
             borders = [b.path for b in border_candidates(WORK / "data", system)]
