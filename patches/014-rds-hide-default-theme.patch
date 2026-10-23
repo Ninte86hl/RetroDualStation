@@ -1,5 +1,5 @@
 diff --git a/es-core/src/ThemeData.cpp b/es-core/src/ThemeData.cpp
-index 9df90e8..23826f9 100644
+index 9df90e8..5f49792 100644
 --- a/es-core/src/ThemeData.cpp
 +++ b/es-core/src/ThemeData.cpp
 @@ -1,4 +1,5 @@
@@ -12,8 +12,8 @@ index 9df90e8..23826f9 100644
  			if (Utils::String::startsWith(Utils::FileSystem::getFileName(*it), "."))
  				continue;
  
-+			// RDS: das ROCKNIX-Standardtheme ist nicht für zwei Bildschirme gebaut – im Dual-Modus ausblenden
-+			if (RdsScreens::active() && Utils::FileSystem::getFileName(*it) == "es-theme-art-book-next")
++			// RDS: das ROCKNIX-Standardtheme (auch als Verweis system-theme) ist nicht für zwei Bildschirme gebaut – im Dual-Modus ausblenden
++			if (RdsScreens::active() && (Utils::FileSystem::getFileName(*it) == "es-theme-art-book-next" || Utils::FileSystem::getFileName(*it) == "system-theme"))
 +				continue;
 +
  			if(Utils::FileSystem::isDirectory(*it))
