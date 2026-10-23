@@ -227,7 +227,7 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Hell/Dunkel: automatisch nach Theme": "Light/dark: follows the theme", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
     "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
     "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
     "Violett": "Violet", "Magenta": "Magenta",
@@ -3012,6 +3012,46 @@ DS_COLORS = [("Grau", "61829a"), ("Braun", "ba4900"), ("Rot", "e5383b"), ("Rosa"
              ("Dunkelblau", "2f45c2"), ("Lila", "9b5de5"), ("Violett", "b43fd6"), ("Magenta", "e64980")]
 
 
+ES_SETTINGS = "/storage/.config/emulationstation/es_settings.cfg"
+
+
+def theme_auto_name():
+    """„Automatisch“: Hell oder Dunkel nach dem Farbschema des ES-Themes (z. B. canvas rds → Pastel).
+    Entscheidet über die Helligkeit der Grundfarbe (BackdropColor) des gewählten Schemas – passt so auch für
+    Custom und künftige Schemata. Ohne Farbschema (z. B. dii-ess-aye rds): Dunkel."""
+    try:
+        cfg = rd(ES_SETTINGS) or ""
+        theme = re.search(r'name="ThemeSet" value="([^"]*)"', cfg)
+        scheme = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
+        if not theme:
+            return "dark"
+        base = None
+        for root in ("/storage/.config/emulationstation/themes", "/storage/roms/themes", "/usr/share/emulationstation/themes"):
+            if os.path.isdir(os.path.join(root, theme.group(1))):
+                base = os.path.join(root, theme.group(1))
+                break
+        xml = rd(os.path.join(base, "colors.xml")) if base else None
+        if not xml:
+            return "dark"
+        block = None
+        if scheme:
+            m = re.search(r'<variables ifSubset="color-scheme:%s">(.*?)</variables>' % re.escape(scheme.group(1)), xml, re.S)
+            block = m.group(1) if m else None
+        if block is None:                      # Standard/Custom: erster Variablenblock
+            m = re.search(r"<variables>(.*?)</variables>", xml, re.S)
+            block = m.group(1) if m else ""
+        # BackdropColor ist die sichtbare Grundfarbe (Light: weiß, Dark: schwarz); sonst backgroundColor
+        bg = (re.search(r"<BackdropColor>\s*([0-9a-fA-F]{6})", block)
+              or re.search(r"<backgroundColor>\s*([0-9a-fA-F]{6})", block))
+        if not bg:
+            return "dark"
+        r, g, b = (int(bg.group(1)[i:i + 2], 16) for i in (0, 2, 4))
+        return "light" if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55 else "dark"
+    except Exception as exc:
+        log("Theme-Automatik:", exc)
+        return "dark"
+
+
 class ColorMenu:
     """Untermenü Akzentfarbe: 16 Farbkacheln (4 × 4) wie im DS-Profil; Vorschau beim Wählen."""
     title = "Akzentfarbe"
@@ -3108,6 +3148,7 @@ class ControlCenter:
         HAPTIC_ON[0] = self.cfg.get("haptics", True)
         LANG[0] = ui_language()
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
+        self.apply_auto_theme()
         self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
@@ -3221,11 +3262,20 @@ class ControlCenter:
         save_config(self.cfg)
         haptic("open")                                       # beim Einschalten spürbar bestätigen
 
+    def apply_auto_theme(self):
+        """Bei „Automatisch“ Hell/Dunkel aus dem ES-Theme übernehmen (beim Öffnen und regelmäßig)."""
+        if self.cfg.get("theme") == "auto":
+            self.T = THEMES[theme_auto_name()]
+
     def toggle_theme(self):
-        name = "light" if self.T is THEMES["dark"] else "dark"
-        self.T = THEMES[name]
+        # Dunkel → Hell → Automatisch (nach dem Farbschema des ES-Themes) → Dunkel
+        cur = self.cfg.get("theme") if self.cfg.get("theme") in ("dark", "light", "auto") else "dark"
+        name = {"dark": "light", "light": "auto", "auto": "dark"}[cur]
         self.cfg["theme"] = name
+        self.T = THEMES[theme_auto_name()] if name == "auto" else THEMES[name]
         save_config(self.cfg)
+        if name == "auto":
+            info_toast("Hell/Dunkel: automatisch nach Theme", "help")
 
     def next_accent(self):
         i = ACCENTS.index(self.accent) if self.accent in ACCENTS else -1
@@ -3712,6 +3762,9 @@ class ControlCenter:
                     P.circle(cx + 6, 92, 10, T["pill"])
                 else:
                     P.sun(cx, 97, T["text"])
+                if self.cfg.get("theme") == "auto":     # Automatisch: kleines „A“ am Symbol
+                    P.circle(cx + 18, 116, 11, A)
+                    P.text("A", 14, cx + 18, 121, "ffffff", bold=True, align="c", raw=True)
             else:
                 P.circle(cx, 97, 13, A)
             if top_focus and self.top_sel == i:
@@ -5423,6 +5476,7 @@ def main():
     def toggle(view):
         if ui.view != view:
             TIMING["open"] = (view, time.monotonic())
+            cc.apply_auto_theme()                       # Theme in ES evtl. umgestellt
         if ui.pending_view and not ui.view:
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
@@ -5958,6 +6012,7 @@ def main():
                 # eigene Erfolgsmeldung dann aus – oben meldet einheitlich das Kontrollcenter
                 last["n"] = last.get("n", 0) + 1
                 if last["n"] % 20 == 0:
+                    cc.apply_auto_theme()
                     ini = "/storage/.config/dsperate/dsperate.ini"
                     txt = rd(ini) or ""
                     if re.search(r"(?m)^toasts\s*=\s*true", txt) and not run(["pidof", "dsperate"]):
@@ -6317,6 +6372,7 @@ def main():
                     os.remove("/tmp/rds-shot")
                     if parts and parts[0] == "end":
                         cc.T = THEMES.get(cc.cfg.get("theme"), THEMES["dark"])
+                        cc.apply_auto_theme()
                         cc.accent = (cc.cfg.get("accent") or "#" + ACCENTS[0]).lstrip("#")
                         if ui.view:
                             toggle(ui.view)
