@@ -1920,10 +1920,10 @@ class Pauser:
 THEMES = {
     "dark": {"bg": "373737", "card": "262626", "tile": "4a4a4a", "seg": "444444",
              "track": "5a5a5a", "focus": "5a5a5a", "text": "ffffff", "muted": "bdbdbd",
-             "on_bg": "ffffff", "on_text": "1c1c1c", "pill": "262626", "dot": "6a6a6a"},
+             "on_bg": "ffffff", "on_text": "1c1c1c", "pill": "262626", "dot": "6a6a6a", "_dark": True},
     "light": {"bg": "e9e9e9", "card": "ffffff", "tile": "dcdcdc", "seg": "e4e4e4",
               "track": "cfcfcf", "focus": "dedede", "text": "1c1c1c", "muted": "666666",
-              "on_bg": "1c1c1c", "on_text": "ffffff", "pill": "ffffff", "dot": "b5b5b5"},
+              "on_bg": "1c1c1c", "on_text": "ffffff", "pill": "ffffff", "dot": "b5b5b5", "_dark": False},
 }
 WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
@@ -3090,6 +3090,59 @@ def theme_accent():
     return None
 
 
+def _lum(h):
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+
+def _contrast(a, b):
+    la, lb = sorted((_lum(a), _lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def _mixhex(a, b, t):
+    return "%02x%02x%02x" % tuple(round(int(a[i:i + 2], 16) * (1 - t) + int(b[i:i + 2], 16) * t) for i in (0, 2, 4))
+
+
+def theme_palette():
+    """Versuch (Automatisch): komplette Farbtabelle aus dem Farbschema des ES-Themes – Grundfarbe und
+    Textfarbe des Schemas, Karten/Kacheln/Regler daraus abgestuft. Dark/Light und Themes ohne Schema:
+    None (dann die normalen Varianten). Zu wenig Kontrast → Text schwarz bzw. weiß."""
+    try:
+        cfg = rd(ES_SETTINGS) or ""
+        m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
+        if not m or m.group(1) in ("dark", "light"):
+            return None
+        block = theme_scheme_block()
+        bg = _hexvar(block, "BackdropColor", "backgroundColor")
+        if not bg:
+            return None
+        dark = _lum(bg) < 0.25
+        text = _hexvar(block, "gamelistPrimaryColor", "systemInfoColor", "helpTextColor") or ("ffffff" if dark else "1c1c1c")
+        if _contrast(text, bg) < 4.5:
+            text = "ffffff" if dark else "1c1c1c"
+        # Karten müssen sich vom Hintergrund abheben: fast Weiß → Hintergrund leicht getönt, Karten weiß;
+        # fast Schwarz → Karten etwas heller statt noch dunkler
+        if dark:
+            card = _mixhex(bg, "000000", 0.35) if _lum(bg) > 0.03 else _mixhex(bg, text, 0.09)
+        else:
+            if _lum(bg) > 0.85:
+                bg = _mixhex(bg, text, 0.08)
+            card = _mixhex(bg, "ffffff", 0.7)
+        pill = card
+        muted = _mixhex(text, bg, 0.3)
+        if _contrast(muted, bg) < 3:
+            muted = _mixhex(text, bg, 0.15)
+        return {"bg": bg, "card": card, "tile": _mixhex(bg, text, 0.12), "seg": _mixhex(bg, text, 0.07),
+                "track": _mixhex(bg, text, 0.2), "focus": _mixhex(bg, text, 0.15), "text": text, "muted": muted,
+                "on_bg": text, "on_text": bg, "pill": pill, "dot": _mixhex(bg, text, 0.3), "_dark": dark,
+                "_scheme": m.group(1)}
+    except Exception as exc:
+        log("Theme-Palette:", exc)
+        return None
+
+
 def user_accent(cfg):
     """Im Farbmenü gewählte Akzentfarbe (alter Wert „theme“ → Rot)."""
     a = cfg.get("accent")
@@ -3318,14 +3371,14 @@ class ControlCenter:
         if not isinstance(getattr(self, "sub", None), ColorMenu):   # nicht mitten in der Farbvorschau
             if self.cfg.get("theme") == "auto":
                 # Automatisch: Hell/Dunkel und – bei farbigen Schemata – auch der Akzent kommen aus dem Theme
-                self.T = THEMES[theme_auto_name()]
+                self.T = theme_palette() or THEMES[theme_auto_name()]   # Versuch: volle Theme-Farben
                 self.accent = theme_accent() or user_accent(self.cfg)
             elif hasattr(self, "accent"):
                 self.accent = user_accent(self.cfg)
         if hasattr(self, "accent") and (self.T, self.accent) != before:
             m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
             log("Theme-Automatik: Schema %s → %s, Akzent %s" % (m.group(1) if m else "?",
-                "hell" if self.T is THEMES["light"] else "dunkel", self.accent))
+                "dunkel" if self.T.get("_dark") else "hell", self.accent))
 
     def toggle_theme(self):
         # Dunkel → Hell → Automatisch (nach dem Farbschema des ES-Themes) → Dunkel
@@ -3819,7 +3872,7 @@ class ControlCenter:
                 if not HAPTIC_ON[0]:
                     P.poly([(cx - 15, 83), (cx - 12, 80), (cx + 15, 109), (cx + 12, 112)], col)
             elif i == 0:   # Mond (Dunkel) bzw. Sonne mit Strahlen (Hell)
-                if self.T is THEMES["dark"]:
+                if self.T.get("_dark"):
                     P.circle(cx, 97, 12, T["text"])
                     P.circle(cx + 6, 92, 10, T["pill"])
                 else:
@@ -4250,8 +4303,11 @@ class ControlCenter:
         T, A = self.T, self.accent
         t = self.toast_now or {}
         # Farben folgen Hell/Dunkel des Kontrollcenters
-        BG, FG, MU, TR = (("1c1c1c", "ffffff", "bdbdbd", "4a4a4a") if T is THEMES["dark"]
-                          else ("ffffff", "1c1c1c", "666666", "d6d6d6"))
+        if T.get("_scheme"):                    # Theme-Farben (Automatisch): Karte des Schemas
+            BG, FG, MU, TR = T["card"], T["text"], T["muted"], T["track"]
+        else:
+            BG, FG, MU, TR = (("1c1c1c", "ffffff", "bdbdbd", "4a4a4a") if T.get("_dark")
+                              else ("ffffff", "1c1c1c", "666666", "d6d6d6"))
         if t.get("kind") == "volume":
             bw, x = 560, 630 - 280
             P.rrect(x, 22, bw, 112, 56, BG, 0.9)
@@ -4266,7 +4322,7 @@ class ControlCenter:
             return
         if t.get("kind") == "battery":          # Warnung bei niedrigem Akku (20 / 10 / 5 %)
             lvl = t.get("level") or 0
-            col = ("f5be1e" if BG == "1c1c1c" else "b07d00") if lvl > 10 else "e5383b"   # Gelb auf Weiß dunkler
+            col = ("f5be1e" if T.get("_dark") else "b07d00") if lvl > 10 else "e5383b"   # Gelb auf Weiß dunkler
             head = tr("Akku fast leer") if lvl <= 5 else tr("Akku schwach")
             sub = tr("Jetzt laden – sonst geht das Gerät gleich aus") if lvl <= 5 else tr("Bitte bald laden")
             hs, ss = 28, 18
