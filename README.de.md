@@ -76,7 +76,7 @@ Ein Update funktioniert genauso. Danach stehen unter **Ports**:
 |:-:|---|---|
 | <img src="docs/icons/rds-install.png" width="48"> | **Install RDS** | Installiert oder aktualisiert RDS |
 | <img src="docs/icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES über beide Bildschirme |
-| <img src="docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Original-ES auf einem Bildschirm, z. B. zum Scrapen |
+| <img src="docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Original-ES auf einem Bildschirm |
 | <img src="docs/icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, Icon und Hero am Gerät |
 | <img src="docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Zurück zum Original, Spiele und Spielstände bleiben |
 

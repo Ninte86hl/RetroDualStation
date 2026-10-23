@@ -19,7 +19,7 @@ After installing, you'll find RDS in **Ports** by these icons:
 |:-:|---|---|
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-install.png" width="48"> | **Install RDS** | Installs or updates RDS |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES across both screens |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Stock ES on one screen, e.g. for scraping |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Stock ES on one screen |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, icons and hero images on the device |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Back to stock; games and saves stay |
 
