@@ -227,7 +227,7 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Hell/Dunkel: automatisch nach Theme": "Light/dark: follows the theme", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Hell/Dunkel: automatisch nach Theme": "Light/dark: follows the theme", "Farbe aus dem Farbschema des ES-Themes": "Colour from the ES theme's colour scheme", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
     "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
     "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
     "Violett": "Violet", "Magenta": "Magenta",
@@ -3015,41 +3015,68 @@ DS_COLORS = [("Grau", "61829a"), ("Braun", "ba4900"), ("Rot", "e5383b"), ("Rosa"
 ES_SETTINGS = "/storage/.config/emulationstation/es_settings.cfg"
 
 
+def theme_scheme_block():
+    """Variablenblock des gewählten Farbschemas im ES-Theme (canvas rds: colors.xml) oder None."""
+    cfg = rd(ES_SETTINGS) or ""
+    theme = re.search(r'name="ThemeSet" value="([^"]*)"', cfg)
+    scheme = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
+    if not theme:
+        return None
+    base = None
+    for root in ("/storage/.config/emulationstation/themes", "/storage/roms/themes", "/usr/share/emulationstation/themes"):
+        if os.path.isdir(os.path.join(root, theme.group(1))):
+            base = os.path.join(root, theme.group(1))
+            break
+    xml = rd(os.path.join(base, "colors.xml")) if base else None
+    if not xml:
+        return None
+    if scheme:
+        m = re.search(r'<variables ifSubset="color-scheme:%s">(.*?)</variables>' % re.escape(scheme.group(1)), xml, re.S)
+        if m:
+            return m.group(1)
+    m = re.search(r"<variables>(.*?)</variables>", xml, re.S)     # Standard/Custom: erster Block
+    return m.group(1) if m else None
+
+
+def _hexvar(block, *names):
+    for n in names:
+        m = re.search(r"<%s>\s*([0-9a-fA-F]{6})" % n, block or "")
+        if m:
+            return m.group(1).lower()
+    return None
+
+
 def theme_auto_name():
     """„Automatisch“: Hell oder Dunkel nach dem Farbschema des ES-Themes (z. B. canvas rds → Pastel).
-    Entscheidet über die Helligkeit der Grundfarbe (BackdropColor) des gewählten Schemas – passt so auch für
-    Custom und künftige Schemata. Ohne Farbschema (z. B. dii-ess-aye rds): Dunkel."""
+    Entscheidet über die Helligkeit der Grundfarbe (BackdropColor) des gewählten Schemas – passt so auch
+    für Custom und künftige Schemata. Ohne Farbschema (z. B. dii-ess-aye rds): Dunkel."""
     try:
-        cfg = rd(ES_SETTINGS) or ""
-        theme = re.search(r'name="ThemeSet" value="([^"]*)"', cfg)
-        scheme = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
-        if not theme:
-            return "dark"
-        base = None
-        for root in ("/storage/.config/emulationstation/themes", "/storage/roms/themes", "/usr/share/emulationstation/themes"):
-            if os.path.isdir(os.path.join(root, theme.group(1))):
-                base = os.path.join(root, theme.group(1))
-                break
-        xml = rd(os.path.join(base, "colors.xml")) if base else None
-        if not xml:
-            return "dark"
-        block = None
-        if scheme:
-            m = re.search(r'<variables ifSubset="color-scheme:%s">(.*?)</variables>' % re.escape(scheme.group(1)), xml, re.S)
-            block = m.group(1) if m else None
-        if block is None:                      # Standard/Custom: erster Variablenblock
-            m = re.search(r"<variables>(.*?)</variables>", xml, re.S)
-            block = m.group(1) if m else ""
-        # BackdropColor ist die sichtbare Grundfarbe (Light: weiß, Dark: schwarz); sonst backgroundColor
-        bg = (re.search(r"<BackdropColor>\s*([0-9a-fA-F]{6})", block)
-              or re.search(r"<backgroundColor>\s*([0-9a-fA-F]{6})", block))
+        bg = _hexvar(theme_scheme_block(), "BackdropColor", "backgroundColor")
         if not bg:
             return "dark"
-        r, g, b = (int(bg.group(1)[i:i + 2], 16) for i in (0, 2, 4))
+        r, g, b = (int(bg[i:i + 2], 16) for i in (0, 2, 4))
         return "light" if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55 else "dark"
     except Exception as exc:
         log("Theme-Automatik:", exc)
         return "dark"
+
+
+def theme_accent():
+    """Akzentfarbe „Theme“: Auswahlfarbe des Farbschemas (canvas rds: gamelistSelectorColor).
+    Grau (kein echter Akzent, z. B. Dark/Light) oder ohne Schema: Rot."""
+    try:
+        c = _hexvar(theme_scheme_block(), "gamelistSelectorColor", "systemCarouselSelectorColor")
+        if c:
+            r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
+            if max(r, g, b) - min(r, g, b) >= 40:
+                lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+                if lum > 0.6:                  # zu hell für weiße Schrift (z. B. Pastel): abdunkeln
+                    k = 0.6 / lum
+                    c = "%02x%02x%02x" % (int(r * k), int(g * k), int(b * k))
+                return c
+    except Exception as exc:
+        log("Theme-Akzent:", exc)
+    return "e5383b"
 
 
 class ColorMenu:
@@ -3057,11 +3084,14 @@ class ColorMenu:
     title = "Akzentfarbe"
     COLS = 4
 
+    THEME = len(DS_COLORS)                     # Index der breiten Kachel „Theme“ unter dem 4 × 4-Raster
+
     def __init__(self, cc):
         self.cc = cc
         self.before = cc.accent
+        self.before_cfg = cc.cfg.get("accent")
         cur = [c for _n, c in DS_COLORS]
-        self.sel = cur.index(cc.accent) if cc.accent in cur else 0
+        self.sel = self.THEME if self.before_cfg == "theme" else cur.index(cc.accent) if cc.accent in cur else 0
         self.drag_from = None
         self.done = False
 
@@ -3079,26 +3109,37 @@ class ColorMenu:
     def drag(self, dy):
         pass
 
+    def _color(self, i):
+        return theme_accent() if i == self.THEME else DS_COLORS[i][1]
+
     def _preview(self):
-        self.cc.accent = DS_COLORS[self.sel][1]
+        self.cc.accent = self._color(self.sel)
 
     def nav(self, dx, dy):
-        n = len(DS_COLORS)
-        r, c = divmod(self.sel, self.COLS)
-        c = max(0, min(self.COLS - 1, c + dx))
-        r = max(0, min(n // self.COLS - 1, r + dy))
-        self.sel = r * self.COLS + c
+        rows = len(DS_COLORS) // self.COLS
+        if self.sel == self.THEME:
+            if dy < 0:
+                self.sel = (rows - 1) * self.COLS + getattr(self, "last_col", 0)
+        else:
+            r, c = divmod(self.sel, self.COLS)
+            if dy > 0 and r == rows - 1:
+                self.last_col = c
+                self.sel = self.THEME
+            else:
+                c = max(0, min(self.COLS - 1, c + dx))
+                r = max(0, min(rows - 1, r + dy))
+                self.sel = r * self.COLS + c
         self._preview()
 
     def confirm(self):
         cc = self.cc
-        cc.accent = DS_COLORS[self.sel][1]
-        cc.cfg["accent"] = "#" + cc.accent
+        cc.accent = self._color(self.sel)
+        cc.cfg["accent"] = "theme" if self.sel == self.THEME else "#" + cc.accent
         save_config(cc.cfg)
         self.done = True
         haptic("tap")
         cc.sub = None
-        log("Akzentfarbe:", DS_COLORS[self.sel][0], cc.accent)
+        log("Akzentfarbe:", "Theme" if self.sel == self.THEME else DS_COLORS[self.sel][0], cc.accent)
 
     def tap(self, hit):
         if hit and hit[0] == "color":
@@ -3123,14 +3164,18 @@ class ColorMenu:
         gap = 20
         tw = (1170 - gap * (self.COLS - 1)) / self.COLS
         top, bottom = 150, 795
-        rows = len(DS_COLORS) // self.COLS
+        rows = len(DS_COLORS) // self.COLS + 1          # + breite Kachel „Theme“
         th = (bottom - top - gap * (rows - 1)) / rows
-        for i, (name, col) in enumerate(DS_COLORS):
-            x = 45 + (i % self.COLS) * (tw + gap)
-            y = top + (i // self.COLS) * (th + gap)
+        tiles = [(name, col, 45 + (i % self.COLS) * (tw + gap), top + (i // self.COLS) * (th + gap), tw)
+                 for i, (name, col) in enumerate(DS_COLORS)]
+        tiles.append(("Theme", theme_accent(), 45, top + (rows - 1) * (th + gap), 1170))
+        for i, (name, col, x, y, tw) in enumerate(tiles):
             P.rrect(x, y, tw, th, 20, col)
             P.text(name, 22, x + 22, y + th - 22, "ffffff", bold=True)
-            if col == self.before:             # gespeicherte Farbe: Haken
+            if i == self.THEME:
+                P.text("Farbe aus dem Farbschema des ES-Themes", 19, x + tw - 22, y + th - 22, "ffffff", align="r")
+            saved = (self.before_cfg == "theme") if i == self.THEME else (self.before_cfg != "theme" and col == self.before)
+            if saved:                          # gespeicherte Farbe: Haken
                 P.circle(x + tw - 30, y + 30, 18, "ffffff")
                 P.text("✓", 22, x + tw - 30, y + 38, col, bold=True, align="c", raw=True)
             if i == self.sel:
@@ -3149,7 +3194,7 @@ class ControlCenter:
         LANG[0] = ui_language()
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.apply_auto_theme()
-        self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
+        self.accent = theme_accent() if self.cfg.get("accent") == "theme" else (self.cfg.get("accent") or "#e5383b").lstrip("#")
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
         # Zuletzt im CC gewählte Helligkeit wiederherstellen: ES schreibt beim Beenden/Neustart seine alten
@@ -3263,9 +3308,12 @@ class ControlCenter:
         haptic("open")                                       # beim Einschalten spürbar bestätigen
 
     def apply_auto_theme(self):
-        """Bei „Automatisch“ Hell/Dunkel aus dem ES-Theme übernehmen (beim Öffnen und regelmäßig)."""
+        """Bei „Automatisch“ Hell/Dunkel und bei Akzent „Theme“ die Farbe aus dem ES-Theme übernehmen
+        (beim Öffnen und regelmäßig)."""
         if self.cfg.get("theme") == "auto":
             self.T = THEMES[theme_auto_name()]
+        if self.cfg.get("accent") == "theme" and not isinstance(self.sub, ColorMenu):
+            self.accent = theme_accent()
 
     def toggle_theme(self):
         # Dunkel → Hell → Automatisch (nach dem Farbschema des ES-Themes) → Dunkel
