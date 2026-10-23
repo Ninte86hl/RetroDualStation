@@ -2399,8 +2399,8 @@ class SubMenu:
             P.text(f"{count} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
                    T["muted"], align="c")
         cc.hits.append((45, 195, 1170, self.LIST_H + 20, ("sublist",)))
-        P.hint([("A", "Auswählen")], 17, 45, 835, T["muted"], T["text"])
-        P.hint([("B", "Zurück")], 17, 1215, 835, T["muted"], T["text"], align="r")
+        P.hint([("A", "Auswählen")], 18, 45, 835, T["muted"], T["text"])
+        P.hint([("B", "Zurück")], 18, 1215, 835, T["muted"], T["text"], align="r")
 
 
 class WifiMenu(SubMenu):
@@ -2997,7 +2997,7 @@ class Keyboard:
         hint = ([("◄ ►", "wählen"), ("A", "einfügen"), ("B", "schließen")] if self.popup else
                 [("A", "Taste (halten: ä, ö, ü …)"), ("B", "Löschen"), ("L1", "Groß"), ("R1", "?123"),
                  ("Stick", "Cursor"), ("Start", "OK")])
-        P.hint(hint, 17, 630, 835, T["muted"], T["text"], align="c")
+        P.hint(hint, 18, 630, 835, T["muted"], T["text"], align="c")
 
 
 
@@ -3094,7 +3094,7 @@ class ColorMenu:
             if i == self.sel:
                 P.rrect(x - 6, y - 6, tw + 12, th + 12, 26, T["text"], stroke=4)
             cc.hits.append((x, y, tw, th, ("color", i)))
-        P.hint([("A", "übernehmen"), ("B", "zurück")], 17, 45, 835, T["muted"], T["text"])
+        P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
 
 
 
@@ -3604,10 +3604,10 @@ class ControlCenter:
             left.append(("B", "zurück"))
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
-        P.hint(left, 17, 45, 835, T["muted"], T["text"])
+        P.hint(left, 18, 45, 835, T["muted"], T["text"])
         right = [("Select", "Tour")] if (self.slot_pick is not None or self.ghelp or (self.page == 2 and self.ra_detail)) \
             else [("Select", "Tour"), ("B", "Schließen")]
-        P.hint(right, 17, 1215, 835, T["muted"], T["text"], align="r")
+        P.hint(right, 18, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
             wdt = 34 if i == self.page else 12
@@ -3737,7 +3737,7 @@ class ControlCenter:
         if not (icon and P.image(icon, 72, 167, 90, 90, 14)):
             P.rrect(72, 167, 90, 90, 14, T["tile"])
             P.text((self.game["name"][:1] if self.game else "–").upper(), 40, 117, 227, T["muted"], bold=True, align="c")
-        P.text("LÄUFT GERADE", 15, 187, 182, T["muted"], bold=True)
+        P.text("LÄUFT GERADE", 19, 187, 182, T["muted"], bold=True)
         self.marquee = False
         if self.game:
             g = self.game
@@ -3759,7 +3759,7 @@ class ControlCenter:
             if g["played"] is not None:
                 mins = int(g["played"] // 60)
                 sub += f" · {mins // 60}:{mins % 60:02d} h"
-            P.text(sub, 18, 187, 253, T["muted"])
+            P.text(sub, 19, 187, 253, T["muted"])
             gfocus = self.rows()[self.focus][0] == "game"
             P.rrect(955, 181, 233, 63, 32, A, a=1.0 if gfocus else 0.45)
             P.text("Spiel beenden", 21, 1071, 220, "ffffff", bold=True, align="c")
@@ -3768,7 +3768,7 @@ class ControlCenter:
             self.hits.append((955, 175, 233, 75, ("quit", None)))
         else:
             P.text("Kein Spiel aktiv", 28, 187, 222, T["text"], bold=True)
-            P.text("EmulationStation", 18, 187, 253, T["muted"])
+            P.text("EmulationStation", 19, 187, 253, T["muted"])
 
         # Regler
         rows = self.rows()
@@ -3823,7 +3823,7 @@ class ControlCenter:
             sub = self._tile_detail(i)
             P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
             if sub:
-                P.text(sub, 16, tx + 25, ry + 96, mix(tc, fill, 0.25))
+                P.text(sub, 19, tx + 25, ry + 96, mix(tc, fill, 0.25))
             if i < 2:   # WLAN/BT Untermenü-Pfeil
                 P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
                 P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
@@ -3887,7 +3887,7 @@ class ControlCenter:
                 P.game_icon(key, cx, cy, "ffffff" if sel else T["text"])
                 if sel:
                     self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
-                P.text(label, 18, cx, cy + 86, T["muted"], align="c")
+                P.text(label, 19, cx, cy + 86, T["muted"], align="c")
                 self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
         if self.gbusy:
             P.text("Bitte warten …", 24, 630, y, T["muted"], align="c")
@@ -3916,11 +3916,11 @@ class ControlCenter:
         if shot and P.image(shot, x, y, w, h, 24):
             P.rrect(x, y + h - 92, w, 92, 24, "000000", 0.62)
             P.text(label, 24, x + 28, y + h - 52, "ffffff", bold=True)
-            P.text(self._big_detail(key), 17, x + 28, y + h - 22, "dddddd", raw=True)
+            P.text(self._big_detail(key), 19, x + 28, y + h - 22, "dddddd", raw=True)
             cy, cc_ = y + h - 46, "ffffff"
         else:
             P.text(label, 24, x + 28, y + h / 2 - 8, tc, bold=True)
-            P.text(self._big_detail(key), 17, x + 28, y + h / 2 + 26, mc, raw=True)
+            P.text(self._big_detail(key), 19, x + 28, y + h / 2 + 26, mc, raw=True)
             cy, cc_ = y + h / 2, tc
         if arrow:
             P.circle(x + w - 44, cy, 24, mix(fill, tc, 0.18) if not shot else "000000")
@@ -3955,7 +3955,7 @@ class ControlCenter:
         else:
             sc = ra_shortcuts() if emu == "RetroArch" else []
         P.text(g.get("name") or "", 30, 45, 95, T["text"], bold=True, raw=True)
-        P.text(" · ".join(v for v in (system.upper(), emu) if v), 18, 45, 128, T["muted"], raw=True)
+        P.text(" · ".join(v for v in (system.upper(), emu) if v), 19, 45, 128, T["muted"], raw=True)
         # links: Spieltasten
         P.rrect(45, 160, 574, 610, 24, T["card"])
         P.text("Spieltasten", 22, 75, 205, T["text"], bold=True)
@@ -4013,15 +4013,15 @@ class ControlCenter:
         P.text(name, 28, 130, 88, T["text"], bold=True, raw=True)
         hc = re.search(r"^global\.retroachievements\.hardcore=1", rd("/storage/.config/system/configs/system.cfg") or "", re.M)
         pts = user.get("score") if hc else user.get("softcore_score")
-        P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 18, 130, 118, T["muted"], raw=True)
+        P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 19, 130, 118, T["muted"], raw=True)
         label = tr("Hardcore an") if hc else tr("Softcore")
         pw = P.width(label, 18, bold=True, raw=True) + 48
         if hc:   # Hardcore: Akzentfarbe mit weißer Schrift – lesbar in Hell und Dunkel
             P.rrect(1215 - pw, 70, pw, 54, 27, A)
-            P.text(label, 18, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+            P.text(label, 19, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
         else:
             P.rrect(1215 - pw, 70, pw, 54, 27, T["pill"])
-            P.text(label, 18, 1215 - pw / 2, 104, T["text"], bold=True, align="c", raw=True)
+            P.text(label, 19, 1215 - pw / 2, 104, T["text"], bold=True, align="c", raw=True)
         # Spielkarte
         rows, unl = self._ra_rows()
         P.rrect(45, 165, 1170, 190, 28, T["card"])
@@ -4035,19 +4035,19 @@ class ControlCenter:
             title = title[:-2]
         P.text(title, 30, 240, 225, T["text"], bold=True, raw=True)
         if unsupported:
-            P.text(tr("Diese ROM-Version wird von RetroAchievements nicht unterstützt."), 18, 240, 262, T["muted"], raw=True)
-            P.text(tr("Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes"), 16, 240, 296, T["muted"], raw=True)
+            P.text(tr("Diese ROM-Version wird von RetroAchievements nicht unterstützt."), 19, 240, 262, T["muted"], raw=True)
+            P.text(tr("Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes"), 19, 240, 296, T["muted"], raw=True)
             return
         n_done = sum(1 for a in rows if str(a.get("id")) in unl)
         p_done = sum(a.get("points") or 0 for a in rows if str(a.get("id")) in unl)
         p_all = sum(a.get("points") or 0 for a in rows)
         P.text("%d %s %d %s  ·  %d / %d %s" % (n_done, tr("von"), len(rows), tr("Erfolgen"), p_done, p_all, tr("Punkte")),
-               18, 240, 260, T["muted"], raw=True)
+               19, 240, 260, T["muted"], raw=True)
         frac = n_done / len(rows) if rows else 0
         P.rrect(240, 285, 940, 18, 9, T["seg"])
         if frac:
             P.rrect(240, 285, max(18, 940 * frac), 18, 9, A)
-        P.text("%d %%" % round(frac * 100), 17, 1180, 325, T["muted"], align="r", raw=True)
+        P.text("%d %%" % round(frac * 100), 19, 1180, 325, T["muted"], align="r", raw=True)
         self.ra_sel = min(self.ra_sel, len(rows) - 1)
         if self.ra_detail:
             self._draw_ra_detail(P, rows[self.ra_sel], unl)
@@ -4071,7 +4071,7 @@ class ControlCenter:
             d = a.get("desc") or ""
             while P.width(d, 16, raw=True) > 920 and len(d) > 4:
                 d = d[:-2]
-            P.text(d, 16, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
+            P.text(d, 19, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
             P.text("%d P" % (a.get("points") or 0), 19, 1190, y + 54,
                    "ffffff" if (sel or done) else T["muted"], bold=True, align="r", raw=True)
             self.hits.append((45, y, 1170, 92, ("ra_row", i)))
@@ -4121,9 +4121,9 @@ class ControlCenter:
             ds = time.strftime("%d.%m.%Y %H:%M", time.localtime(int(when))) if str(when).isdigit() else ""
             label = tr("Freigeschaltet") + (" " + ds if ds else "") + (" · Hardcore" if done.get("hardcore") else "")
             P.rrect(x, 705, P.width(label, 17, bold=True, raw=True) + 40, 44, 22, A)
-            P.text(label, 17, x + 20, 734, "ffffff", bold=True, raw=True)
+            P.text(label, 19, x + 20, 734, "ffffff", bold=True, raw=True)
         else:
-            P.text(tr("Noch offen"), 17, x, 734, T["muted"], bold=True)
+            P.text(tr("Noch offen"), 19, x, 734, T["muted"], bold=True)
         self.hits.append((45, 380, 1170, 400, ("ra_close", None)))
 
     def paint_toast(self, cr, w, h):
@@ -4194,7 +4194,7 @@ class ControlCenter:
             if not (b and P.image(b, x + 20, 30, 96, 96, 16)):
                 P.rrect(x + 20, 30, 96, 96, 16, A)
                 P.game_icon("trophy", x + 68, 78, "ffffff")
-            P.text(tr("Erfolg freigeschaltet!"), 18, x + 140, 58, A, bold=True)
+            P.text(tr("Erfolg freigeschaltet!"), 19, x + 140, 58, A, bold=True)
             title = t.get("title") or ""
             while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
                 title = title[:-2]
@@ -4204,7 +4204,7 @@ class ControlCenter:
                 sub = sub[:-2]
             if sub != (t.get("sub") or ""):
                 sub = sub.rstrip() + "…"
-            P.text(sub, 17, x + 140, 126, "bdbdbd", raw=True)
+            P.text(sub, 19, x + 140, 126, "bdbdbd", raw=True)
 
     def _session(self):
         """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
@@ -4368,7 +4368,7 @@ class ControlCenter:
             # Beschriftung unten auf dunklem Band
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
             label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
-            P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            P.text(label, 19, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
                 P.game_icon("trash", tx + tw - 32, ty + 32, "ffffff")
@@ -4376,7 +4376,7 @@ class ControlCenter:
             if n == self.del_confirm:
                 P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
                 P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
-                P.text(tr("nochmal X oder tippen"), 16, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
+                P.text(tr("nochmal X oder tippen"), 19, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
@@ -4497,7 +4497,7 @@ class ControlCenter:
             P.text(f"{key}  {tr(label)}", 21, x + 140, 866, "ffffff" if j2 == 0 else T["text"], bold=j2 == 0, align="c", raw=True)
             self.hits.append((x + 10, 818, 260, 80, ("gs_btn", key)))
         if it.get("emu") in ("PortMaster",):
-            P.text("Spielstand über das Spiel selbst", 16, 630, 930, T["muted"], align="c")
+            P.text("Spielstand über das Spiel selbst", 19, 630, 930, T["muted"], align="c")
 
 
 # ------------------------------------------------------------ Power-Menü ----
@@ -4676,7 +4676,7 @@ class PowerMenu:
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
                        "ffffff" if active else T["muted"], bold=active, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
-            P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 17, W / 2, H - 36,
+            P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 18, W / 2, H - 36,
                    T["muted"], T["text"], align="c")
 
         elif self.state == self.STATE_RESTART:
