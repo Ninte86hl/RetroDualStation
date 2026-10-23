@@ -12,6 +12,9 @@ ssh root@"$IP" "PAGE=$PAGE sh -s" <<'REMOTE'
 export XDG_RUNTIME_DIR=/run/0-runtime-dir WAYLAND_DISPLAY=wayland-1
 BOTTOM=DSI-1   # unterer Bildschirm auf RG DS und RG DS Plus
 rm -rf /tmp/rds-shots && mkdir -p /tmp/rds-shots
+# CC vorab öffnen: das erste Öffnen dauert länger als ein Farbwechsel (sonst zeigt Bild 1 noch ES)
+echo "dark e5383b $PAGE" > /tmp/rds-shot
+sleep 3
 for mode in dark light; do
   for acc in e5383b 3d7bff 2bb673 f08c00 9b5de5 e64980; do
     echo "$mode $acc $PAGE" > /tmp/rds-shot
