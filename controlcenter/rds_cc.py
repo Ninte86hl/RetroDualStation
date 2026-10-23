@@ -1591,6 +1591,18 @@ def es_launch(rom):
         return False
 
 
+def es_emulator(rom):
+    """Emulator, den ES für dieses Spiel eingestellt hat (system.cfg: Spiel vor System), sonst None."""
+    cfg = rd("/storage/.config/system/configs/system.cfg") or ""
+    system = os.path.basename(os.path.dirname(rom or ""))
+    for key in (f'{system}["{os.path.basename(rom or "")}"].emulator', f"{system}.emulator"):
+        m = re.search(rf"^{re.escape(key)}=(\S+)", cfg, re.M)
+        if m:
+            val = m.group(1).lower()
+            return next((v for k, v in EMULATORS.items() if val.startswith(k)), None)
+    return None
+
+
 def autosave_on(rom):
     """Auto-Speichern/Laden laut ES (system.cfg): <system>.autosave hat Vorrang vor global.autosave."""
     cfg = rd("/storage/.config/system/configs/system.cfg") or ""
@@ -1633,6 +1645,20 @@ class Switcher:
                 self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))][:GS_MAX]
         except (OSError, ValueError):
             self.items = []
+        changed = False
+        for i in self.items:
+            emu = es_emulator(i["rom"])
+            if emu and emu != i.get("emu"):
+                # In ES auf einen anderen Emulator gewechselt: dessen eigenen Stand nutzen,
+                # Vorschau vom alten Emulator passt nicht mehr → Spielbild statt Screenshot
+                log("Gameswitcher: Emulator gewechselt", i["name"], i.get("emu"), "->", emu)
+                i["emu"], i["shot"] = emu, None
+                changed = True
+        if changed:
+            try:
+                self.save()
+            except OSError:
+                pass
 
     def save(self):
         os.makedirs(GS_DIR, exist_ok=True)
@@ -1732,7 +1758,8 @@ class Switcher:
                     log("Gameswitcher: Stand bereit nach %.1f s" % (time.monotonic() - t0))
                     break
                 time.sleep(0.25)
-        elif emu == "DraStic" and not fresh:
+            return
+        if emu == "DraStic" and not fresh:
             env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
             def window():
                 try:
@@ -1741,8 +1768,17 @@ class Switcher:
                     return '"drastic"' in tree.lower()
                 except Exception:
                     return False
+            other = None
             while time.time() < deadline and not window():   # sobald das Fenster da ist
+                g = running_game()
+                if g and g["emu"] != "DraStic":                # in ES inzwischen anderer Emulator
+                    other = g["emu"]
+                    break
                 time.sleep(0.15)
+            if other:
+                log("Gameswitcher: statt DraStic laeuft", other)
+                item["emu"] = other
+                return self.resume_steps(item, fresh)
             log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
             time.sleep(0.7)
             inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden (einmal – doppelt ließ die Musik springen)
