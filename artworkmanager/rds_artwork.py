@@ -10,6 +10,7 @@ Zeichnen, Bildschirme, Eingabe und Bildschirmtastatur kommen vom Kontrollcenter.
 """
 import ctypes
 import json
+import re
 import os
 import subprocess
 import sys
@@ -461,8 +462,12 @@ class App:
     def __init__(self):
         self.cfg = load_config()                       # Theme/Akzent/Tastatur wie im Kontrollcenter
         cc.LANG[0] = cc.ui_language()                  # Sprache wie EmulationStation
-        self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
-        self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
+        # Hell/Dunkel wie im Kontrollcenter; „Automatisch“ → Hell oder Dunkel nach dem ES-Theme
+        theme = self.cfg.get("theme")
+        self.T = THEMES[cc.theme_auto_name()] if theme == "auto" else THEMES.get(theme, THEMES["dark"])
+        self.accent = cc.user_accent(self.cfg)               # gewählte Farbe (alter Wert „theme“ → Rot)
+        if not re.fullmatch(r"[0-9a-fA-F]{6}", self.accent or ""):
+            self.accent = "e5383b"
         self.settings = load_settings()
         read_cfg()
         self.pen = None
