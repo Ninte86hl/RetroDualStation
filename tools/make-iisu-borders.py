@@ -3,48 +3,47 @@
 
 Aufruf (im Repo-Ordner):
     git clone --depth 1 https://github.com/viik4/iisu-asset-tool /tmp/iisu
-    python3 tools/make-iisu-borders.py /tmp/iisu <Artwork-Manager-Repo>
-Legt artworkmanager/borders/<system>/<name>-<hash>.png an – gleiche Auswahl und Dateinamen
-wie prepare_iisu_borders() beim Entpacken des Archivs (Quelle: iisu-asset-tool, MIT-Lizenz).
+    python3 tools/make-iisu-borders.py /tmp/iisu
+Legt artworkmanager/borders/<name>-<hash>.png und systems.txt (Bild → Systemordner) an;
+der Installer verteilt sie nach data/platform-borders/<system>/.
+Quelle: iisu-asset-tool von viik4 (MIT-Lizenz).
 """
-import hashlib, os, shutil, sys
+import hashlib, shutil, sys
 from pathlib import Path
 
-src, am = Path(sys.argv[1]), Path(sys.argv[2])
-sys.path.insert(0, str(am))
-from rocknixds_artwork_manager.iisu_borders import IISU_BORDER_ALIASES, _is_png, _normalized
+BY_BORDER = {   # Rahmen → Systemordner aus /storage/roms (ROCKNIX)
+    "NES": "nes famicom fds nesh", "SNES": "snes sfc snesh snesmsu1 satellaview sufami",
+    "GENESIS": "genesis genh megadrive megadrive-japan megadriveh",
+    "Game_Boy": "gb gbh", "Game_Boy_Color": "gbc gbch", "Game_Boy_Advance": "gba gbah gbav",
+    "NINTENDO_DS": "nds ndsiware", "NINTENDO_3DS": "3ds", "N64": "n64 n64dd",
+    "Gamecube": "gamecube", "Wii": "wii wiiware",
+    "PSX": "psx", "PS2": "ps2", "PSP": "psp pspminis", "PS_Vita": "psvita",
+    "Saturn": "saturn", "Dreamcast": "dreamcast", "Game_Gear": "gamegear gamegearh",
+    "Neo_Geo_Pocket_Color": "ngp ngpc",
+    "Arcade": "arcade mame fbneo cps1 cps2 cps3 neogeo naomi atomiswave st-v",
+    "PC": "pc windows",
+}
+PNG = bytes((137, 80, 78, 71, 13, 10, 26, 10))
 
 
-def border_name_matches_system(name, system):
-    """Genauer Namensvergleich (die Teilwort-Suche ordnete z. B. GENESIS/SNES dem NES zu)."""
-    stem = _normalized(Path(name).stem)
-    if system in EXTRA and system not in IISU_BORDER_ALIASES:
-        return stem == _normalized(EXTRA[system])
-    return any(stem == _normalized(a) or stem == 'nintendo' + _normalized(a) for a in IISU_BORDER_ALIASES[system])
+def norm(s):
+    return "".join(c for c in s.casefold() if c.isalnum())
 
+
+src = Path(sys.argv[1])
 out = Path(__file__).resolve().parent.parent / "artworkmanager" / "borders"
 shutil.rmtree(out, ignore_errors=True)
+out.mkdir(parents=True)
 files = sorted(p for p in src.rglob("*.png") if "/borders/" in p.as_posix().casefold())
-# weitere ROCKNIX-Systemordner (der Manager kennt dafür keine Aliase; mitgelieferte Rahmen findet er trotzdem)
-EXTRA = {"n64": "N64", "psp": "PSP", "megadrive": "GENESIS", "genesis": "GENESIS", "gamegear": "Game_Gear",
-         "dreamcast": "Dreamcast", "saturn": "Saturn", "ngp": "Neo_Geo_Pocket_Color", "ngpc": "Neo_Geo_Pocket_Color",
-         "3ds": "NINTENDO_3DS", "gamecube": "Gamecube", "gc": "Gamecube", "wii": "Wii", "ps2": "PS2",
-         "psvita": "PS_Vita", "switch": "Switch", "pc": "PC", "windows": "PC", "android": "Android"}
-for system in list(IISU_BORDER_ALIASES) + list(EXTRA):
-    seen = set()                                   # gleiche Bilder (borders/ + android/) nur einmal
-    for p in files:
-        if not border_name_matches_system(p.name, system):
-            continue
-        if system == "nds" and "3ds" in p.stem.casefold():   # Alias „ds“ trifft sonst auch den 3DS
-            continue
-        data = p.read_bytes()
-        if not _is_png(data) or hashlib.sha1(data).digest() in seen:
-            continue
-        seen.add(hashlib.sha1(data).digest())
-        arch = "iisu-asset-tool-main/" + p.relative_to(src).as_posix()   # Pfad wie im Archiv
-        suffix = hashlib.sha1(arch.encode("utf-8")).hexdigest()[:8]
-        d = out / system
-        d.mkdir(parents=True, exist_ok=True)
-        (d / f"{p.stem}-{suffix}.png").write_bytes(data)
-for d in sorted(out.iterdir()):
-    print(d.name, len(list(d.glob("*.png"))), sum(f.stat().st_size for f in d.glob("*.png")) // 1024, "KiB")
+lines = []
+for border, folders in BY_BORDER.items():
+    p = next((f for f in files if norm(f.stem) == norm(border) and f.read_bytes().startswith(PNG)), None)
+    if not p:
+        print("fehlt:", border)
+        continue
+    arch = "iisu-asset-tool-main/" + p.relative_to(src).as_posix()   # Dateiname wie beim Archiv
+    name = f"{p.stem}-{hashlib.sha1(arch.encode('utf-8')).hexdigest()[:8]}.png"
+    (out / name).write_bytes(p.read_bytes())
+    lines.append(f"{name} {folders}")
+(out / "systems.txt").write_text("\n".join(lines) + "\n")
+print(len(lines), "Rahmen,", sum(f.stat().st_size for f in out.glob("*.png")) // 1024, "KiB")
