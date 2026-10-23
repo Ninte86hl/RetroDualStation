@@ -3030,8 +3030,14 @@ def theme_scheme_block():
     xml = rd(os.path.join(base, "colors.xml")) if base else None
     if not xml:
         return None
-    if scheme:
-        m = re.search(r'<variables ifSubset="color-scheme:%s">(.*?)</variables>' % re.escape(scheme.group(1)), xml, re.S)
+    name = scheme.group(1) if scheme else None
+    if not name:
+        # ES speichert die erste Wahl (bei canvas rds „Dark“) nicht – dann gilt der erste Eintrag der Liste
+        txml = rd(os.path.join(base, "theme.xml")) or ""
+        m = re.search(r'<subset name="color-scheme"[^>]*>\s*<include name="([^"]+)"', txml)
+        name = m.group(1) if m else None
+    if name:
+        m = re.search(r'<variables ifSubset="color-scheme:%s">(.*?)</variables>' % re.escape(name), xml, re.S)
         if m:
             return m.group(1)
     m = re.search(r"<variables>(.*?)</variables>", xml, re.S)     # Standard/Custom: erster Block
