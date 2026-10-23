@@ -3898,15 +3898,14 @@ class ControlCenter:
                     P.rrect(cx + sgn * 12 - 1.5, 91, 3, 12, 1.5, col)
                 if not HAPTIC_ON[0]:
                     P.poly([(cx - 15, 83), (cx - 12, 80), (cx + 15, 109), (cx + 12, 112)], col)
-            elif i == 0:   # Mond (Dunkel) bzw. Sonne mit Strahlen (Hell)
-                if self.T.get("_dark"):
+            elif i == 0:   # Mond (Dunkel), Sonne mit Strahlen (Hell) oder „A“ (Automatisch nach dem ES-Theme)
+                if self.cfg.get("theme") == "auto":
+                    P.text("A", 30, cx, 108, T["text"], bold=True, align="c", raw=True)
+                elif self.T.get("_dark"):
                     P.circle(cx, 97, 12, T["text"])
                     P.circle(cx + 6, 92, 10, T["pill"])
                 else:
                     P.sun(cx, 97, T["text"])
-                if self.cfg.get("theme") == "auto":     # Automatisch: kleines „A“ am Symbol
-                    P.circle(cx + 18, 116, 11, A)
-                    P.text("A", 14, cx + 18, 121, on_acc(A), bold=True, align="c", raw=True)
             else:   # Farbpunkt; bei Automatisch abgeblendet (Farbe kommt aus dem Theme)
                 P.circle(cx, 97, 13, mix(A, T["pill"], 0.45) if self.cfg.get("theme") == "auto" else A)
             if top_focus and self.top_sel == i:
