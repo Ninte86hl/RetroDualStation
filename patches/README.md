@@ -29,6 +29,8 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
   the Control Center shows achievements in game (page 3).
 - `012-rds-scraper-notification-top.patch` – background notifications (e.g. scraper progress) in dual mode: larger,
   centred at the bottom of the top screen, stacked upwards (the top centre belongs to the Control Center's messages).
+- `013-rds-input-config-splash.patch` – *Configure input* (detect device and button mapping) on the menu screen in dual mode;
+  the loading/reload screen (splash after a theme change or gamelist update) on the top screen instead of across both.
 
 ## Usage
 

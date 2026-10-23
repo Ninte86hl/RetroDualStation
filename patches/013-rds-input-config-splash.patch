@@ -1,0 +1,141 @@
+diff --git a/es-core/src/Splash.cpp b/es-core/src/Splash.cpp
+index bb6c27b..c8674da 100644
+--- a/es-core/src/Splash.cpp
++++ b/es-core/src/Splash.cpp
+@@ -1,6 +1,11 @@
+ #include "Splash.h"
+ #include "ThemeData.h"
+ #include "Window.h"
++#include "RdsScreens.h"
++
++// RDS: Splash (Laden/Neu laden) nur auf dem oberen Bildschirm statt über beide
++#define SPLASH_X (RdsScreens::active() ? RdsScreens::top().x : 0.0f)
++#define SPLASH_W (RdsScreens::active() ? RdsScreens::top().w : (float)Renderer::getScreenWidth())
+ #include "resources/TextureResource.h"
+ #include "components/NinePatchComponent.h"
+ #include <algorithm>
+@@ -62,29 +67,29 @@ Splash::Splash(Window* window, const std::string image, bool fullScreenBackGroun
+ 	if (fullScreenBackGround && !useOldSplashLayout)
+ 	{
+ 		mBackground.setOrigin(0.5, 0.5);
+-		mBackground.setPosition(Renderer::getScreenWidth() / 2, Renderer::getScreenHeight() / 2);
++		mBackground.setPosition(SPLASH_X + SPLASH_W / 2, Renderer::getScreenHeight() / 2);
+ 
+ 		if (backGroundImageTheme)
+-			mBackground.setMaxSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++			mBackground.setMaxSize(SPLASH_W, Renderer::getScreenHeight());
+ 		else
+ 		{
+-			mBackground.setMinSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++			mBackground.setMinSize(SPLASH_W, Renderer::getScreenHeight());
+ 			linearSmooth = true;
+ 		}
+ 	}
+ 	else
+ 	{
+ 		mBackground.setOrigin(0.5, 0.5);
+-		mBackground.setPosition(Renderer::getScreenWidth() * 0.5f, Renderer::getScreenHeight()  * 0.42f);
++		mBackground.setPosition(SPLASH_X + SPLASH_W * 0.5f, Renderer::getScreenHeight()  * 0.42f);
+ 
+ 		if (useOldSplashLayout)
+ 		{
+-			mBackground.setMaxSize(Renderer::getScreenWidth() * 0.80f, Renderer::getScreenHeight() * 0.60f);
++			mBackground.setMaxSize(SPLASH_W * 0.80f, Renderer::getScreenHeight() * 0.60f);
+ 			mBackground.setRoundCorners(0.02);
+ 		}
+ 		else
+ 		{
+-			mBackground.setMaxSize(Renderer::getScreenWidth() * 0.71f, Renderer::getScreenHeight() * 0.55f);
++			mBackground.setMaxSize(SPLASH_W * 0.71f, Renderer::getScreenHeight() * 0.55f);
+ 			mBackground.setRoundCorners(0.02);
+ 		}
+ 	}
+@@ -102,17 +107,17 @@ Splash::Splash(Window* window, const std::string image, bool fullScreenBackGroun
+ 
+ #ifdef BATOCERA
+ 	if (fullScreenBackGround)
+-		mText.setPosition(0, Renderer::getScreenHeight() * 0.83f);
++		mText.setPosition(SPLASH_X, Renderer::getScreenHeight() * 0.83f);
+ 	else
+-		mText.setPosition(0, Renderer::getScreenHeight() * 0.86f);
++		mText.setPosition(SPLASH_X, Renderer::getScreenHeight() * 0.86f);
+ #else
+ 	if (fullScreenBackGround)
+-		mText.setPosition(0, Renderer::getScreenHeight() * 0.78f);
++		mText.setPosition(SPLASH_X, Renderer::getScreenHeight() * 0.78f);
+ 	else
+-		mText.setPosition(0, Renderer::getScreenHeight() * 0.835f);
++		mText.setPosition(SPLASH_X, Renderer::getScreenHeight() * 0.835f);
+ #endif
+ 
+-	mText.setSize(Renderer::getScreenWidth(), font->getLetterHeight());
++	mText.setSize(SPLASH_W, font->getLetterHeight());
+ 
+ 	Vector2f mProgressPosition;
+ 	Vector2f mProgressSize;
+@@ -147,9 +152,9 @@ Splash::Splash(Window* window, const std::string image, bool fullScreenBackGroun
+ 	// Progressbar
+ 	float baseHeight = 0.036f;
+ 
+-	float w = Renderer::getScreenWidth() / 2.0f;
++	float w = SPLASH_W / 2.0f;
+ 	float h = Renderer::getScreenHeight() * baseHeight;
+-	float x = Renderer::getScreenWidth() / 2.0f - w / 2.0f;
++	float x = SPLASH_X + SPLASH_W / 2.0f - w / 2.0f;
+ 	float y = Renderer::getScreenHeight() - (Renderer::getScreenHeight() * 3 * baseHeight);
+ 
+ 	auto blankTexture = TextureResource::get(":/white.png", false, true, true, false, false);
+diff --git a/es-core/src/guis/GuiDetectDevice.cpp b/es-core/src/guis/GuiDetectDevice.cpp
+index f81b912..58f5fc5 100644
+--- a/es-core/src/guis/GuiDetectDevice.cpp
++++ b/es-core/src/guis/GuiDetectDevice.cpp
+@@ -7,6 +7,7 @@
+ #include "InputManager.h"
+ #include "PowerSaver.h"
+ #include "Window.h"
++#include "RdsScreens.h"
+ #include "LocaleES.h"
+ 
+ #define HOLD_TIME 1000
+@@ -64,11 +65,11 @@ GuiDetectDevice::GuiDetectDevice(Window* window, bool firstRun, const std::funct
+ 	mGrid.setEntry(mDeviceHeld, Vector2i(0, 4), false, true);
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++		setSize(RdsScreens::active() ? RdsScreens::menuW() : (float)Renderer::getScreenWidth(), Renderer::getScreenHeight());
+ 	else
+-		setSize(Renderer::getScreenWidth() * 0.6f, Renderer::getScreenHeight() * 0.5f);
++		setSize(RdsScreens::active() ? RdsScreens::menuW() * 0.9f : Renderer::getScreenWidth() * 0.6f, Renderer::getScreenHeight() * 0.5f);
+ 
+-	setPosition((Renderer::getScreenWidth() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++	setPosition(RdsScreens::active() ? RdsScreens::menuX() + (RdsScreens::menuW() - mSize.x()) / 2 : (Renderer::getScreenWidth() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ }
+ 
+ void GuiDetectDevice::onSizeChanged()
+diff --git a/es-core/src/guis/GuiInputConfig.cpp b/es-core/src/guis/GuiInputConfig.cpp
+index 82b603f..8d888dd 100644
+--- a/es-core/src/guis/GuiInputConfig.cpp
++++ b/es-core/src/guis/GuiInputConfig.cpp
+@@ -7,6 +7,7 @@
+ #include "InputManager.h"
+ #include "Log.h"
+ #include "Window.h"
++#include "RdsScreens.h"
+ 
+ #define fake_gettext_north pgettext("joystick", "NORTH")
+ #define fake_gettext_south pgettext("joystick", "SOUTH")
+@@ -291,11 +292,11 @@ GuiInputConfig::GuiInputConfig(Window* window, InputConfig* target, bool reconfi
+ 	mGrid.setEntry(mButtonGrid, Vector2i(0, 6), true, false);
+ 
+ 	if (Renderer::ScreenSettings::fullScreenMenus())
+-		setSize(Renderer::getScreenWidth(), Renderer::getScreenHeight());
++		setSize(RdsScreens::active() ? RdsScreens::menuW() : (float)Renderer::getScreenWidth(), Renderer::getScreenHeight());
+ 	else
+-		setSize(Renderer::getScreenWidth() * 0.6f, Renderer::getScreenHeight() * 0.75f);
++		setSize(RdsScreens::active() ? RdsScreens::menuW() * 0.9f : Renderer::getScreenWidth() * 0.6f, Renderer::getScreenHeight() * 0.75f);
+ 
+-	setPosition((Renderer::getScreenWidth() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
++	setPosition(RdsScreens::active() ? RdsScreens::menuX() + (RdsScreens::menuW() - mSize.x()) / 2 : (Renderer::getScreenWidth() - mSize.x()) / 2, (Renderer::getScreenHeight() - mSize.y()) / 2);
+ }
+ 
+ void GuiInputConfig::onSizeChanged()

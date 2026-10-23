@@ -326,12 +326,6 @@
 			<zIndex>20</zIndex>
 		</image>
 
-		<image name="sc_panel" extra="true">
-			<path>${themePath}/_inc/variants/panel.svg</path>
-			<pos>0.735 0.125</pos>
-			<size>0.24 0.75</size><!-- 0.125 - 0.875, same height as the grid -->
-			<zIndex>10</zIndex>
-		</image>
 		<image name="sc_selector" extra="true">
 			<path>${themePath}/_inc/variants/bar.svg</path>
 			<origin>0.5 0.5</origin>
@@ -367,14 +361,14 @@
 					<fontPath>${fontBold}</fontPath>
 					<fontSize>0.03</fontSize>
 					<color>${systemInfoColor}</color>
-					<opacity>0.6</opacity>
+					<opacity>0.8</opacity>
 					<!-- The selected name is drawn by md_name on the selection bar
 					     (with marquee scrolling), so it is hidden here. -->
 					<storyboard event="activate">
 						<animation property="opacity" to="0" duration="60" mode="easeOut" />
 					</storyboard>
 					<storyboard event="deactivate">
-						<animation property="opacity" to="0.6" duration="120" mode="easeOut" />
+						<animation property="opacity" to="0.8" duration="120" mode="easeOut" />
 					</storyboard>
 				</text>
 			</itemTemplate>
