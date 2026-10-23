@@ -391,7 +391,7 @@
 			<alignment>left</alignment>
 			<fontPath>${fontBold}</fontPath>
 			<fontSize>0.03</fontSize>
-			<color>${systemInfoColor}</color>
+			<color>${rdsBarTextColor}</color>
 			<autoScroll>horizontal</autoScroll>
 			<autoScrollDelay>1500</autoScrollDelay>
 			<autoScrollSpeed>40</autoScrollSpeed>
