@@ -27,11 +27,15 @@ Oben rechts im Kontrollcenter:
 - **Akzentfarbe** – bei Dunkel und Hell: 16 Farben wie im Profil von Nintendo DS / DSi. Bei Automatisch kommt die Farbe aus dem Theme.
 - Auf hellen Akzenten ist die Schrift automatisch dunkel.
 
+<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/cc-themes.png" alt="Theme-Farben bei Automatisch" width="640"> <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/shots/cc-colors.png" alt="DS-Farben" width="200"></p>
+
 ## Power-Menü
 **Power kurz** – Ruhemodus, Neu starten (wahlweise mit Log-Sicherung), Ausschalten, ES neu starten · **Power lang** – sofort Ruhemodus
 
 ## Meldungen oben
 Neue Erfolge und die Lautstärke erscheinen kurz auf dem oberen Bildschirm über dem Spiel.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/shots/cc-toasts.png" alt="Toasts" width="640"></p>
 
 | | | |
 |:-:|:-:|:-:|
