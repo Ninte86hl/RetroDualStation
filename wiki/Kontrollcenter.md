@@ -19,6 +19,14 @@ Für RetroArch, DSperate und DraStic:
 ## Einheitliche Kürzel
 **Anbernic + R1** – Vorspulen · **Anbernic + R2 / L2** – Speichern / Laden · **Anbernic + X** – Emulator-Menü · **Anbernic + Y** – FPS · **Anbernic + Start** – Beenden · **Anbernic + ◀ / ▶** – Platz wechseln
 
+## Aussehen *(v15.1)*
+Oben rechts im Kontrollcenter:
+- **Dunkel · Hell · Automatisch** – bei *Automatisch* übernehmen Kontrollcenter, Gameswitcher, Power-Menü und Meldungen
+  die Farben des ES-Themes: Hintergrund wie das ES-Menü, Akzent wie die Auswahl (canvas rds: Famicom rot mit Gold,
+  SNES lila, Neon pink …). Ein Schemawechsel in ES wirkt sofort beim nächsten Öffnen.
+- **Akzentfarbe** – bei Dunkel und Hell: 16 Farben wie im Profil von Nintendo DS / DSi. Bei Automatisch kommt die Farbe aus dem Theme.
+- Auf hellen Akzenten ist die Schrift automatisch dunkel.
+
 ## Power-Menü
 **Power kurz** – Ruhemodus, Neu starten (wahlweise mit Log-Sicherung), Ausschalten, ES neu starten · **Power lang** – sofort Ruhemodus
 

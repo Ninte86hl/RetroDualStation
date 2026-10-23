@@ -51,7 +51,7 @@ Nach der Installation findest du RDS unter **Ports** an diesen Icons:
 - **Leistung:** Sparen · Ausgewogen · Leistung.
 - **Kacheln:** WLAN und Bluetooth (**X / Y** – Details und Koppeln), *Unterer Screen aus*
   (mit der Anbernic-Taste wieder einschalten) und *Ruhemodus*.
-- Oben rechts: Power-Menü, helles/dunkles Design und Akzentfarbe.
+- Oben rechts: Design **Dunkel · Hell · Automatisch** (Automatisch übernimmt die Farben des ES-Themes, z. B. canvas rds Famicom) und die **Akzentfarbe** aus den 16 Farben des DS-Profils.
 
 **L1 / R1** – Seite wechseln · **B** – Schließen · **Select** – diese Tour erneut starten
 
