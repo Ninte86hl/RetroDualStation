@@ -3075,7 +3075,8 @@ def theme_accent():
     try:
         block = theme_scheme_block()
         # Markenfarbe des Schemas: Menüfarbe, wenn sie farbig ist (Famicom: Rot), sonst die Auswahlfarbe
-        menu = _hexvar(block, "menuBackgroundColor")
+        m = re.search(r"<menuBackgroundColor>\s*([0-9a-fA-F]{6})\s*<", block or "")   # nur deckend (Sony: mit Alpha → nein)
+        menu = m.group(1).lower() if m else None
         if menu and max(int(menu[i:i + 2], 16) for i in (0, 2, 4)) - min(int(menu[i:i + 2], 16) for i in (0, 2, 4)) >= 40:
             c = menu
         else:
@@ -3083,11 +3084,7 @@ def theme_accent():
         if c:
             r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
             if max(r, g, b) - min(r, g, b) >= 40:
-                lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-                if lum > 0.6:                  # zu hell für weiße Schrift (z. B. Pastel): abdunkeln
-                    k = 0.6 / lum
-                    c = "%02x%02x%02x" % (int(r * k), int(g * k), int(b * k))
-                return c
+                return c                       # genau die Farbe des Themes (auch Pastel unverändert)
     except Exception as exc:
         log("Theme-Akzent:", exc)
     return None
