@@ -3075,7 +3075,7 @@ class ColorMenu:
         # Kopfzeile: Zurück + Titel
         P.rrect(45, 62, 170, 62, 31, T["pill"])
         P.chevron(45 + 30, 93, -9, T["text"])
-        P.text("Zurück", 20, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
+        P.text("Zurück", 22, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
         cc.hits.append((45, 62, 170, 62, ("sub", "back")))
         P.text("Akzentfarbe", 30, 630, 104, T["text"], bold=True, align="c")
         gap = 20
@@ -3087,7 +3087,7 @@ class ColorMenu:
             x = 45 + (i % self.COLS) * (tw + gap)
             y = top + (i // self.COLS) * (th + gap)
             P.rrect(x, y, tw, th, 20, col)
-            P.text(name, 24, x + 22, y + th - 22, "ffffff", bold=True)
+            P.text(name, 22, x + 22, y + th - 22, "ffffff", bold=True)
             if col == self.before:             # gespeicherte Farbe: Haken
                 P.circle(x + tw - 30, y + 30, 18, "ffffff")
                 P.text("✓", 22, x + tw - 30, y + 38, col, bold=True, align="c", raw=True)
