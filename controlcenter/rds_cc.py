@@ -3134,10 +3134,20 @@ def theme_palette():
         muted = _mixhex(text, bg, 0.3)
         if _contrast(muted, bg) < 3:
             muted = _mixhex(text, bg, 0.15)
-        return {"bg": bg, "card": card, "tile": _mixhex(bg, text, 0.12), "seg": _mixhex(bg, text, 0.07),
-                "track": _mixhex(bg, text, 0.2), "focus": _mixhex(bg, text, 0.15), "text": text, "muted": muted,
-                "on_bg": text, "on_text": bg, "pill": pill, "dot": _mixhex(bg, text, 0.3), "_dark": dark,
-                "_scheme": m.group(1)}
+        pal = {"bg": bg, "card": card, "tile": _mixhex(bg, text, 0.12), "seg": _mixhex(bg, text, 0.07),
+               "track": _mixhex(bg, text, 0.2), "focus": _mixhex(bg, text, 0.15), "text": text, "muted": muted,
+               "on_bg": text, "on_text": bg, "pill": pill, "dot": _mixhex(bg, text, 0.3), "_dark": dark,
+               "_scheme": m.group(1)}
+        # Zweitfarbe: hat das Schema neben dem Akzent eine eigene farbige Auswahlfarbe (Famicom: Rot + Gold),
+        # tönt sie Kacheln, Regler-Spur und Seitenpunkte
+        second = _hexvar(block, "gamelistSelectorColor")
+        acc = theme_accent()
+        if second and acc and second != acc:
+            r, g, b = (int(second[i:i + 2], 16) for i in (0, 2, 4))
+            if max(r, g, b) - min(r, g, b) >= 40:
+                pal.update(tile=_mixhex(bg, second, 0.22), seg=_mixhex(bg, second, 0.12),
+                           track=_mixhex(bg, second, 0.45), dot=second)
+        return pal
     except Exception as exc:
         log("Theme-Palette:", exc)
         return None
