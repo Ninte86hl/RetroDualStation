@@ -3070,21 +3070,14 @@ def theme_auto_name():
 
 
 def theme_accent():
-    """Akzentfarbe „Theme“: Auswahlfarbe des Farbschemas (canvas rds: gamelistSelectorColor).
+    """Akzentfarbe nach dem Theme: Farbe der aktiven Auswahl in ES (canvas rds: gamelistSelectorColor).
     Grau (kein echter Akzent, z. B. Dark/Light) oder ohne Schema: None – dann gilt die gewählte Farbe."""
     try:
-        block = theme_scheme_block()
-        # Markenfarbe des Schemas: Menüfarbe, wenn sie farbig ist (Famicom: Rot), sonst die Auswahlfarbe
-        m = re.search(r"<menuBackgroundColor>\s*([0-9a-fA-F]{6})\s*<", block or "")   # nur deckend (Sony: mit Alpha → nein)
-        menu = m.group(1).lower() if m else None
-        if menu and max(int(menu[i:i + 2], 16) for i in (0, 2, 4)) - min(int(menu[i:i + 2], 16) for i in (0, 2, 4)) >= 40:
-            c = menu
-        else:
-            c = _hexvar(block, "gamelistSelectorColor", "systemCarouselSelectorColor")
+        c = _hexvar(theme_scheme_block(), "gamelistSelectorColor", "systemCarouselSelectorColor")
         if c:
             r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
             if max(r, g, b) - min(r, g, b) >= 40:
-                return c                       # genau die Farbe des Themes (auch Pastel unverändert)
+                return c
     except Exception as exc:
         log("Theme-Akzent:", exc)
     return None
@@ -3106,48 +3099,35 @@ def _mixhex(a, b, t):
 
 
 def theme_palette():
-    """Versuch (Automatisch): komplette Farbtabelle aus dem Farbschema des ES-Themes – Grundfarbe und
-    Textfarbe des Schemas, Karten/Kacheln/Regler daraus abgestuft. Dark/Light und Themes ohne Schema:
-    None (dann die normalen Varianten). Zu wenig Kontrast → Text schwarz bzw. weiß."""
+    """Versuch (Automatisch): Farben wie im ES-Menü des Themes – Hintergrund = Menüfarbe des Schemas,
+    Akzent und Kacheln = Farbe der aktiven Auswahl (Famicom: rotes CC mit goldenen Kacheln).
+    Dark/Light und Themes ohne Schema: None (dann die normalen Varianten). Text immer kontrastreich."""
     try:
         cfg = rd(ES_SETTINGS) or ""
         m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
         if not m or m.group(1) in ("dark", "light"):
             return None
         block = theme_scheme_block()
-        bg = _hexvar(block, "BackdropColor", "backgroundColor")
+        bg = _hexvar(block, "menuBackgroundColor", "BackdropColor", "backgroundColor")   # 8-stellig: Alpha ignoriert
         if not bg:
             return None
-        dark = _lum(bg) < 0.25
-        text = _hexvar(block, "gamelistPrimaryColor", "systemInfoColor", "helpTextColor") or ("ffffff" if dark else "1c1c1c")
-        if _contrast(text, bg) < 4.5:
-            text = "ffffff" if dark else "1c1c1c"
-        # Karten müssen sich vom Hintergrund abheben: fast Weiß → Hintergrund leicht getönt, Karten weiß;
-        # fast Schwarz → Karten etwas heller statt noch dunkler
-        if dark:
-            card = _mixhex(bg, "000000", 0.35) if _lum(bg) > 0.03 else _mixhex(bg, text, 0.09)
-        else:
-            if _lum(bg) > 0.85:
-                bg = _mixhex(bg, text, 0.08)
-            card = _mixhex(bg, "ffffff", 0.7)
-        pill = card
+        dark = _lum(bg) < 0.2
+        text = "ffffff" if dark else "1c1c1c"
+        if not dark and _lum(bg) > 0.85:            # fast Weiß: leicht tönen, damit Karten sich abheben
+            bg = _mixhex(bg, text, 0.08)
+        card = _mixhex(bg, "000000", 0.3) if dark else _mixhex(bg, "ffffff", 0.7)
+        if dark and _lum(bg) < 0.03:
+            card = _mixhex(bg, text, 0.09)
+        sel = theme_accent()
+        tint = sel or text
+        tile = _mixhex(bg, tint, (0.8 if dark else 0.45) if sel else 0.12)   # dunkel: kräftig (Famicom: Gold)
+        if _contrast(text, tile) < 3:               # Kachel zu nah an der Schrift: weniger einfärben
+            tile = _mixhex(bg, tint, 0.25)
         muted = _mixhex(text, bg, 0.3)
-        if _contrast(muted, bg) < 3:
-            muted = _mixhex(text, bg, 0.15)
-        pal = {"bg": bg, "card": card, "tile": _mixhex(bg, text, 0.12), "seg": _mixhex(bg, text, 0.07),
-               "track": _mixhex(bg, text, 0.2), "focus": _mixhex(bg, text, 0.15), "text": text, "muted": muted,
-               "on_bg": text, "on_text": bg, "pill": pill, "dot": _mixhex(bg, text, 0.3), "_dark": dark,
-               "_scheme": m.group(1)}
-        # Zweitfarbe: hat das Schema neben dem Akzent eine eigene farbige Auswahlfarbe (Famicom: Rot + Gold),
-        # tönt sie Kacheln, Regler-Spur und Seitenpunkte
-        second = _hexvar(block, "gamelistSelectorColor")
-        acc = theme_accent()
-        if second and acc and second != acc:
-            r, g, b = (int(second[i:i + 2], 16) for i in (0, 2, 4))
-            if max(r, g, b) - min(r, g, b) >= 40:
-                pal.update(tile=_mixhex(bg, second, 0.22), seg=_mixhex(bg, second, 0.12),
-                           track=_mixhex(bg, second, 0.45), dot=second)
-        return pal
+        return {"bg": bg, "card": card, "tile": tile, "seg": _mixhex(bg, tint, 0.2 if sel else 0.07),
+                "track": _mixhex(bg, tint, 0.5 if sel else 0.2), "focus": _mixhex(bg, text, 0.15),
+                "text": text, "muted": muted, "on_bg": text, "on_text": bg, "pill": card,
+                "dot": _mixhex(bg, tint, 0.6), "_dark": dark, "_scheme": m.group(1)}
     except Exception as exc:
         log("Theme-Palette:", exc)
         return None
