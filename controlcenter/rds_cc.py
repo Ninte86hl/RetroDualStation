@@ -6023,9 +6023,12 @@ def main():
         known = {"game": None, "ids": set()}
         while True:
             if os.path.exists("/tmp/rds-toast-test"):          # Testmeldung: touch /tmp/rds-toast-test
+                # optional mit Inhalt (Bilderpflege): echo "Titel|Untertitel|Badge-ID" > /tmp/rds-toast-test
+                parts = ((rd("/tmp/rds-toast-test") or "").strip().split("|") + ["", "", ""])[:3]
                 os.remove("/tmp/rds-toast-test")
-                cc.toasts.append({"kind": "cheevo", "badge": None, "title": "Test: Erfolg freigeschaltet",
-                                  "sub": "10 %s  ·  1 / 1" % tr("Punkte")})
+                cc.toasts.append({"kind": "cheevo", "badge": parts[2] or None,
+                                  "title": parts[0] or "Test: Erfolg freigeschaltet",
+                                  "sub": parts[1] or "10 %s  ·  1 / 1" % tr("Punkte")})
             g = cc.game
             if g and g.get("emu") == "DSperate":
                 dsperate_cheevos(g, known)
