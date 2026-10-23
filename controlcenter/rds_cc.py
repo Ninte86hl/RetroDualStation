@@ -4321,12 +4321,18 @@ class ControlCenter:
         P.s, P.ox, P.oy = w / 1260, 0, 0          # Entwurf 1260 breit, Höhe frei
         T, A = self.T, self.accent
         t = self.toast_now or {}
-        # Farben folgen Hell/Dunkel des Kontrollcenters
+        # Farben folgen dem Modus des Kontrollcenters (Hell, Dunkel oder Automatisch nach dem Theme)
         if T.get("_scheme"):                    # Theme-Farben (Automatisch): Karte des Schemas
             BG, FG, MU, TR = T["card"], T["text"], T["muted"], T["track"]
         else:
             BG, FG, MU, TR = (("1c1c1c", "ffffff", "bdbdbd", "4a4a4a") if T.get("_dark")
                               else ("ffffff", "1c1c1c", "666666", "d6d6d6"))
+        # Akzent als Schrift/Symbol auf der Meldung: genug Kontrast zum Hintergrund (Pastel: Hellblau auf Hellgrau)
+        AF = A
+        for _ in range(6):
+            if _contrast(AF, BG) >= 3:
+                break
+            AF = _mixhex(AF, FG, 0.25)
         if t.get("kind") == "volume":
             bw, x = 560, 630 - 280
             P.rrect(x, 22, bw, 112, 56, BG, 0.9)
@@ -4336,7 +4342,7 @@ class ControlCenter:
             if t.get("muted") or not t.get("value"):
                 P.game_icon("quit", x + 100, 78, FG, scale=0.5)
             P.rrect(x + 120, 70, 330, 16, 8, TR)
-            P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
+            P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, AF)
             P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, FG, bold=True, align="r", raw=True)
             return
         if t.get("kind") == "battery":          # Warnung bei niedrigem Akku (20 / 10 / 5 %)
@@ -4379,7 +4385,7 @@ class ControlCenter:
             bw = int(P.width(text, fs, bold=True, raw=True)) + 150
             x = 630 - bw // 2
             P.rrect(x, 30, bw, 96, 48, BG, 0.9)
-            P.game_icon(t.get("icon") or "ff", x + 62, 78, A, scale=0.75)
+            P.game_icon(t.get("icon") or "ff", x + 62, 78, AF, scale=0.75)
             P.text(text, fs, x + 110, 88, FG, bold=True, raw=True)
             return
         if t.get("kind") == "cheevo":
@@ -4389,7 +4395,7 @@ class ControlCenter:
             if not (b and P.image(b, x + 20, 30, 96, 96, 16)):
                 P.rrect(x + 20, 30, 96, 96, 16, A)
                 P.game_icon("trophy", x + 68, 78, on_acc(A))
-            P.text(tr("Erfolg freigeschaltet!"), 19, x + 140, 58, A, bold=True)
+            P.text(tr("Erfolg freigeschaltet!"), 19, x + 140, 58, AF, bold=True)
             title = t.get("title") or ""
             while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
                 title = title[:-2]
