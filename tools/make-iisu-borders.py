@@ -22,6 +22,8 @@ for system in IISU_BORDER_ALIASES:
     for p in files:
         if not border_name_matches_system(p.name, system):
             continue
+        if system == "nds" and "3ds" in p.stem.casefold():   # Alias „ds“ trifft sonst auch den 3DS
+            continue
         data = p.read_bytes()
         if not _is_png(data) or hashlib.sha1(data).digest() in seen:
             continue
