@@ -5171,6 +5171,11 @@ def info_toast(text, icon="ff"):
 
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
+    try:   # Diagnose bei Hängern: pkill -USR1 -f rds_cc.py → Stelle aller Threads ins Journal
+        import faulthandler, signal
+        faulthandler.register(signal.SIGUSR1, all_threads=True)
+    except Exception:
+        pass
     mako_hide_osd()
     vkey_open()
     cc = ControlCenter()

@@ -2517,6 +2517,13 @@ class App:
 
 def main():
     log("RetroDualStation Artwork Manager", VERSION)
+    try:   # Diagnose bei Hängern: pkill -USR1 -f rds_artwork.py → Stelle aller Threads in manager.log
+        import faulthandler, signal
+        WORK.mkdir(parents=True, exist_ok=True)
+        _fh = open(WORK / "manager.log", "a")
+        faulthandler.register(signal.SIGUSR1, file=_fh, all_threads=True)
+    except Exception:
+        pass
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     a = App()
 
