@@ -228,8 +228,8 @@ LANG = ["de"]
 
 EN = {
     "Automatisch: Hell/Dunkel und Farben nach Theme": "Automatic: light/dark and colours follow the theme",
-    "Automatisch aktiv: Bei farbigen Theme-Schemata (z. B. SNES, Famicom) passt sich die Akzentfarbe an.":
-        "Automatic is on: with coloured theme schemes (e.g. SNES, Famicom) the accent colour adapts.", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Automatisch aktiv: Die Farben kommen aus dem Theme. Deine Auswahl hier gilt für Hell und Dunkel.":
+        "Automatic is on: colours come from the theme. Your choice here applies to light and dark.", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
     "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
     "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
     "Violett": "Violet", "Magenta": "Magenta",
@@ -3103,11 +3103,11 @@ def theme_palette():
     Akzent und Kacheln = Farbe der aktiven Auswahl (Famicom: rotes CC mit goldenen Kacheln).
     Dark/Light und Themes ohne Schema: None (dann die normalen Varianten). Text immer kontrastreich."""
     try:
-        cfg = rd(ES_SETTINGS) or ""
-        m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
-        if not m or m.group(1) in ("dark", "light"):
-            return None
         block = theme_scheme_block()
+        if not block:
+            return None
+        m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
+        scheme = m.group(1) if m else "standard"
         bg = _hexvar(block, "menuBackgroundColor", "BackdropColor", "backgroundColor")   # 8-stellig: Alpha ignoriert
         if not bg:
             return None
@@ -3129,9 +3129,17 @@ def theme_palette():
                 "track": _mixhex(bg, "000000", 0.35) if dark else _mixhex(bg, text, 0.18),
                 "focus": _mixhex(bg, text, 0.15),
                 "text": text, "muted": muted, "on_bg": text, "on_text": bg, "pill": card,
-                "dot": _mixhex(bg, tint, 0.6), "_dark": dark, "_scheme": m.group(1)}
+                "dot": _mixhex(bg, tint, 0.6), "_dark": dark, "_scheme": scheme}
     except Exception as exc:
         log("Theme-Palette:", exc)
+        return None
+
+
+def theme_selector():
+    """Farbe der aktiven Auswahl in ES – ohne Farbfilter (Dark/Light: Grau), für den Automatik-Modus."""
+    try:
+        return _hexvar(theme_scheme_block(), "gamelistSelectorColor", "systemCarouselSelectorColor")
+    except Exception:
         return None
 
 
@@ -3237,7 +3245,7 @@ class ColorMenu:
                 P.rrect(x - 6, y - 6, tw + 12, th + 12, 26, T["text"], stroke=4)
             cc.hits.append((x, y, tw, th, ("color", i)))
         if auto:
-            P.text("Automatisch aktiv: Bei farbigen Theme-Schemata (z. B. SNES, Famicom) passt sich die Akzentfarbe an.",
+            P.text("Automatisch aktiv: Die Farben kommen aus dem Theme. Deine Auswahl hier gilt für Hell und Dunkel.",
                    19, 630, 778, T["muted"], align="c")
         P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
 
@@ -3372,7 +3380,8 @@ class ControlCenter:
             if self.cfg.get("theme") == "auto":
                 # Automatisch: Hell/Dunkel und – bei farbigen Schemata – auch der Akzent kommen aus dem Theme
                 self.T = theme_palette() or THEMES[theme_auto_name()]   # Versuch: volle Theme-Farben
-                self.accent = theme_accent() or user_accent(self.cfg)
+                # Automatisch: Farben kommen immer aus dem Theme – die Farbwahl gilt nur für Hell/Dunkel manuell
+                self.accent = (theme_selector() if self.T.get("_scheme") else None) or theme_accent() or user_accent(self.cfg)
                 if self.T.get("_scheme") and self.T.get("_dark"):
                     # Akzent im gleichen Farbton wie ein dunkler Hintergrund (Sony: Dunkelblau auf Blau) hebt sich
                     # nicht ab → aufhellen. Andere Farbtöne (Famicom: Gold auf Rot) und helle Schemata bleiben original.
