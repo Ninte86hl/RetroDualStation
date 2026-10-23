@@ -1,0 +1,21 @@
+diff --git a/es-core/src/ThemeData.cpp b/es-core/src/ThemeData.cpp
+index 9df90e8..23826f9 100644
+--- a/es-core/src/ThemeData.cpp
++++ b/es-core/src/ThemeData.cpp
+@@ -1,4 +1,5 @@
+ #include "ThemeData.h"
++#include "RdsScreens.h"
+ 
+ #include "components/ImageComponent.h"
+ #include "components/TextComponent.h"
+@@ -2386,6 +2387,10 @@ std::map<std::string, ThemeSet> ThemeData::getThemeSets()
+ 			if (Utils::String::startsWith(Utils::FileSystem::getFileName(*it), "."))
+ 				continue;
+ 
++			// RDS: das ROCKNIX-Standardtheme ist nicht für zwei Bildschirme gebaut – im Dual-Modus ausblenden
++			if (RdsScreens::active() && Utils::FileSystem::getFileName(*it) == "es-theme-art-book-next")
++				continue;
++
+ 			if(Utils::FileSystem::isDirectory(*it))
+ 			{
+ 				ThemeSet set = {*it};

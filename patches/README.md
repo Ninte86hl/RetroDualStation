@@ -31,6 +31,7 @@ commit `cada856d86e3115fbbf0bce09dd761b0ee8fa9fd`:
   centred at the bottom of the top screen, stacked upwards (the top centre belongs to the Control Center's messages).
 - `013-rds-input-config-splash.patch` – *Configure input* (detect device and button mapping) on the menu screen in dual mode;
   the loading/reload screen (splash after a theme change or gamelist update) on the top screen instead of across both.
+- `014-rds-hide-default-theme.patch` – the ROCKNIX default theme (art-book-next, single screen only) is hidden from the theme list in dual mode.
 
 ## Usage
 
@@ -42,7 +43,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all thirteen** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all fourteen** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating
