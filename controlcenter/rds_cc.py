@@ -227,7 +227,9 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
-    "Hell/Dunkel: automatisch nach Theme": "Light/dark: follows the theme", "Farbe aus dem Farbschema des ES-Themes": "Colour from the ES theme's colour scheme", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Automatisch: Hell/Dunkel und Farben nach Theme": "Automatic: light/dark and colours follow the theme",
+    "Automatisch aktiv: Bei farbigen Theme-Schemata (z. B. SNES, Famicom) passt sich die Akzentfarbe an.":
+        "Automatic is on: with coloured theme schemes (e.g. SNES, Famicom) the accent colour adapts.", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
     "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
     "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
     "Violett": "Violet", "Magenta": "Magenta",
@@ -3069,7 +3071,7 @@ def theme_auto_name():
 
 def theme_accent():
     """Akzentfarbe „Theme“: Auswahlfarbe des Farbschemas (canvas rds: gamelistSelectorColor).
-    Grau (kein echter Akzent, z. B. Dark/Light) oder ohne Schema: Rot."""
+    Grau (kein echter Akzent, z. B. Dark/Light) oder ohne Schema: None – dann gilt die gewählte Farbe."""
     try:
         block = theme_scheme_block()
         # Markenfarbe des Schemas: Menüfarbe, wenn sie farbig ist (Famicom: Rot), sonst die Auswahlfarbe
@@ -3088,22 +3090,27 @@ def theme_accent():
                 return c
     except Exception as exc:
         log("Theme-Akzent:", exc)
-    return "e5383b"
+    return None
+
+
+def user_accent(cfg):
+    """Im Farbmenü gewählte Akzentfarbe (alter Wert „theme“ → Rot)."""
+    a = cfg.get("accent")
+    return "e5383b" if not a or a == "theme" else a.lstrip("#")
 
 
 class ColorMenu:
-    """Untermenü Akzentfarbe: 16 Farbkacheln (4 × 4) wie im DS-Profil; Vorschau beim Wählen."""
+    """Untermenü Akzentfarbe: 16 Farbkacheln (4 × 4) wie im DS-Profil; Vorschau beim Wählen.
+    Bei Hell/Dunkel „Automatisch“ und farbigem Theme-Schema gilt die Farbe des Schemas (Hinweis unten)."""
     title = "Akzentfarbe"
     COLS = 4
 
-    THEME = len(DS_COLORS)                     # Index der breiten Kachel „Theme“ unter dem 4 × 4-Raster
-
     def __init__(self, cc):
         self.cc = cc
-        self.before = cc.accent
-        self.before_cfg = cc.cfg.get("accent")
+        self.before = cc.accent                 # angezeigte Farbe (ggf. aus dem Schema)
+        self.saved = user_accent(cc.cfg)        # im Menü gewählte Farbe
         cur = [c for _n, c in DS_COLORS]
-        self.sel = self.THEME if self.before_cfg == "theme" else cur.index(cc.accent) if cc.accent in cur else 0
+        self.sel = cur.index(self.saved) if self.saved in cur else 0
         self.drag_from = None
         self.done = False
 
@@ -3121,37 +3128,27 @@ class ColorMenu:
     def drag(self, dy):
         pass
 
-    def _color(self, i):
-        return theme_accent() if i == self.THEME else DS_COLORS[i][1]
-
     def _preview(self):
-        self.cc.accent = self._color(self.sel)
+        self.cc.accent = DS_COLORS[self.sel][1]
 
     def nav(self, dx, dy):
         rows = len(DS_COLORS) // self.COLS
-        if self.sel == self.THEME:
-            if dy < 0:
-                self.sel = (rows - 1) * self.COLS + getattr(self, "last_col", 0)
-        else:
-            r, c = divmod(self.sel, self.COLS)
-            if dy > 0 and r == rows - 1:
-                self.last_col = c
-                self.sel = self.THEME
-            else:
-                c = max(0, min(self.COLS - 1, c + dx))
-                r = max(0, min(rows - 1, r + dy))
-                self.sel = r * self.COLS + c
+        r, c = divmod(self.sel, self.COLS)
+        c = max(0, min(self.COLS - 1, c + dx))
+        r = max(0, min(rows - 1, r + dy))
+        self.sel = r * self.COLS + c
         self._preview()
 
     def confirm(self):
         cc = self.cc
-        cc.accent = self._color(self.sel)
-        cc.cfg["accent"] = "theme" if self.sel == self.THEME else "#" + cc.accent
+        cc.cfg["accent"] = "#" + DS_COLORS[self.sel][1]
         save_config(cc.cfg)
         self.done = True
         haptic("tap")
         cc.sub = None
-        log("Akzentfarbe:", "Theme" if self.sel == self.THEME else DS_COLORS[self.sel][0], cc.accent)
+        cc.accent = DS_COLORS[self.sel][1]
+        cc.apply_auto_theme()                   # Automatisch + farbiges Schema: Schemafarbe hat Vorrang
+        log("Akzentfarbe:", DS_COLORS[self.sel][0], cc.accent)
 
     def tap(self, hit):
         if hit and hit[0] == "color":
@@ -3166,35 +3163,33 @@ class ColorMenu:
 
     def draw(self, P):
         cc, T = self.cc, self.cc.T
-        A = cc.accent
         # Kopfzeile: Zurück + Titel
         P.rrect(45, 62, 170, 62, 31, T["pill"])
         P.chevron(45 + 30, 93, -9, T["text"])
         P.text("Zurück", 22, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
         cc.hits.append((45, 62, 170, 62, ("sub", "back")))
         P.text("Akzentfarbe", 30, 630, 104, T["text"], bold=True, align="c")
+        auto = cc.cfg.get("theme") == "auto"
         gap = 20
         tw = (1170 - gap * (self.COLS - 1)) / self.COLS
-        top, bottom = 150, 795
-        rows = len(DS_COLORS) // self.COLS + 1          # + breite Kachel „Theme“
+        top, bottom = 150, (735 if auto else 795)        # bei Automatisch Platz für den Hinweis
+        rows = len(DS_COLORS) // self.COLS
         th = (bottom - top - gap * (rows - 1)) / rows
-        tiles = [(name, col, 45 + (i % self.COLS) * (tw + gap), top + (i // self.COLS) * (th + gap), tw)
-                 for i, (name, col) in enumerate(DS_COLORS)]
-        tiles.append(("Theme", theme_accent(), 45, top + (rows - 1) * (th + gap), 1170))
-        for i, (name, col, x, y, tw) in enumerate(tiles):
+        for i, (name, col) in enumerate(DS_COLORS):
+            x = 45 + (i % self.COLS) * (tw + gap)
+            y = top + (i // self.COLS) * (th + gap)
             P.rrect(x, y, tw, th, 20, col)
             P.text(name, 22, x + 22, y + th - 22, "ffffff", bold=True)
-            if i == self.THEME:
-                P.text("Farbe aus dem Farbschema des ES-Themes", 19, x + tw - 22, y + th - 22, "ffffff", align="r")
-            saved = (self.before_cfg == "theme") if i == self.THEME else (self.before_cfg != "theme" and col == self.before)
-            if saved:                          # gespeicherte Farbe: Haken
+            if col == self.saved:              # gewählte Farbe: Haken
                 P.circle(x + tw - 30, y + 30, 18, "ffffff")
                 P.text("✓", 22, x + tw - 30, y + 38, col, bold=True, align="c", raw=True)
             if i == self.sel:
                 P.rrect(x - 6, y - 6, tw + 12, th + 12, 26, T["text"], stroke=4)
             cc.hits.append((x, y, tw, th, ("color", i)))
+        if auto:
+            P.text("Automatisch aktiv: Bei farbigen Theme-Schemata (z. B. SNES, Famicom) passt sich die Akzentfarbe an.",
+                   19, 630, 778, T["muted"], align="c")
         P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
-
 
 
 class ControlCenter:
@@ -3206,7 +3201,7 @@ class ControlCenter:
         LANG[0] = ui_language()
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.apply_auto_theme()
-        self.accent = theme_accent() if self.cfg.get("accent") == "theme" else (self.cfg.get("accent") or "#e5383b").lstrip("#")
+        self.accent = user_accent(self.cfg)
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
         # Zuletzt im CC gewählte Helligkeit wiederherstellen: ES schreibt beim Beenden/Neustart seine alten
@@ -3323,10 +3318,13 @@ class ControlCenter:
         """Bei „Automatisch“ Hell/Dunkel und bei Akzent „Theme“ die Farbe aus dem ES-Theme übernehmen
         (beim Öffnen und regelmäßig)."""
         before = (getattr(self, "T", None), getattr(self, "accent", None))   # auch beim Start (accent noch nicht gesetzt)
-        if self.cfg.get("theme") == "auto":
-            self.T = THEMES[theme_auto_name()]
-        if self.cfg.get("accent") == "theme" and not isinstance(getattr(self, "sub", None), ColorMenu):
-            self.accent = theme_accent()
+        if not isinstance(getattr(self, "sub", None), ColorMenu):   # nicht mitten in der Farbvorschau
+            if self.cfg.get("theme") == "auto":
+                # Automatisch: Hell/Dunkel und – bei farbigen Schemata – auch der Akzent kommen aus dem Theme
+                self.T = THEMES[theme_auto_name()]
+                self.accent = theme_accent() or user_accent(self.cfg)
+            elif hasattr(self, "accent"):
+                self.accent = user_accent(self.cfg)
         if hasattr(self, "accent") and (self.T, self.accent) != before:
             m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
             log("Theme-Automatik: Schema %s → %s, Akzent %s" % (m.group(1) if m else "?",
@@ -3337,10 +3335,12 @@ class ControlCenter:
         cur = self.cfg.get("theme") if self.cfg.get("theme") in ("dark", "light", "auto") else "dark"
         name = {"dark": "light", "light": "auto", "auto": "dark"}[cur]
         self.cfg["theme"] = name
-        self.T = THEMES[theme_auto_name()] if name == "auto" else THEMES[name]
+        if name != "auto":
+            self.T = THEMES[name]
         save_config(self.cfg)
+        self.apply_auto_theme()                 # Automatisch: Theme-Farben, sonst die gewählte Akzentfarbe
         if name == "auto":
-            info_toast("Hell/Dunkel: automatisch nach Theme", "help")
+            info_toast("Automatisch: Hell/Dunkel und Farben nach Theme", "help")
 
     def next_accent(self):
         i = ACCENTS.index(self.accent) if self.accent in ACCENTS else -1
