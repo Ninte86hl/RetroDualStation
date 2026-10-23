@@ -227,6 +227,10 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
+    "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
+    "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
+    "Violett": "Violet", "Magenta": "Magenta",
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
@@ -2997,6 +3001,103 @@ class Keyboard:
 
 
 
+# Akzentfarben nach dem Vorbild der 16 Profilfarben von Nintendo DS / DSi (gleiche Reihenfolge).
+# Sehr helle DS-Töne leicht abgedunkelt, damit weiße Schrift auf der Akzentfarbe lesbar bleibt;
+# die bisherigen sechs Farben sind enthalten (gespeicherte Einstellungen bleiben gültig).
+DS_COLORS = [("Grau", "61829a"), ("Braun", "ba4900"), ("Rot", "e5383b"), ("Rosa", "e55fc9"),
+             ("Orange", "f08c00"), ("Gelb", "d4a300"), ("Hellgrün", "74b300"), ("Grün", "2bb673"),
+             ("Dunkelgrün", "00843d"), ("Türkis", "1fa98f"), ("Hellblau", "2f9fe0"), ("Blau", "3d7bff"),
+             ("Dunkelblau", "2f45c2"), ("Lila", "9b5de5"), ("Violett", "b43fd6"), ("Magenta", "e64980")]
+
+
+class ColorMenu:
+    """Untermenü Akzentfarbe: 16 Farbkacheln (4 × 4) wie im DS-Profil; Vorschau beim Wählen."""
+    title = "Akzentfarbe"
+    COLS = 4
+
+    def __init__(self, cc):
+        self.cc = cc
+        self.before = cc.accent
+        cur = [c for _n, c in DS_COLORS]
+        self.sel = cur.index(cc.accent) if cc.accent in cur else 0
+        self.drag_from = None
+        self.done = False
+
+    # Schnittstelle wie bei WLAN/Bluetooth
+    def tick(self):
+        pass
+
+    def close(self):
+        if not self.done:                      # ohne Bestätigen zurück: alte Farbe wieder herstellen
+            self.cc.accent = self.before
+
+    def drag_start(self):
+        pass
+
+    def drag(self, dy):
+        pass
+
+    def _preview(self):
+        self.cc.accent = DS_COLORS[self.sel][1]
+
+    def nav(self, dx, dy):
+        n = len(DS_COLORS)
+        r, c = divmod(self.sel, self.COLS)
+        c = max(0, min(self.COLS - 1, c + dx))
+        r = max(0, min(n // self.COLS - 1, r + dy))
+        self.sel = r * self.COLS + c
+        self._preview()
+
+    def confirm(self):
+        cc = self.cc
+        cc.accent = DS_COLORS[self.sel][1]
+        cc.cfg["accent"] = "#" + cc.accent
+        save_config(cc.cfg)
+        self.done = True
+        haptic("tap")
+        cc.sub = None
+        log("Akzentfarbe:", DS_COLORS[self.sel][0], cc.accent)
+
+    def tap(self, hit):
+        if hit and hit[0] == "color":
+            if hit[1] == self.sel:
+                self.confirm()
+            else:
+                self.sel = hit[1]
+                self._preview()
+        elif hit and hit[0] == "sub" and hit[1] == "back":
+            self.close()
+            self.cc.sub = None
+
+    def draw(self, P):
+        cc, T = self.cc, self.cc.T
+        A = cc.accent
+        # Kopfzeile: Zurück + Titel
+        P.rrect(45, 62, 170, 62, 31, T["pill"])
+        P.chevron(45 + 30, 93, -9, T["text"])
+        P.text("Zurück", 20, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
+        cc.hits.append((45, 62, 170, 62, ("sub", "back")))
+        P.text("Akzentfarbe", 30, 630, 104, T["text"], bold=True, align="c")
+        gap = 20
+        tw = (1170 - gap * (self.COLS - 1)) / self.COLS
+        top, bottom = 150, 795
+        rows = len(DS_COLORS) // self.COLS
+        th = (bottom - top - gap * (rows - 1)) / rows
+        for i, (name, col) in enumerate(DS_COLORS):
+            x = 45 + (i % self.COLS) * (tw + gap)
+            y = top + (i // self.COLS) * (th + gap)
+            P.rrect(x, y, tw, th, 20, col)
+            P.text(name, 20, x + 22, y + th - 22, "ffffff", bold=True)
+            if col == self.before:             # gespeicherte Farbe: Haken
+                P.circle(x + tw - 30, y + 30, 18, "ffffff")
+                P.text("✓", 22, x + tw - 30, y + 38, col, bold=True, align="c", raw=True)
+            if i == self.sel:
+                P.rrect(x - 6, y - 6, tw + 12, th + 12, 26, T["text"], stroke=4)
+            cc.hits.append((x, y, tw, th, ("color", i)))
+        P.hint([("A", "übernehmen"), ("B", "zurück")], 17, 45, 835, T["muted"], T["text"])
+
+
+
 class ControlCenter:
     """Zustand, Zeichnen und Bedienung des Kontrollcenters."""
 
@@ -3129,6 +3230,10 @@ class ControlCenter:
         self.accent = ACCENTS[(i + 1) % len(ACCENTS)]
         self.cfg["accent"] = "#" + self.accent
         save_config(self.cfg)
+
+    def open_colors(self):
+        self.sub = ColorMenu(self)
+        log("Untermenü:", self.sub.title)
 
     def open_sub(self, i):
         self.sub = (WifiMenu if i == 0 else BtMenu)(self)
@@ -3318,7 +3423,7 @@ class ControlCenter:
         elif kind == "top":
             if self.top_sel == -1:
                 return "power"
-            (self.toggle_theme, self.next_accent, self.toggle_haptics)[self.top_sel]()
+            (self.toggle_theme, self.open_colors, self.toggle_haptics)[self.top_sel]()
 
     def turn_page(self, d):
         if self.sub:
@@ -3406,7 +3511,7 @@ class ControlCenter:
                 self.page = val
             elif kind == "top":
                 self.focus, self.top_sel = 0, val
-                (self.toggle_theme, self.next_accent, self.toggle_haptics)[val]()
+                (self.toggle_theme, self.open_colors, self.toggle_haptics)[val]()
             elif kind == "power_btn":
                 return "power"
             elif kind == "quit":
