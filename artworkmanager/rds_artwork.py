@@ -300,7 +300,7 @@ EN_AM = {
     "Sicherheitsprüfung fehlgeschlagen – nichts geschrieben": "Safety check failed – nothing was written",
     "Speichern nicht vollständig bestätigt": "Saving could not be fully verified",
     # Batch-Warteliste (v15)
-    "Warteliste": "Waiting list", "Jetzt speichern": "Save now", "Entfernen": "Remove", "Nach oben": "Move up",
+    "Warteliste": "Waiting list", "speichern bzw. Warteliste": "save or waiting list", "Jetzt speichern": "Save now", "Entfernen": "Remove", "Nach oben": "Move up",
     "Name eingeben": "Enter name", "Batch beenden?": "End batch?", "Speichern & beenden": "Save & finish",
     "Batch abbrechen": "Cancel batch", "Batch abgebrochen": "Batch cancelled",
     "Die Warteliste ist leer": "The waiting list is empty", "Die Warteliste ist leer.": "The waiting list is empty.",
@@ -2101,8 +2101,8 @@ class App:
             ([("X", "Icon-Editor für dieses Spiel"), ("Y", "Filter: alle · fehlende · keine Artworks")], False),
             ("Spielansicht", True),
             ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
-            ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Suche aktualisieren")], False),
-            ([("R3", "Ansicht oben"), ("X", "Icon-Editor: 1:1 mit iiSU-Rahmen, nur für Icons ohne Rahmen")], False),
+            ([("Start", "speichern bzw. Warteliste"), ("Y", "anderes Spiel suchen"), ("L3", "Suche aktualisieren")], False),
+            ([("L2 / R2", "Seite"), ("X", "Icon-Editor: 1:1 mit iiSU-Rahmen, nur für Icons ohne Rahmen")], False),
         ]),
     ]
 
