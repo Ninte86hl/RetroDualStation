@@ -3153,6 +3153,27 @@ def on_acc(a):
         return "ffffff"
 
 
+def resolve_colors(cfg):
+    """Farbtabelle und Akzent nach dem Modus: Dunkel/Hell mit gewählter Farbe, Automatisch nach dem ES-Theme
+    (Hintergrund wie das ES-Menü, Akzent wie die Auswahl). Gilt für Kontrollcenter und Artwork Manager."""
+    theme = cfg.get("theme")
+    if theme != "auto":
+        return THEMES.get(theme, THEMES["dark"]), user_accent(cfg)
+    T = theme_palette() or THEMES[theme_auto_name()]
+    acc = (theme_selector() if T.get("_scheme") else None) or theme_accent() or user_accent(cfg)
+    if T.get("_scheme") and T.get("_dark"):
+        # gleicher Farbton wie ein dunkler Hintergrund (Sony: Dunkelblau auf Blau) → aufhellen
+        import colorsys
+        hue = lambda h: colorsys.rgb_to_hsv(*(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)))[0] * 360
+        d = abs(hue(acc) - hue(T["bg"]))
+        if min(d, 360 - d) < 30:
+            for _ in range(6):
+                if _contrast(acc, T["bg"]) >= 3.0:
+                    break
+                acc = _mixhex(acc, "ffffff", 0.2)
+    return T, acc
+
+
 def user_accent(cfg):
     """Im Farbmenü gewählte Akzentfarbe (alter Wert „theme“ → Rot)."""
     a = cfg.get("accent")
@@ -3258,6 +3279,7 @@ class ControlCenter:
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
         self.apply_auto_theme()
         self.accent = user_accent(self.cfg)
+        self.T, self.accent = resolve_colors(self.cfg)      # Automatisch: gleich beim Start die Theme-Farben
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
         # Zuletzt im CC gewählte Helligkeit wiederherstellen: ES schreibt beim Beenden/Neustart seine alten
@@ -3371,28 +3393,12 @@ class ControlCenter:
         haptic("open")                                       # beim Einschalten spürbar bestätigen
 
     def apply_auto_theme(self):
-        """Bei „Automatisch“ Hell/Dunkel und bei Akzent „Theme“ die Farbe aus dem ES-Theme übernehmen
-        (beim Öffnen und regelmäßig)."""
+        """Farben nach dem Modus setzen (beim Öffnen und regelmäßig) – gemeinsame Regel: resolve_colors."""
         before = (getattr(self, "T", None), getattr(self, "accent", None))   # auch beim Start (accent noch nicht gesetzt)
-        if not isinstance(getattr(self, "sub", None), ColorMenu):   # nicht mitten in der Farbvorschau
-            if self.cfg.get("theme") == "auto":
-                # Automatisch: Hell/Dunkel und – bei farbigen Schemata – auch der Akzent kommen aus dem Theme
-                self.T = theme_palette() or THEMES[theme_auto_name()]   # Versuch: volle Theme-Farben
-                # Automatisch: Farben kommen immer aus dem Theme – die Farbwahl gilt nur für Hell/Dunkel manuell
-                self.accent = (theme_selector() if self.T.get("_scheme") else None) or theme_accent() or user_accent(self.cfg)
-                if self.T.get("_scheme") and self.T.get("_dark"):
-                    # Akzent im gleichen Farbton wie ein dunkler Hintergrund (Sony: Dunkelblau auf Blau) hebt sich
-                    # nicht ab → aufhellen. Andere Farbtöne (Famicom: Gold auf Rot) und helle Schemata bleiben original.
-                    import colorsys
-                    hue = lambda h: colorsys.rgb_to_hsv(*(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)))[0] * 360
-                    d = abs(hue(self.accent) - hue(self.T["bg"]))
-                    if min(d, 360 - d) < 30:
-                        for _ in range(6):
-                            if _contrast(self.accent, self.T["bg"]) >= 3.0:
-                                break
-                            self.accent = _mixhex(self.accent, "ffffff", 0.2)
-            elif hasattr(self, "accent"):
-                self.accent = user_accent(self.cfg)
+        if isinstance(getattr(self, "sub", None), ColorMenu):    # nicht mitten in der Farbvorschau
+            return
+        if self.cfg.get("theme") == "auto" or hasattr(self, "accent"):
+            self.T, self.accent = resolve_colors(self.cfg)
         if hasattr(self, "accent") and (self.T, self.accent) != before:
             m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
             log("Theme-Automatik: Schema %s → %s, Akzent %s" % (m.group(1) if m else "?",

@@ -462,10 +462,12 @@ class App:
     def __init__(self):
         self.cfg = load_config()                       # Theme/Akzent/Tastatur wie im Kontrollcenter
         cc.LANG[0] = cc.ui_language()                  # Sprache wie EmulationStation
-        # Hell/Dunkel wie im Kontrollcenter; „Automatisch“ → Hell oder Dunkel nach dem ES-Theme
-        theme = self.cfg.get("theme")
-        self.T = THEMES[cc.theme_auto_name()] if theme == "auto" else THEMES.get(theme, THEMES["dark"])
-        self.accent = cc.user_accent(self.cfg)               # gewählte Farbe (alter Wert „theme“ → Rot)
+        # Farben wie im Kontrollcenter: Dunkel/Hell mit gewählter Farbe, Automatisch nach dem ES-Theme
+        try:
+            self.T, self.accent = cc.resolve_colors(self.cfg)
+        except Exception as exc:
+            log("Farben:", exc)
+            self.T, self.accent = THEMES["dark"], "e5383b"
         if not re.fullmatch(r"[0-9a-fA-F]{6}", self.accent or ""):
             self.accent = "e5383b"
         self.settings = load_settings()
@@ -1975,7 +1977,7 @@ class App:
             kw = 42 * len(keys) + 6 * (len(keys) - 1)
             kx = cx - (tw + kw + 10) / 2 + 21 if label else cx - kw / 2 + 21
             for k in keys:
-                P.circle(kx, BAR_Y + BAR_H / 2, 21, "ffffff" if primary else T["card"])
+                P.circle(kx, BAR_Y + BAR_H / 2, 21, cc.on_acc(self.accent) if primary else T["card"])
                 if k == "⌂":
                     self.home_icon(P, kx, BAR_Y + BAR_H / 2, T["text"] if on else T["muted"])
                 else:
@@ -1984,7 +1986,7 @@ class App:
                 kx += 48
             kx -= 48
             if label:
-                P.text(label, 27, kx + 31, BAR_Y + BAR_H / 2 + 10, "ffffff" if primary else
+                P.text(label, 27, kx + 31, BAR_Y + BAR_H / 2 + 10, cc.on_acc(self.accent) if primary else
                        (T["text"] if on else T["muted"]), bold=True, raw=True)
             if on:
                 self.hits.append((x, BAR_Y, w, BAR_H, ("btn", act)))
@@ -2073,7 +2075,7 @@ class App:
                 P.text(text, 30 if head else 26, 80, y, T["text"] if head else T["muted"], bold=head, raw=True)
             y += 66 if head else 52
         P.rrect(40, BAR_Y, 1180, BAR_H, 22, A)
-        P.hint([("A", "Weiter")], 30, 630, BAR_Y + BAR_H / 2 + 11, "ffffff", "ffffff", align="c")
+        P.hint([("A", "Weiter")], 30, 630, BAR_Y + BAR_H / 2 + 11, cc.on_acc(self.accent), cc.on_acc(self.accent), align="c")
         self.hits.append((40, BAR_Y, 1180, BAR_H, ("intro", None)))
 
     def draw_setup(self, P):
@@ -2091,7 +2093,7 @@ class App:
         for n, line in enumerate(lines):
             P.text(line, 30, 90, 240 + n * 52, T["text"] if n < 2 else T["muted"], raw=True)
         P.rrect(50, 600, 560, 110, 30, self.accent)
-        P.hint([("A", "Ja, sichern")], 34, 330, 668, "ffffff", "ffffff", align="c")
+        P.hint([("A", "Ja, sichern")], 34, 330, 668, cc.on_acc(self.accent), cc.on_acc(self.accent), align="c")
         self.hits.append((50, 600, 560, 110, ("setup", True)))
         P.rrect(650, 600, 560, 110, 30, T["tile"])
         P.hint([("B", "Nein")], 34, 930, 668, T["text"], T["text"], align="c")
@@ -2147,7 +2149,7 @@ class App:
             P.text(line, 25, 630, 350 + n * 42, T["muted"], align="c", raw=True)
         alt = c.get("alt")
         if alt:   # drei Wahlmöglichkeiten nebeneinander
-            boxes = [(140, A, (c.get("key", "A"), c["yes"]), ("confirm", True), "ffffff"),
+            boxes = [(140, A, (c.get("key", "A"), c["yes"]), ("confirm", True), cc.on_acc(self.accent)),
                      (470, T["tile"], (alt[0], alt[1]), ("confirm_alt", None), T["text"]),
                      (800, T["tile"], ("B", c.get("no", "Abbrechen")), ("confirm", False), T["text"])]
             for x, fill, label, hit, col in boxes:
@@ -2156,7 +2158,7 @@ class App:
                 self.hits.append((x, 540, 320, 90, hit))
             return
         P.rrect(160, 540, 450, 90, 26, A)
-        P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
+        P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, cc.on_acc(self.accent), cc.on_acc(self.accent), align="c")
         self.hits.append((160, 540, 450, 90, ("confirm", True)))
         P.rrect(650, 540, 450, 90, 26, T["tile"])
         P.hint([("B", c.get("no", "Abbrechen"))], 27, 875, 597, T["text"], T["text"], align="c")
@@ -2256,8 +2258,8 @@ class App:
             cnt = str(len(self.cands.get(kind) or []))
             tw = P.width(txt, 26, bold=True, raw=True) + 12 + P.width(cnt, 20, raw=True)
             tx = x + (w - tw) / 2
-            P.text(txt, 26, tx, TABS_Y + TABS_H / 2 + 9, "ffffff" if on else T["text"], bold=True, raw=True)
-            P.text(cnt, 20, tx + tw, TABS_Y + TABS_H / 2 + 9, "ffffff" if on else T["muted"], align="r", raw=True)
+            P.text(txt, 26, tx, TABS_Y + TABS_H / 2 + 9, cc.on_acc(self.accent) if on else T["text"], bold=True, raw=True)
+            P.text(cnt, 20, tx + tw, TABS_Y + TABS_H / 2 + 9, cc.on_acc(self.accent) if on else T["muted"], align="r", raw=True)
             self.hits.append((x, TABS_Y, w, TABS_H, ("kind", n)))
             x += w + 14
         kind = self.kind_key()
@@ -2312,7 +2314,7 @@ class App:
         w = P.width(label, 22, bold=True, raw=True) + 36
         on = bool(self.bq) if self.batch else bool(self.chosen)
         P.rrect(1220 - w, HINT_Y - 30, w, 42, 21, A if on else T["tile"], a=1.0 if on else 0.35)
-        P.text(label, 22, 1220 - w / 2, HINT_Y - 2, "ffffff" if on else T["muted"], bold=True, align="c", raw=True)
+        P.text(label, 22, 1220 - w / 2, HINT_Y - 2, cc.on_acc(self.accent) if on else T["muted"], bold=True, align="c", raw=True)
         if on:
             self.hits.append((1220 - w, HINT_Y - 34, w, 50, ("btn", self.transfer)))
 
