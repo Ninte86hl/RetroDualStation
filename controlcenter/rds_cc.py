@@ -228,8 +228,8 @@ LANG = ["de"]
 
 EN = {
     "Automatisch: Hell/Dunkel und Farben nach Theme": "Automatic: light/dark and colours follow the theme",
-    "Automatisch aktiv: Die Farben kommen aus dem Theme. Deine Auswahl hier gilt für Hell und Dunkel.":
-        "Automatic is on: colours come from the theme. Your choice here applies to light and dark.", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Farben kommen aus dem Theme – für eigene Farben Hell oder Dunkel wählen":
+        "Colours come from the theme – choose light or dark for your own colours", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
     "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
     "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
     "Violett": "Violet", "Magenta": "Magenta",
@@ -3227,10 +3227,9 @@ class ColorMenu:
         P.text("Zurück", 22, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
         cc.hits.append((45, 62, 170, 62, ("sub", "back")))
         P.text("Akzentfarbe", 30, 630, 104, T["text"], bold=True, align="c")
-        auto = cc.cfg.get("theme") == "auto"
         gap = 20
         tw = (1170 - gap * (self.COLS - 1)) / self.COLS
-        top, bottom = 150, (735 if auto else 795)        # bei Automatisch Platz für den Hinweis
+        top, bottom = 150, 795
         rows = len(DS_COLORS) // self.COLS
         th = (bottom - top - gap * (rows - 1)) / rows
         for i, (name, col) in enumerate(DS_COLORS):
@@ -3244,9 +3243,6 @@ class ColorMenu:
             if i == self.sel:
                 P.rrect(x - 6, y - 6, tw + 12, th + 12, 26, T["text"], stroke=4)
             cc.hits.append((x, y, tw, th, ("color", i)))
-        if auto:
-            P.text("Automatisch aktiv: Die Farben kommen aus dem Theme. Deine Auswahl hier gilt für Hell und Dunkel.",
-                   19, 630, 778, T["muted"], align="c")
         P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
 
 
@@ -3419,6 +3415,9 @@ class ControlCenter:
         save_config(self.cfg)
 
     def open_colors(self):
+        if self.cfg.get("theme") == "auto":     # Automatisch: Farben kommen aus dem Theme, keine eigene Wahl
+            info_toast("Farben kommen aus dem Theme – für eigene Farben Hell oder Dunkel wählen", "help")
+            return
         self.sub = ColorMenu(self)
         log("Untermenü:", self.sub.title)
 
@@ -3900,8 +3899,8 @@ class ControlCenter:
                 if self.cfg.get("theme") == "auto":     # Automatisch: kleines „A“ am Symbol
                     P.circle(cx + 18, 116, 11, A)
                     P.text("A", 14, cx + 18, 121, on_acc(A), bold=True, align="c", raw=True)
-            else:
-                P.circle(cx, 97, 13, A)
+            else:   # Farbpunkt; bei Automatisch abgeblendet (Farbe kommt aus dem Theme)
+                P.circle(cx, 97, 13, mix(A, T["pill"], 0.45) if self.cfg.get("theme") == "auto" else A)
             if top_focus and self.top_sel == i:
                 self._focus_ring(P, x, 70, 54, 54, 27)
             self.hits.append((x - 4, 66, 62, 62, ("top", i)))
