@@ -51,7 +51,7 @@ Open it with the **Anbernic** button – in EmulationStation and in every game (
 - **Performance:** Battery saver · Balanced · Performance.
 - **Tiles:** Wi-Fi and Bluetooth (**X / Y** – details and pairing), *Bottom screen off*
   (wake it with the Anbernic button) and *Sleep*.
-- Top right: power menu, light/dark theme and accent colour.
+- Top right: theme **dark · light · automatic** (automatic takes the colours of the ES theme, e.g. canvas rds Famicom) and the **accent colour** from the 16 colours of the DS profile.
 
 **L1 / R1** – switch page · **B** – close · **Select** – start this tour again
 

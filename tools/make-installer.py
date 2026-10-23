@@ -91,6 +91,12 @@ with zipfile.ZipFile(out, "w") as z:
     for f in ("rds_artwork.py", "multidisc.py"):
         add(z, os.path.join(repo, "artworkmanager", f), p + "artworkmanager/" + f, FILE)
     add(z, os.path.join(repo, "artworkmanager", "Artwork Manager.sh"), p + "ports/Artwork Manager.sh", EXEC)
+    borders = os.path.join(repo, "artworkmanager", "borders")    # iiSU-Rahmen (tools/make-iisu-borders.py)
+    for root, dirs, files in os.walk(borders):
+        dirs.sort()
+        for f in sorted(files):
+            src = os.path.join(root, f)
+            add(z, src, p + "artworkmanager/borders/" + os.path.relpath(src, borders), FILE)
     if artwork_repo:
         pkg = os.path.join(artwork_repo, "rocknixds_artwork_manager")
         if not os.path.isfile(os.path.join(pkg, "__init__.py")):

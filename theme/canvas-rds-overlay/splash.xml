@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RDS: Ladebildschirm (Start und Neuladen) im Hintergrund des gewählten Farbschemas
+     (oberer Bildschirm-Ausschnitt der canvas-ds-Hintergründe, erzeugt mit tools/make-canvas-splash.py) -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<subset name="color-scheme" displayName="Color Scheme">
+		<include name="dark"/>
+		<include name="light"/>
+		<include name="retro"/>
+		<include name="neon"/>
+		<include name="pastel"/>
+		<include name="sony"/>
+		<include name="snes"/>
+		<include name="famicom"/>
+		<include name="custom"/>
+	</subset>
+	<view name="splash">
+		<image name="background" ifSubset="color-scheme:dark">
+			<path>./_inc/splash/dark.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:light">
+			<path>./_inc/splash/light.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:retro">
+			<path>./_inc/splash/retro.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:neon">
+			<path>./_inc/splash/neon.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:pastel">
+			<path>./_inc/splash/pastel.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:sony">
+			<path>./_inc/splash/sony.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:snes">
+			<path>./_inc/splash/snes.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:famicom">
+			<path>./_inc/splash/famicom.webp</path>
+		</image>
+		<image name="background" ifSubset="color-scheme:custom">
+			<path>./_inc/splash/custom.webp</path>
+		</image>
+		<image name="background">
+			<linearSmooth>true</linearSmooth>
+		</image>
+	</view>
+</theme>

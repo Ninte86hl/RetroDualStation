@@ -227,6 +227,12 @@ def safe(fn):
 LANG = ["de"]
 
 EN = {
+    "Automatisch: Hell/Dunkel und Farben nach Theme": "Automatic: light/dark and colours follow the theme",
+    "Farben kommen aus dem Theme – für eigene Farben Hell oder Dunkel wählen":
+        "Colours come from the theme – choose light or dark for your own colours", "Akzentfarbe": "Accent colour", "übernehmen": "apply", "Grau": "Grey", "Braun": "Brown", "Rot": "Red",
+    "Rosa": "Pink", "Gelb": "Yellow", "Hellgrün": "Lime", "Grün": "Green", "Dunkelgrün": "Dark green",
+    "Türkis": "Turquoise", "Hellblau": "Light blue", "Blau": "Blue", "Dunkelblau": "Dark blue", "Lila": "Purple",
+    "Violett": "Violet", "Magenta": "Magenta",
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
@@ -756,6 +762,8 @@ class Pen:
     def hint(self, items, size, x, y, c, key_c=None, align="l"):
         """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“, mit „·“ getrennt.
         items: [("A", "Auswählen"), ("B", "Zurück")] – Erklärungen werden übersetzt, Tasten nicht."""
+        if self.s < 0.6:      # RG DS (640 px): Hinweise eine Stufe größer, sonst zu klein zum Lesen
+            size += 1
         parts = []
         for n, (key, text) in enumerate(items):
             if n:
@@ -1388,7 +1396,9 @@ TOUR = [
                ("WLAN, Bluetooth, unteren Screen ausschalten und Ruhemodus.",
                 "Wi-Fi, Bluetooth, bottom screen off and sleep."),
                ("Im Spiel pausiert das Spiel, solange das Kontrollcenter offen ist.",
-                "In a game, the game pauses while the Control Center is open.")],
+                "In a game, the game pauses while the Control Center is open."),
+               ("Oben: Dunkel, Hell oder Automatisch (Farben des ES-Themes) und 16 Akzentfarben wie beim DS.",
+                "Top: dark, light or automatic (ES theme colours) and 16 accent colours like on the DS.")],
      "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
     {"title": ("Seite „Spiel“", "Game page"),
      "img": ("tour-spiel.png", "tour-spiel.png"),
@@ -1581,6 +1591,18 @@ def es_launch(rom):
         return False
 
 
+def es_emulator(rom):
+    """Emulator, den ES für dieses Spiel eingestellt hat (system.cfg: Spiel vor System), sonst None."""
+    cfg = rd("/storage/.config/system/configs/system.cfg") or ""
+    system = os.path.basename(os.path.dirname(rom or ""))
+    for key in (f'{system}["{os.path.basename(rom or "")}"].emulator', f"{system}.emulator"):
+        m = re.search(rf"^{re.escape(key)}=(\S+)", cfg, re.M)
+        if m:
+            val = m.group(1).lower()
+            return next((v for k, v in EMULATORS.items() if val.startswith(k)), None)
+    return None
+
+
 def autosave_on(rom):
     """Auto-Speichern/Laden laut ES (system.cfg): <system>.autosave hat Vorrang vor global.autosave."""
     cfg = rd("/storage/.config/system/configs/system.cfg") or ""
@@ -1623,6 +1645,20 @@ class Switcher:
                 self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))][:GS_MAX]
         except (OSError, ValueError):
             self.items = []
+        changed = False
+        for i in self.items:
+            emu = es_emulator(i["rom"])
+            if emu and emu != i.get("emu"):
+                # In ES auf einen anderen Emulator gewechselt: dessen eigenen Stand nutzen,
+                # Vorschau vom alten Emulator passt nicht mehr → Spielbild statt Screenshot
+                log("Gameswitcher: Emulator gewechselt", i["name"], i.get("emu"), "->", emu)
+                i["emu"], i["shot"] = emu, None
+                changed = True
+        if changed:
+            try:
+                self.save()
+            except OSError:
+                pass
 
     def save(self):
         os.makedirs(GS_DIR, exist_ok=True)
@@ -1722,7 +1758,8 @@ class Switcher:
                     log("Gameswitcher: Stand bereit nach %.1f s" % (time.monotonic() - t0))
                     break
                 time.sleep(0.25)
-        elif emu == "DraStic" and not fresh:
+            return
+        if emu == "DraStic" and not fresh:
             env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
             def window():
                 try:
@@ -1731,8 +1768,17 @@ class Switcher:
                     return '"drastic"' in tree.lower()
                 except Exception:
                     return False
+            other = None
             while time.time() < deadline and not window():   # sobald das Fenster da ist
+                g = running_game()
+                if g and g["emu"] != "DraStic":                # in ES inzwischen anderer Emulator
+                    other = g["emu"]
+                    break
                 time.sleep(0.15)
+            if other:
+                log("Gameswitcher: statt DraStic laeuft", other)
+                item["emu"] = other
+                return self.resume_steps(item, fresh)
             log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
             time.sleep(0.7)
             inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden (einmal – doppelt ließ die Musik springen)
@@ -1912,10 +1958,10 @@ class Pauser:
 THEMES = {
     "dark": {"bg": "373737", "card": "262626", "tile": "4a4a4a", "seg": "444444",
              "track": "5a5a5a", "focus": "5a5a5a", "text": "ffffff", "muted": "bdbdbd",
-             "on_bg": "ffffff", "on_text": "1c1c1c", "pill": "262626", "dot": "6a6a6a"},
+             "on_bg": "ffffff", "on_text": "1c1c1c", "pill": "262626", "dot": "6a6a6a", "_dark": True},
     "light": {"bg": "e9e9e9", "card": "ffffff", "tile": "dcdcdc", "seg": "e4e4e4",
               "track": "cfcfcf", "focus": "dedede", "text": "1c1c1c", "muted": "666666",
-              "on_bg": "1c1c1c", "on_text": "ffffff", "pill": "ffffff", "dot": "b5b5b5"},
+              "on_bg": "1c1c1c", "on_text": "ffffff", "pill": "ffffff", "dot": "b5b5b5", "_dark": False},
 }
 WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
@@ -2395,8 +2441,8 @@ class SubMenu:
             P.text(f"{count} {self.what}  ·  mit dem Finger scrollen", 17, 630, 835,
                    T["muted"], align="c")
         cc.hits.append((45, 195, 1170, self.LIST_H + 20, ("sublist",)))
-        P.hint([("A", "Auswählen")], 17, 45, 835, T["muted"], T["text"])
-        P.hint([("B", "Zurück")], 17, 1215, 835, T["muted"], T["text"], align="r")
+        P.hint([("A", "Auswählen")], 18, 45, 835, T["muted"], T["text"])
+        P.hint([("B", "Zurück")], 18, 1215, 835, T["muted"], T["text"], align="r")
 
 
 class WifiMenu(SubMenu):
@@ -2993,8 +3039,270 @@ class Keyboard:
         hint = ([("◄ ►", "wählen"), ("A", "einfügen"), ("B", "schließen")] if self.popup else
                 [("A", "Taste (halten: ä, ö, ü …)"), ("B", "Löschen"), ("L1", "Groß"), ("R1", "?123"),
                  ("Stick", "Cursor"), ("Start", "OK")])
-        P.hint(hint, 17, 630, 835, T["muted"], T["text"], align="c")
+        P.hint(hint, 18, 630, 835, T["muted"], T["text"], align="c")
 
+
+
+# Akzentfarben nach dem Vorbild der 16 Profilfarben von Nintendo DS / DSi (gleiche Reihenfolge).
+# Helle DS-Töne im Original: auf hellen Akzenten wird die Schrift automatisch dunkel (on_acc);
+# die bisherigen sechs Farben sind enthalten (gespeicherte Einstellungen bleiben gültig).
+DS_COLORS = [("Grau", "61829a"), ("Braun", "ba4900"), ("Rot", "e5383b"), ("Rosa", "f080d8"),
+             ("Orange", "f08c00"), ("Gelb", "f0d000"), ("Hellgrün", "98d600"), ("Grün", "2bb673"),
+             ("Dunkelgrün", "00843d"), ("Türkis", "1fa98f"), ("Hellblau", "2f9fe0"), ("Blau", "3d7bff"),
+             ("Dunkelblau", "2f45c2"), ("Lila", "9b5de5"), ("Violett", "b43fd6"), ("Magenta", "e64980")]
+
+
+ES_SETTINGS = "/storage/.config/emulationstation/es_settings.cfg"
+
+
+def theme_scheme_block():
+    """Variablenblock des gewählten Farbschemas im ES-Theme (canvas rds: colors.xml) oder None."""
+    cfg = rd(ES_SETTINGS) or ""
+    theme = re.search(r'name="ThemeSet" value="([^"]*)"', cfg)
+    scheme = re.search(r'name="subset\.color-scheme" value="([^"]*)"', cfg)
+    if not theme:
+        return None
+    base = None
+    for root in ("/storage/.config/emulationstation/themes", "/storage/roms/themes", "/usr/share/emulationstation/themes"):
+        if os.path.isdir(os.path.join(root, theme.group(1))):
+            base = os.path.join(root, theme.group(1))
+            break
+    xml = rd(os.path.join(base, "colors.xml")) if base else None
+    if not xml:
+        return None
+    name = scheme.group(1) if scheme else None
+    if not name:
+        # ES speichert die erste Wahl (bei canvas rds „Dark“) nicht – dann gilt der erste Eintrag der Liste
+        txml = rd(os.path.join(base, "theme.xml")) or ""
+        m = re.search(r'<subset name="color-scheme"[^>]*>\s*<include name="([^"]+)"', txml)
+        name = m.group(1) if m else None
+    if name:
+        m = re.search(r'<variables ifSubset="color-scheme:%s">(.*?)</variables>' % re.escape(name), xml, re.S)
+        if m:
+            return m.group(1)
+    m = re.search(r"<variables>(.*?)</variables>", xml, re.S)     # Standard/Custom: erster Block
+    return m.group(1) if m else None
+
+
+def _hexvar(block, *names):
+    for n in names:
+        m = re.search(r"<%s>\s*([0-9a-fA-F]{6})" % n, block or "")
+        if m:
+            return m.group(1).lower()
+    return None
+
+
+def theme_auto_name():
+    """„Automatisch“: Hell oder Dunkel nach dem Farbschema des ES-Themes (z. B. canvas rds → Pastel).
+    Entscheidet über die Helligkeit der Grundfarbe (BackdropColor) des gewählten Schemas – passt so auch
+    für Custom und künftige Schemata. Ohne Farbschema (z. B. dii-ess-aye rds): Dunkel."""
+    try:
+        bg = _hexvar(theme_scheme_block(), "BackdropColor", "backgroundColor")
+        if not bg:
+            return "dark"
+        r, g, b = (int(bg[i:i + 2], 16) for i in (0, 2, 4))
+        return "light" if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55 else "dark"
+    except Exception as exc:
+        log("Theme-Automatik:", exc)
+        return "dark"
+
+
+def theme_accent():
+    """Akzentfarbe nach dem Theme: Farbe der aktiven Auswahl in ES (canvas rds: gamelistSelectorColor).
+    Grau (kein echter Akzent, z. B. Dark/Light) oder ohne Schema: None – dann gilt die gewählte Farbe."""
+    try:
+        c = _hexvar(theme_scheme_block(), "gamelistSelectorColor", "systemCarouselSelectorColor")
+        if c:
+            r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
+            if max(r, g, b) - min(r, g, b) >= 40:
+                return c
+    except Exception as exc:
+        log("Theme-Akzent:", exc)
+    return None
+
+
+def _lum(h):
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+
+def _contrast(a, b):
+    la, lb = sorted((_lum(a), _lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def _mixhex(a, b, t):
+    return "%02x%02x%02x" % tuple(round(int(a[i:i + 2], 16) * (1 - t) + int(b[i:i + 2], 16) * t) for i in (0, 2, 4))
+
+
+def theme_palette():
+    """Versuch (Automatisch): Farben wie im ES-Menü des Themes – Hintergrund = Menüfarbe des Schemas,
+    Akzent und Kacheln = Farbe der aktiven Auswahl (Famicom: rotes CC mit goldenen Kacheln).
+    Dark/Light und Themes ohne Schema: None (dann die normalen Varianten). Text immer kontrastreich."""
+    try:
+        block = theme_scheme_block()
+        if not block:
+            return None
+        m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
+        scheme = m.group(1) if m else "standard"
+        bg = _hexvar(block, "menuBackgroundColor", "BackdropColor", "backgroundColor")   # 8-stellig: Alpha ignoriert
+        if not bg:
+            return None
+        dark = _lum(bg) < 0.2
+        text = "ffffff" if dark else "1c1c1c"
+        if not dark and _lum(bg) > 0.85:            # fast Weiß: leicht tönen, damit Karten sich abheben
+            bg = _mixhex(bg, text, 0.08)
+        card = _mixhex(bg, "000000", 0.3) if dark else _mixhex(bg, "ffffff", 0.7)
+        if dark and _lum(bg) < 0.03:
+            card = _mixhex(bg, text, 0.09)
+        sel = theme_accent()
+        tint = sel or text
+        tile = _mixhex(bg, tint, (0.8 if dark else 0.45) if sel else 0.12)   # dunkel: kräftig (Famicom: Gold)
+        if _contrast(text, tile) < 3:               # Kachel zu nah an der Schrift: weniger einfärben
+            tile = _mixhex(bg, tint, 0.25)
+        muted = _mixhex(text, bg, 0.3)
+        return {"bg": bg, "card": card, "tile": tile, "seg": _mixhex(bg, tint, 0.2 if sel else 0.07),
+                # leere Reglerstrecke neutral (dunkler/heller Grund), damit die gefüllte Akzentstrecke sich abhebt
+                "track": _mixhex(bg, "000000", 0.35) if dark else _mixhex(bg, text, 0.18),
+                "focus": _mixhex(bg, text, 0.15),
+                "text": text, "muted": muted, "on_bg": text, "on_text": bg, "pill": card,
+                "dot": _mixhex(bg, tint, 0.6), "_dark": dark, "_scheme": scheme}
+    except Exception as exc:
+        log("Theme-Palette:", exc)
+        return None
+
+
+def theme_selector():
+    """Farbe der aktiven Auswahl in ES – ohne Farbfilter (Dark/Light: Grau), für den Automatik-Modus."""
+    try:
+        return _hexvar(theme_scheme_block(), "gamelistSelectorColor", "systemCarouselSelectorColor")
+    except Exception:
+        return None
+
+
+def on_acc(a):
+    """Schriftfarbe auf einer Akzentfläche: dunkel auf hellen Akzenten (Pastel, Gelb …), sonst weiß."""
+    try:
+        return "1c1c1c" if _lum(a) > 0.42 else "ffffff"
+    except Exception:
+        return "ffffff"
+
+
+def resolve_colors(cfg):
+    """Farbtabelle und Akzent nach dem Modus: Dunkel/Hell mit gewählter Farbe, Automatisch nach dem ES-Theme
+    (Hintergrund wie das ES-Menü, Akzent wie die Auswahl). Gilt für Kontrollcenter und Artwork Manager."""
+    theme = cfg.get("theme")
+    if theme != "auto":
+        return THEMES.get(theme, THEMES["dark"]), user_accent(cfg)
+    T = theme_palette() or THEMES[theme_auto_name()]
+    acc = (theme_selector() if T.get("_scheme") else None) or theme_accent() or user_accent(cfg)
+    if T.get("_scheme") and T.get("_dark"):
+        # gleicher Farbton wie ein dunkler Hintergrund (Sony: Dunkelblau auf Blau) → aufhellen
+        import colorsys
+        hue = lambda h: colorsys.rgb_to_hsv(*(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)))[0] * 360
+        d = abs(hue(acc) - hue(T["bg"]))
+        if min(d, 360 - d) < 30:
+            for _ in range(6):
+                if _contrast(acc, T["bg"]) >= 3.0:
+                    break
+                acc = _mixhex(acc, "ffffff", 0.2)
+    return T, acc
+
+
+def user_accent(cfg):
+    """Im Farbmenü gewählte Akzentfarbe (alter Wert „theme“ → Rot)."""
+    a = cfg.get("accent")
+    return "e5383b" if not a or a == "theme" else a.lstrip("#")
+
+
+class ColorMenu:
+    """Untermenü Akzentfarbe: 16 Farbkacheln (4 × 4) wie im DS-Profil; Vorschau beim Wählen.
+    Bei Hell/Dunkel „Automatisch“ und farbigem Theme-Schema gilt die Farbe des Schemas (Hinweis unten)."""
+    title = "Akzentfarbe"
+    COLS = 4
+
+    def __init__(self, cc):
+        self.cc = cc
+        self.before = cc.accent                 # angezeigte Farbe (ggf. aus dem Schema)
+        self.saved = user_accent(cc.cfg)        # im Menü gewählte Farbe
+        cur = [c for _n, c in DS_COLORS]
+        self.sel = cur.index(self.saved) if self.saved in cur else 0
+        self.drag_from = None
+        self.done = False
+
+    # Schnittstelle wie bei WLAN/Bluetooth
+    def tick(self):
+        pass
+
+    def close(self):
+        if not self.done:                      # ohne Bestätigen zurück: alte Farbe wieder herstellen
+            self.cc.accent = self.before
+
+    def drag_start(self):
+        pass
+
+    def drag(self, dy):
+        pass
+
+    def _preview(self):
+        self.cc.accent = DS_COLORS[self.sel][1]
+
+    def nav(self, dx, dy):
+        rows = len(DS_COLORS) // self.COLS
+        r, c = divmod(self.sel, self.COLS)
+        c = max(0, min(self.COLS - 1, c + dx))
+        r = max(0, min(rows - 1, r + dy))
+        self.sel = r * self.COLS + c
+        self._preview()
+
+    def confirm(self):
+        cc = self.cc
+        cc.cfg["accent"] = "#" + DS_COLORS[self.sel][1]
+        save_config(cc.cfg)
+        self.done = True
+        haptic("tap")
+        cc.sub = None
+        cc.accent = DS_COLORS[self.sel][1]
+        cc.apply_auto_theme()                   # Automatisch + farbiges Schema: Schemafarbe hat Vorrang
+        log("Akzentfarbe:", DS_COLORS[self.sel][0], cc.accent)
+
+    def tap(self, hit):
+        if hit and hit[0] == "color":
+            if hit[1] == self.sel:
+                self.confirm()
+            else:
+                self.sel = hit[1]
+                self._preview()
+        elif hit and hit[0] == "sub" and hit[1] == "back":
+            self.close()
+            self.cc.sub = None
+
+    def draw(self, P):
+        cc, T = self.cc, self.cc.T
+        # Kopfzeile: Zurück + Titel
+        P.rrect(45, 62, 170, 62, 31, T["pill"])
+        P.chevron(45 + 30, 93, -9, T["text"])
+        P.text("Zurück", 22, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
+        cc.hits.append((45, 62, 170, 62, ("sub", "back")))
+        P.text("Akzentfarbe", 30, 630, 104, T["text"], bold=True, align="c")
+        gap = 20
+        tw = (1170 - gap * (self.COLS - 1)) / self.COLS
+        top, bottom = 150, 795
+        rows = len(DS_COLORS) // self.COLS
+        th = (bottom - top - gap * (rows - 1)) / rows
+        for i, (name, col) in enumerate(DS_COLORS):
+            x = 45 + (i % self.COLS) * (tw + gap)
+            y = top + (i // self.COLS) * (th + gap)
+            P.rrect(x, y, tw, th, 20, col)
+            P.text(name, 22, x + 22, y + th - 22, "ffffff", bold=True)
+            if col == self.saved:              # gewählte Farbe: Haken
+                P.circle(x + tw - 30, y + 30, 18, "ffffff")
+                P.text("✓", 22, x + tw - 30, y + 38, col, bold=True, align="c", raw=True)
+            if i == self.sel:
+                P.rrect(x - 6, y - 6, tw + 12, th + 12, 26, T["text"], stroke=4)
+            cc.hits.append((x, y, tw, th, ("color", i)))
+        P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
 
 
 class ControlCenter:
@@ -3005,7 +3313,9 @@ class ControlCenter:
         HAPTIC_ON[0] = self.cfg.get("haptics", True)
         LANG[0] = ui_language()
         self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
-        self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
+        self.apply_auto_theme()
+        self.accent = user_accent(self.cfg)
+        self.T, self.accent = resolve_colors(self.cfg)      # Automatisch: gleich beim Start die Theme-Farben
         self.backlights = find_backlights(self.cfg)
         log("Regler:", ", ".join(f"{label} = {b.name}" for label, b in self.backlights) or "keine Helligkeit gefunden")
         # Zuletzt im CC gewählte Helligkeit wiederherstellen: ES schreibt beim Beenden/Neustart seine alten
@@ -3118,17 +3428,42 @@ class ControlCenter:
         save_config(self.cfg)
         haptic("open")                                       # beim Einschalten spürbar bestätigen
 
+    def apply_auto_theme(self):
+        """Farben nach dem Modus setzen (beim Öffnen und regelmäßig) – gemeinsame Regel: resolve_colors."""
+        before = (getattr(self, "T", None), getattr(self, "accent", None))   # auch beim Start (accent noch nicht gesetzt)
+        if isinstance(getattr(self, "sub", None), ColorMenu):    # nicht mitten in der Farbvorschau
+            return
+        if self.cfg.get("theme") == "auto" or hasattr(self, "accent"):
+            self.T, self.accent = resolve_colors(self.cfg)
+        if hasattr(self, "accent") and (self.T, self.accent) != before:
+            m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
+            log("Theme-Automatik: Schema %s → %s, Akzent %s" % (m.group(1) if m else "?",
+                "dunkel" if self.T.get("_dark") else "hell", self.accent))
+
     def toggle_theme(self):
-        name = "light" if self.T is THEMES["dark"] else "dark"
-        self.T = THEMES[name]
+        # Dunkel → Hell → Automatisch (nach dem Farbschema des ES-Themes) → Dunkel
+        cur = self.cfg.get("theme") if self.cfg.get("theme") in ("dark", "light", "auto") else "dark"
+        name = {"dark": "light", "light": "auto", "auto": "dark"}[cur]
         self.cfg["theme"] = name
+        if name != "auto":
+            self.T = THEMES[name]
         save_config(self.cfg)
+        self.apply_auto_theme()                 # Automatisch: Theme-Farben, sonst die gewählte Akzentfarbe
+        if name == "auto":
+            info_toast("Automatisch: Hell/Dunkel und Farben nach Theme", "help")
 
     def next_accent(self):
         i = ACCENTS.index(self.accent) if self.accent in ACCENTS else -1
         self.accent = ACCENTS[(i + 1) % len(ACCENTS)]
         self.cfg["accent"] = "#" + self.accent
         save_config(self.cfg)
+
+    def open_colors(self):
+        if self.cfg.get("theme") == "auto":     # Automatisch: Farben kommen aus dem Theme, keine eigene Wahl
+            info_toast("Farben kommen aus dem Theme – für eigene Farben Hell oder Dunkel wählen", "help")
+            return
+        self.sub = ColorMenu(self)
+        log("Untermenü:", self.sub.title)
 
     def open_sub(self, i):
         self.sub = (WifiMenu if i == 0 else BtMenu)(self)
@@ -3318,7 +3653,7 @@ class ControlCenter:
         elif kind == "top":
             if self.top_sel == -1:
                 return "power"
-            (self.toggle_theme, self.next_accent, self.toggle_haptics)[self.top_sel]()
+            (self.toggle_theme, self.open_colors, self.toggle_haptics)[self.top_sel]()
 
     def turn_page(self, d):
         if self.sub:
@@ -3406,7 +3741,7 @@ class ControlCenter:
                 self.page = val
             elif kind == "top":
                 self.focus, self.top_sel = 0, val
-                (self.toggle_theme, self.next_accent, self.toggle_haptics)[val]()
+                (self.toggle_theme, self.open_colors, self.toggle_haptics)[val]()
             elif kind == "power_btn":
                 return "power"
             elif kind == "quit":
@@ -3499,10 +3834,10 @@ class ControlCenter:
             left.append(("B", "zurück"))
         elif self.page == 1 and game_actions(self.game):
             left = [("A", "Ausführen"), ("L1 / R1", "Seite wechseln")]
-        P.hint(left, 17, 45, 835, T["muted"], T["text"])
+        P.hint(left, 18, 45, 835, T["muted"], T["text"])
         right = [("Select", "Tour")] if (self.slot_pick is not None or self.ghelp or (self.page == 2 and self.ra_detail)) \
             else [("Select", "Tour"), ("B", "Schließen")]
-        P.hint(right, 17, 1215, 835, T["muted"], T["text"], align="r")
+        P.hint(right, 18, 1215, 835, T["muted"], T["text"], align="r")
         x = 630 - (34 + 24 * (len(PAGES) - 1)) / 2
         for i in range(len(PAGES)):
             wdt = 34 if i == self.page else 12
@@ -3544,8 +3879,8 @@ class ControlCenter:
         x = 40
         for key, label, act, primary in buttons:
             P.rrect(x, 800, bw, 90, 26, A if primary else T["tile"])
-            P.hint([(key, label)], 26, x + bw / 2, 855, "ffffff" if primary else T["text"],
-                   "ffffff" if primary else T["text"], align="c")
+            P.hint([(key, label)], 26, x + bw / 2, 855, on_acc(A) if primary else T["text"],
+                   on_acc(A) if primary else T["text"], align="c")
             self.hits.append((x, 800, bw, 90, ("tour", act)))
             x += bw + 20
 
@@ -3599,14 +3934,16 @@ class ControlCenter:
                     P.rrect(cx + sgn * 12 - 1.5, 91, 3, 12, 1.5, col)
                 if not HAPTIC_ON[0]:
                     P.poly([(cx - 15, 83), (cx - 12, 80), (cx + 15, 109), (cx + 12, 112)], col)
-            elif i == 0:   # Mond (Dunkel) bzw. Sonne mit Strahlen (Hell)
-                if self.T is THEMES["dark"]:
+            elif i == 0:   # Mond (Dunkel), Sonne mit Strahlen (Hell) oder „A“ (Automatisch nach dem ES-Theme)
+                if self.cfg.get("theme") == "auto":
+                    P.text("A", 30, cx, 108, T["text"], bold=True, align="c", raw=True)
+                elif self.T.get("_dark"):
                     P.circle(cx, 97, 12, T["text"])
                     P.circle(cx + 6, 92, 10, T["pill"])
                 else:
                     P.sun(cx, 97, T["text"])
-            else:
-                P.circle(cx, 97, 13, A)
+            else:   # Farbpunkt; bei Automatisch abgeblendet (Farbe kommt aus dem Theme)
+                P.circle(cx, 97, 13, mix(A, T["pill"], 0.45) if self.cfg.get("theme") == "auto" else A)
             if top_focus and self.top_sel == i:
                 self._focus_ring(P, x, 70, 54, 54, 27)
             self.hits.append((x - 4, 66, 62, 62, ("top", i)))
@@ -3632,7 +3969,7 @@ class ControlCenter:
         if not (icon and P.image(icon, 72, 167, 90, 90, 14)):
             P.rrect(72, 167, 90, 90, 14, T["tile"])
             P.text((self.game["name"][:1] if self.game else "–").upper(), 40, 117, 227, T["muted"], bold=True, align="c")
-        P.text("LÄUFT GERADE", 15, 187, 182, T["muted"], bold=True)
+        P.text("LÄUFT GERADE", 19, 187, 182, T["muted"], bold=True)
         self.marquee = False
         if self.game:
             g = self.game
@@ -3654,16 +3991,16 @@ class ControlCenter:
             if g["played"] is not None:
                 mins = int(g["played"] // 60)
                 sub += f" · {mins // 60}:{mins % 60:02d} h"
-            P.text(sub, 18, 187, 253, T["muted"])
+            P.text(sub, 19, 187, 253, T["muted"])
             gfocus = self.rows()[self.focus][0] == "game"
             P.rrect(955, 181, 233, 63, 32, A, a=1.0 if gfocus else 0.45)
-            P.text("Spiel beenden", 21, 1071, 220, "ffffff", bold=True, align="c")
+            P.text("Spiel beenden", 21, 1071, 220, on_acc(A), bold=True, align="c")
             if gfocus:
                 self._focus_ring(P, 955, 181, 233, 63, 32)
             self.hits.append((955, 175, 233, 75, ("quit", None)))
         else:
             P.text("Kein Spiel aktiv", 28, 187, 222, T["text"], bold=True)
-            P.text("EmulationStation", 18, 187, 253, T["muted"])
+            P.text("EmulationStation", 19, 187, 253, T["muted"])
 
         # Regler
         rows = self.rows()
@@ -3695,7 +4032,7 @@ class ControlCenter:
             sx = 372 + i * 279
             active = i == self.perf
             P.rrect(sx, y + 14, 269, 61, 16, A if active else mix(T["seg"], A, 0.12))
-            P.text(name, 20, sx + 134, y + 52, "ffffff" if active else T["text"],
+            P.text(name, 20, sx + 134, y + 52, on_acc(A) if active else T["text"],
                    bold=active, align="c")
             if focused and i == self.perf_sel:
                 self._focus_ring(P, sx, y + 14, 269, 61, 16)
@@ -3714,14 +4051,14 @@ class ControlCenter:
             tx = 45 + i * (tw + gap)
             fill = A if states[i] else mix(T["tile"], A, 0.22)
             P.rrect(tx, ry, tw, th, 24, fill)
-            tc = "ffffff" if states[i] else T["text"]
+            tc = on_acc(A) if states[i] else T["text"]
             sub = self._tile_detail(i)
             P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
             if sub:
-                P.text(sub, 16, tx + 25, ry + 96, mix(tc, fill, 0.25))
+                P.text(sub, 19, tx + 25, ry + 96, mix(tc, fill, 0.25))
             if i < 2:   # WLAN/BT Untermenü-Pfeil
-                P.circle(tx + tw - 38, ry + 38, 22, mix(fill, "ffffff" if states[i] else T["text"], 0.18))
-                P.chevron(tx + tw - 34, ry + 38, 9, "ffffff" if states[i] else T["text"])
+                P.circle(tx + tw - 38, ry + 38, 22, mix(fill, on_acc(A) if states[i] else T["text"], 0.18))
+                P.chevron(tx + tw - 34, ry + 38, 9, on_acc(A) if states[i] else T["text"])
                 self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
             if focused and i == self.tile:
                 self._focus_ring(P, tx, ry, tw, th, 24)
@@ -3779,10 +4116,10 @@ class ControlCenter:
                 cy = 670                                  # Symbolreihe unten über der Fußzeile
                 sel = i == self.gsel
                 P.circle(cx, cy, 50, A if sel else mix(T["tile"], A, 0.22))
-                P.game_icon(key, cx, cy, "ffffff" if sel else T["text"])
+                P.game_icon(key, cx, cy, on_acc(A) if sel else T["text"])
                 if sel:
                     self._focus_ring(P, cx - 50, cy - 50, 100, 100, 50)
-                P.text(label, 18, cx, cy + 86, T["muted"], align="c")
+                P.text(label, 19, cx, cy + 86, T["muted"], align="c")
                 self.hits.append((cx - 70, cy - 55, 140, 160, ("gact", i)))
         if self.gbusy:
             P.text("Bitte warten …", 24, 630, y, T["muted"], align="c")
@@ -3805,17 +4142,17 @@ class ControlCenter:
         T, A = self.T, self.accent
         sel = i == self.gsel
         fill = A if sel else mix(T["tile"], A, 0.22)      # angesteuert = Akzentfarbe wie im CC
-        tc, mc = ("ffffff", mix("ffffff", A, 0.25)) if sel else (T["text"], T["muted"])
+        tc, mc = (on_acc(A), mix(on_acc(A), A, 0.25)) if sel else (T["text"], T["muted"])
         P.rrect(x, y, w, h, 24, fill)
         arrow = (self.game or {}).get("emu") in SLOT_EMUS
         if shot and P.image(shot, x, y, w, h, 24):
             P.rrect(x, y + h - 92, w, 92, 24, "000000", 0.62)
             P.text(label, 24, x + 28, y + h - 52, "ffffff", bold=True)
-            P.text(self._big_detail(key), 17, x + 28, y + h - 22, "dddddd", raw=True)
+            P.text(self._big_detail(key), 19, x + 28, y + h - 22, "dddddd", raw=True)
             cy, cc_ = y + h - 46, "ffffff"
         else:
             P.text(label, 24, x + 28, y + h / 2 - 8, tc, bold=True)
-            P.text(self._big_detail(key), 17, x + 28, y + h / 2 + 26, mc, raw=True)
+            P.text(self._big_detail(key), 19, x + 28, y + h / 2 + 26, mc, raw=True)
             cy, cc_ = y + h / 2, tc
         if arrow:
             P.circle(x + w - 44, cy, 24, mix(fill, tc, 0.18) if not shot else "000000")
@@ -3850,7 +4187,7 @@ class ControlCenter:
         else:
             sc = ra_shortcuts() if emu == "RetroArch" else []
         P.text(g.get("name") or "", 30, 45, 95, T["text"], bold=True, raw=True)
-        P.text(" · ".join(v for v in (system.upper(), emu) if v), 18, 45, 128, T["muted"], raw=True)
+        P.text(" · ".join(v for v in (system.upper(), emu) if v), 19, 45, 128, T["muted"], raw=True)
         # links: Spieltasten
         P.rrect(45, 160, 574, 610, 24, T["card"])
         P.text("Spieltasten", 22, 75, 205, T["text"], bold=True)
@@ -3908,15 +4245,15 @@ class ControlCenter:
         P.text(name, 28, 130, 88, T["text"], bold=True, raw=True)
         hc = re.search(r"^global\.retroachievements\.hardcore=1", rd("/storage/.config/system/configs/system.cfg") or "", re.M)
         pts = user.get("score") if hc else user.get("softcore_score")
-        P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 18, 130, 118, T["muted"], raw=True)
+        P.text("%s %s" % ("{:,}".format(pts or 0).replace(",", "."), tr("Punkte")), 19, 130, 118, T["muted"], raw=True)
         label = tr("Hardcore an") if hc else tr("Softcore")
         pw = P.width(label, 18, bold=True, raw=True) + 48
         if hc:   # Hardcore: Akzentfarbe mit weißer Schrift – lesbar in Hell und Dunkel
             P.rrect(1215 - pw, 70, pw, 54, 27, A)
-            P.text(label, 18, 1215 - pw / 2, 104, "ffffff", bold=True, align="c", raw=True)
+            P.text(label, 19, 1215 - pw / 2, 104, on_acc(A), bold=True, align="c", raw=True)
         else:
             P.rrect(1215 - pw, 70, pw, 54, 27, T["pill"])
-            P.text(label, 18, 1215 - pw / 2, 104, T["text"], bold=True, align="c", raw=True)
+            P.text(label, 19, 1215 - pw / 2, 104, T["text"], bold=True, align="c", raw=True)
         # Spielkarte
         rows, unl = self._ra_rows()
         P.rrect(45, 165, 1170, 190, 28, T["card"])
@@ -3930,19 +4267,19 @@ class ControlCenter:
             title = title[:-2]
         P.text(title, 30, 240, 225, T["text"], bold=True, raw=True)
         if unsupported:
-            P.text(tr("Diese ROM-Version wird von RetroAchievements nicht unterstützt."), 18, 240, 262, T["muted"], raw=True)
-            P.text(tr("Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes"), 16, 240, 296, T["muted"], raw=True)
+            P.text(tr("Diese ROM-Version wird von RetroAchievements nicht unterstützt."), 19, 240, 262, T["muted"], raw=True)
+            P.text(tr("Unterstützte Versionen: retroachievements.org → Spiel → Supported Game Hashes"), 19, 240, 296, T["muted"], raw=True)
             return
         n_done = sum(1 for a in rows if str(a.get("id")) in unl)
         p_done = sum(a.get("points") or 0 for a in rows if str(a.get("id")) in unl)
         p_all = sum(a.get("points") or 0 for a in rows)
         P.text("%d %s %d %s  ·  %d / %d %s" % (n_done, tr("von"), len(rows), tr("Erfolgen"), p_done, p_all, tr("Punkte")),
-               18, 240, 260, T["muted"], raw=True)
+               19, 240, 260, T["muted"], raw=True)
         frac = n_done / len(rows) if rows else 0
         P.rrect(240, 285, 940, 18, 9, T["seg"])
         if frac:
             P.rrect(240, 285, max(18, 940 * frac), 18, 9, A)
-        P.text("%d %%" % round(frac * 100), 17, 1180, 325, T["muted"], align="r", raw=True)
+        P.text("%d %%" % round(frac * 100), 19, 1180, 325, T["muted"], align="r", raw=True)
         self.ra_sel = min(self.ra_sel, len(rows) - 1)
         if self.ra_detail:
             self._draw_ra_detail(P, rows[self.ra_sel], unl)
@@ -3958,7 +4295,7 @@ class ControlCenter:
             if not (b and P.image(b, 58, y + 10, 72, 72, 14)):
                 P.rrect(58, y + 10, 72, 72, 14, A if done else T["seg"])
                 P.game_icon("trophy", 94, y + 46, "ffffff" if done else T["muted"])
-            tc = "ffffff" if sel else T["text"]
+            tc = on_acc(A) if sel else T["text"]
             t = a.get("title") or ""
             while P.width(t, 20, bold=True, raw=True) > 900 and len(t) > 4:
                 t = t[:-2]
@@ -3966,9 +4303,9 @@ class ControlCenter:
             d = a.get("desc") or ""
             while P.width(d, 16, raw=True) > 920 and len(d) > 4:
                 d = d[:-2]
-            P.text(d, 16, 150, y + 66, mix("ffffff", A, 0.3) if sel else T["muted"], raw=True)
+            P.text(d, 19, 150, y + 66, mix(on_acc(A), A, 0.3) if sel else T["muted"], raw=True)
             P.text("%d P" % (a.get("points") or 0), 19, 1190, y + 54,
-                   "ffffff" if (sel or done) else T["muted"], bold=True, align="r", raw=True)
+                   on_acc(A) if (sel or done) else T["muted"], bold=True, align="r", raw=True)
             self.hits.append((45, y, 1170, 92, ("ra_row", i)))
             y += 102
 
@@ -4016,9 +4353,9 @@ class ControlCenter:
             ds = time.strftime("%d.%m.%Y %H:%M", time.localtime(int(when))) if str(when).isdigit() else ""
             label = tr("Freigeschaltet") + (" " + ds if ds else "") + (" · Hardcore" if done.get("hardcore") else "")
             P.rrect(x, 705, P.width(label, 17, bold=True, raw=True) + 40, 44, 22, A)
-            P.text(label, 17, x + 20, 734, "ffffff", bold=True, raw=True)
+            P.text(label, 19, x + 20, 734, on_acc(A), bold=True, raw=True)
         else:
-            P.text(tr("Noch offen"), 17, x, 734, T["muted"], bold=True)
+            P.text(tr("Noch offen"), 19, x, 734, T["muted"], bold=True)
         self.hits.append((45, 380, 1170, 400, ("ra_close", None)))
 
     def paint_toast(self, cr, w, h):
@@ -4027,21 +4364,33 @@ class ControlCenter:
         P.s, P.ox, P.oy = w / 1260, 0, 0          # Entwurf 1260 breit, Höhe frei
         T, A = self.T, self.accent
         t = self.toast_now or {}
+        # Farben folgen dem Modus des Kontrollcenters (Hell, Dunkel oder Automatisch nach dem Theme)
+        if T.get("_scheme"):                    # Theme-Farben (Automatisch): Karte des Schemas
+            BG, FG, MU, TR = T["card"], T["text"], T["muted"], T["track"]
+        else:
+            BG, FG, MU, TR = (("1c1c1c", "ffffff", "bdbdbd", "4a4a4a") if T.get("_dark")
+                              else ("ffffff", "1c1c1c", "666666", "d6d6d6"))
+        # Akzent als Schrift/Symbol auf der Meldung: genug Kontrast zum Hintergrund (Pastel: Hellblau auf Hellgrau)
+        AF = A
+        for _ in range(6):
+            if _contrast(AF, BG) >= 3:
+                break
+            AF = _mixhex(AF, FG, 0.25)
         if t.get("kind") == "volume":
             bw, x = 560, 630 - 280
-            P.rrect(x, 22, bw, 112, 56, "1c1c1c", 0.9)
+            P.rrect(x, 22, bw, 112, 56, BG, 0.9)
             # Lautsprecher
-            P.rrect(x + 46, 64, 16, 28, 4, "ffffff")
-            P.poly([(x + 58, 64), (x + 78, 48), (x + 78, 108), (x + 58, 92)], "ffffff")
+            P.rrect(x + 46, 64, 16, 28, 4, FG)
+            P.poly([(x + 58, 64), (x + 78, 48), (x + 78, 108), (x + 58, 92)], FG)
             if t.get("muted") or not t.get("value"):
-                P.game_icon("quit", x + 100, 78, "ffffff", scale=0.5)
-            P.rrect(x + 120, 70, 330, 16, 8, "4a4a4a")
-            P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, A)
-            P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, "ffffff", bold=True, align="r", raw=True)
+                P.game_icon("quit", x + 100, 78, FG, scale=0.5)
+            P.rrect(x + 120, 70, 330, 16, 8, TR)
+            P.rrect(x + 120, 70, 330 * (t.get("value") or 0) / 100, 16, 8, AF)
+            P.text("%d %%" % (t.get("value") or 0), 22, x + bw - 36, 87, FG, bold=True, align="r", raw=True)
             return
         if t.get("kind") == "battery":          # Warnung bei niedrigem Akku (20 / 10 / 5 %)
             lvl = t.get("level") or 0
-            col = "f5be1e" if lvl > 10 else "e5383b"
+            col = ("f5be1e" if T.get("_dark") else "b07d00") if lvl > 10 else "e5383b"   # Gelb auf Weiß dunkler
             head = tr("Akku fast leer") if lvl <= 5 else tr("Akku schwach")
             sub = tr("Jetzt laden – sonst geht das Gerät gleich aus") if lvl <= 5 else tr("Bitte bald laden")
             hs, ss = 28, 18
@@ -4050,14 +4399,14 @@ class ControlCenter:
                 hs, ss = hs - 2, max(14, ss - 1)
             bw = int(max(P.width(head + "  %d %%" % lvl, hs, bold=True, raw=True), P.width(sub, ss, raw=True))) + 170
             x = 630 - bw // 2
-            P.rrect(x, 18, bw, 120, 40, "1c1c1c", 0.92)
+            P.rrect(x, 18, bw, 120, 40, BG, 0.92)
             # Batterie-Symbol
-            P.rrect(x + 34, 54, 66, 40, 9, "ffffff")
-            P.rrect(x + 39, 59, 56, 30, 6, "1c1c1c")
-            P.rrect(x + 100, 66, 8, 16, 3, "ffffff")
+            P.rrect(x + 34, 54, 66, 40, 9, FG)
+            P.rrect(x + 39, 59, 56, 30, 6, BG)
+            P.rrect(x + 100, 66, 8, 16, 3, FG)
             P.rrect(x + 43, 63, max(6, 48 * lvl / 100), 22, 4, col)
             P.text("%s  %d %%" % (head, lvl), hs, x + 130, 70, col, bold=True, raw=True)
-            P.text(sub, ss, x + 130, 104, "bdbdbd", raw=True)
+            P.text(sub, ss, x + 130, 104, MU, raw=True)
             return
         if t.get("kind") == "charging":         # Ladegerät angeschlossen
             lvl = t.get("level") or 0
@@ -4067,9 +4416,9 @@ class ControlCenter:
                 fs -= 2
             bw = int(P.width(text, fs, bold=True, raw=True)) + 150
             x = 630 - bw // 2
-            P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
+            P.rrect(x, 30, bw, 96, 48, BG, 0.9)
             P.game_icon("bolt", x + 62, 78, "2db67a")
-            P.text(text, fs, x + 110, 88, "ffffff", bold=True, raw=True)
+            P.text(text, fs, x + 110, 88, FG, bold=True, raw=True)
             return
         if t.get("kind") == "info":             # kurze Rückmeldung, z. B. „Vorspulen umgeschaltet“
             text = tr(t.get("text") or "")
@@ -4078,28 +4427,28 @@ class ControlCenter:
                 fs -= 2
             bw = int(P.width(text, fs, bold=True, raw=True)) + 150
             x = 630 - bw // 2
-            P.rrect(x, 30, bw, 96, 48, "1c1c1c", 0.9)
-            P.game_icon(t.get("icon") or "ff", x + 62, 78, A, scale=0.75)
-            P.text(text, fs, x + 110, 88, "ffffff", bold=True, raw=True)
+            P.rrect(x, 30, bw, 96, 48, BG, 0.9)
+            P.game_icon(t.get("icon") or "ff", x + 62, 78, AF, scale=0.75)
+            P.text(text, fs, x + 110, 88, FG, bold=True, raw=True)
             return
         if t.get("kind") == "cheevo":
             x, bw = 230, 800
-            P.rrect(x, 14, bw, 128, 34, "1c1c1c", 0.92)
+            P.rrect(x, 14, bw, 128, 34, BG, 0.92)
             b = ra_badge(t.get("badge"))
             if not (b and P.image(b, x + 20, 30, 96, 96, 16)):
                 P.rrect(x + 20, 30, 96, 96, 16, A)
-                P.game_icon("trophy", x + 68, 78, "ffffff")
-            P.text(tr("Erfolg freigeschaltet!"), 18, x + 140, 58, A, bold=True)
+                P.game_icon("trophy", x + 68, 78, on_acc(A))
+            P.text(tr("Erfolg freigeschaltet!"), 19, x + 140, 58, AF, bold=True)
             title = t.get("title") or ""
             while P.width(title, 28, bold=True, raw=True) > bw - 170 and len(title) > 4:
                 title = title[:-2]
-            P.text(title, 28, x + 140, 96, "ffffff", bold=True, raw=True)
+            P.text(title, 28, x + 140, 96, FG, bold=True, raw=True)
             sub = t.get("sub") or ""
             while P.width(sub, 17, raw=True) > bw - 170 and len(sub) > 4:   # Beschreibung bleibt im Kasten
                 sub = sub[:-2]
             if sub != (t.get("sub") or ""):
                 sub = sub.rstrip() + "…"
-            P.text(sub, 17, x + 140, 126, "bdbdbd", raw=True)
+            P.text(sub, 19, x + 140, 126, MU, raw=True)
 
     def _session(self):
         """Spielzeit seit dem Start des Emulator-Prozesses, z. B. „0:42 h“."""
@@ -4192,7 +4541,7 @@ class ControlCenter:
             P.text(line, 21, 85, y, T["muted"])
             y += 42
         P.rrect(85, 530, 260, 64, 32, A)
-        P.text("Verstanden", 22, 215, 571, "ffffff", bold=True, align="c")
+        P.text("Verstanden", 22, 215, 571, on_acc(A), bold=True, align="c")
         self._focus_ring(P, 85, 530, 260, 64, 32)
         self.hits.append((45, 200, 1170, 420, ("ghint", None)))
 
@@ -4244,12 +4593,14 @@ class ControlCenter:
     def _draw_slots(self, P):
         """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
         T, A = self.T, self.accent
-        P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 200, T["text"], bold=True)
+        # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
+        P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
         cols, gap = 3, 22
-        tw, th = (1170 - gap * (cols - 1)) / cols, 170
+        top, bottom = 88, 795
+        tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
         for n in range(SLOTS_USER):
             tx = 45 + (n % cols) * (tw + gap)
-            ty = 225 + (n // cols) * (th + gap)
+            ty = top + (n // cols) * (th + gap)
             cur = n == self.slot
             usable = self.slot_mode == "save" or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
@@ -4261,7 +4612,7 @@ class ControlCenter:
             # Beschriftung unten auf dunklem Band
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
             label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
-            P.text(label, 18, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            P.text(label, 19, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
                 P.game_icon("trash", tx + tw - 32, ty + 32, "ffffff")
@@ -4269,7 +4620,7 @@ class ControlCenter:
             if n == self.del_confirm:
                 P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
                 P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
-                P.text(tr("nochmal X oder tippen"), 16, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
+                P.text(tr("nochmal X oder tippen"), 19, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
@@ -4387,10 +4738,10 @@ class ControlCenter:
         for j2, (key, label) in enumerate(btns):
             x = bx + j2 * 280
             P.rrect(x + 10, 822, 260, 72, 36, A if j2 == 0 else T["card"])
-            P.text(f"{key}  {tr(label)}", 21, x + 140, 866, "ffffff" if j2 == 0 else T["text"], bold=j2 == 0, align="c", raw=True)
+            P.text(f"{key}  {tr(label)}", 21, x + 140, 866, on_acc(A) if j2 == 0 else T["text"], bold=j2 == 0, align="c", raw=True)
             self.hits.append((x + 10, 818, 260, 80, ("gs_btn", key)))
         if it.get("emu") in ("PortMaster",):
-            P.text("Spielstand über das Spiel selbst", 16, 630, 930, T["muted"], align="c")
+            P.text("Spielstand über das Spiel selbst", 19, 630, 930, T["muted"], align="c")
 
 
 # ------------------------------------------------------------ Power-Menü ----
@@ -4567,9 +4918,9 @@ class PowerMenu:
                     P.rrect(bxi, byi, cbw, 90, 20, T["bg"])
                     P.rrect(bxi, byi, cbw, 90, 20, T["dot"], stroke=2)
                 P.text(label, 24, bxi + cbw / 2, byi + 52,
-                       "ffffff" if active else T["muted"], bold=active, align="c")
+                       on_acc(accent) if active else T["muted"], bold=active, align="c")
                 hits.append((bxi, byi, cbw, 90, "yes" if i == 0 else "no"))
-            P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 17, W / 2, H - 36,
+            P.hint([("◄ ►", "Auswahl"), ("A", "Bestätigen"), ("B", "Abbrechen")], 18, W / 2, H - 36,
                    T["muted"], T["text"], align="c")
 
         elif self.state == self.STATE_RESTART:
@@ -4587,7 +4938,7 @@ class PowerMenu:
                     P.rrect(bx, by, bw, bh, 24, T["bg"])
                     P.rrect(bx, by, bw, bh, 24, T["dot"], stroke=2)
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
-                       "ffffff" if active else T["muted"], bold=active, align="c")
+                       on_acc(accent) if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
             P.hint([("B", "Zurück")], 19, W / 2, H - 36, T["muted"], T["text"], align="c")
 
@@ -4605,11 +4956,11 @@ class PowerMenu:
                     P.rrect(bx, by, bw, bh, 24, T["bg"])
                     P.rrect(bx, by, bw, bh, 24, T["dot"], stroke=2)
                 P.text(label, 28, bx + bw / 2, by + bh / 2 + 28 * 0.36,
-                       "ffffff" if active else T["muted"], bold=active, align="c")
+                       on_acc(accent) if active else T["muted"], bold=active, align="c")
                 hits.append((bx, by, bw, bh, ("item", i)))
                 if has_sub:
                     # Pfeil rechts innen im Button
-                    tc = "ffffff" if active else T["muted"]
+                    tc = on_acc(accent) if active else T["muted"]
                     circ_fill = mix(accent, "000000", 0.18) if active else T["dot"]
                     P.circle(bx + bw - 52, by + bh / 2, 22, circ_fill)
                     P.chevron(bx + bw - 48, by + bh / 2, 9, tc)
@@ -5169,6 +5520,11 @@ def info_toast(text, icon="ff"):
 
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
+    try:   # Diagnose bei Hängern: pkill -USR1 -f rds_cc.py → Stelle aller Threads ins Journal
+        import faulthandler, signal
+        faulthandler.register(signal.SIGUSR1, all_threads=True)
+    except Exception:
+        pass
     mako_hide_osd()
     vkey_open()
     cc = ControlCenter()
@@ -5306,6 +5662,7 @@ def main():
     def toggle(view):
         if ui.view != view:
             TIMING["open"] = (view, time.monotonic())
+            cc.apply_auto_theme()                       # Theme in ES evtl. umgestellt
         if ui.pending_view and not ui.view:
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
@@ -5702,9 +6059,12 @@ def main():
         known = {"game": None, "ids": set()}
         while True:
             if os.path.exists("/tmp/rds-toast-test"):          # Testmeldung: touch /tmp/rds-toast-test
+                # optional mit Inhalt (Bilderpflege): echo "Titel|Untertitel|Badge-ID" > /tmp/rds-toast-test
+                parts = ((rd("/tmp/rds-toast-test") or "").strip().split("|") + ["", "", ""])[:3]
                 os.remove("/tmp/rds-toast-test")
-                cc.toasts.append({"kind": "cheevo", "badge": None, "title": "Test: Erfolg freigeschaltet",
-                                  "sub": "10 %s  ·  1 / 1" % tr("Punkte")})
+                cc.toasts.append({"kind": "cheevo", "badge": parts[2] or None,
+                                  "title": parts[0] or "Test: Erfolg freigeschaltet",
+                                  "sub": parts[1] or "10 %s  ·  1 / 1" % tr("Punkte")})
             g = cc.game
             if g and g.get("emu") == "DSperate":
                 dsperate_cheevos(g, known)
@@ -5841,6 +6201,7 @@ def main():
                 # eigene Erfolgsmeldung dann aus – oben meldet einheitlich das Kontrollcenter
                 last["n"] = last.get("n", 0) + 1
                 if last["n"] % 20 == 0:
+                    cc.apply_auto_theme()
                     ini = "/storage/.config/dsperate/dsperate.ini"
                     txt = rd(ini) or ""
                     if re.search(r"(?m)^toasts\s*=\s*true", txt) and not run(["pidof", "dsperate"]):
@@ -6192,6 +6553,28 @@ def main():
                     # ein Fehler darf das Kontrollcenter nicht beenden
                     log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())
                     state["dirty"] = True
+            if os.path.exists("/tmp/rds-shot"):
+                # Bilderpflege (nur für Screenshots): echo "dark e5383b 0" > /tmp/rds-shot
+                # → Hell/Dunkel, Akzent und Seite setzen (nicht gespeichert), CC öffnen; "end" schließt und stellt zurück
+                try:
+                    parts = (rd("/tmp/rds-shot") or "").split()
+                    os.remove("/tmp/rds-shot")
+                    if parts and parts[0] == "end":
+                        cc.T = THEMES.get(cc.cfg.get("theme"), THEMES["dark"])
+                        cc.apply_auto_theme()
+                        cc.accent = (cc.cfg.get("accent") or "#" + ACCENTS[0]).lstrip("#")
+                        if ui.view:
+                            toggle(ui.view)
+                    elif len(parts) >= 2 and parts[0] in THEMES:
+                        cc.T, cc.accent = THEMES[parts[0]], parts[1].lstrip("#")
+                        if ui.view != "cc":
+                            toggle("cc")
+                        if len(parts) >= 3:
+                            cc.sub = None
+                            cc.page = int(parts[2])
+                    state["dirty"] = True
+                except Exception as exc:
+                    log("Bilderpflege:", exc)
             if ui.pending_view and ui.current_output():
                 # Bildschirm war kurz weg (z. B. beim Hochfahren aus- und eingeschaltet): wieder anzeigen
                 view, ui.pending_view = ui.pending_view, None

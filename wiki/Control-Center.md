@@ -19,11 +19,23 @@ For RetroArch, DSperate and DraStic:
 ## Same shortcuts everywhere
 **Anbernic + R1** – fast forward · **Anbernic + R2 / L2** – save / load · **Anbernic + X** – emulator menu · **Anbernic + Y** – FPS · **Anbernic + Start** – quit · **Anbernic + ◀ / ▶** – change slot
 
+## Look *(v15.1)*
+Top right in the Control Center:
+- **Dark · light · automatic** – with *automatic*, Control Center, game switcher, power menu and notifications take
+  the colours of the ES theme: background like the ES menu, accent like the selection (canvas rds: Famicom red with gold,
+  SNES purple, Neon pink …). Changing the scheme in ES applies the next time you open it.
+- **Accent colour** – for dark and light: 16 colours like the Nintendo DS / DSi profile. With automatic, the colour comes from the theme.
+- Text on light accents automatically turns dark.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/cc-themes.png" alt="Theme colours with automatic" width="640"> <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/shots/cc-colors.png" alt="DS colours" width="200"></p>
+
 ## Power menu
 **Power short** – sleep, restart (optionally saving logs), power off, restart ES · **Power long** – sleep immediately
 
 ## Notifications on top
 New achievements and the volume briefly appear on the top screen over the game.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/shots/cc-toasts.png" alt="Toasts" width="640"></p>
 
 | | | |
 |:-:|:-:|:-:|

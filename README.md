@@ -65,7 +65,7 @@ Progress and all achievements in the Control Center, notification on top of the 
 
 ## Installation
 
-1. Download **`retrodualstation-v15.zip`** (includes canvas-ds) from the [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest).
+1. Download **`retrodualstation-v15.1.zip`** (includes canvas-ds) from the [latest release](https://github.com/Ninte86hl/RetroDualStation/releases/latest).
 2. Unpack it into the **`ports`** folder of your ROMs (`/storage/roms/ports`).
 3. In ES open **Ports** → <img src="docs/icons/rds-install.png" width="24"> **Install RDS**.
 
@@ -84,10 +84,10 @@ Updating works the same way. Afterwards **Ports** has:
 <summary>ROMs on an ext4 partition? Copy the ZIP over the network</summary>
 
 ```bash
-scp retrodualstation-v15.zip root@<IP>:/storage/roms/ports/
+scp retrodualstation-v15.1.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip retrodualstation-v15.zip && rm retrodualstation-v15.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip retrodualstation-v15.1.zip && rm retrodualstation-v15.1.zip"
 ```
 </details>
 

@@ -10,6 +10,7 @@ Zeichnen, Bildschirme, Eingabe und Bildschirmtastatur kommen vom Kontrollcenter.
 """
 import ctypes
 import json
+import re
 import os
 import subprocess
 import sys
@@ -298,6 +299,20 @@ EN_AM = {
     "SteamGridDB-Key gespeichert": "SteamGridDB key saved", "SteamGridDB-Key entfernt": "SteamGridDB key removed",
     "Sicherheitsprüfung fehlgeschlagen – nichts geschrieben": "Safety check failed – nothing was written",
     "Speichern nicht vollständig bestätigt": "Saving could not be fully verified",
+    # Batch-Warteliste (v15)
+    "Warteliste": "Waiting list", "speichern bzw. Warteliste": "save or waiting list", "Jetzt speichern": "Save now", "Entfernen": "Remove", "Nach oben": "Move up",
+    "Name eingeben": "Enter name", "Batch beenden?": "End batch?", "Speichern & beenden": "Save & finish",
+    "Batch abbrechen": "Cancel batch", "Batch abgebrochen": "Batch cancelled",
+    "Die Warteliste ist leer": "The waiting list is empty", "Die Warteliste ist leer.": "The waiting list is empty.",
+    "Speichern trägt sie direkt in EmulationStation ein,": "Save adds them to EmulationStation right away,",
+    "Abbrechen verwirft sie. Weiter führt zurück zum Batch.": "Cancel discards them. Continue returns to the batch.",
+    "Warteliste voll – einen Moment, es wird noch gespeichert": "Waiting list full – one moment, still saving",
+    "Erneut speichern": "Save again", "Mit deiner Auswahl erneut speichern?": "Save again with your selection?",
+    "Warteschlange gespeichert und in EmulationStation eingetragen": "Waiting list saved and added to EmulationStation",
+    "Keine Bilder gefunden – mit Y anderes Spiel suchen": "No images found – press Y to search for another game",
+    "Mehrere Spiele gefunden – bitte das richtige wählen": "Several games found – please choose the right one",
+    "Keine Treffer – anderen Namen eingeben": "No results – enter a different name",
+    "System öffnen, um sie mit deiner Auswahl zu speichern": "Open the system to save them with your selection",
 }
 EN_AM_PATTERNS = [
     (r"^(.*) · (alle|fehlende|keine Artworks)$",
@@ -323,6 +338,24 @@ EN_AM_PATTERNS = [
      lambda m: f"Batch finished · {m[1]} saved · {m[2]} skipped" + (f" · {m[3]} open" if m[3] else "")),
     (r"^(\d+ / \d+) · einmalige Frage$", lambda m: f"{m[1]} · asked once"),
     (r"^Fehler: (.*)$", lambda m: f"Error: {m[1]}"),
+    (r"^Speichere noch (\d+) Spiele – gleich geht's weiter$", lambda m: f"Still saving {m[1]} games – continuing shortly"),
+    (r"^Batch abgebrochen · (\d+) Spiele verworfen$", lambda m: f"Batch cancelled · {m[1]} games discarded"),
+    (r"^Batch beendet · (\d+) vorgemerkt · (\d+) übersprungen(?: · (\d+) offen)?(?: · speichere noch (\d+) …)?$",
+     lambda m: f"Batch finished · {m[1]} queued · {m[2]} skipped" + (f" · {m[3]} open" if m[3] else "")
+     + (f" · still saving {m[4]} …" if m[4] else "")),
+    (r"^(\d+) Spiele werden erneut gespeichert$", lambda m: f"Saving {m[1]} games again"),
+    (r"^(\d+) Spiele nicht gespeichert$", lambda m: f"{m[1]} games not saved"),
+    (r"^(\d+) (Spiel|Spiele) in der Warteliste\.$", lambda m: f"{m[1]} {'game' if m[2] == 'Spiel' else 'games'} in the waiting list."),
+    (r"^(\d+) (Spiel|Spiele) (in Arbeit|in der Warteliste)$",
+     lambda m: f"{m[1]} {'game' if m[2] == 'Spiel' else 'games'} " + ("in progress" if m[3] == "in Arbeit" else "in the waiting list")),
+    (r"^Nicht gespeichert  ·  (\d+) (Spiel|Spiele)$", lambda m: f"Not saved  ·  {m[1]} {'game' if m[2] == 'Spiel' else 'games'}"),
+    (r"^Nicht gespeichert: (.*)$", lambda m: f"Not saved: {m[1]}"),
+    (r"^\+ (\d+) weitere  ·  (.*)$", lambda m: f"+ {m[1]} more  ·  " + am_tr(m[2])),
+    (r"^Speichere (.+) … \(noch (\d+)\)$", lambda m: f"Saving {m[1]} … ({m[2]} left)"),
+    (r"^Speichere noch (\d+) …$", lambda m: f"Still saving {m[1]} …"),
+    (r"^(.+) aus der Warteliste entfernt$", lambda m: f"{m[1]} removed from the waiting list"),
+    (r"^Start  Warteliste \((\d+)\)$", lambda m: f"Start  Waiting list ({m[1]})"),
+    (r"^Seite (\d+ / \d+)$", lambda m: f"Page {m[1]}"),
 ]
 
 
@@ -360,6 +393,19 @@ from multidisc import find_groups, apply_groups, referenced_by_m3u  # noqa: E402
 
 OWN = WORK / "eigene"                       # eigene Bilder: eigene/, eigene/<system>/, eigene/alle/
 OWN_EXT = {".png", ".jpg", ".jpeg", ".webp"}
+
+
+def safe_border_download(url):
+    """Einzelne Rahmen laden – nie das große iiSU-Archiv (Rahmen kommen mit dem Installer).
+    Feste Zeitgrenze und Größenlimit, damit das Gerät nicht hängen bleibt."""
+    if url.endswith(".zip"):
+        raise RuntimeError("iiSU-Archiv wird auf dem Gerät nicht geladen")
+    from urllib.request import Request, urlopen
+    with urlopen(Request(url, headers={"User-Agent": "RetroDualStation"}), timeout=10) as r:
+        data = r.read(5 * 1024 * 1024 + 1)
+    if len(data) > 5 * 1024 * 1024:
+        raise RuntimeError("Rahmen zu groß")
+    return data
 
 
 def fetch(url):
@@ -461,8 +507,14 @@ class App:
     def __init__(self):
         self.cfg = load_config()                       # Theme/Akzent/Tastatur wie im Kontrollcenter
         cc.LANG[0] = cc.ui_language()                  # Sprache wie EmulationStation
-        self.T = THEMES.get(self.cfg.get("theme"), THEMES["dark"])
-        self.accent = (self.cfg.get("accent") or "#e5383b").lstrip("#")
+        # Farben wie im Kontrollcenter: Dunkel/Hell mit gewählter Farbe, Automatisch nach dem ES-Theme
+        try:
+            self.T, self.accent = cc.resolve_colors(self.cfg)
+        except Exception as exc:
+            log("Farben:", exc)
+            self.T, self.accent = THEMES["dark"], "e5383b"
+        if not re.fullmatch(r"[0-9a-fA-F]{6}", self.accent or ""):
+            self.accent = "e5383b"
         self.settings = load_settings()
         read_cfg()
         self.pen = None
@@ -1240,7 +1292,7 @@ class App:
                 if not border_candidates(WORK / "data", system):
                     self.busy = "iiSU-Rahmen werden geladen … (nur beim ersten Mal)"
                     self.dirty = True
-                prepare_iisu_borders(WORK / "data", system)
+                prepare_iisu_borders(WORK / "data", system, download=safe_border_download)
             except Exception as exc:
                 log("Rahmen nicht ladbar:", exc)
             borders = [b.path for b in border_candidates(WORK / "data", system)]
@@ -1970,7 +2022,7 @@ class App:
             kw = 42 * len(keys) + 6 * (len(keys) - 1)
             kx = cx - (tw + kw + 10) / 2 + 21 if label else cx - kw / 2 + 21
             for k in keys:
-                P.circle(kx, BAR_Y + BAR_H / 2, 21, "ffffff" if primary else T["card"])
+                P.circle(kx, BAR_Y + BAR_H / 2, 21, cc.on_acc(self.accent) if primary else T["card"])
                 if k == "⌂":
                     self.home_icon(P, kx, BAR_Y + BAR_H / 2, T["text"] if on else T["muted"])
                 else:
@@ -1979,7 +2031,7 @@ class App:
                 kx += 48
             kx -= 48
             if label:
-                P.text(label, 27, kx + 31, BAR_Y + BAR_H / 2 + 10, "ffffff" if primary else
+                P.text(label, 27, kx + 31, BAR_Y + BAR_H / 2 + 10, cc.on_acc(self.accent) if primary else
                        (T["text"] if on else T["muted"]), bold=True, raw=True)
             if on:
                 self.hits.append((x, BAR_Y, w, BAR_H, ("btn", act)))
@@ -2049,8 +2101,8 @@ class App:
             ([("X", "Icon-Editor für dieses Spiel"), ("Y", "Filter: alle · fehlende · keine Artworks")], False),
             ("Spielansicht", True),
             ([("◀ ▶", "Bild wählen"), ("L / R", "Artwork-Stil"), ("A", "übernehmen")], False),
-            ([("Start", "speichern"), ("Y", "anderes Spiel suchen"), ("L3", "Suche aktualisieren")], False),
-            ([("R3", "Ansicht oben"), ("X", "Icon-Editor: 1:1 mit iiSU-Rahmen, nur für Icons ohne Rahmen")], False),
+            ([("Start", "speichern bzw. Warteliste"), ("Y", "anderes Spiel suchen"), ("L3", "Suche aktualisieren")], False),
+            ([("L2 / R2", "Seite"), ("X", "Icon-Editor: 1:1 mit iiSU-Rahmen, nur für Icons ohne Rahmen")], False),
         ]),
     ]
 
@@ -2068,7 +2120,7 @@ class App:
                 P.text(text, 30 if head else 26, 80, y, T["text"] if head else T["muted"], bold=head, raw=True)
             y += 66 if head else 52
         P.rrect(40, BAR_Y, 1180, BAR_H, 22, A)
-        P.hint([("A", "Weiter")], 30, 630, BAR_Y + BAR_H / 2 + 11, "ffffff", "ffffff", align="c")
+        P.hint([("A", "Weiter")], 30, 630, BAR_Y + BAR_H / 2 + 11, cc.on_acc(self.accent), cc.on_acc(self.accent), align="c")
         self.hits.append((40, BAR_Y, 1180, BAR_H, ("intro", None)))
 
     def draw_setup(self, P):
@@ -2086,7 +2138,7 @@ class App:
         for n, line in enumerate(lines):
             P.text(line, 30, 90, 240 + n * 52, T["text"] if n < 2 else T["muted"], raw=True)
         P.rrect(50, 600, 560, 110, 30, self.accent)
-        P.hint([("A", "Ja, sichern")], 34, 330, 668, "ffffff", "ffffff", align="c")
+        P.hint([("A", "Ja, sichern")], 34, 330, 668, cc.on_acc(self.accent), cc.on_acc(self.accent), align="c")
         self.hits.append((50, 600, 560, 110, ("setup", True)))
         P.rrect(650, 600, 560, 110, 30, T["tile"])
         P.hint([("B", "Nein")], 34, 930, 668, T["text"], T["text"], align="c")
@@ -2142,7 +2194,7 @@ class App:
             P.text(line, 25, 630, 350 + n * 42, T["muted"], align="c", raw=True)
         alt = c.get("alt")
         if alt:   # drei Wahlmöglichkeiten nebeneinander
-            boxes = [(140, A, (c.get("key", "A"), c["yes"]), ("confirm", True), "ffffff"),
+            boxes = [(140, A, (c.get("key", "A"), c["yes"]), ("confirm", True), cc.on_acc(self.accent)),
                      (470, T["tile"], (alt[0], alt[1]), ("confirm_alt", None), T["text"]),
                      (800, T["tile"], ("B", c.get("no", "Abbrechen")), ("confirm", False), T["text"])]
             for x, fill, label, hit, col in boxes:
@@ -2151,7 +2203,7 @@ class App:
                 self.hits.append((x, 540, 320, 90, hit))
             return
         P.rrect(160, 540, 450, 90, 26, A)
-        P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, "ffffff", "ffffff", align="c")
+        P.hint([(c.get("key", "A"), c["yes"])], 27, 385, 597, cc.on_acc(self.accent), cc.on_acc(self.accent), align="c")
         self.hits.append((160, 540, 450, 90, ("confirm", True)))
         P.rrect(650, 540, 450, 90, 26, T["tile"])
         P.hint([("B", c.get("no", "Abbrechen"))], 27, 875, 597, T["text"], T["text"], align="c")
@@ -2251,8 +2303,8 @@ class App:
             cnt = str(len(self.cands.get(kind) or []))
             tw = P.width(txt, 26, bold=True, raw=True) + 12 + P.width(cnt, 20, raw=True)
             tx = x + (w - tw) / 2
-            P.text(txt, 26, tx, TABS_Y + TABS_H / 2 + 9, "ffffff" if on else T["text"], bold=True, raw=True)
-            P.text(cnt, 20, tx + tw, TABS_Y + TABS_H / 2 + 9, "ffffff" if on else T["muted"], align="r", raw=True)
+            P.text(txt, 26, tx, TABS_Y + TABS_H / 2 + 9, cc.on_acc(self.accent) if on else T["text"], bold=True, raw=True)
+            P.text(cnt, 20, tx + tw, TABS_Y + TABS_H / 2 + 9, cc.on_acc(self.accent) if on else T["muted"], align="r", raw=True)
             self.hits.append((x, TABS_Y, w, TABS_H, ("kind", n)))
             x += w + 14
         kind = self.kind_key()
@@ -2307,7 +2359,7 @@ class App:
         w = P.width(label, 22, bold=True, raw=True) + 36
         on = bool(self.bq) if self.batch else bool(self.chosen)
         P.rrect(1220 - w, HINT_Y - 30, w, 42, 21, A if on else T["tile"], a=1.0 if on else 0.35)
-        P.text(label, 22, 1220 - w / 2, HINT_Y - 2, "ffffff" if on else T["muted"], bold=True, align="c", raw=True)
+        P.text(label, 22, 1220 - w / 2, HINT_Y - 2, cc.on_acc(self.accent) if on else T["muted"], bold=True, align="c", raw=True)
         if on:
             self.hits.append((1220 - w, HINT_Y - 34, w, 50, ("btn", self.transfer)))
 
@@ -2398,7 +2450,7 @@ class App:
             info.append(f"{n} {'Spiel' if n == 1 else 'Spiele'} " + ("in Arbeit" if self.flush or not b else "in der Warteliste"))
         if pages > 1 and self.view == "game":
             info.insert(0, f"Seite {self.idx[kind] // PAGE + 1} / {pages}")
-        line = " · ".join(info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
+        line = " · ".join(am_tr(x) for x in info)          # unten links: Seite · Batch · in Arbeit (oben rechts sitzt der Hero-Haken)
         if self.top_mode == "mix":
             self.draw_mix(P)
             if line:
@@ -2517,6 +2569,13 @@ class App:
 
 def main():
     log("RetroDualStation Artwork Manager", VERSION)
+    try:   # Diagnose bei Hängern: pkill -USR1 -f rds_artwork.py → Stelle aller Threads in manager.log
+        import faulthandler, signal
+        WORK.mkdir(parents=True, exist_ok=True)
+        _fh = open(WORK / "manager.log", "a")
+        faulthandler.register(signal.SIGUSR1, file=_fh, all_threads=True)
+    except Exception:
+        pass
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     a = App()
 

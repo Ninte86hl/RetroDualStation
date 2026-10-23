@@ -367,6 +367,18 @@ if [ -f "$SRC/artworkmanager/rds_artwork.py" ]; then
         rm -rf "$AMDIR/rocknixds_artwork_manager"
         cp -r "$SRC/artworkmanager/rocknixds_artwork_manager" "$AMDIR/"
     fi
+    # iiSU-Rahmen mitliefern: das Gerät lädt so nie das große iiSU-Archiv (~100 MB im Speicher)
+    if [ -f "$SRC/artworkmanager/borders/systems.txt" ]; then
+        while read -r img dirs; do
+            [ -f "$SRC/artworkmanager/borders/$img" ] || continue
+            for sys in $dirs; do
+                mkdir -p "$AMDIR/data/platform-borders/$sys"
+                cp -n "$SRC/artworkmanager/borders/$img" "$AMDIR/data/platform-borders/$sys/"
+                echo "iiSU borders shipped with RDS." > "$AMDIR/data/platform-borders/$sys/.iisu-archive-v1"
+            done
+        done < "$SRC/artworkmanager/borders/systems.txt"
+        log "iiSU-Rahmen kopiert"
+    fi
     rm -rf "$AMDIR/__pycache__"
     log "Artwork Manager kopiert: $AMDIR"
     # Pillow (Bildverarbeitung) für das Gerät

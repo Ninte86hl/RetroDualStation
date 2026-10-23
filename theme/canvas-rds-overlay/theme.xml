@@ -71,6 +71,9 @@ Licnese: Creative Commons CC-BY-NC-SA
    </subset>
    <include>./colors.xml</include>
    <include ifSubset="color-scheme:custom">${themeCustomizationsPath}/colors.xml</include>
+   <!-- RDS: Schrift auf dem Auswahlbalken (Showcase) – lesbar auf jeder Balkenfarbe -->
+   <variables><rdsBarTextColor>ffffff</rdsBarTextColor></variables>
+   <variables ifSubset="color-scheme:pastel"><rdsBarTextColor>3b3b3b</rdsBarTextColor></variables>
    <!--
    ///
    Subset: Font Size
@@ -349,7 +352,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 		<image name="playtime-logo" origin="0.5 0.5" linearSmooth="true" extra="true">
 			<path>./_inc/images/playtime-icon.svg</path>
 			<zIndex>4</zIndex>
-			<color>${gameMetadataColor}</color>
+			<color>${systemInfoColor}</color>
 			<opacity>0.7</opacity>
 			<visible>true</visible>
 		</image>
@@ -377,13 +380,13 @@ Licnese: Creative Commons CC-BY-NC-SA
 		<datetime name="md_releasedate,md_lastplayed">
 			<origin>0 0.5</origin>
 			<fontPath>${fontBold}</fontPath>
-			<color>${gameMetadataColor}</color>
+			<color>${systemInfoColor}</color>
 			<lineSpacing>1</lineSpacing>
 		</datetime>
 		<text name="md_name,md_players,md_genre,md_developer,md_publisher,md_playcount,md_gametime_custom">
 			<origin>0 0.5</origin>
 			<fontPath>${fontBold}</fontPath>
-			<color>${gameMetadataColor}</color>
+			<color>${systemInfoColor}</color>
 			<lineSpacing>1</lineSpacing>
 			<value>Unknown</value>
 		</text>
@@ -398,13 +401,13 @@ Licnese: Creative Commons CC-BY-NC-SA
 			<origin>0.5 0.5</origin>
 			<filledPath>./_inc/images/icon-star-filled.svg</filledPath>
 			<unfilledPath>./_inc/images/icon-star-unfilled.svg</unfilledPath>
-			<color>${gameMetadataColor}</color>
+			<color>${systemInfoColor}</color>
 			<visible>false</visible>
 		</rating>
 		<text name="md_gametime_custom" extra="true">
 			<visible>true</visible>
 			<text>{game:gametime} &gt; 0 ? formatseconds({game:gametime}) : "Never"</text>
-			<color>${gameMetadataColor}</color>
+			<color>${systemInfoColor}</color>
 			<autoScroll>horizontal</autoScroll>
 			<autoScrollSpeed>50</autoScrollSpeed>
 			<autoScrollDelay>500000</autoScrollDelay>
@@ -428,7 +431,7 @@ Licnese: Creative Commons CC-BY-NC-SA
 			<autoScroll>vertical</autoScroll>
 			<autoScrollSpeed>50</autoScrollSpeed>
 			<autoScrollDelay>5000</autoScrollDelay>
-			<color>${gameMetadataColor}</color>
+			<color>${systemInfoColor}</color>
 		</text>
 	</view>
 	<view name="grid">

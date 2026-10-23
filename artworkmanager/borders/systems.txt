@@ -1,0 +1,21 @@
+NES-abc10fd7.png nes famicom fds nesh
+SNES-343c335c.png snes sfc snesh snesmsu1 satellaview sufami
+GENESIS-489bc3c0.png genesis genh megadrive megadrive-japan megadriveh
+Game_Boy-2099575f.png gb gbh
+Game_Boy_Color-c803c646.png gbc gbch
+Game_Boy_Advance-f33d055b.png gba gbah gbav
+NINTENDO_DS-c5414998.png nds ndsiware
+NINTENDO_3DS-37850f0f.png 3ds
+N64-97513cc6.png n64 n64dd
+Gamecube-b673a405.png gamecube
+Wii-65ee3426.png wii wiiware
+PSX-126a37d4.png psx
+PS2-e15dccad.png ps2
+PSP-e2434442.png psp pspminis
+PS_Vita-14b062d7.png psvita
+Saturn-c8c9106d.png saturn
+Dreamcast-039db944.png dreamcast
+Game_Gear-d17961bc.png gamegear gamegearh
+Neo_Geo_Pocket_Color-a82634dc.png ngp ngpc
+Arcade-f5350bc5.png arcade mame fbneo cps1 cps2 cps3 neogeo naomi atomiswave st-v
+PC-02677c51.png pc windows
