@@ -760,6 +760,8 @@ class Pen:
     def hint(self, items, size, x, y, c, key_c=None, align="l"):
         """Hinweiszeile nach der RetroDualStation-Regel: Taste fett, dann „– Erklärung“, mit „·“ getrennt.
         items: [("A", "Auswählen"), ("B", "Zurück")] – Erklärungen werden übersetzt, Tasten nicht."""
+        if self.s < 0.6:      # RG DS (640 px): Hinweise eine Stufe größer, sonst zu klein zum Lesen
+            size += 1
         parts = []
         for n, (key, text) in enumerate(items):
             if n:
