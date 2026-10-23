@@ -12,7 +12,13 @@ from pathlib import Path
 
 src, am = Path(sys.argv[1]), Path(sys.argv[2])
 sys.path.insert(0, str(am))
-from rocknixds_artwork_manager.iisu_borders import IISU_BORDER_ALIASES, border_name_matches_system, _is_png
+from rocknixds_artwork_manager.iisu_borders import IISU_BORDER_ALIASES, _is_png, _normalized
+
+
+def border_name_matches_system(name, system):
+    """Genauer Namensvergleich (die Teilwort-Suche ordnete z. B. GENESIS/SNES dem NES zu)."""
+    stem = _normalized(Path(name).stem)
+    return any(stem == _normalized(a) or stem == 'nintendo' + _normalized(a) for a in IISU_BORDER_ALIASES[system])
 
 out = Path(__file__).resolve().parent.parent / "artworkmanager" / "borders"
 shutil.rmtree(out, ignore_errors=True)
