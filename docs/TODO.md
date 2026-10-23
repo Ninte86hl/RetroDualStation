@@ -62,6 +62,7 @@ Danach abwägen, was als Nächstes ausgebaut wird.
 - [x] Bestandsaufnahme auf dem RG DS Plus (Ergebnis in [KONTROLLCENTER.md](KONTROLLCENTER.md))
 - [x] Entscheidung (19.10.2026): Kontrollcenter als **Eigenentwicklung** (eigener Code, MIT wie der Rest; lowerdeck nur als Hinweis, dass der Weg funktioniert – kein Code übernommen)
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
+- [ ] Nach v15.1 – ES-Patch: In Listen fehlt auf Deutsch das ▲▼-Symbol in der Hinweisleiste. ROCKNIX übersetzt den Symbolnamen mit (`HelpPrompt(_("up/down"), …)` in `ComponentList.cpp` und `ComponentTab.cpp` → „Unknown help icon "hinauf/hinunter"“ im Log). Symbolnamen nicht übersetzen. (vorgemerkt 23.10.2026)
 
 ## RetroDualStation
 

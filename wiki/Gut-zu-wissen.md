@@ -1,8 +1,7 @@
 🇬🇧 [English](Good-to-know)
 
 - **RG DS: größere Schrift in den ES-Menüs** – bewusste Usability-Entscheidung: Auf den kleineren 640 × 480-Bildschirmen zeigt ES die Menüschrift etwas größer als maßstabsgetreu. Dadurch passen weniger Einträge auf einmal ins Fenster (z. B. *Systemeinstellungen* und *Beenden* per Scrollen), dafür bleibt alles gut lesbar. Kontrollcenter, Gameswitcher und Power-Menü skalieren mit dem Bildschirm.
-- **Kein ScreenScraper** in der Dual-Version – die Zugangsdaten gibt es nur für den offiziellen ROCKNIX-Build. Zum Scrapen per Ports auf *Single* und zurück. (Entwicklerzugang beantragt.)
-- **RetroAchievements:** *Hauptmenü → RetroAchievements* öffnet die Einstellungen; Fortschritt und Erfolge stehen auf Seite 3 im [Kontrollcenter](Kontrollcenter).
+- **RetroAchievements:** *Hauptmenü → RetroAchievements* öffnet die Einstellungen; Fortschritt und Erfolge stehen auf Seite 3 im [Kontrollcenter](Kontrollcenter) – auch für DS-Spiele in DSperate, nicht in DraStic ([mehr](RetroAchievements-DE)).
 - **PS1:** Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - **DS:** DraStic und DSperate funktionieren; RetroArch-DS-Cores sind ungetestet.
 - **Touch in DraStic reagiert nicht?** **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).

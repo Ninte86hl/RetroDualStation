@@ -19,7 +19,7 @@ Nach der Installation findest du RDS unter **Ports** an diesen Icons:
 |:-:|---|---|
 | <img src="icons/rds-install.png" width="48"> | **Install RDS** | Installiert oder aktualisiert RDS |
 | <img src="icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES über beide Bildschirme |
-| <img src="icons/rds-single.png" width="48"> | **RDS Single-Screen** | Original-ES auf einem Bildschirm, z. B. zum Scrapen |
+| <img src="icons/rds-single.png" width="48"> | **RDS Single-Screen** | Original-ES auf einem Bildschirm |
 | <img src="icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, Icon und Hero am Gerät |
 | <img src="icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Zurück zum Original, Spiele und Spielstände bleiben |
 
