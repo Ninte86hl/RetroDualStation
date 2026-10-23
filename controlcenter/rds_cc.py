@@ -3316,12 +3316,12 @@ class ControlCenter:
     def apply_auto_theme(self):
         """Bei „Automatisch“ Hell/Dunkel und bei Akzent „Theme“ die Farbe aus dem ES-Theme übernehmen
         (beim Öffnen und regelmäßig)."""
-        before = (self.T, self.accent)
+        before = (getattr(self, "T", None), getattr(self, "accent", None))   # auch beim Start (accent noch nicht gesetzt)
         if self.cfg.get("theme") == "auto":
             self.T = THEMES[theme_auto_name()]
-        if self.cfg.get("accent") == "theme" and not isinstance(self.sub, ColorMenu):
+        if self.cfg.get("accent") == "theme" and not isinstance(getattr(self, "sub", None), ColorMenu):
             self.accent = theme_accent()
-        if (self.T, self.accent) != before:
+        if hasattr(self, "accent") and (self.T, self.accent) != before:
             m = re.search(r'name="subset\.color-scheme" value="([^"]*)"', rd(ES_SETTINGS) or "")
             log("Theme-Automatik: Schema %s → %s, Akzent %s" % (m.group(1) if m else "?",
                 "hell" if self.T is THEMES["light"] else "dunkel", self.accent))
