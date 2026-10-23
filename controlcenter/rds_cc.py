@@ -3087,7 +3087,7 @@ class ColorMenu:
             x = 45 + (i % self.COLS) * (tw + gap)
             y = top + (i // self.COLS) * (th + gap)
             P.rrect(x, y, tw, th, 20, col)
-            P.text(name, 20, x + 22, y + th - 22, "ffffff", bold=True)
+            P.text(name, 24, x + 22, y + th - 22, "ffffff", bold=True)
             if col == self.before:             # gespeicherte Farbe: Haken
                 P.circle(x + tw - 30, y + 30, 18, "ffffff")
                 P.text("✓", 22, x + tw - 30, y + 38, col, bold=True, align="c", raw=True)
