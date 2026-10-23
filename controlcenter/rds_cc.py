@@ -6192,6 +6192,27 @@ def main():
                     # ein Fehler darf das Kontrollcenter nicht beenden
                     log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())
                     state["dirty"] = True
+            if os.path.exists("/tmp/rds-shot"):
+                # Bilderpflege (nur für Screenshots): echo "dark e5383b 0" > /tmp/rds-shot
+                # → Hell/Dunkel, Akzent und Seite setzen (nicht gespeichert), CC öffnen; "end" schließt und stellt zurück
+                try:
+                    parts = (rd("/tmp/rds-shot") or "").split()
+                    os.remove("/tmp/rds-shot")
+                    if parts and parts[0] == "end":
+                        cc.T = THEMES.get(cc.cfg.get("theme"), THEMES["dark"])
+                        cc.accent = (cc.cfg.get("accent") or "#" + ACCENTS[0]).lstrip("#")
+                        if ui.view:
+                            toggle(ui.view)
+                    elif len(parts) >= 2 and parts[0] in THEMES:
+                        cc.T, cc.accent = THEMES[parts[0]], parts[1].lstrip("#")
+                        if ui.view != "cc":
+                            toggle("cc")
+                        if len(parts) >= 3:
+                            cc.sub = None
+                            cc.page = int(parts[2])
+                    state["dirty"] = True
+                except Exception as exc:
+                    log("Bilderpflege:", exc)
             if ui.pending_view and ui.current_output():
                 # Bildschirm war kurz weg (z. B. beim Hochfahren aus- und eingeschaltet): wieder anzeigen
                 view, ui.pending_view = ui.pending_view, None
