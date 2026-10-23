@@ -4244,12 +4244,14 @@ class ControlCenter:
     def _draw_slots(self, P):
         """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
         T, A = self.T, self.accent
-        P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 200, T["text"], bold=True)
+        # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
+        P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
         cols, gap = 3, 22
-        tw, th = (1170 - gap * (cols - 1)) / cols, 170
+        top, bottom = 88, 795
+        tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
         for n in range(SLOTS_USER):
             tx = 45 + (n % cols) * (tw + gap)
-            ty = 225 + (n // cols) * (th + gap)
+            ty = top + (n // cols) * (th + gap)
             cur = n == self.slot
             usable = self.slot_mode == "save" or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
