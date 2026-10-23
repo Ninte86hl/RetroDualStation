@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RDS: Ladebildschirm (Start und Neuladen) mit RDS-Logo statt des Standardbilds -->
+<theme>
+	<formatVersion>7</formatVersion>
+	<view name="splash">
+		<image name="background">
+			<path>./rds-splash.svg</path>
+			<linearSmooth>true</linearSmooth>
+		</image>
+	</view>
+</theme>
