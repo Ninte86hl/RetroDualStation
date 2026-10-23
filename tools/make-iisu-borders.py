@@ -18,12 +18,19 @@ from rocknixds_artwork_manager.iisu_borders import IISU_BORDER_ALIASES, _is_png,
 def border_name_matches_system(name, system):
     """Genauer Namensvergleich (die Teilwort-Suche ordnete z. B. GENESIS/SNES dem NES zu)."""
     stem = _normalized(Path(name).stem)
+    if system in EXTRA and system not in IISU_BORDER_ALIASES:
+        return stem == _normalized(EXTRA[system])
     return any(stem == _normalized(a) or stem == 'nintendo' + _normalized(a) for a in IISU_BORDER_ALIASES[system])
 
 out = Path(__file__).resolve().parent.parent / "artworkmanager" / "borders"
 shutil.rmtree(out, ignore_errors=True)
 files = sorted(p for p in src.rglob("*.png") if "/borders/" in p.as_posix().casefold())
-for system in IISU_BORDER_ALIASES:
+# weitere ROCKNIX-Systemordner (der Manager kennt dafür keine Aliase; mitgelieferte Rahmen findet er trotzdem)
+EXTRA = {"n64": "N64", "psp": "PSP", "megadrive": "GENESIS", "genesis": "GENESIS", "gamegear": "Game_Gear",
+         "dreamcast": "Dreamcast", "saturn": "Saturn", "ngp": "Neo_Geo_Pocket_Color", "ngpc": "Neo_Geo_Pocket_Color",
+         "3ds": "NINTENDO_3DS", "gamecube": "Gamecube", "gc": "Gamecube", "wii": "Wii", "ps2": "PS2",
+         "psvita": "PS_Vita", "switch": "Switch", "pc": "PC", "windows": "PC", "android": "Android"}
+for system in list(IISU_BORDER_ALIASES) + list(EXTRA):
     seen = set()                                   # gleiche Bilder (borders/ + android/) nur einmal
     for p in files:
         if not border_name_matches_system(p.name, system):
