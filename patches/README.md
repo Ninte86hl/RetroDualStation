@@ -42,7 +42,7 @@ distribution/projects/ROCKNIX/packages/ui/emulationstation/patches/aarch64/
 
 and build the package (see [`../docs/BUILD.md`](../docs/BUILD.md)).
 
-Copy **all twelve** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
+Copy **all thirteen** patches. Remove older copies (e.g. `001-rgds-menu-dualscreen-v2.patch`)
 first – every file in that folder is applied.
 
 ## Updating
