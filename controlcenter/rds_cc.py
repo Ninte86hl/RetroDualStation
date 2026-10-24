@@ -236,7 +236,7 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
-    "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap",
+    "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap", "Automatisch": "Automatic",
     "überschreiben": "overwrite", "nochmal: überschreiben": "again: overwrite",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
     "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Verbunden": "Connected", "Getrennt": "Disconnected", "Akku voll": "Battery full", "Keine Erfolge für dieses Spiel": "No achievements for this game", "Erfolge": "achievements", "WLAN verbunden": "Wi-Fi connected", "WLAN getrennt": "Wi-Fi disconnected", "Kopfhörer": "Headphones", "Lautsprecher": "Speaker", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
@@ -4054,7 +4054,7 @@ class ControlCenter:
     def details(self):
         if self.page == 1 and self.slot_pick is not None:
             n = self.slot_pick
-            if not self._slot_exists(n):
+            if n < 0 or not self._slot_exists(n):        # automatischer Stand: nicht löschbar
                 return
             if self.del_confirm != n:
                 self.del_confirm = n          # erst beim zweiten X wirklich löschen
@@ -4124,6 +4124,14 @@ class ControlCenter:
         if self.page == 1 and self.ghelp:
             return
         if self.page == 1 and self.slot_pick is not None:
+            if self.slot_pick < 0:                       # auf „Automatisch“: nur nach unten
+                if dy > 0:
+                    self.slot_pick = 0
+                return
+            if dy < 0 and self.slot_pick < 3 and self.slot_mode == "load" and self._slot_exists(-1):
+                self.slot_pick = -1
+                self.del_confirm = self.save_confirm = None
+                return
             n = self.slot_pick + dx + dy * 3
             if 0 <= n < SLOTS_USER:
                 self.slot_pick = n
@@ -4382,7 +4390,7 @@ class ControlCenter:
                 left = [("A", "nochmal: überschreiben" if self.save_confirm == self.slot_pick else "überschreiben")]
             else:
                 left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
-            if self._slot_exists(self.slot_pick):
+            if self.slot_pick >= 0 and self._slot_exists(self.slot_pick):
                 left.append(("X", "nochmal: löschen" if self.del_confirm == self.slot_pick else "löschen"))
             left.append(("B", "zurück"))
         elif self.page == 1 and game_actions(self.game):
@@ -5143,13 +5151,17 @@ class ControlCenter:
         rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
         if not rom:
             return None
-        n += 1                                  # Index 0–8 → Platz 1–9 (Platz 0 = automatisch)
+        n += 1                                  # Index 0–8 → Platz 1–9, Index -1 → Platz 0 (automatisch)
         if g.get("emu") == "DraStic":
             return drastic_slot_path(g, n)
         if g.get("emu") == "DSperate":
             if g.get("_code") is None:
                 g["_code"] = nds_gamecode(rom) or ""
-            return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n)) if g["_code"] else None
+            if not g["_code"]:
+                return None
+            if n == 0:                          # DSperate legt seinen automatischen Stand selbst an (.auto)
+                return os.path.join("/storage/roms/savestates/nds", "%s.auto.dss" % g["_code"])
+            return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n))
         return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
 
@@ -5158,6 +5170,32 @@ class ControlCenter:
         T, A = self.T, self.accent
         # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
         P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
+        if self.slot_mode == "load":
+            # Automatischer Stand (Platz 0): eigener Knopf neben der Überschrift – nur zum Laden, nie zum Speichern
+            fa = self._slot_file(-1)
+            bx, by, bw, bh = 655, 14, 560, 66
+            sel = self.slot_pick == -1
+            if fa and os.path.exists(fa):
+                when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(fa)))
+                P.rrect(bx, by, bw, bh, 18, A if sel else mix(T["tile"], A, 0.22))
+                png = fa + ".png"
+                if not os.path.exists(png) or os.path.getmtime(png) < os.path.getmtime(fa) - 5:
+                    # kein (aktuelles) eigenes Vorschaubild: Bild aus dem Gameswitcher
+                    rom = (self.game or {}).get("rom") or ""
+                    png = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
+                    if not os.path.exists(png):
+                        png = None
+                if png:
+                    P.image(png, bx + 8, by + 7, 69, 52, 10)
+                tc = "ffffff" if sel else T["text"]
+                P.text(tr("Automatisch"), 22, bx + (88 if png else 22), by + 30, tc, bold=True, raw=True)
+                P.text(when, 18, bx + (88 if png else 22), by + 54, tc, raw=True)
+                if sel:
+                    self._focus_ring(P, bx, by, bw, bh, 18)
+                self.hits.append((bx, by, bw, bh, ("slotpick", -1)))
+            else:
+                P.rrect(bx, by, bw, bh, 18, T["seg"])
+                P.text(tr("Automatisch") + "  ·  " + tr("leer"), 20, bx + 22, by + 42, T["muted"], raw=True)
         cols, gap = 3, 22
         top, bottom = 88, 795
         tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
@@ -6514,14 +6552,17 @@ def main():
                     speed_event(key, g)
             threading.Thread(target=later, daemon=True).start()
             return
+        idx = cc.slot
         if key == "setslot":
             target = cc.slot_pick if cc.slot_pick is not None else cc.slot
             cc.slot_pick = None
-            cc.slot = target                 # zuletzt genutzter Slot = Vorauswahl beim nächsten Mal
+            if target >= 0:
+                cc.slot = target             # zuletzt genutzter Slot = Vorauswahl beim nächsten Mal
+            idx = target                     # -1 = automatischer Stand (nur Laden)
             key = cc.slot_mode
         if emu == "RetroArch":
             # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
-            cmd = {"save": f"SAVE_STATE_SLOT {cc.slot + 1}", "load": f"LOAD_STATE_SLOT {cc.slot + 1}",
+            cmd = {"save": f"SAVE_STATE_SLOT {idx + 1}", "load": f"LOAD_STATE_SLOT {idx + 1}",
                    "shot": "SCREENSHOT"}[key]
             if key == "shot":
                 # Ordner fehlt bei frischem ROCKNIX → RetroArch speichert sonst nichts.
@@ -6533,7 +6574,7 @@ def main():
                 log("Seite Spiel:", cmd)
                 return
             ok = ra_command(cmd) is not None
-            log("Seite Spiel:", cmd, "Slot", cc.slot + 1)
+            log("Seite Spiel:", cmd, "Slot", idx + 1)
             toggle("cc")                     # erledigt → zurück ins Spiel
             if ok:
                 info_toast("Gespeichert" if key == "save" else "Geladen", "save" if key == "save" else "load")
@@ -6554,14 +6595,20 @@ def main():
                         msg = "Screenshot gespeichert"
                 elif emu == "DSperate":
                     # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
-                    n = cc.slot + 1                     # Platz 1–9
+                    n = idx + 1                         # Platz 1–9, 0 = automatisch
+                    if n == 0:
+                        # DSperate lädt .auto nicht per Slot-Kürzel: auf den (unbenutzten) Platz 0 kopieren
+                        auto = cc._slot_file(-1)
+                        if not auto or not os.path.exists(auto):
+                            raise RuntimeError("DSperate: kein automatischer Stand")
+                        shutil.copy2(auto, auto.replace(".auto.dss", ".0.dss"))
                     step = "slot_next" if n > cc.dsp_slot else "slot_prev"
                     for _ in range(abs(n - cc.dsp_slot)):
                         if not dsperate_press(step):
                             raise RuntimeError("DSperate: Slot-Kürzel nicht belegt")
                         time.sleep(0.12)
                     cc.dsp_slot = n
-                    f = cc._slot_file(cc.slot)
+                    f = cc._slot_file(idx)
                     before = os.path.getmtime(f) if f and os.path.exists(f) else 0
                     shot = None
                     if key == "save" and f:     # Vorschaubild vom oberen Bildschirm (DSperate legt keins an)
@@ -6585,7 +6632,7 @@ def main():
                 elif emu == "DraStic":
                     # DraStic speichert/lädt per Taste (R2/L2) immer in seinem eingestellten Slot b.
                     # Andere Slots: Datei von/nach <rom>_<n>.dss kopieren; Slot b wird vorher gesichert.
-                    n, b = cc.slot + 1, drastic_base_slot()   # Platz 1–9
+                    n, b = idx + 1, drastic_base_slot()       # Platz 1–9, 0 = automatisch
                     fb, fn = drastic_slot_path(g, b), drastic_slot_path(g, n)
                     bak = fb + ".rdsbak"
                     if n != b and os.path.exists(fb):
