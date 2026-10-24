@@ -5,6 +5,7 @@
 #         2) SM64 (DSperate) über ES starten → prüfen → einfrieren
 #         3) RetroArch-Spiel mit dem gemerkten Befehl an ES vorbei starten → prüfen
 #         4) RetroArch beenden → SM64 aufwecken (Touch-Zuordnung + Fokus) → prüfen
+# Optional: VORHER=1 fragt auch vor dem Wechsel nach Tasten/Touch im DS-Spiel.
 # Optional: RA="Teil des ROM-Namens" (Standard: Super Metroid), DS="Teil des DS-ROM-Namens" (Standard: Mario 64)
 LOG=/storage/ra-fast-test.log
 export XDG_RUNTIME_DIR=/run/0-runtime-dir WAYLAND_DISPLAY=wayland-1 SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
@@ -50,8 +51,12 @@ for i in $(seq 1 120); do EMU=$(pidof dsperate || pidof drastic) && break; sleep
 sleep 6
 RU=$(pgrep -x runemu.sh | head -1)
 EMUNAME=$(cat /proc/$EMU/comm)
-say "1/3 DS-Spiel läuft ($EMUNAME) – bitte prüfen:"
-frage "Vorher DS" "$EMUNAME"
+if [ "${VORHER:-0}" = 1 ]; then
+    say "1/3 DS-Spiel läuft ($EMUNAME) – bitte prüfen:"
+    frage "Vorher DS" "$EMUNAME"
+else
+    say "1/3 DS-Spiel läuft ($EMUNAME)"
+fi
 PIDS=$(desc $RU | tr '\n' ' ')
 CONS=$(swaymsg -t get_tree | python3 -c '
 import json,sys
