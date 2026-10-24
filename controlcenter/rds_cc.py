@@ -607,6 +607,11 @@ class Pen:
                 self.poly([(cx + dx - 6, cy - 14), (cx + dx + 14, cy), (cx + dx - 6, cy + 14)], c)
         elif kind == "play":                      # normale Geschwindigkeit
             self.poly([(cx - 9, cy - 15), (cx + 15, cy), (cx - 9, cy + 15)], c)
+        elif kind == "lock":                      # Schloss: geschützter automatischer Stand
+            self.rrect(cx - 12, cy - 2, 24, 18, 4, c)
+            self.rrect(cx - 9, cy - 16, 4, 16, 2, c)
+            self.rrect(cx + 5, cy - 16, 4, 16, 2, c)
+            self.rrect(cx - 9, cy - 16, 18, 4, 2, c)
         elif kind in ("save", "load"):            # Pfeil nach unten (speichern) bzw. oben (laden) in eine Schale
             self.rrect(cx - 16, cy + 10, 32, 5, 2, c)
             self.rrect(cx - 16, cy + 2, 5, 13, 2, c)
@@ -4124,17 +4129,11 @@ class ControlCenter:
         if self.page == 1 and self.ghelp:
             return
         if self.page == 1 and self.slot_pick is not None:
-            if self.slot_pick < 0:                       # auf „Automatisch“: nur nach unten
-                if dy > 0:
-                    self.slot_pick = 0
-                return
-            if dy < 0 and self.slot_pick < 3 and self.slot_mode == "load" and self._slot_exists(-1):
-                self.slot_pick = -1
-                self.del_confirm = self.save_confirm = None
-                return
-            n = self.slot_pick + dx + dy * 3
-            if 0 <= n < SLOTS_USER:
-                self.slot_pick = n
+            cells, cols = self._slot_cells()
+            pos = cells.index(self.slot_pick) if self.slot_pick in cells else 0
+            p2 = pos + dx + dy * cols
+            if 0 <= p2 < len(cells) and (cells[p2] >= 0 or self._slot_exists(cells[p2])):
+                self.slot_pick = cells[p2]
                 self.del_confirm = self.save_confirm = None
             return
         if self.page == 1:
@@ -5132,6 +5131,12 @@ class ControlCenter:
         log("Seite Spiel: Slot", n, "gelöscht")
         self.del_confirm = None
 
+    def _slot_cells(self):
+        """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9), Laden 4 Spalten mit „Automatisch“ als zehnter Kachel."""
+        if self.slot_mode == "load":
+            return list(range(SLOTS_USER)) + [-1], 4
+        return list(range(SLOTS_USER)), 3
+
     def _needs_save_confirm(self, n):
         """Speichern auf einen belegten Slot: erst beim zweiten A bzw. Tippen überschreiben."""
         if self.slot_mode != "save" or not self._slot_exists(n) or self.save_confirm == n:
@@ -5166,54 +5171,42 @@ class ControlCenter:
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
 
     def _draw_slots(self, P):
-        """Slot-Menü: Slots 1–9 mit Vorschaubild (Platz 0 = automatischer Stand, nicht im Menü)."""
+        """Slot-Menü: Slots 1–9 mit Vorschaubild; beim Laden zusätzlich „Automatisch“ (Platz 0, geschützt)."""
         T, A = self.T, self.accent
         # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
         P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
-        if self.slot_mode == "load":
-            # Automatischer Stand (Platz 0): eigener Knopf neben der Überschrift – nur zum Laden, nie zum Speichern
-            fa = self._slot_file(-1)
-            bx, by, bw, bh = 655, 14, 560, 66
-            sel = self.slot_pick == -1
-            if fa and os.path.exists(fa):
-                when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(fa)))
-                P.rrect(bx, by, bw, bh, 18, A if sel else mix(T["tile"], A, 0.22))
-                png = fa + ".png"
-                if not os.path.exists(png) or os.path.getmtime(png) < os.path.getmtime(fa) - 5:
-                    # kein (aktuelles) eigenes Vorschaubild: Bild aus dem Gameswitcher
-                    rom = (self.game or {}).get("rom") or ""
-                    png = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
-                    if not os.path.exists(png):
-                        png = None
-                if png:
-                    P.image(png, bx + 8, by + 7, 69, 52, 10)
-                tc = "ffffff" if sel else T["text"]
-                P.text(tr("Automatisch"), 22, bx + (88 if png else 22), by + 30, tc, bold=True, raw=True)
-                P.text(when, 18, bx + (88 if png else 22), by + 54, tc, raw=True)
-                if sel:
-                    self._focus_ring(P, bx, by, bw, bh, 18)
-                self.hits.append((bx, by, bw, bh, ("slotpick", -1)))
-            else:
-                P.rrect(bx, by, bw, bh, 18, T["seg"])
-                P.text(tr("Automatisch") + "  ·  " + tr("leer"), 20, bx + 22, by + 42, T["muted"], raw=True)
-        cols, gap = 3, 22
+        cells, cols = self._slot_cells()
+        gap = 22
         top, bottom = 88, 795
         tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
-        for n in range(SLOTS_USER):
-            tx = 45 + (n % cols) * (tw + gap)
-            ty = top + (n // cols) * (th + gap)
-            cur = n == self.slot
-            usable = self.slot_mode == "save" or self._slot_exists(n)
+        for pos, n in enumerate(cells):
+            tx = 45 + (pos % cols) * (tw + gap)
+            ty = top + (pos // cols) * (th + gap)
+            usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
             f = self._slot_file(n)
             when = None
             if f and os.path.exists(f):
                 when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(f)))
-                P.image(f + ".png", tx, ty, tw, th, 20)
+                png = f + ".png"
+                if n < 0 and (not os.path.exists(png) or os.path.getmtime(png) < os.path.getmtime(f) - 5):
+                    # automatischer Stand ohne aktuelles eigenes Bild: Bild aus dem Gameswitcher
+                    rom = (self.game or {}).get("rom") or ""
+                    png = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
+                P.image(png, tx, ty, tw, th, 20)
             # Beschriftung unten auf dunklem Band
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
-            label = "Slot %d" % (n + 1) + ("  ·  " + when if when else "  ·  " + tr("leer"))   # Anzeige 1–9
+            name = tr("Automatisch") if n < 0 else "Slot %d" % (n + 1)   # Anzeige 1–9, Platz 0 = automatisch
+            label = name + ("  ·  " + when if when else "  ·  " + tr("leer"))
             P.text(label, 19, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            if n < 0:                                   # automatischer Stand: geschützt, nie löschen/überschreiben
+                P.circle(tx + tw - 32, ty + 32, 22, "000000")
+                P.game_icon("lock", tx + tw - 32, ty + 32, "ffffff")
+                if usable:
+                    if n == self.slot_pick:
+                        self._focus_ring(P, tx, ty, tw, th, 20)
+                    self.hits.append((tx, ty, tw, th, ("slotpick", n)))
+                continue
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
                 P.game_icon("trash", tx + tw - 32, ty + 32, "ffffff")
