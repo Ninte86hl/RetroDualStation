@@ -6776,8 +6776,8 @@ def main():
                         if g and g["emu"] in AUTO_DIM_EMUS:
                             cc.screen_off()
                             cc.screen_auto = True
-                        elif not g and cc.screen_auto:
-                            cc.screen_on()
+                        elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
+                            cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
@@ -6912,6 +6912,8 @@ def main():
                         item = next((i for i in sw.items if arg.lower() in os.path.basename(i["rom"]).lower()), None)
                         log("Test: Wechsel zu", item["name"] if item else "– nicht im Gameswitcher: " + arg)
                         if item:
+                            if cc.screen_bottom_off:
+                                cc.screen_on()
                             cc.loading = (item, False)
                             cc.loading_t0 = time.monotonic()
                             ui.show("loading")
