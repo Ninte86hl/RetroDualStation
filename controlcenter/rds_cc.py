@@ -51,8 +51,8 @@ HOME_NAMES = [os.environ["RDS_CC_HOMEKEY"]] if os.environ.get("RDS_CC_HOMEKEY") 
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
-HOME_LONG_S = 1.5      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
-HOME_DOUBLE_S = 0.35   # Home zweimal kurz hintereinander → Gameswitcher
+HOME_LONG_S = 0.8      # Home gehalten → im Spiel die letzten beiden Spiele tauschen, kurz → speichern und zurück zu ES
+HOME_DOUBLE_S = 0.35   # Home zweimal kurz hintereinander → Gameswitcher (Übersicht)
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -1394,8 +1394,8 @@ TOUR = [
      "img": ("geraet-tasten.png", "geraet-tasten-en.png"),
      "keys": [("Anbernic", ("Kontrollcenter öffnen / schließen", "open / close the Control Center")),
               (("Home kurz", "Home short"), ("im Spiel speichern, zurück zu ES", "in a game: save, back to ES")),
-              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten)", "Game switcher (hold 1.5 s)")),
-              (("Home 2×", "Home 2×"), ("im Spiel: direkt zum vorherigen Spiel", "in a game: jump to the previous game")),
+              (("Home 2×", "Home 2×"), ("Gameswitcher öffnen", "open the game switcher")),
+              (("Home lang", "Home long"), ("im Spiel: zum vorherigen Spiel wechseln", "in a game: switch to the previous game")),
               (("Power kurz", "Power short"), ("Power-Menü", "Power menu")),
               (("Power lang", "Power long"), ("sofort Ruhemodus", "sleep immediately"))]},
     {"title": ("Kontrollcenter", "Control Center"),
@@ -6998,10 +6998,9 @@ def main():
                                     toggle(ui.view)
                                     home_down["t"] = None
                                 elif home_down["pending"] is not None:
-                                    home_down["pending"] = None   # Doppelklick
+                                    home_down["pending"] = None   # Doppelklick → Gameswitcher (Übersicht)
                                     home_down["t"] = None
-                                    # im Spiel: direkt zum vorherigen Spiel (wie Alt-Tab), in ES: Gameswitcher
-                                    cc.quick_switch = bool(running_game())
+                                    cc.quick_switch = False
                                     toggle("switcher")
                                 else:
                                     home_down["t"] = time.monotonic()
@@ -7170,7 +7169,9 @@ def main():
             if home_down["t"] is not None and not home_down["fired"] \
                     and time.monotonic() - home_down["t"] >= HOME_LONG_S:
                 home_down["fired"] = True
-                toggle("switcher")                                # lang: Gameswitcher
+                # lang: im Spiel die letzten beiden Spiele tauschen (wie Alt-Tab), sonst Gameswitcher
+                cc.quick_switch = bool(running_game()) and len(cc.switcher.items) > 1
+                toggle("switcher")
             if cc.loading:
                 sw = cc.switcher
                 if getattr(sw, "done", False) or time.monotonic() - cc.loading_t0 > 40:
@@ -7191,8 +7192,8 @@ def main():
                 quick = getattr(cc, "quick_switch", False)
                 cc.quick_switch = False
                 if ui.view == "switcher" and quick and len(sw.items) > 1:
-                    sw.sel = 1                                    # Doppelklick: vorheriges Spiel
-                    log("Gameswitcher: Doppelklick → direkt zu", sw.items[1].get("name"))
+                    sw.sel = 1                                    # Home lang: vorheriges Spiel
+                    log("Gameswitcher: Home lang → direkt zu", sw.items[1].get("name"))
                     gs_act(False)
                 elif ui.view == "switcher":
                     pauser.pause(cc.game)
