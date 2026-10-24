@@ -2673,6 +2673,7 @@ def drastic_shortcuts():
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
+SLOT_ICON = -2          # Laden-Menü: Kachel mit dem Spiel-Icon (oben links, nicht wählbar)
 SLOTS_USER = 9          # Nutzer-Slots 1–9 (intern Index 0–8 → Platz Index+1), Platz 0 = automatisch (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
 
@@ -4133,9 +4134,9 @@ class ControlCenter:
             cells, cols = self._slot_cells()
             pos = cells.index(self.slot_pick) if self.slot_pick in cells else 0
             p2 = pos + dx + dy * cols
-            while dx and 0 <= p2 < len(cells) and cells[p2] is None:
+            while dx and 0 <= p2 < len(cells) and cells[p2] in (None, SLOT_ICON):
                 p2 += dx                                 # freie Plätze (Beschriftung) überspringen
-            if 0 <= p2 < len(cells) and cells[p2] is not None and (cells[p2] >= 0 or self._slot_exists(cells[p2])):
+            if 0 <= p2 < len(cells) and cells[p2] not in (None, SLOT_ICON) and (cells[p2] >= 0 or self._slot_exists(cells[p2])):
                 self.slot_pick = cells[p2]
                 self.del_confirm = self.save_confirm = None
             return
@@ -5135,9 +5136,10 @@ class ControlCenter:
         self.del_confirm = None
 
     def _slot_cells(self):
-        """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9), Laden 4 Spalten mit „Automatisch“ als zehnter Kachel."""
+        """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9). Laden 4 Spalten: Spiel-Icon, Slot 1–9 (Slot 9 unter
+        Slot 5), dann die Fläche „Automatischer Speicherpunkt“ mit der Automatisch-Kachel (Spalten 3–4)."""
         if self.slot_mode == "load":
-            return list(range(SLOTS_USER)) + [None, None, -1], 4
+            return [SLOT_ICON] + list(range(SLOTS_USER)) + [None, -1], 4
         return list(range(SLOTS_USER)), 3
 
     def _needs_save_confirm(self, n):
@@ -5184,22 +5186,31 @@ class ControlCenter:
         top, bottom = 88, 795
         tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
         if -1 in cells:
-            # Fläche in der Theme-Farbe: Beschriftung links, „Automatisch“-Kachel rechts – mit Lücke zu Slot 9
+            # Fläche in der Theme-Farbe über die letzten beiden Spalten: Beschriftung links, „Automatisch“ rechts
             pos = cells.index(-1)
-            ax = 45 + (pos % cols) * (tw + gap)          # Spalte von Slot 8 – Fläche schließt bündig damit ab
+            ax = 45 + (pos % cols) * (tw + gap)          # Spalte von Slot 7 (darüber)
             py = top + (pos // cols) * (th + gap)
             l1, l2 = tr("Automatischer"), tr("Speicherpunkt")
-            lw = max(P.width(l1, 32, bold=True, raw=True), P.width(l2, 32, bold=True, raw=True))
             rx = ax - 26                                 # Text rechtsbündig direkt neben der Kachel
-            px = rx - lw - 30                            # Fläche nur so breit wie nötig → große Lücke zu Slot 9
+            px = ax - tw - gap                           # links bündig mit der Spalte von Slot 6
             P.rrect(px, py, ax + tw - px, th, 20, mix(T["bg"], A, 0.35))   # rechts bündig mit der Kachel
-            P.text(l1, 32, rx, py + th / 2 - 8, T["text"], bold=True, align="r", raw=True)
-            P.text(l2, 32, rx, py + th / 2 + 34, T["text"], bold=True, align="r", raw=True)
+            fs = 32                                      # bei langen Wörtern (Deutsch) etwas kleiner
+            while fs > 22 and max(P.width(l1, fs, bold=True, raw=True), P.width(l2, fs, bold=True, raw=True)) > rx - px - 22:
+                fs -= 2
+            P.text(l1, fs, rx, py + th / 2 - fs / 4, T["text"], bold=True, align="r", raw=True)
+            P.text(l2, fs, rx, py + th / 2 + fs * 1.06, T["text"], bold=True, align="r", raw=True)
         for pos, n in enumerate(cells):
             if n is None:
                 continue
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
+            if n == SLOT_ICON:                           # Spiel-Icon (Artwork Manager/Scraper), sonst RDS-Logo
+                P.rrect(tx, ty, tw, th, 20, T["card"])
+                d = th - 30
+                icon = self._game_icon()
+                if not (icon and P.image(icon, tx + (tw - d) / 2, ty + 15, d, d, 18)):
+                    P.logo(tx + (tw - 110) / 2, ty + (th - 110) / 2, 110, T["muted"], T["card"])
+                continue
             w_, h_ = tw, th
             usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
