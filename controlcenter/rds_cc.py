@@ -1629,6 +1629,15 @@ def rom_of(pid):
     return next((a for a in reversed(args) if "/roms/" in a), None)
 
 
+def gs_wait(name, default):
+    """Wartezeit im Gameswitcher; zum Ausprobieren überschreibbar mit /tmp/rds-gs-timing.json
+    (z. B. {"dsperate": 0.4}) – ohne Neustart, gilt ab dem nächsten Wechsel."""
+    try:
+        return float(json.loads(rd("/tmp/rds-gs-timing.json") or "{}").get(name, default))
+    except (ValueError, TypeError, AttributeError):
+        return default
+
+
 class Switcher:
     """Zuletzt gespielte Spiele: speichern beim Öffnen, fortsetzen (A) oder neu starten (Y)."""
 
@@ -1752,7 +1761,7 @@ class Switcher:
                         time.sleep(0.5)
                         ra_command("RESET")      # Auto-Laden übergehen (Ladebildschirm verdeckt es)
                     elif not autosave_on(item["rom"]):
-                        time.sleep(1.5)          # ohne Auto-Laden: unseren Slot nachladen
+                        time.sleep(gs_wait("retroarch_slot", 1.5))   # ohne Auto-Laden: unseren Slot nachladen
                         ra_command(f"LOAD_STATE_SLOT {SLOT}")
                     # sonst hat RetroArch den Auto-Stand schon beim Start geladen (wie bei Onion)
                     log("Gameswitcher: Stand bereit nach %.1f s" % (time.monotonic() - t0))
@@ -1780,9 +1789,9 @@ class Switcher:
                 item["emu"] = other
                 return self.resume_steps(item, fresh)
             log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
-            time.sleep(0.7)
+            time.sleep(gs_wait("drastic", 0.7))
             inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden (einmal – doppelt ließ die Musik springen)
-            time.sleep(0.5)                          # Laden abschließen, bevor der Ton zurückkommt
+            time.sleep(gs_wait("drastic_after", 0.5))   # Laden abschließen, bevor der Ton zurückkommt
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
@@ -1817,7 +1826,7 @@ class Switcher:
             log("Gameswitcher: %s-Fenster %s nach %.1f s" % (emu, "da" if found else "nicht erkannt",
                                                                time.monotonic() - t0))
             if found:
-                time.sleep(0.8)   # Luft fürs Autoload, bevor der Ladebildschirm geht
+                time.sleep(gs_wait("dsperate", 0.8))   # Luft fürs Autoload, bevor der Ladebildschirm geht
             else:
                 time.sleep(max(0.0, wend - time.time()))
             log("Gameswitcher: %s bereit nach %.1f s" % (emu, time.monotonic() - t0))
