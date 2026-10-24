@@ -5621,6 +5621,7 @@ def main():
             if fy - edge["y"] >= 0.20:
                 edge["y"] = None
                 edge["swallow"] = True
+                edge["opened"] = True
                 log("Wischgeste: Kontrollcenter")
                 if cc.screen_bottom_off:
                     cc.screen_on()
@@ -5628,6 +5629,21 @@ def main():
                 state["dirty"] = True
         elif kind == "up":
             edge["y"] = None
+
+    def refocus_game():
+        """Nach einer Touch-Geste: Die Berührung auf dem unteren Bildschirm nimmt RetroArch den Fokus,
+        RetroArch pausiert dann von selbst (pause_nonactive). Fokus zurückgeben und sicher weiterlaufen lassen."""
+        g = cc.game
+        if not g or g.get("emu") != "RetroArch":
+            return
+        sway_cmd('[title="^RetroArch"] focus')
+        def unpause():
+            time.sleep(0.4)
+            st = ra_command("GET_STATUS", reply=True) or ""
+            if "PAUSED" in st:
+                ra_command("PAUSE_TOGGLE")
+                log("Wischgeste: RetroArch fortgesetzt")
+        threading.Thread(target=unpause, daemon=True).start()
 
     def edge_close(t):
         """Offenes Kontrollcenter: vom unteren Rand nach oben wischen schließt es (Gegenstück zur Wischgeste)."""
@@ -5724,6 +5740,8 @@ def main():
             ui.hide()
             set_grab(False)
             pauser.resume()
+            if edge.pop("opened", False):
+                refocus_game()
         else:
             if view in ("cc", "power", "switcher"):
                 haptic("open")                       # kurzes Feedback beim Öffnen (überall gleich)
