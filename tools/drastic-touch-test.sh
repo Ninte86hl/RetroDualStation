@@ -45,7 +45,8 @@ case "$V" in
   d) ( cd /storage/.config/drastic && LD_PRELOAD=/usr/lib/libdrastouch.so SDL_TOUCH_MOUSE_EVENTS=0 ./drastic "$ROM_B" >/dev/null 2>&1 & ) ;;
   e|f) ( retroarch >/dev/null 2>&1 & ) ;;
 esac
-sleep 3
+for i in $(seq 1 40); do swaymsg -t get_tree | grep -qE '"app_id": "(drastic|retroarch)"' && break; sleep 0.25; done
+sleep 1
 case "$V" in
   e) swaymsg "[pid=$(pidof retroarch)] fullscreen enable global, focus" >/dev/null 2>&1 ;;
   f) swaymsg "[pid=$(pidof retroarch)] move to output DSI-2, fullscreen enable, focus" >/dev/null 2>&1 ;;
