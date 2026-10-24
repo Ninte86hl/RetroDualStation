@@ -1985,6 +1985,40 @@ def _wait_gone(pid, limit=6.0):
         time.sleep(0.1)
 
 
+GS_LAUNCHED = {"rom": None, "t": 0.0}          # zuletzt vom Gameswitcher gestartetes Spiel
+
+
+def drastic_autoload(game):
+    """DraStic kennt kein Auto-Laden. Wird ein Spiel aus ES gestartet, für das der Gameswitcher einen Stand hat,
+    diesen nachladen (L2) – nur mit „Auto-Laden“ in ES und nur bei frischem Start (nicht nach CC-Neustart)."""
+    rom = game.get("rom")
+    if not rom or not autosave_on(rom) or (game.get("played") or 99) > 8:
+        return
+    if GS_LAUNCHED["rom"] == rom and time.time() - GS_LAUNCHED["t"] < 60:
+        return                                       # vom Gameswitcher gestartet – der lädt selbst
+    dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
+    if not os.path.exists(dss):
+        return
+
+    def work():
+        env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+        end = time.time() + 15
+        while time.time() < end:
+            try:
+                if '"drastic"' in subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                                 capture_output=True, text=True).stdout.lower():
+                    break
+            except Exception:
+                pass
+            time.sleep(0.2)
+        time.sleep(gs_wait("drastic", 0.7) + 0.5)
+        g = running_game()
+        if g and g["pid"] == game["pid"]:
+            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = Stand laden
+            log("DraStic: Auto-Laden aus ES –", game.get("name"))
+    threading.Thread(target=work, daemon=True).start()
+
+
 def gs_wait(name, default):
     """Wartezeit im Gameswitcher; zum Ausprobieren überschreibbar mit /tmp/rds-gs-timing.json
     (z. B. {"dsperate": 0.4}) – ohne Neustart, gilt ab dem nächsten Wechsel."""
@@ -2245,6 +2279,7 @@ class Switcher:
         """Laufendes Spiel beenden (speichert vorher), dann item starten.
         Setzt self.done, wenn das Spiel läuft und der Stand geladen ist (Ladebildschirm weg)."""
         self.done = False
+        GS_LAUNCHED.update(rom=item["rom"], t=time.time())
         ini = "/storage/.config/dsperate/dsperate.ini"
 
         def work():
@@ -6946,6 +6981,8 @@ def main():
                                 cc.switcher.remember(g)
                             except Exception as exc:
                                 log("Gameswitcher: Merken fehlgeschlagen:", exc)
+                        if g and g["emu"] == "DraStic" and not cc.loading and not FROZEN["busy"]:
+                            drastic_autoload(g)       # aus ES gestartet: Gameswitcher-Stand laden (wie Auto-Laden)
                         if g and g["emu"] in AUTO_DIM_EMUS:
                             cc.screen_off()
                             cc.screen_auto = True
