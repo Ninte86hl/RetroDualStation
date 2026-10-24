@@ -67,12 +67,14 @@ say "DS-Spiel ausgeblendet und eingefroren ($PIDS) · $(mem)"
 # 3. RetroArch an ES vorbei, Umgebung und Ordner vom Anker
 CWD=$(readlink /proc/$RU/cwd)
 mapfile -d '' ENVS < /proc/$RU/environ
+swaymsg "focus output DSI-2" >/dev/null     # RetroArch soll oben erscheinen (Fokus lag unten)
 T0=$(date +%s%N)
 ( cd "$CWD" && env -i "${ENVS[@]}" setsid "${RA_ARGS[@]}" >/dev/null 2>&1 & )
 for i in $(seq 1 120); do RAP=$(pidof retroarch) && break; sleep 0.1; done
 say "RetroArch-Prozess nach $(( ($(date +%s%N) - T0) / 1000000 )) ms"
 for i in $(seq 1 150); do swaymsg -t get_tree | grep -qi '"app_id": "[^"]*retroarch' && break; sleep 0.1; done
 say "RetroArch-Fenster nach $(( ($(date +%s%N) - T0) / 1000000 )) ms · $(mem)"
+swaymsg '[app_id="(?i)retroarch"] move to output DSI-2, fullscreen enable, focus' >/dev/null 2>&1
 sleep 3
 say "Fenster:"; fenster
 say "2/3 RetroArch läuft – bitte prüfen (Bild auf dem richtigen Bildschirm?):"
@@ -85,6 +87,7 @@ pkill -KILL retroarch 2>/dev/null
 T0=$(date +%s%N)
 swaymsg 'input type:touch map_to_output *' >/dev/null
 for c in $CONS; do swaymsg "[con_id=${c%%:*}] scratchpad show, floating disable, move to output ${c#*:}, fullscreen enable" >/dev/null; done
+say "Liegengebliebene Tasten verwerfen: $(python3 /storage/evdev-flush.py $PIDS)"
 kill -CONT $PIDS
 swaymsg "[pid=$EMU title=Bottom] focus" >/dev/null 2>&1
 say "DS-Spiel aufgeweckt nach $(( ($(date +%s%N) - T0) / 1000000 )) ms · $(mem)"
