@@ -1953,6 +1953,32 @@ def fast_watch():
                     fast_quit_anchor()
 
 
+def fast_end_extra(game):
+    """Zusatzspiel sicher beenden, bevor der Anker zurückkommt. Erst normal (Stand ist über den Gameswitcher schon
+    gesichert), nach 3 s hart samt Startskript und Helfern – sonst liefen zwei Spiele gleichzeitig (Ton, Eingaben)."""
+    ru = runemu_of(game["pid"])
+    tree = [p for p in proc_tree(ru or game["pid"]) if p not in FROZEN["pids"]]
+    for p in tree:                                   # angehalten (Pause) käme SIGTERM nie an
+        try:
+            os.kill(p, signal.SIGCONT)
+        except OSError:
+            pass
+    quit_game(game)
+    _wait_gone(game["pid"], 3.0)
+    if os.path.exists("/proc/%d" % game["pid"]):
+        log("Schnellwechsel: Zusatzspiel reagiert nicht – hart beenden", game.get("name"))
+        for p in tree:
+            try:
+                os.kill(p, signal.SIGKILL)
+            except OSError:
+                pass
+        _wait_gone(game["pid"], 2.0)
+    if os.path.exists("/proc/%d" % game["pid"]):
+        log("Schnellwechsel: Zusatzspiel läuft weiter – Abbruch")
+        return False
+    return True
+
+
 def _wait_gone(pid, limit=6.0):
     end = time.time() + limit
     while time.time() < end and os.path.exists("/proc/%d" % pid):
@@ -2177,8 +2203,8 @@ class Switcher:
         FROZEN["busy"] = True
         try:
             if FROZEN["pids"]:                                    # current ist das Zusatzspiel
-                quit_game(current)
-                _wait_gone(current["pid"])
+                if not fast_end_extra(current):
+                    return True                                   # Zusatzspiel lässt sich nicht beenden → Wechsel abbrechen
                 if item["rom"] == FROZEN["rom"]:
                     fast_resume()                                 # zurück zum Anker
                     log("Gameswitcher: Schnellwechsel zurück nach %.1f s" % (time.monotonic() - t0))
