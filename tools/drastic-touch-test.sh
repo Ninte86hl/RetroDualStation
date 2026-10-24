@@ -40,7 +40,8 @@ sleep 3
 case "$V" in
   e) swaymsg "[pid=$(pidof retroarch)] fullscreen enable global, focus" >/dev/null 2>&1 ;;
   f) swaymsg "[pid=$(pidof retroarch)] move to output DSI-2, fullscreen enable, focus" >/dev/null 2>&1 ;;
-  *) swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1 ;;   # wie beim Schnellwechsel
+  *) if [ "$NOGLOBAL" = 1 ]; then say "ohne globales Vollbild"; else
+       swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1; fi ;;   # wie beim Schnellwechsel
 esac
 say "Fenster: $(swaymsg -t get_tree | grep -oE '"(app_id|shell|name)": "[^"]*"' | grep -iE -A2 -B1 'drastic|retroarch' | tr '\n' ' ' | head -c 300)"
 snap waehrend
