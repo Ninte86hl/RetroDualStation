@@ -5148,9 +5148,11 @@ class ControlCenter:
                 P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
                 P.text(tr("nochmal X oder tippen"), 19, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
             if n == self.save_confirm:
-                P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
-                P.circle(tx + tw / 2, ty + th / 2 - 44, 26, A)
-                P.text("!", 34, tx + tw / 2, ty + th / 2 - 32, "ffffff", bold=True, align="c", raw=True)
+                # Rückfrage in der Theme-Farbe, gedämpft: erst abdunkeln (lesbar), dann leicht einfärben
+                P.rrect(tx, ty, tw, th, 20, "000000", 0.45)
+                P.rrect(tx, ty, tw, th, 20, A, 0.35)
+                P.circle(tx + tw / 2, ty + th / 2 - 44, 26, "ffffff")
+                P.text("!", 34, tx + tw / 2, ty + th / 2 - 32, A, bold=True, align="c", raw=True)
                 P.text(tr("Überschreiben?"), 24, tx + tw / 2, ty + th / 2 + 6, "ffffff", bold=True, align="c", raw=True)
                 P.text(tr("nochmal A oder tippen"), 19, tx + tw / 2, ty + th / 2 + 34, "dddddd", align="c", raw=True)
             if n == self.slot_pick:
