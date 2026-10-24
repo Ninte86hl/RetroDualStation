@@ -9,6 +9,7 @@
 #   f = Gegenprobe: wie e, aber RetroArch nur auf dem oberen Bildschirm (kein globales Vollbild)
 # Zusatz: MAP=1 ordnet den Touchscreen nach dem DraStic-Start und nach dem Aufwecken fest dem unteren Bildschirm zu
 #         (UNTEN=<Ausgang>, Standard DSI-1) und setzt den Fokus aufs untere DSperate-Fenster.
+#         MAP=4 setzt nach dem Aufwecken nur die Touch-Zuordnung zurück (map_to_output *) und den Fokus – der Kandidat für den Schnellwechsel.
 #         MAP=3 probiert nach dem Ergebnis drei Zuordnungen nacheinander durch (links/mitte/rechts antippen).
 #         MAP=2 lädt nach dem Aufwecken stattdessen die Sway-Konfiguration neu (wie es ES bei jedem Start tut).
 # Ablauf: SM64 über ES starten → einfrieren → DraStic (Zelda) 15 s → DraStic beenden → SM64 aufwecken → Touch prüfen.
@@ -70,6 +71,12 @@ sleep 0.5
 if pidof drastic >/dev/null; then say "WARNUNG: DraStic läuft noch (PID $(pidof drastic))"; else say "DraStic beendet"; fi
 sleep 1
 kill -CONT $DSP
+if [ "$MAP" = 4 ]; then
+    sleep 0.5
+    swaymsg 'input type:touch map_to_output *' >/dev/null
+    swaymsg "[pid=$DSP title=Bottom] focus" >/dev/null 2>&1
+    say "Touch-Zuordnung zurückgesetzt (map_to_output *), Fokus aufs untere DSperate-Fenster"
+fi
 if [ "$MAP" = 2 ]; then
     sleep 0.5
     swaymsg reload >/dev/null
