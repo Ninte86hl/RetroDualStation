@@ -236,8 +236,8 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
-    "Dein Stand vom letzten Spielwechsel oder von Home kurz. Er wird dabei jedes Mal neu gesetzt und lässt sich nicht überschreiben oder löschen. Laden bringt dich dorthin zurück – auch nachdem du einen Slot geladen hast.":
-        "Your state from the last game switch or Home short. It is updated each time and can't be overwritten or deleted. Loading takes you back there – even after loading a slot.",
+    "Dein Stand vom letzten Spielwechsel oder Home kurz – geschützt, jederzeit hierher zurück.":
+        "Your state from the last game switch or Home short – protected, come back here anytime.",
     "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap", "Automatisch": "Automatic",
     "überschreiben": "overwrite", "nochmal: überschreiben": "again: overwrite",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
@@ -5181,6 +5181,12 @@ class ControlCenter:
         gap = 22
         top, bottom = 88, 795
         tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
+        if -1 in cells:
+            # Fläche in der Theme-Farbe: umrahmt „Automatisch“ samt Erklärung daneben
+            pos = cells.index(-1)
+            px = 45 + (pos % cols) * (tw + gap) - 10
+            py = top + (pos // cols) * (th + gap) - 10
+            P.rrect(px, py, 1170 + 45 + 10 - px, th + 20, 26, mix(T["bg"], A, 0.35))
         for pos, n in enumerate(cells):
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
@@ -5229,27 +5235,22 @@ class ControlCenter:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
         if len(cells) < cols * 3:
-            # freie Plätze beim Laden: kurze Erklärung zum automatischen Stand, in der Theme-Farbe hinterlegt
+            # Erklärung zum automatischen Stand auf den freien Plätzen daneben
             pos = len(cells)
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
             bw = (cols - pos % cols) * (tw + gap) - gap
-            P.rrect(tx, ty, bw, th, 20, mix(T["tile"], A, 0.35))
-            P.circle(tx + 40, ty + 42, 22, "000000")
-            P.game_icon("lock", tx + 40, ty + 42, "ffffff")
-            P.text(tr("Automatisch"), 24, tx + 76, ty + 51, T["text"], bold=True, raw=True)
-            words = tr("Dein Stand vom letzten Spielwechsel oder von Home kurz. Er wird dabei jedes Mal neu "
-                       "gesetzt und lässt sich nicht überschreiben oder löschen. Laden bringt dich dorthin zurück "
-                       "– auch nachdem du einen Slot geladen hast.").split()
-            line, y, maxw = "", ty + 96, bw - 48
+            P.text(tr("Automatisch"), 24, tx + 8, ty + 70, T["text"], bold=True, raw=True)
+            words = tr("Dein Stand vom letzten Spielwechsel oder Home kurz – geschützt, jederzeit hierher zurück.").split()
+            line, y, maxw = "", ty + 112, bw - 24
             for w in words:
-                if line and P.width(line + " " + w, 19, raw=True) > maxw:
-                    P.text(line, 19, tx + 24, y, T["text"], raw=True)
-                    line, y = w, y + 28
+                if line and P.width(line + " " + w, 20, raw=True) > maxw:
+                    P.text(line, 20, tx + 8, y, T["text"], raw=True)
+                    line, y = w, y + 30
                 else:
                     line = (line + " " + w).strip()
             if line:
-                P.text(line, 19, tx + 24, y, T["text"], raw=True)
+                P.text(line, 20, tx + 8, y, T["text"], raw=True)
 
     def _draw_placeholder(self, P):
         T = self.T
