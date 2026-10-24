@@ -2151,16 +2151,28 @@ class Switcher:
                                    os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
                 before = os.path.getmtime(dss) if os.path.exists(dss) else 0
                 inject_keys([(313, 1), 0.1, (313, 0)])   # R2 = Speicherstand
+                t_key = time.monotonic()
                 for _ in range(30):                        # nur so lange warten, bis die Datei fertig ist
                     time.sleep(0.1)
                     if os.path.exists(dss) and os.path.getmtime(dss) > before:
-                        time.sleep(0.2)                    # Schreiben abschließen lassen
+                        t_file = time.monotonic()
+                        size = -1
+                        while time.monotonic() - t_file < 1.0:   # fertig = Größe ändert sich nicht mehr
+                            time.sleep(0.05)
+                            now = os.path.getsize(dss)
+                            if now == size:
+                                break
+                            size = now
+                        log("Gameswitcher: DraStic-Stand – Datei nach %.2f s, fertig nach %.2f s" % (
+                            t_file - t_key, time.monotonic() - t_key))
                         break
+            t_g = time.monotonic()
             try:
                 grim.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 grim.kill()
-            log("Gameswitcher: Aufnahme + Speichern in %.1f s" % (time.monotonic() - t0))
+            log("Gameswitcher: Aufnahme + Speichern in %.1f s (Screenshot wartete noch %.2f s)" % (
+                time.monotonic() - t0, time.monotonic() - t_g))
         self.remember(game, shot if os.path.exists(shot) else None)
         log("Gameswitcher: gespeichert", emu, os.path.basename(rom))
 
