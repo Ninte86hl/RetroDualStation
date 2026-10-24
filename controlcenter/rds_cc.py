@@ -1650,6 +1650,17 @@ FAST_MIN_MB = 180
 FROZEN = {"pids": [], "runemu": None, "rom": None, "name": None, "emu": None, "cons": [], "busy": False}
 
 
+def touch_map(emu):
+    """swaymsg-Befehl für die Touch-Zuordnung. ROCKNIX ordnet den Touchscreen beim Erscheinen eines DraStic-Fensters
+    per for_window-Regel einem Bildschirm zu und nimmt das nie zurück; ES setzt es nur durch sein reload zurück.
+    Ohne ES (Schnellwechsel): für DraStic die Regel aus der Sway-Konfiguration nachbilden, sonst Zuordnung aufheben."""
+    if emu == "DraStic":
+        m = re.search(r'for_window \[app_id="drastic"\][^\n]*?(input "[^"]+" map_to_output \S+)',
+                      rd("/storage/.config/sway/config") or "")
+        return m.group(1) if m else None
+    return "input type:touch map_to_output *"
+
+
 def fast_enabled():
     return os.path.exists(FAST_FLAG)
 
@@ -1770,8 +1781,12 @@ def fast_fullscreen():
         return
     cons = sway_windows(set(proc_tree(g["pid"])))
     mode = "fullscreen enable global" if g.get("emu") == "DraStic" else "fullscreen enable"   # DraStic: beide Bildschirme
-    if cons:
-        sway_cmd("; ".join(f"[con_id={c}] {mode}, focus" for c, _o in cons))
+    cmds = [f"[con_id={c}] {mode}, focus" for c, _o in cons]
+    tm = touch_map(g.get("emu"))
+    if tm:
+        cmds.append(tm)
+    if cmds:
+        sway_cmd("; ".join(cmds))
 
 
 def fast_resume():
@@ -1784,6 +1799,9 @@ def fast_resume():
                         + ", " + full)
         else:
             cmds.append(f"[con_id={con}] {full}")
+    tm = touch_map(FROZEN.get("emu"))             # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
+    if tm:
+        cmds.append(tm)
     top = next((x[0] for x in FROZEN["cons"] if x[1] == TOP_OUTPUT), None)
     if top:
         cmds.append(f"[con_id={top}] focus")
