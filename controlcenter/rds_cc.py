@@ -1723,8 +1723,10 @@ def fast_freeze(game):
     pids = proc_tree(ru)
     pids = [p for p in pids if p != ru]          # runemu.sh selbst wartet nur
     cons = sway_windows(set(pids))
-    if cons:
+    hide = gs_wait("hide", 0) >= 1                # Test: Fenster in den Scratchpad (1) oder liegen lassen (0)
+    if cons and hide:
         sway_cmd("; ".join(f"[con_id={con}] move to scratchpad" for con, _out in cons))
+    cons = [(c, o, hide) for c, o in cons]
     for p in pids:
         try:
             os.kill(p, signal.SIGSTOP)
@@ -1767,15 +1769,22 @@ def fast_fullscreen():
     if not g:
         return
     cons = sway_windows(set(proc_tree(g["pid"])))
+    mode = "fullscreen enable global" if g.get("emu") == "DraStic" else "fullscreen enable"   # DraStic: beide Bildschirme
     if cons:
-        sway_cmd("; ".join(f"[con_id={c}] fullscreen enable" for c, _o in cons))
+        sway_cmd("; ".join(f"[con_id={c}] {mode}, focus" for c, _o in cons))
 
 
 def fast_resume():
     """Anker wieder zeigen und aufwecken."""
-    cmds = [f"[con_id={con}] scratchpad show, floating disable" + (f", move to output {out}" if out else "")
-            + ", fullscreen enable" for con, out in FROZEN["cons"]]
-    top = next((c for c, o in FROZEN["cons"] if o == TOP_OUTPUT), None)
+    full = "fullscreen enable global" if FROZEN.get("emu") == "DraStic" else "fullscreen enable"
+    cmds = []
+    for con, out, hidden in [tuple(x) + (False,) * (3 - len(x)) for x in FROZEN["cons"]]:
+        if hidden:
+            cmds.append(f"[con_id={con}] scratchpad show, floating disable" + (f", move to output {out}" if out else "")
+                        + ", " + full)
+        else:
+            cmds.append(f"[con_id={con}] {full}")
+    top = next((x[0] for x in FROZEN["cons"] if x[1] == TOP_OUTPUT), None)
     if top:
         cmds.append(f"[con_id={top}] focus")
     if cmds:
