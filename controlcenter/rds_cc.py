@@ -1479,7 +1479,7 @@ def card_aspect(item):
     return size[0] / size[1] if size and size[1] else 4 / 3
 RA_PROXY = "/usr/share/lowerdeck/ra_proxy.py"
 CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gameswitcher-chain.patch)
-SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
+SLOT = 0   # automatischer Stand (Gameswitcher, Home kurz, Auto-Laden) – bei allen Emulatoren Platz 0, im Menü unsichtbar
 
 
 # Stärke, Dauer (ms) – kleine Motoren brauchen Anlaufzeit, sonst hört man sie nur
@@ -2134,7 +2134,7 @@ class Switcher:
         if emu == "RetroArch":
             ra_command(f"SAVE_STATE_SLOT {SLOT}")
             png = os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
-                               os.path.splitext(os.path.basename(rom))[0] + f".state{SLOT}.png")
+                               os.path.splitext(os.path.basename(rom))[0] + (f".state{SLOT}.png" if SLOT else ".state.png"))
             for _ in range(15):          # Vorschaubild abwarten
                 time.sleep(0.1)
                 if os.path.exists(png) and time.time() - os.path.getmtime(png) < 5:
@@ -2148,7 +2148,7 @@ class Switcher:
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if emu == "DraStic":
                 drastic_auto_slot(game)
-                drastic_io(game, SLOT, "save")              # automatischer Stand: Platz 9, nie die Nutzer-Slots
+                drastic_io(game, SLOT, "save")              # automatischer Stand: Platz 0, nie die Nutzer-Slots 1–9
             t_g = time.monotonic()
             try:
                 grim.wait(timeout=5)
@@ -2667,7 +2667,7 @@ def drastic_shortcuts():
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
-SLOTS_USER = 9          # Plätze 0–8 für den Nutzer (angezeigt als Slot 1–9), Platz 9 = automatisch (Gameswitcher, SLOT)
+SLOTS_USER = 9          # Nutzer-Slots 1–9 (intern Index 0–8 → Platz Index+1), Platz 0 = automatisch (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
 
 
@@ -2735,16 +2735,8 @@ def drastic_io(game, n, key, after=0.5):
 
 
 def drastic_auto_slot(game):
-    """Pfad des automatischen Stands (Gameswitcher, Platz 9). Einmalige Übernahme: Früher nutzte der Gameswitcher
-    Platz 0 – gibt es Platz 9 noch nicht, wird Platz 0 dorthin kopiert (Platz 0 bleibt dem Nutzer erhalten)."""
-    f9, f0 = drastic_slot_path(game, SLOT), drastic_slot_path(game, 0)
-    if not os.path.exists(f9) and os.path.exists(f0):
-        try:
-            shutil.copy2(f0, f9)
-            log("DraStic: Stand von Platz 0 als automatischen Stand (Platz %d) übernommen" % SLOT)
-        except OSError:
-            pass
-    return f9
+    """Pfad des automatischen Stands (Platz 0 – derselbe, den DraStic per Kürzel als Schnellspeicher nutzt)."""
+    return drastic_slot_path(game, SLOT)
 
 
 def nds_gamecode(rom):
@@ -5151,6 +5143,7 @@ class ControlCenter:
         rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
         if not rom:
             return None
+        n += 1                                  # Index 0–8 → Platz 1–9 (Platz 0 = automatisch)
         if g.get("emu") == "DraStic":
             return drastic_slot_path(g, n)
         if g.get("emu") == "DSperate":
@@ -5161,7 +5154,7 @@ class ControlCenter:
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
 
     def _draw_slots(self, P):
-        """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
+        """Slot-Menü: Slots 1–9 mit Vorschaubild (Platz 0 = automatischer Stand, nicht im Menü)."""
         T, A = self.T, self.accent
         # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
         P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
@@ -6075,7 +6068,7 @@ def ra_slot_step(game, d):
         m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
         RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
     RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
-    info_toast("Slot %d" % (RA_SLOT["slot"] + 1), "save")   # Anzeige 1–9 wie im Kontrollcenter
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")   # RetroArch-Zählung = Anzeige im Kontrollcenter (0 = automatisch)
 
 
 def info_toast(text, icon="ff"):
@@ -6528,7 +6521,7 @@ def main():
             key = cc.slot_mode
         if emu == "RetroArch":
             # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
-            cmd = {"save": f"SAVE_STATE_SLOT {cc.slot}", "load": f"LOAD_STATE_SLOT {cc.slot}",
+            cmd = {"save": f"SAVE_STATE_SLOT {cc.slot + 1}", "load": f"LOAD_STATE_SLOT {cc.slot + 1}",
                    "shot": "SCREENSHOT"}[key]
             if key == "shot":
                 # Ordner fehlt bei frischem ROCKNIX → RetroArch speichert sonst nichts.
@@ -6540,7 +6533,7 @@ def main():
                 log("Seite Spiel:", cmd)
                 return
             ok = ra_command(cmd) is not None
-            log("Seite Spiel:", cmd, "Slot", cc.slot)
+            log("Seite Spiel:", cmd, "Slot", cc.slot + 1)
             toggle("cc")                     # erledigt → zurück ins Spiel
             if ok:
                 info_toast("Gespeichert" if key == "save" else "Geladen", "save" if key == "save" else "load")
@@ -6561,14 +6554,14 @@ def main():
                         msg = "Screenshot gespeichert"
                 elif emu == "DSperate":
                     # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
-                    n = cc.slot
+                    n = cc.slot + 1                     # Platz 1–9
                     step = "slot_next" if n > cc.dsp_slot else "slot_prev"
                     for _ in range(abs(n - cc.dsp_slot)):
                         if not dsperate_press(step):
                             raise RuntimeError("DSperate: Slot-Kürzel nicht belegt")
                         time.sleep(0.12)
                     cc.dsp_slot = n
-                    f = cc._slot_file(n)
+                    f = cc._slot_file(cc.slot)
                     before = os.path.getmtime(f) if f and os.path.exists(f) else 0
                     shot = None
                     if key == "save" and f:     # Vorschaubild vom oberen Bildschirm (DSperate legt keins an)
@@ -6592,7 +6585,7 @@ def main():
                 elif emu == "DraStic":
                     # DraStic speichert/lädt per Taste (R2/L2) immer in seinem eingestellten Slot b.
                     # Andere Slots: Datei von/nach <rom>_<n>.dss kopieren; Slot b wird vorher gesichert.
-                    n, b = cc.slot, drastic_base_slot()
+                    n, b = cc.slot + 1, drastic_base_slot()   # Platz 1–9
                     fb, fn = drastic_slot_path(g, b), drastic_slot_path(g, n)
                     bak = fb + ".rdsbak"
                     if n != b and os.path.exists(fb):
