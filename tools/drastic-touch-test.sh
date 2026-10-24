@@ -21,6 +21,7 @@ sleep 12
 DSP=$(pidof dsperate); RU=$(pgrep -f "runemu.sh.*Mario" | head -1)
 [ -n "$DSP" ] || { say "FEHLER: DSperate läuft nicht"; exit 1; }
 say "Touch in SM64 JETZT kurz prüfen (5 s) …"; sleep 5
+holders() { for p in /proc/[0-9]*; do ls -l $p/fd 2>/dev/null | grep -q "/dev/input/event1$" && echo "$(basename $p) $(cat $p/comm)"; done | tr '\n' ' '; }
 snap() { { swaymsg -t get_seats; swaymsg -t get_inputs; ps -o pid,args | grep -iE "[x]wayland|[g]ptokeyb|[d]rastic"; } > "/storage/dtt-$1.txt" 2>&1; }
 snap vorher
 kill -STOP $DSP; say "SM64 eingefroren"
@@ -45,6 +46,7 @@ case "$V" in
 esac
 say "Fenster: $(swaymsg -t get_tree | grep -oE '"(app_id|shell|name)": "[^"]*"' | grep -iE -A2 -B1 'drastic|retroarch' | tr '\n' ' ' | head -c 300)"
 snap waehrend
+say "Touchscreen (event1) offen bei: $(holders)"
 say "DraStic gestartet – 12 s (Touch in Zelda darf benutzt werden)"
 sleep 12
 for p in $(pidof drastic) $(pidof retroarch); do kill -TERM "$p"; done
@@ -56,6 +58,7 @@ sleep 1
 kill -CONT $DSP
 say "SM64 aufgeweckt – jetzt Touch prüfen!"
 snap nachher
+say "Touchscreen (event1) offen bei: $(holders)"
 say "Unterschiede vorher/nachher:"; diff /storage/dtt-vorher.txt /storage/dtt-nachher.txt | grep -vE '"(id|pid)"' | head -30 | tee -a "$LOG"
 read -r -p "Geht der Touch in SM64? (j/n) " A
 say "Ergebnis Touch nach DraStic: $A"
