@@ -60,12 +60,14 @@ fi
 PIDS=$(desc $RU | tr '\n' ' ')
 CONS=$(swaymsg -t get_tree | python3 -c '
 import json,sys
-def walk(n,out=None):
+def walk(n,out=None,ws=None):
     if n.get("type")=="output": out=n["name"]
-    if n.get("pid")==int(sys.argv[1]) and n.get("type") in ("con","floating_con"): print("%s:%s" % (n["id"],out))
-    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
+    if n.get("type")=="workspace": ws=n["name"]
+    if n.get("pid")==int(sys.argv[1]) and n.get("type") in ("con","floating_con"): print("%s:%s:%s" % (n["id"],out,ws))
+    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out,ws)
 walk(json.load(sys.stdin))' $EMU)
-for c in $CONS; do swaymsg "[con_id=${c%%:*}] fullscreen disable, move to scratchpad" >/dev/null; done
+say "Fenster des DS-Spiels: $CONS"
+for c in $CONS; do swaymsg "[con_id=${c%%:*}] move container to workspace rdspark" >/dev/null; done   # unsichtbarer Arbeitsbereich statt Scratchpad
 sleep ${WARTE:-0.6}     # DSperate muss das Ausblenden noch bestätigen, sonst behält Sway sein letztes Bild
 kill -STOP $PIDS
 say "DS-Spiel ausgeblendet und eingefroren ($PIDS) · $(mem)"
@@ -107,7 +109,7 @@ kill -TERM $(pidof retroarch); for i in $(seq 1 40); do pidof retroarch >/dev/nu
 pkill -KILL retroarch 2>/dev/null
 T0=$(date +%s%N)
 swaymsg 'input type:touch map_to_output *' >/dev/null
-for c in $CONS; do swaymsg "[con_id=${c%%:*}] scratchpad show, floating disable, move to output ${c#*:}, fullscreen enable" >/dev/null; done
+for c in $CONS; do IFS=: read -r cid cout cws <<< "$c"; swaymsg "[con_id=$cid] move container to workspace $cws, fullscreen enable" >/dev/null; done
 say "Liegengebliebene Tasten verwerfen: $(python3 /storage/evdev-flush.py $PIDS)"
 kill -CONT $PIDS
 swaymsg "[pid=$EMU title=Bottom] focus" >/dev/null 2>&1
