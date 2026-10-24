@@ -30,6 +30,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       soll der Dienst nichts tun (keine Tasten abgreifen, keine Vibration, kein Power-Menü – ROCKNIX übernimmt);
       z. B. beim Umschalten (`es-switch-helper.sh single`) stoppen bzw. im CC den Modus erkennen und ruhen.
       Dabei auch den veralteten Tour-Hinweis „einmal im Single-Screen-Modus scrapen“ (Artwork Manager) anpassen.
+- [ ] **Uninstaller: Sicherungen zurückspielen** (24.10.2026) – `system.cfg`-Werte, Sway und mako stellt er schon her,
+      aber nicht: RetroArch-Kürzel (`retroarch.cfg.vor-rds-kuerzel`), DSperate (`dsperate.ini.vor-rds-kuerzel`, auch `toasts`),
+      DraStic (`drastic.cfg.vor-rds-kuerzel`), ES-Tastenbelegung (`es_input.cfg.before-rds`), RetroArch „Rückfragen und
+      Einblendungen aus“ und PS1-Core (nur im Log, keine Sicherung). Wie bei Multi Pop: nur zurückspielen, wenn die Datei
+      seit der Installation unverändert ist (Prüfsumme beim Installieren merken) – sonst nicht überschreiben und im Log/Hinweis
+      nennen, damit spätere eigene Änderungen erhalten bleiben. Kein ES-Build nötig.
 - [ ] ES-Patch: In Listen fehlt auf Deutsch das ▲▼-Symbol in der Hinweisleiste. ROCKNIX übersetzt den Symbolnamen mit (`HelpPrompt(_("up/down"), …)` in `ComponentList.cpp` und `ComponentTab.cpp` → „Unknown help icon "hinauf/hinunter"“ im Log). Symbolnamen nicht übersetzen. (vorgemerkt 23.10.2026)
 - [ ] Issue #5 (maniman303) beantworten: ScreenScraper im Dual-Build (v15), Bildschirm-Bereiche (Patch 004/005)
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
