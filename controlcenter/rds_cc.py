@@ -6886,6 +6886,30 @@ def main():
                     # ein Fehler darf das Kontrollcenter nicht beenden
                     log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())
                     state["dirty"] = True
+            if os.path.exists("/tmp/rds-gs-test"):
+                # Automatischer Test (tools/gs-autotest.sh): "quit" oder Teil des ROM-Namens → Wechsel wie per Gameswitcher
+                try:
+                    arg = (rd("/tmp/rds-gs-test") or "").strip()
+                    os.remove("/tmp/rds-gs-test")
+                    g = running_game()
+                    if arg == "quit":
+                        cc.game = g
+                        do_quit()
+                    elif g and not ui.view:
+                        cc.game = g
+                        sw = cc.switcher
+                        sw.capture(g)
+                        sw.load()
+                        item = next((i for i in sw.items if arg.lower() in os.path.basename(i["rom"]).lower()), None)
+                        log("Test: Wechsel zu", item["name"] if item else "– nicht im Gameswitcher: " + arg)
+                        if item:
+                            cc.loading = (item, False)
+                            cc.loading_t0 = time.monotonic()
+                            ui.show("loading")
+                            ui.show_top(cc.paint_top_loading)
+                            sw.launch(item, False, current=g)
+                except Exception:
+                    log("Test: Fehler\n" + traceback.format_exc().rstrip())
             if os.path.exists("/tmp/rds-shot"):
                 # Bilderpflege (nur für Screenshots): echo "dark e5383b 0" > /tmp/rds-shot
                 # → Hell/Dunkel, Akzent und Seite setzen (nicht gespeichert), CC öffnen; "end" schließt und stellt zurück
