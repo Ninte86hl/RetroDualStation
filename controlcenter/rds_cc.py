@@ -1846,11 +1846,15 @@ class Switcher:
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
                 chained = False
                 if current:
-                    # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau)
-                    try:
-                        wr(CHAIN_FILE, item["rom"] + "\n")
-                    except OSError:
-                        pass
+                    # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau).
+                    # Test: nach DraStic nicht verketten – der nächste DS-Emulator bekam sonst keinen Touch
+                    # (über ES gestartet geht er); ES kommt einmal kurz zurück, dann startet das Spiel per /launch.
+                    chain_req = current.get("emu") != "DraStic"
+                    if chain_req:
+                        try:
+                            wr(CHAIN_FILE, item["rom"] + "\n")
+                        except OSError:
+                            chain_req = False
                     quit_game(current)
                     for _ in range(60):
                         if not running_game():
@@ -1858,7 +1862,7 @@ class Switcher:
                         time.sleep(0.15)
                     log("Gameswitcher: altes Spiel beendet nach %.1f s" % (time.monotonic() - t0))
                     # Hat ES den Auftrag übernommen? (Datei weg = gelesen)
-                    for _ in range(20):
+                    for _ in range(20 if chain_req else 0):
                         if not os.path.exists(CHAIN_FILE):
                             chained = True
                             break
