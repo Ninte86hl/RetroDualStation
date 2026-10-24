@@ -1995,7 +1995,7 @@ def drastic_autoload(game):
     rom = game.get("rom")
     if not rom or not autosave_on(rom):
         return
-    if GS_LAUNCHED["rom"] == rom and time.time() - GS_LAUNCHED["t"] < 60:
+    if GS_LAUNCHED["rom"] == rom and time.time() - GS_LAUNCHED["t"] < 15:   # Start dauert ≈ 3 s
         return                                       # vom Gameswitcher gestartet – der lädt selbst
     dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
     if not os.path.exists(dss):
