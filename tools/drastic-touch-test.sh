@@ -29,7 +29,9 @@ ROM_B=$(ls /storage/roms/nds/*.nds | grep -i "zelda.*phantom" | head -1)
 T0=$(date +%s)
 say "Start SM64 über ES"
 curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
-sleep 12
+for i in $(seq 1 120); do DSP=$(pidof dsperate) && break; sleep 0.25; done
+for i in $(seq 1 60); do [ "$(swaymsg -t get_tree | grep -c '"app_id": "dsperate"')" -ge 2 ] && break; sleep 0.25; done
+sleep 3
 DSP=$(pidof dsperate); RU=$(pgrep -f "runemu.sh.*Mario" | head -1)
 [ -n "$DSP" ] || { say "FEHLER: DSperate läuft nicht"; exit 1; }
 say "1/3 SM64 läuft – bitte prüfen:"
