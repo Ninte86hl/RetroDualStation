@@ -1831,8 +1831,20 @@ def fast_recover():
     fast_resume()
 
 
+def fast_quit_anchor():
+    """Zusatzspiel wurde außerhalb des Gameswitchers beendet (Home, Spielmenü, CC): auch den Anker beenden,
+    damit man wie gewohnt in ES landet. Erst aufwecken (eingefroren käme SIGTERM nicht an), dann normal beenden."""
+    name = FROZEN["name"]
+    fast_resume()
+    time.sleep(0.5)
+    g = _running_emu()
+    if g:
+        quit_game(g)
+    log("Schnellwechsel: Zusatzspiel beendet – Anker ebenfalls beendet, zurück zu ES:", name)
+
+
 def fast_watch():
-    """Wird das Zusatzspiel beendet (z. B. über das CC), kommt der Anker automatisch zurück."""
+    """Wird das Zusatzspiel außerhalb des Gameswitchers beendet, wird auch der Anker beendet (zurück zu ES)."""
     while True:
         time.sleep(1.0)
         if FROZEN["pids"] and not FROZEN["busy"]:
@@ -1842,7 +1854,7 @@ def fast_watch():
             if _running_emu() is None:
                 time.sleep(0.5)
                 if _running_emu() is None and not FROZEN["busy"]:
-                    fast_resume()
+                    fast_quit_anchor()
 
 
 def _wait_gone(pid, limit=6.0):
