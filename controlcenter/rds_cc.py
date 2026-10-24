@@ -2325,6 +2325,9 @@ class Switcher:
                             break
                         time.sleep(0.1)
                     self.resume_steps(item, fresh)
+                    if item["emu"] == "DraStic":
+                        # Sicherheitsnetz: DraStic landete auf dem RG DS gelegentlich als Fenster
+                        sway_cmd('[app_id="drastic"] fullscreen enable global')
                 log("Gameswitcher: Wechsel fertig nach %.1f s" % (time.monotonic() - t0))
             except Exception:
                 log("Gameswitcher: Fehler beim Wechsel:\n" + traceback.format_exc().rstrip())
