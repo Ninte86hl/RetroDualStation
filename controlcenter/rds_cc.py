@@ -1989,18 +1989,19 @@ GS_LAUNCHED = {"rom": None, "t": 0.0}          # zuletzt vom Gameswitcher gestar
 
 
 def drastic_autoload(game):
-    """DraStic kennt kein Auto-Laden. Wird ein Spiel aus ES gestartet, für das der Gameswitcher einen Stand hat,
-    diesen nachladen (L2) – nur mit „Auto-Laden“ in ES und nur bei frischem Start (nicht nach CC-Neustart)."""
+    """DraStic kennt kein Auto-Laden. Wird ein Spiel aus ES gestartet, für das es einen Savestate auf Platz 0 gibt
+    (den nutzt auch der Gameswitcher), diesen nachladen (L2) – nur mit „Auto-Laden“ in ES. Ton aus, bis geladen,
+    damit es nicht nach einem Neustart des Spiels aussieht."""
     rom = game.get("rom")
-    if not rom or not autosave_on(rom) or (game.get("played") or 99) > 8:
+    if not rom or not autosave_on(rom):
         return
     if GS_LAUNCHED["rom"] == rom and time.time() - GS_LAUNCHED["t"] < 60:
         return                                       # vom Gameswitcher gestartet – der lädt selbst
     dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
     if not os.path.exists(dss):
         return
-
-    def work():
+    spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])
+    try:
         env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
         end = time.time() + 15
         while time.time() < end:
@@ -2010,13 +2011,35 @@ def drastic_autoload(game):
                     break
             except Exception:
                 pass
-            time.sleep(0.2)
-        time.sleep(gs_wait("drastic", 0.7) + 0.5)
-        g = running_game()
-        if g and g["pid"] == game["pid"]:
+            time.sleep(0.1)
+        time.sleep(gs_wait("drastic", 0.7))
+        if os.path.exists("/proc/%d" % game["pid"]):
             inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = Stand laden
+            time.sleep(gs_wait("drastic_after", 0.5))
             log("DraStic: Auto-Laden aus ES –", game.get("name"))
-    threading.Thread(target=work, daemon=True).start()
+    finally:
+        spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"])
+
+
+def drastic_watch():
+    """Neu gestartetes DraStic sofort erkennen (die Hauptschleife prüft nur alle 2 s – zu spät fürs Nachladen)."""
+    seen = set()
+    while True:
+        time.sleep(0.4)
+        try:
+            pids = [int(p) for p in (run(["pidof", "drastic"]) or "").split()]
+        except Exception:
+            pids = []
+        for pid in pids:
+            if pid in seen:
+                continue
+            seen.add(pid)
+            if FROZEN["busy"] or pid in FROZEN["pids"]:
+                continue
+            g = _running_emu()
+            if g and g["pid"] == pid and (g.get("played") or 99) < 5:
+                drastic_autoload(g)
+        seen &= set(pids)
 
 
 def gs_wait(name, default):
@@ -6002,6 +6025,7 @@ def main():
     cc = ControlCenter()
     INFO_TOAST[:] = [cc]
     fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
+    threading.Thread(target=drastic_watch, daemon=True).start()   # DraStic: Auto-Laden beim Start aus ES
     if fast_enabled():
         threading.Thread(target=zram_setup, daemon=True).start()
         threading.Thread(target=fast_watch, daemon=True).start()
@@ -6981,8 +7005,6 @@ def main():
                                 cc.switcher.remember(g)
                             except Exception as exc:
                                 log("Gameswitcher: Merken fehlgeschlagen:", exc)
-                        if g and g["emu"] == "DraStic" and not cc.loading and not FROZEN["busy"]:
-                            drastic_autoload(g)       # aus ES gestartet: Gameswitcher-Stand laden (wie Auto-Laden)
                         if g and g["emu"] in AUTO_DIM_EMUS:
                             cc.screen_off()
                             cc.screen_auto = True
