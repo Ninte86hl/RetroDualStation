@@ -22,6 +22,11 @@ sleep 12
 DSP=$(pidof dsperate); RU=$(pgrep -f "runemu.sh.*Mario" | head -1)
 [ -n "$DSP" ] || { say "FEHLER: DSperate läuft nicht"; exit 1; }
 say "Touch in SM64 JETZT kurz prüfen (5 s) …"; sleep 5
+frage() {   # $1 = Bezeichnung; setzt A = Touch-Antwort
+    read -r -p "  Gehen die TASTEN in SM64 (z. B. springen)? (j/n) " K
+    read -r -p "  Geht der TOUCH in SM64? (j/n) " A
+    say "$1: Tasten $K · Touch $A"
+}
 holders() { for p in /proc/[0-9]*; do ls -l $p/fd 2>/dev/null | grep -q "/dev/input/event1$" && echo "$(basename $p) $(cat $p/comm)"; done | tr '\n' ' '; }
 snap() { { swaymsg -t get_seats; swaymsg -t get_inputs; ps -o pid,args | grep -iE "[x]wayland|[g]ptokeyb|[d]rastic"; } > "/storage/dtt-$1.txt" 2>&1; }
 snap vorher
@@ -65,18 +70,17 @@ say "DSperate: $(grep -E '^State' /proc/$DSP/status 2>/dev/null || echo 'Prozess
 say "Meldungen von DSperate/Wayland seit dem Start:"
 journalctl --since "@$T0" --no-pager 2>/dev/null | grep -iE "dsperate|wayland|broken pipe|display|wl_|disconnect|EPIPE|error" | grep -v rds-cc | tail -12 | tee -a "$LOG"
 say "Unterschiede vorher/nachher:"; diff /storage/dtt-vorher.txt /storage/dtt-nachher.txt | grep -vE '"(id|pid)"' | head -30 | tee -a "$LOG"
-read -r -p "Geht der Touch in SM64? (j/n) " A
-say "Ergebnis Touch nach DraStic: $A"
+frage "Ergebnis nach DraStic"
 if [ "$A" = n ] && [ "$REPAIR" = 1 ]; then
     seats() { swaymsg -t get_seats | grep -E '"name": "seat|"focus"' | tr -d ' \n'; }
     say "Reparatur 1: Fokus auf das untere DSperate-Fenster · Seats vorher: $(seats)"
     swaymsg "[app_id=dsperate title=Bottom] focus" >/dev/null
     say "  Seats nachher: $(seats)"
-    read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 1: $A"
+    frage "  Ergebnis Reparatur 1"
     if [ "$A" = n ]; then
         say "Reparatur 2: Zeiger-Sperre lösen (pointer_constraint escape) auf beiden Seats"
         for st in seat0 seat1; do swaymsg "seat $st pointer_constraint escape" >/dev/null 2>&1; done
-        read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 2: $A"
+        frage "  Ergebnis Reparatur 2"
         if [ "$A" = n ]; then
             say "Reparatur 3: Touchscreen in Sway neu anmelden (Gerät kurz trennen)"
             dev=$(basename "$(readlink -f /sys/class/input/event1/device/device)")
@@ -84,7 +88,7 @@ if [ "$A" = n ] && [ "$REPAIR" = 1 ]; then
             echo "$dev" > /sys/bus/i2c/drivers/$drv/unbind 2>/dev/null; sleep 1
             echo "$dev" > /sys/bus/i2c/drivers/$drv/bind 2>/dev/null; sleep 2
             say "  Treiber $drv / $dev neu gebunden"
-            read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 3: $A"
+            frage "  Ergebnis Reparatur 3"
         fi
     fi
 fi
