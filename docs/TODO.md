@@ -24,6 +24,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Schnellwechsel: Schalter im Kontrollcenter** (24.10.2026) – bisher nur über die Testdatei
+      `/storage/.config/retrodualstation/fastswitch`. Für v15.2 einen Schalter im CC (mit kurzer Erklärung) und
+      entscheiden, ob er standardmäßig an oder aus ist. Getestet auf RG DS Plus und RG DS (DSperate, DraStic, RetroArch).
+- [ ] **Bluetooth-Agent vervielfacht sich** (24.10.2026) – mit eingeschaltetem Bluetooth kommt bei jedem ES-Neustart
+      ein weiterer `rocknix-bluetooth-agent` dazu (15 Stück ≈ 230 MB RAM + 150 MB zram nach vielen Neustarts).
+      Erst prüfen, ob das bei ROCKNIX bekannt ist; sonst überzählige Agents beenden (nur den neuesten behalten).
 - [ ] **Single-Modus: Kontrollcenter ruhen lassen** (gemeldet 24.10.2026) – im Single-Screen-Modus reagiert der
       CC-Dienst weiter auf Anbernic, Home und Power: Vibration, und vermutlich versucht er CC, Gameswitcher und
       Power-Menü zu öffnen. Es fühlt sich an wie die Dual-Bedienung mit nur einem Bildschirm. Im Single-Modus
