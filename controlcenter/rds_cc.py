@@ -2061,6 +2061,7 @@ class Switcher:
         ini = "/storage/.config/dsperate/dsperate.ini"
 
         def work():
+            nonlocal current                    # kann beim Schnellwechsel auf den Anker wechseln
             spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])   # Startton/Musik nicht hören
             before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
             restore = None
