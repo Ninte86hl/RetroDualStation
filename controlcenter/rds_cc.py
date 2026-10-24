@@ -1277,6 +1277,8 @@ def _running_emu():
     for pid in os.listdir("/proc"):
         if not pid.isdigit():
             continue
+        if FROZEN["pids"] and int(pid) in FROZEN["pids"]:
+            continue                          # eingefrorenes Anker-Spiel (Schnellwechsel) zählt nicht als laufend
         comm = (rd(f"/proc/{pid}/comm") or "").lower()
         emu = next((v for k, v in EMULATORS.items() if comm.startswith(k)), None)
         if not emu or comm.endswith(".sh"):   # Startskripte nicht einfrieren
@@ -1636,6 +1638,182 @@ def rom_of(pid):
     return next((a for a in reversed(args) if "/roms/" in a), None)
 
 
+# ------------------------------------------------- Schnellwechsel (Test) ----
+# Das von ES gestartete Spiel („Anker“) wird beim Wechsel eingefroren und versteckt, das neue Spiel läuft als
+# „Zusatzspiel“ über runemu.sh (Aufruf vom Anker übernommen). Zurück zum Anker: Zusatzspiel beenden, Anker
+# aufwecken – unter einer Sekunde. Höchstens zwei Spiele im Speicher. Ein mit: touch FAST_FLAG
+
+FAST_FLAG = "/storage/.config/retrodualstation/fastswitch"
+FAST_STATE = "/tmp/rds-frozen.json"
+FAST_EMUS = {"DSperate": ("dsperate", "dsperate-sa"), "DraStic": ("drastic", "drastic-sa")}
+FAST_MIN_MB = 180
+FROZEN = {"pids": [], "runemu": None, "rom": None, "name": None, "emu": None, "cons": [], "busy": False}
+
+
+def fast_enabled():
+    return os.path.exists(FAST_FLAG)
+
+
+def mem_available_mb():
+    m = re.search(r"^MemAvailable:\s+(\d+)", rd("/proc/meminfo") or "", re.M)
+    return int(m.group(1)) // 1024 if m else 0
+
+
+def zram_setup():
+    """Komprimierten Speicher (zram) für eingefrorene Spiele einrichten – nur mit Schnellwechsel."""
+    if not fast_enabled() or "zram0" in (rd("/proc/swaps") or ""):
+        return
+    subprocess.run(["sh", "-c", "modprobe zram 2>/dev/null; cd /sys/block/zram0 || exit 1; "
+                    "grep -q lz4 comp_algorithm && echo lz4 > comp_algorithm; echo 512M > disksize && "
+                    "mkswap /dev/zram0 >/dev/null && swapon -p 100 /dev/zram0 && echo 20 > /proc/sys/vm/swappiness"],
+                   timeout=10, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log("Schnellwechsel: zram", "aktiv" if "zram0" in (rd("/proc/swaps") or "") else "nicht verfügbar")
+
+
+def _parent(pid):
+    try:
+        return int(rd(f"/proc/{pid}/stat").rsplit(")", 1)[1].split()[1])
+    except (AttributeError, IndexError, ValueError):
+        return 0
+
+
+def runemu_of(pid):
+    """runemu.sh-Prozess, der dieses Spiel gestartet hat."""
+    for _ in range(12):
+        pid = _parent(pid)
+        if pid <= 1:
+            return None
+        if any(a.endswith("runemu.sh") for a in _cmdline(pid)[:2]):
+            return pid
+    return None
+
+
+def sway_windows(pids):
+    """[(con_id, Ausgang)] aller Fenster dieser Prozesse."""
+    try:
+        tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True, timeout=2,
+                          env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout)
+    except Exception:
+        return []
+    out = []
+
+    def walk(n, output):
+        if n.get("type") == "output":
+            output = n.get("name")
+        if n.get("pid") in pids and n.get("type") in ("con", "floating_con"):
+            out.append((n["id"], output))
+        for c in n.get("nodes", []) + n.get("floating_nodes", []):
+            walk(c, output)
+    walk(tree, None)
+    return out
+
+
+def fast_save():
+    try:
+        wr(FAST_STATE, json.dumps({k: FROZEN[k] for k in ("pids", "runemu", "rom", "name", "emu", "cons")}))
+    except OSError:
+        pass
+
+
+def fast_freeze(game):
+    """Anker-Spiel einfrieren und seine Fenster verstecken. False, wenn es nicht geht."""
+    ru = runemu_of(game["pid"])
+    if not ru:
+        return False
+    pids = proc_tree(ru)
+    pids = [p for p in pids if p != ru]          # runemu.sh selbst wartet nur
+    cons = sway_windows(set(pids))
+    if cons:
+        sway_cmd("; ".join(f"[con_id={con}] move to scratchpad" for con, _out in cons))
+    for p in pids:
+        try:
+            os.kill(p, signal.SIGSTOP)
+        except OSError:
+            pass
+    FROZEN.update(pids=pids, runemu=ru, rom=game.get("rom"), name=game.get("name"), cons=cons, emu=game.get("emu"))
+    fast_save()
+    log("Schnellwechsel: eingefroren", game.get("name"), "(%d Prozesse, %d Fenster)" % (len(pids), len(cons)))
+    return True
+
+
+def fast_start(item):
+    """Zusatzspiel mit dem runemu-Aufruf des Ankers starten (ROM und Emulator getauscht)."""
+    ru = FROZEN["runemu"]
+    args = _cmdline(ru)
+    emu, core = FAST_EMUS[item["emu"]]
+    new = []
+    for a in args:
+        if a == FROZEN["rom"]:
+            a = item["rom"]
+        elif a.startswith("--emulator="):
+            a = "--emulator=" + emu
+        elif a.startswith("--core="):
+            a = "--core=" + core
+        new.append(a)
+    try:
+        env = dict(x.split("=", 1) for x in open(f"/proc/{ru}/environ", "rb").read().decode("utf-8", "replace")
+                   .split("\0") if "=" in x)
+        cwd = os.readlink(f"/proc/{ru}/cwd")
+    except OSError:
+        env, cwd = dict(os.environ), "/"
+    subprocess.Popen(new, env=env, cwd=cwd, start_new_session=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), emu)
+
+
+def fast_resume():
+    """Anker wieder zeigen und aufwecken."""
+    cmds = [f"[con_id={con}] scratchpad show, floating disable" + (f", move to output {out}" if out else "")
+            + ", fullscreen enable" for con, out in FROZEN["cons"]]
+    top = next((c for c, o in FROZEN["cons"] if o == TOP_OUTPUT), None)
+    if top:
+        cmds.append(f"[con_id={top}] focus")
+    if cmds:
+        sway_cmd("; ".join(cmds))                 # ein Aufruf: Reihenfolge bleibt erhalten
+    for p in reversed(FROZEN["pids"]):
+        try:
+            os.kill(p, signal.SIGCONT)
+        except OSError:
+            pass
+    log("Schnellwechsel: Anker aufgeweckt", FROZEN["name"])
+    FROZEN.update(pids=[], runemu=None, rom=None, name=None, emu=None, cons=[])
+    try:
+        os.remove(FAST_STATE)
+    except OSError:
+        pass
+
+
+def fast_recover():
+    """Nach einem Neustart des CC: eingefrorenes Spiel nie zurücklassen."""
+    try:
+        st = json.loads(rd(FAST_STATE) or "")
+    except ValueError:
+        return
+    FROZEN.update(st)
+    log("Schnellwechsel: eingefrorenes Spiel vom letzten Lauf gefunden – aufwecken")
+    fast_resume()
+
+
+def fast_watch():
+    """Wird das Zusatzspiel beendet (z. B. über das CC), kommt der Anker automatisch zurück."""
+    while True:
+        time.sleep(1.0)
+        if FROZEN["pids"] and not FROZEN["busy"]:
+            if not os.path.exists("/proc/%d" % FROZEN["pids"][-1]):
+                FROZEN.update(pids=[], cons=[])     # Anker gibt es nicht mehr
+                continue
+            if _running_emu() is None:
+                time.sleep(0.5)
+                if _running_emu() is None and not FROZEN["busy"]:
+                    fast_resume()
+
+
+def _wait_gone(pid, limit=6.0):
+    end = time.time() + limit
+    while time.time() < end and os.path.exists("/proc/%d" % pid):
+        time.sleep(0.1)
+
+
 def gs_wait(name, default):
     """Wartezeit im Gameswitcher; zum Ausprobieren überschreibbar mit /tmp/rds-gs-timing.json
     (z. B. {"dsperate": 0.4}) – ohne Neustart, gilt ab dem nächsten Wechsel."""
@@ -1842,6 +2020,40 @@ class Switcher:
                 time.sleep(max(0.0, wend - time.time()))
             log("Gameswitcher: %s bereit nach %.1f s" % (emu, time.monotonic() - t0))
 
+    def fast_switch(self, item, fresh, current, t0):
+        """Schnellwechsel zwischen DS-Emulatoren. True = erledigt, False = normaler Weg."""
+        FROZEN["busy"] = True
+        try:
+            if FROZEN["pids"]:                                    # current ist das Zusatzspiel
+                quit_game(current)
+                _wait_gone(current["pid"])
+                if item["rom"] == FROZEN["rom"]:
+                    fast_resume()                                 # zurück zum Anker
+                    log("Gameswitcher: Schnellwechsel zurück nach %.1f s" % (time.monotonic() - t0))
+                    return True
+                if item["emu"] in FAST_EMUS and item["emu"] != FROZEN.get("emu") and mem_available_mb() >= FAST_MIN_MB:
+                    fast_start(item)                              # anderes Zusatzspiel, Anker bleibt eingefroren
+                    self.resume_steps(item, fresh)
+                    log("Gameswitcher: Schnellwechsel (Zusatzspiel) fertig nach %.1f s" % (time.monotonic() - t0))
+                    return True
+                fast_resume()                                     # sonst: Anker zurück, dann normaler Weg
+                time.sleep(0.5)
+                return running_game() or False
+            emus_ok = current.get("emu") in FAST_EMUS and item["emu"] in FAST_EMUS and current.get("emu") != item["emu"]
+            mem = mem_available_mb()
+            if not emus_ok or mem < FAST_MIN_MB:
+                log("Gameswitcher: kein Schnellwechsel (%s, %d MB frei)" % (
+                    "Emulatoren" if not emus_ok else "Speicher", mem))
+                return False
+            if not fast_freeze(current):
+                return False
+            fast_start(item)
+            self.resume_steps(item, fresh)
+            log("Gameswitcher: Schnellwechsel fertig nach %.1f s (%d MB frei)" % (time.monotonic() - t0, mem_available_mb()))
+            return True
+        finally:
+            FROZEN["busy"] = False
+
     def launch(self, item, fresh, current=None):
         """Laufendes Spiel beenden (speichert vorher), dann item starten.
         Setzt self.done, wenn das Spiel läuft und der Stand geladen ist (Ladebildschirm weg)."""
@@ -1864,6 +2076,12 @@ class Switcher:
                     if "autoload = true" in txt:
                         restore = txt
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
+                if current and fast_enabled():
+                    res = self.fast_switch(item, fresh, current, t0)
+                    if res is True:
+                        return
+                    if isinstance(res, dict):
+                        current = res                             # Anker wieder da → normaler Wechsel von dort
                 chained = False
                 if current:
                     # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau).
@@ -5553,6 +5771,10 @@ def main():
     vkey_open()
     cc = ControlCenter()
     INFO_TOAST[:] = [cc]
+    fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
+    if fast_enabled():
+        threading.Thread(target=zram_setup, daemon=True).start()
+        threading.Thread(target=fast_watch, daemon=True).start()
     state = {"dirty": False}
 
     gs_swipe = {"from": None, "last": (0, 0)}
