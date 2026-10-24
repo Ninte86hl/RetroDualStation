@@ -13,6 +13,14 @@ frage() { local g="${2:-SM64}"
     read -r -p "  Gehen die TASTEN in $g? (j/n) " K
     read -r -p "  Geht der TOUCH in $g? (j/n) " A
     say "$1: Tasten $K · Touch $A"; }
+fenster() { swaymsg -t get_tree | python3 -c '
+import json,sys
+def walk(n,out=None):
+    if n.get("type")=="output": out=n["name"]
+    if n.get("type") in ("con","floating_con") and n.get("pid"):
+        r=n["rect"]; print("   %s pid=%s %-22s out=%s fs=%s rect=%dx%d+%d+%d id=%s" % (n.get("app_id"),n.get("pid"),n.get("name"),out,n.get("fullscreen_mode"),r["width"],r["height"],r["x"],r["y"],n["id"]))
+    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
+walk(json.load(sys.stdin))' | tee -a "$LOG"; }
 ROM_A=$(ls /storage/roms/nds/*.nds | grep -i "mario.*64" | head -1)
 ROM_B=$(ls /storage/roms/nds/*.nds | grep -i "zelda.*phantom" | head -1)
 
@@ -29,6 +37,7 @@ curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
 for i in $(seq 1 80); do DSP=$(pgrep -o -x .dsp-real) && break; sleep 0.25; done
 [ -n "$DSP" ] || { say "FEHLER: DSperate startet nicht"; exit 1; }
 sleep 10
+say "Fenster vorher:"; fenster 2>/dev/null
 say "1/3 SM64 läuft – bitte prüfen (ruhig ein paar Mal unten tippen):"
 mark "VORHER-Pruefung"
 frage "Vorher SM64"
@@ -55,26 +64,19 @@ sleep 2
 say "3/3 SM64 aufgeweckt – bitte prüfen (ruhig ein paar Mal unten tippen):"
 mark "NACHHER-Pruefung"
 frage "Nachher SM64"
-fenster() { swaymsg -t get_tree | python3 -c '
-import json,sys
-def walk(n,out=None):
-    if n.get("type")=="output": out=n["name"]
-    if n.get("app_id") in ("dsperate","drastic"):
-        r=n["rect"]; print("   %s %-22s out=%s fs=%s rect=%dx%d+%d+%d id=%s" % (n["app_id"],n.get("name"),out,n.get("fullscreen_mode"),r["width"],r["height"],r["x"],r["y"],n["id"]))
-    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
-walk(json.load(sys.stdin))' | tee -a "$LOG"; }
+say "Bildschirme: $(swaymsg -t get_outputs | python3 -c 'import json,sys; print(" ".join("%s=%dx%d+%d+%d" % (o["name"],o["rect"]["width"],o["rect"]["height"],o["rect"]["x"],o["rect"]["y"]) for o in json.load(sys.stdin)))')"
 say "Fenster nach dem Aufwecken:"; fenster
 if [ "$A" = n ]; then
     say "Reparatur: Vollbild beider DSperate-Fenster neu setzen, Fokus aufs untere"
     for id in $(swaymsg -t get_tree | python3 -c '
 import json,sys
 def walk(n):
-    if n.get("app_id")=="dsperate": print(n["id"])
+    if n.get("pid")==int(sys.argv[1]): print(n["id"])
     for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c)
-walk(json.load(sys.stdin))'); do
+walk(json.load(sys.stdin))' $DSP); do
         swaymsg "[con_id=$id] fullscreen disable" >/dev/null; swaymsg "[con_id=$id] fullscreen enable" >/dev/null
     done
-    swaymsg "[app_id=dsperate title=Bottom] focus" >/dev/null 2>&1
+    swaymsg "[pid=$DSP title=Bottom] focus" >/dev/null 2>&1
     sleep 1; fenster
     mark "REPARATUR"
     frage "Nach Reparatur"
