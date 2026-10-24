@@ -1,7 +1,7 @@
 #!/bin/bash
 # DSperate von innen: Wayland-Verkehr protokollieren, um zu sehen, warum der Touch nach DraStic fehlt.
 # Aufruf auf dem Gerät (ES in der Systemansicht):  bash /storage/dsperate-wayland-test.sh
-# Ablauf: SM64 einmal über ES starten (Startbefehl abschauen) → beenden → SM64 selbst mit WAYLAND_DEBUG starten
+# Ablauf: Hülle mit WAYLAND_DEBUG über /usr/bin/dsperate legen → SM64 über ES starten
 #         → prüfen → einfrieren → DraStic (Zelda) → beenden → SM64 aufwecken → prüfen → Auswertung.
 LOG=/storage/dsperate-wayland-test.log
 WL=/storage/dsp-wl.log
@@ -16,26 +16,19 @@ frage() { local g="${2:-SM64}"
 ROM_A=$(ls /storage/roms/nds/*.nds | grep -i "mario.*64" | head -1)
 ROM_B=$(ls /storage/roms/nds/*.nds | grep -i "zelda.*phantom" | head -1)
 
-# 1. Startbefehl von DSperate abschauen
-say "SM64 über ES starten, um den Startbefehl von DSperate abzuschauen …"
-curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
-for i in $(seq 1 60); do DSP=$(pidof dsperate) && break; sleep 0.25; done
-[ -n "$DSP" ] || { say "FEHLER: DSperate startet nicht"; exit 1; }
-sleep 2
-CWD=$(readlink /proc/$DSP/cwd)
-mapfile -d '' CMD < /proc/$DSP/cmdline
-mapfile -d '' ENVS < /proc/$DSP/environ
-kill -TERM $DSP; for i in $(seq 1 30); do pidof dsperate >/dev/null || break; sleep 0.2; done
-say "Startbefehl: ${CMD[*]}"
-sleep 4    # ES kommt zurück
-
-# 2. DSperate selbst starten, mit Protokoll
+# 1. Hülle über DSperate legen (nur bis zum Ende des Tests), dann SM64 ganz normal über ES starten
 : > "$WL"
-say "SM64 mit Wayland-Protokoll starten …"
-( cd "$CWD" && env -i "${ENVS[@]}" WAYLAND_DEBUG=1 "${CMD[@]}" 2>>"$WL" >/dev/null & )
-for i in $(seq 1 60); do DSP=$(pidof dsperate) && break; sleep 0.25; done
-for i in $(seq 1 40); do [ "$(swaymsg -t get_tree | grep -c '"app_id": "dsperate"')" -ge 2 ] && break; sleep 0.25; done
-sleep 3
+cp /usr/bin/dsperate /storage/.dsp-real
+printf '#!/bin/sh\nWAYLAND_DEBUG=1 exec -a /usr/bin/dsperate /storage/.dsp-real "$@" 2>>%s\n' "$WL" > /storage/.dsp-wrap
+chmod +x /storage/.dsp-real /storage/.dsp-wrap
+mount --bind /storage/.dsp-wrap /usr/bin/dsperate || { say "FEHLER: Hülle ließ sich nicht einhängen"; exit 1; }
+aufraeumen() { umount /usr/bin/dsperate 2>/dev/null; rm -f /storage/.dsp-real /storage/.dsp-wrap; }
+trap aufraeumen EXIT
+say "SM64 über ES starten (mit Wayland-Protokoll) …"
+curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
+for i in $(seq 1 80); do DSP=$(pgrep -f /storage/.dsp-real | head -1) && break; sleep 0.25; done
+[ -n "$DSP" ] || { say "FEHLER: DSperate startet nicht"; exit 1; }
+sleep 10
 say "1/3 SM64 läuft – bitte prüfen (ruhig ein paar Mal unten tippen):"
 mark "VORHER-Pruefung"
 frage "Vorher SM64"
@@ -85,5 +78,6 @@ awk '
       if (last[s] != "") print "    letzte configure: " substr(last[s], 1, 160)
     }
   }' "$WL" | tee -a "$LOG"
+say "Diagnose: $(wc -l < "$WL") Zeilen · Schnittstellen: $(grep -oE '[a-z_0-9]+@[0-9]+\.[a-z_]+' "$WL" | sed 's/@[0-9]*//' | sort | uniq -c | sort -rn | head -12 | tr '\n' ' ')"
 say "Seats im Protokoll: $(grep -oE 'wl_seat@[0-9]+\.name\("[^"]*"\)' "$WL" | sort -u | tr '\n' ' ')"
 say "Protokoll: $WL ($(du -h "$WL" | cut -f1))"
