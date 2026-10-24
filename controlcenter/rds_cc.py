@@ -5628,6 +5628,25 @@ def main():
                 state["dirty"] = True
         elif kind == "up":
             edge["y"] = None
+
+    def edge_close(t):
+        """Offenes Kontrollcenter: vom unteren Rand nach oben wischen schließt es (Gegenstück zur Wischgeste)."""
+        if not cc.cfg.get("swipe_open", True) or cc.kbd:
+            return False
+        kind = t[0]
+        fy = touch.to_surface(t[1], t[2], 4.0, 3.0)[1] / 3.0
+        if kind == "down":
+            edge["close"] = fy if fy >= 0.90 else None
+        elif kind == "move" and edge.get("close") is not None and edge["close"] - fy >= 0.20:
+            edge["close"] = None
+            edge["swallow"] = True
+            log("Wischgeste: Kontrollcenter schließen")
+            toggle("cc")
+            state["dirty"] = True
+            return True
+        elif kind == "up":
+            edge["close"] = None
+        return False
     joy = open_event(JOYPAD_NAME)
     pads = {}   # fd -> {"name", "path", "ext", "range"}: eingebautes Joypad + externe Controller
     if joy is not None:
@@ -6499,6 +6518,8 @@ def main():
                                 continue
                             if t and not ui.view and not cc.loading:
                                 edge_swipe(t)
+                                continue
+                            if t and ui.view == "cc" and edge_close(t):
                                 continue
                             if t and ui.view and ui.size:
                                 if cc.screen_bottom_off:
