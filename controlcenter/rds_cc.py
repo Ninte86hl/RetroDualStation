@@ -236,6 +236,8 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
+    "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap",
+    "überschreiben": "overwrite", "nochmal: überschreiben": "again: overwrite",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
     "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Verbunden": "Connected", "Getrennt": "Disconnected", "Akku voll": "Battery full", "Keine Erfolge für dieses Spiel": "No achievements for this game", "Erfolge": "achievements", "WLAN verbunden": "Wi-Fi connected", "WLAN getrennt": "Wi-Fi disconnected", "Kopfhörer": "Headphones", "Lautsprecher": "Speaker", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
@@ -5145,6 +5147,12 @@ class ControlCenter:
                 P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
                 P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
                 P.text(tr("nochmal X oder tippen"), 19, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
+            if n == self.save_confirm:
+                P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
+                P.circle(tx + tw / 2, ty + th / 2 - 44, 26, A)
+                P.text("!", 34, tx + tw / 2, ty + th / 2 - 32, "ffffff", bold=True, align="c", raw=True)
+                P.text(tr("Überschreiben?"), 24, tx + tw / 2, ty + th / 2 + 6, "ffffff", bold=True, align="c", raw=True)
+                P.text(tr("nochmal A oder tippen"), 19, tx + tw / 2, ty + th / 2 + 34, "dddddd", align="c", raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
