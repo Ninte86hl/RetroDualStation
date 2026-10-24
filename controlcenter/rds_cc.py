@@ -1761,6 +1761,16 @@ def fast_start(item):
     log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), emu)
 
 
+def fast_fullscreen():
+    """Zusatzspiel: Fenster ins Vollbild (ohne ES landete DraStic sonst als Fenster)."""
+    g = running_game()
+    if not g:
+        return
+    cons = sway_windows(set(proc_tree(g["pid"])))
+    if cons:
+        sway_cmd("; ".join(f"[con_id={c}] fullscreen enable" for c, _o in cons))
+
+
 def fast_resume():
     """Anker wieder zeigen und aufwecken."""
     cmds = [f"[con_id={con}] scratchpad show, floating disable" + (f", move to output {out}" if out else "")
@@ -2034,6 +2044,7 @@ class Switcher:
                 if item["emu"] in FAST_EMUS and item["emu"] != FROZEN.get("emu") and mem_available_mb() >= FAST_MIN_MB:
                     fast_start(item)                              # anderes Zusatzspiel, Anker bleibt eingefroren
                     self.resume_steps(item, fresh)
+                    fast_fullscreen()
                     log("Gameswitcher: Schnellwechsel (Zusatzspiel) fertig nach %.1f s" % (time.monotonic() - t0))
                     return True
                 fast_resume()                                     # sonst: Anker zurück, dann normaler Weg
@@ -2049,6 +2060,7 @@ class Switcher:
                 return False
             fast_start(item)
             self.resume_steps(item, fresh)
+            fast_fullscreen()
             log("Gameswitcher: Schnellwechsel fertig nach %.1f s (%d MB frei)" % (time.monotonic() - t0, mem_available_mb()))
             return True
         finally:
