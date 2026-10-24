@@ -21,10 +21,12 @@ curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
 sleep 12
 DSP=$(pidof dsperate); RU=$(pgrep -f "runemu.sh.*Mario" | head -1)
 [ -n "$DSP" ] || { say "FEHLER: DSperate läuft nicht"; exit 1; }
-say "Touch in SM64 JETZT kurz prüfen (5 s) …"; sleep 5
-frage() {   # $1 = Bezeichnung; setzt A = Touch-Antwort
-    read -r -p "  Gehen die TASTEN in SM64 (z. B. springen)? (j/n) " K
-    read -r -p "  Geht der TOUCH in SM64? (j/n) " A
+say "1/3 SM64 läuft – bitte prüfen:"
+frage "Vorher SM64"
+frage() {   # $1 = Bezeichnung, $2 = Spiel (Standard SM64); setzt A = Touch-Antwort
+    local g="${2:-SM64}"
+    read -r -p "  Gehen die TASTEN in $g? (j/n) " K
+    read -r -p "  Geht der TOUCH in $g? (j/n) " A
     say "$1: Tasten $K · Touch $A"
 }
 holders() { for p in /proc/[0-9]*; do ls -l $p/fd 2>/dev/null | grep -q "/dev/input/event1$" && echo "$(basename $p) $(cat $p/comm)"; done | tr '\n' ' '; }
@@ -53,8 +55,8 @@ esac
 say "Fenster: $(swaymsg -t get_tree | grep -oE '"(app_id|shell|name)": "[^"]*"' | grep -iE -A2 -B1 'drastic|retroarch' | tr '\n' ' ' | head -c 300)"
 snap waehrend
 say "Touchscreen (event1) offen bei: $(holders)"
-say "DraStic gestartet – 12 s (Touch in Zelda darf benutzt werden)"
-sleep 12
+say "2/3 Zelda läuft – bitte prüfen:"
+frage "Während Zelda" "Zelda"
 for p in $(pidof drastic) $(pidof retroarch); do kill -TERM "$p"; done
 for i in 1 2 3 4 5 6 7 8 9 10; do pidof drastic retroarch >/dev/null || break; sleep 0.3; done
 for p in $(pidof drastic) $(pidof retroarch) $(pidof gptokeyb); do kill -KILL "$p" 2>/dev/null; done
@@ -62,7 +64,7 @@ sleep 0.5
 if pidof drastic >/dev/null; then say "WARNUNG: DraStic läuft noch (PID $(pidof drastic))"; else say "DraStic beendet"; fi
 sleep 1
 kill -CONT $DSP
-say "SM64 aufgeweckt – jetzt Touch prüfen!"
+say "3/3 SM64 aufgeweckt – gleich prüfen"
 snap nachher
 say "Touchscreen (event1) offen bei: $(holders)"
 sleep 1
