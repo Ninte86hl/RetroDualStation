@@ -31,8 +31,10 @@ case "$V" in
   c) ( cd /storage/.config/drastic && SDL_TOUCH_MOUSE_EVENTS=0 ./drastic "$ROM_B" >/dev/null 2>&1 & ) ;;
   d) ( cd /storage/.config/drastic && LD_PRELOAD=/usr/lib/libdrastouch.so SDL_TOUCH_MOUSE_EVENTS=0 ./drastic "$ROM_B" >/dev/null 2>&1 & ) ;;
 esac
-say "DraStic gestartet – 15 s (Touch in Zelda darf benutzt werden)"
-sleep 15
+sleep 3
+swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1   # wie beim Schnellwechsel: über beide Bildschirme
+say "DraStic gestartet – 12 s (Touch in Zelda darf benutzt werden)"
+sleep 12
 pkill -TERM -x drastic; sleep 2; pkill -9 -x drastic 2>/dev/null; pkill -x gptokeyb 2>/dev/null
 say "DraStic beendet"
 sleep 1
