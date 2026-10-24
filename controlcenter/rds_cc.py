@@ -236,8 +236,7 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
-    "Dein Stand vom letzten Spielwechsel oder Home kurz – geschützt, jederzeit hierher zurück.":
-        "Your state from the last game switch or Home short – protected, come back here anytime.",
+    "Automatischer": "Automatic", "Speicherpunkt": "save point",
     "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap", "Automatisch": "Automatic",
     "überschreiben": "overwrite", "nochmal: überschreiben": "again: overwrite",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
@@ -4134,7 +4133,9 @@ class ControlCenter:
             cells, cols = self._slot_cells()
             pos = cells.index(self.slot_pick) if self.slot_pick in cells else 0
             p2 = pos + dx + dy * cols
-            if 0 <= p2 < len(cells) and (cells[p2] >= 0 or self._slot_exists(cells[p2])):
+            while dx and 0 <= p2 < len(cells) and cells[p2] is None:
+                p2 += dx                                 # freie Plätze (Beschriftung) überspringen
+            if 0 <= p2 < len(cells) and cells[p2] is not None and (cells[p2] >= 0 or self._slot_exists(cells[p2])):
                 self.slot_pick = cells[p2]
                 self.del_confirm = self.save_confirm = None
             return
@@ -5136,7 +5137,7 @@ class ControlCenter:
     def _slot_cells(self):
         """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9), Laden 4 Spalten mit „Automatisch“ als zehnter Kachel."""
         if self.slot_mode == "load":
-            return list(range(SLOTS_USER)) + [-1], 4
+            return list(range(SLOTS_USER)) + [None, None, -1], 4
         return list(range(SLOTS_USER)), 3
 
     def _needs_save_confirm(self, n):
@@ -5182,12 +5183,17 @@ class ControlCenter:
         top, bottom = 88, 795
         tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
         if -1 in cells:
-            # Fläche in der Theme-Farbe: umrahmt „Automatisch“ samt Erklärung daneben
-            pos = cells.index(-1)
-            px = 45 + (pos % cols) * (tw + gap) - 10
+            # Fläche in der Theme-Farbe: Beschriftung links, „Automatisch“-Kachel rechts – mit Lücke zu Slot 9
+            pos = cells.index(None)
+            px = 45 + (pos % cols) * (tw + gap) + 18
             py = top + (pos // cols) * (th + gap) - 10
             P.rrect(px, py, 1170 + 45 + 10 - px, th + 20, 26, mix(T["bg"], A, 0.35))
+            lx = px + 30
+            P.text(tr("Automatischer"), 32, lx, py + (th + 20) / 2 - 8, T["text"], bold=True, raw=True)
+            P.text(tr("Speicherpunkt"), 32, lx, py + (th + 20) / 2 + 34, T["text"], bold=True, raw=True)
         for pos, n in enumerate(cells):
+            if n is None:
+                continue
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
             usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
@@ -5234,23 +5240,6 @@ class ControlCenter:
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
-        if len(cells) < cols * 3:
-            # Erklärung zum automatischen Stand auf den freien Plätzen daneben
-            pos = len(cells)
-            tx = 45 + (pos % cols) * (tw + gap)
-            ty = top + (pos // cols) * (th + gap)
-            bw = (cols - pos % cols) * (tw + gap) - gap
-            P.text(tr("Automatisch"), 24, tx + 8, ty + 70, T["text"], bold=True, raw=True)
-            words = tr("Dein Stand vom letzten Spielwechsel oder Home kurz – geschützt, jederzeit hierher zurück.").split()
-            line, y, maxw = "", ty + 112, bw - 24
-            for w in words:
-                if line and P.width(line + " " + w, 20, raw=True) > maxw:
-                    P.text(line, 20, tx + 8, y, T["text"], raw=True)
-                    line, y = w, y + 30
-                else:
-                    line = (line + " " + w).strip()
-            if line:
-                P.text(line, 20, tx + 8, y, T["text"], raw=True)
 
     def _draw_placeholder(self, P):
         T = self.T
