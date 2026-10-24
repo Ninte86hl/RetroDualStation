@@ -5185,20 +5185,23 @@ class ControlCenter:
         if -1 in cells:
             # Fläche in der Theme-Farbe: Beschriftung links, „Automatisch“-Kachel rechts – mit Lücke zu Slot 9
             pos = cells.index(-1)
-            ax = 45 + (pos % cols) * (tw + gap)          # Kachel „Automatisch“
-            py = top + (pos // cols) * (th + gap) - 10
+            ax = 45 + (pos % cols) * (tw + gap)          # Spalte von Slot 8 – Fläche schließt bündig damit ab
+            py = top + (pos // cols) * (th + gap)
             l1, l2 = tr("Automatischer"), tr("Speicherpunkt")
             lw = max(P.width(l1, 32, bold=True, raw=True), P.width(l2, 32, bold=True, raw=True))
             rx = ax - 26                                 # Text rechtsbündig direkt neben der Kachel
             px = rx - lw - 30                            # Fläche nur so breit wie nötig → große Lücke zu Slot 9
-            P.rrect(px, py, 1170 + 45 + 10 - px, th + 20, 26, mix(T["bg"], A, 0.35))
-            P.text(l1, 32, rx, py + (th + 20) / 2 - 8, T["text"], bold=True, align="r", raw=True)
-            P.text(l2, 32, rx, py + (th + 20) / 2 + 34, T["text"], bold=True, align="r", raw=True)
+            P.rrect(px, py, 1170 + 45 - px, th, 20, mix(T["bg"], A, 0.35))
+            P.text(l1, 32, rx, py + th / 2 - 8, T["text"], bold=True, align="r", raw=True)
+            P.text(l2, 32, rx, py + th / 2 + 34, T["text"], bold=True, align="r", raw=True)
         for pos, n in enumerate(cells):
             if n is None:
                 continue
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
+            w_, h_ = tw, th
+            if n is not None and n < 0:                  # in der Fläche: ringsum etwas Rand
+                tx, ty, tw, th = tx + 10, ty + 10, tw - 20, th - 20
             usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
             f = self._slot_file(n)
@@ -5223,6 +5226,7 @@ class ControlCenter:
                     if n == self.slot_pick:
                         self._focus_ring(P, tx, ty, tw, th, 20)
                     self.hits.append((tx, ty, tw, th, ("slotpick", n)))
+                tw, th = w_, h_
                 continue
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
