@@ -9,6 +9,7 @@
 #   f = Gegenprobe: wie e, aber RetroArch nur auf dem oberen Bildschirm (kein globales Vollbild)
 # Zusatz: MAP=1 ordnet den Touchscreen nach dem DraStic-Start und nach dem Aufwecken fest dem unteren Bildschirm zu
 #         (UNTEN=<Ausgang>, Standard DSI-1) und setzt den Fokus aufs untere DSperate-Fenster.
+#         MAP=3 probiert nach dem Ergebnis drei Zuordnungen nacheinander durch (links/mitte/rechts antippen).
 #         MAP=2 lädt nach dem Aufwecken stattdessen die Sway-Konfiguration neu (wie es ES bei jedem Start tut).
 # Ablauf: SM64 über ES starten → einfrieren → DraStic (Zelda) 15 s → DraStic beenden → SM64 aufwecken → Touch prüfen.
 V="${1:-a}"
@@ -111,6 +112,17 @@ if [ "$A" = n ] && [ "$REPAIR" = 1 ]; then
             frage "  Ergebnis Reparatur 3"
         fi
     fi
+fi
+if [ "$MAP" = 3 ]; then
+    TS="1046:911:Goodix_Capacitive_TouchScreen"
+    swaymsg "[pid=$DSP title=Bottom] focus" >/dev/null 2>&1
+    for opt in 'map_to_output DSI-1' 'map_to_output *' 'map_to_region 1024 0 1024 768'; do
+        swaymsg "input $TS $opt" >/dev/null 2>&1 || say "  Befehl abgelehnt: $opt"
+        sleep 0.5
+        say "Probe: input … $opt – bitte unten LINKS, MITTE und RECHTS antippen"
+        read -r -p "  Wo reagiert der Touch? (z.B. lmr, r, -) " W
+        say "  $opt → $W"
+    done
 fi
 kill -TERM $DSP
 say "SM64 beendet – zurück in ES"
