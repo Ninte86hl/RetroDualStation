@@ -1999,8 +1999,7 @@ def drastic_autoload(game):
         return
     if GS_LAUNCHED["rom"] == rom and time.time() - GS_LAUNCHED["t"] < 15:   # Start dauert ≈ 3 s
         return                                       # vom Gameswitcher gestartet – der lädt selbst
-    dss = os.path.join("/storage/roms/savestates/nds", os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
-    if not os.path.exists(dss):
+    if not os.path.exists(drastic_auto_slot(game)):
         return
     spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])
     try:
@@ -2014,10 +2013,9 @@ def drastic_autoload(game):
             except Exception:
                 pass
             time.sleep(0.1)
-        time.sleep(gs_wait("drastic", 0.7))
+        time.sleep(gs_wait("drastic", 0.3))
         if os.path.exists("/proc/%d" % game["pid"]):
-            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = Stand laden
-            time.sleep(gs_wait("drastic_after", 0.5))
+            drastic_io(game, SLOT, "load", gs_wait("drastic_after", 0.5))
             log("DraStic: Auto-Laden aus ES –", game.get("name"))
     finally:
         spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"])
@@ -2149,25 +2147,8 @@ class Switcher:
             grim = subprocess.Popen(["grim", "-l", "1", "-o", "DSI-2", shot],
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if emu == "DraStic":
-                dss = os.path.join("/storage/roms/savestates/nds",
-                                   os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
-                before = os.path.getmtime(dss) if os.path.exists(dss) else 0
-                inject_keys([(313, 1), 0.1, (313, 0)])   # R2 = Speicherstand
-                t_key = time.monotonic()
-                for _ in range(30):                        # nur so lange warten, bis die Datei fertig ist
-                    time.sleep(0.1)
-                    if os.path.exists(dss) and os.path.getmtime(dss) > before:
-                        t_file = time.monotonic()
-                        size = -1
-                        while time.monotonic() - t_file < 1.0:   # fertig = Größe ändert sich nicht mehr
-                            time.sleep(0.05)
-                            now = os.path.getsize(dss)
-                            if now == size:
-                                break
-                            size = now
-                        log("Gameswitcher: DraStic-Stand – Datei nach %.2f s, fertig nach %.2f s" % (
-                            t_file - t_key, time.monotonic() - t_key))
-                        break
+                drastic_auto_slot(game)
+                drastic_io(game, SLOT, "save")              # automatischer Stand: Platz 9, nie die Nutzer-Slots
             t_g = time.monotonic()
             try:
                 grim.wait(timeout=5)
@@ -2227,9 +2208,10 @@ class Switcher:
                 item["emu"] = other
                 return self.resume_steps(item, fresh)
             log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
-            time.sleep(gs_wait("drastic", 0.7))
-            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden (einmal – doppelt ließ die Musik springen)
-            time.sleep(gs_wait("drastic_after", 0.5))   # Laden abschließen, bevor der Ton zurückkommt
+            time.sleep(gs_wait("drastic", 0.3))
+            g = {"rom": item["rom"]}
+            drastic_auto_slot(g)
+            drastic_io(g, SLOT, "load", gs_wait("drastic_after", 0.5))   # einmal laden (doppelt ließ die Musik springen)
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
@@ -2685,7 +2667,7 @@ def drastic_shortcuts():
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
-SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
+SLOTS_USER = 9          # Plätze 0–8 für den Nutzer (angezeigt als Slot 1–9), Platz 9 = automatisch (Gameswitcher, SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
 
 
@@ -2701,6 +2683,68 @@ def drastic_base_slot():
 def drastic_slot_path(game, n):
     rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
     return os.path.join("/storage/roms/savestates/nds", "%s_%d.dss" % (os.path.splitext(os.path.basename(rom))[0], n))
+
+
+def drastic_io(game, n, key, after=0.5):
+    """DraStic speichert/lädt per Taste (R2/L2) nur in seinen eingestellten Platz b. Für Platz n: b sichern,
+    bei „load“ n nach b kopieren, Taste drücken, bei „save“ b nach n kopieren, b unverändert zurück.
+    So fasst der Gameswitcher (Platz 9) nie die Slots des Nutzers an. True = erledigt."""
+    b = drastic_base_slot()
+    fb, fn = drastic_slot_path(game, b), drastic_slot_path(game, n)
+    if key == "load" and not os.path.exists(fn):
+        return False
+    bak = fb + ".rdsbak"
+    had_b = os.path.exists(fb)
+    if n != b and had_b:
+        shutil.copy2(fb, bak)
+    ok = False
+    try:
+        if key == "load" and n != b:
+            shutil.copy2(fn, fb)
+        before = os.path.getmtime(fb) if os.path.exists(fb) else 0
+        code = 313 if key == "save" else 312            # R2 speichern, L2 laden
+        t_key = time.monotonic()
+        inject_keys([(code, 1), 0.1, (code, 0)])
+        if key == "load":
+            time.sleep(after)                            # DraStic liest die Datei
+            ok = True
+        else:
+            for _ in range(40):                          # warten, bis die Datei geschrieben ist
+                time.sleep(0.1)
+                if os.path.exists(fb) and os.path.getmtime(fb) > before:
+                    t_file, size = time.monotonic(), -1
+                    while time.monotonic() - t_file < 1.0:   # fertig = Größe ändert sich nicht mehr
+                        time.sleep(0.05)
+                        now = os.path.getsize(fb)
+                        if now == size:
+                            break
+                        size = now
+                    log("DraStic-Stand Platz %d – Datei nach %.2f s, fertig nach %.2f s" % (
+                        n, t_file - t_key, time.monotonic() - t_key))
+                    ok = True
+                    break
+            if ok and n != b:
+                shutil.copy2(fb, fn)
+    finally:
+        if n != b:
+            if had_b and os.path.exists(bak):
+                os.replace(bak, fb)                      # Platz b unverändert zurück
+            elif not had_b and os.path.exists(fb):
+                os.remove(fb)                            # war vorher leer
+    return ok
+
+
+def drastic_auto_slot(game):
+    """Pfad des automatischen Stands (Gameswitcher, Platz 9). Einmalige Übernahme: Früher nutzte der Gameswitcher
+    Platz 0 – gibt es Platz 9 noch nicht, wird Platz 0 dorthin kopiert (Platz 0 bleibt dem Nutzer erhalten)."""
+    f9, f0 = drastic_slot_path(game, SLOT), drastic_slot_path(game, 0)
+    if not os.path.exists(f9) and os.path.exists(f0):
+        try:
+            shutil.copy2(f0, f9)
+            log("DraStic: Stand von Platz 0 als automatischen Stand (Platz %d) übernommen" % SLOT)
+        except OSError:
+            pass
+    return f9
 
 
 def nds_gamecode(rom):
@@ -5019,11 +5063,11 @@ class ControlCenter:
         if g.get("emu") in SLOT_EMUS:
             used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
             if key == "save":
-                return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % self.slot if used else tr("Slot wählen")
+                return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % (self.slot + 1) if used else tr("Slot wählen")
             if not used:
                 return tr("Kein Spielstand")
             n = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
-            return "Slot %d  ·  %s" % (n, when(self._slot_file(n)))
+            return "Slot %d  ·  %s" % (n + 1, when(self._slot_file(n)))
         if g.get("emu") == "DSperate":
             st = nds_state_newest(g)
             if st:
@@ -5137,7 +5181,7 @@ class ControlCenter:
                 P.image(f + ".png", tx, ty, tw, th, 20)
             # Beschriftung unten auf dunklem Band
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
-            label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
+            label = "Slot %d" % (n + 1) + ("  ·  " + when if when else "  ·  " + tr("leer"))   # Anzeige 1–9
             P.text(label, 19, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
@@ -6031,7 +6075,7 @@ def ra_slot_step(game, d):
         m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
         RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
     RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
-    info_toast("Slot %d" % RA_SLOT["slot"], "save")
+    info_toast("Slot %d" % (RA_SLOT["slot"] + 1), "save")   # Anzeige 1–9 wie im Kontrollcenter
 
 
 def info_toast(text, icon="ff"):
