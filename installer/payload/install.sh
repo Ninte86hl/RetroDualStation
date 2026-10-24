@@ -299,6 +299,17 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
         log "DraStic: Menue auf F11, Vorspulen auf F12 (virtuelle Tasten, nur ueber das CC)"
     fi
+    # DraStic: Savestates unkomprimiert – Speichern ≈0,3 s statt 1,8 s (Gameswitcher, Home kurz).
+    # Nur wenn DraStic nicht läuft (es schreibt die Datei beim Beenden zurück).
+    # TODO: prüfen, ob alte komprimierte Stände danach noch laden (Test 25.10. lief mit gelöschten Ständen).
+    if [ -f "$DCFG" ] && ! pidof drastic >/dev/null && ! grep -q '^compress_savestates *= *0' "$DCFG"; then
+        if grep -q '^compress_savestates' "$DCFG"; then
+            sed -i -E 's/^compress_savestates *= *.*/compress_savestates = 0/' "$DCFG"
+        else
+            echo "compress_savestates = 0" >> "$DCFG"
+        fi
+        log "DraStic: Savestates unkomprimiert (schnelleres Speichern)"
+    fi
     # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
     SSMARK=/storage/.config/retrodualstation/savestates.done
     if [ ! -f "$SSMARK" ]; then
