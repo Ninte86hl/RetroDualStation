@@ -5174,7 +5174,8 @@ class ControlCenter:
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
 
     def _draw_slots(self, P):
-        """Slot-Menü: Slots 1–9 mit Vorschaubild; beim Laden zusätzlich „Automatisch“ (Platz 0, geschützt)."""
+        """Slot-Menü: Slots 1–9 mit Vorschaubild; beim Laden zusätzlich „Automatisch“ (Platz 0, geschützt),
+        gleich groß und bündig unter Slot 8."""
         T, A = self.T, self.accent
         # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
         P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
@@ -5191,7 +5192,7 @@ class ControlCenter:
             lw = max(P.width(l1, 32, bold=True, raw=True), P.width(l2, 32, bold=True, raw=True))
             rx = ax - 26                                 # Text rechtsbündig direkt neben der Kachel
             px = rx - lw - 30                            # Fläche nur so breit wie nötig → große Lücke zu Slot 9
-            P.rrect(px, py, 1170 + 45 - px, th, 20, mix(T["bg"], A, 0.35))
+            P.rrect(px, py, ax + tw - px, th, 20, mix(T["bg"], A, 0.35))   # rechts bündig mit der Kachel
             P.text(l1, 32, rx, py + th / 2 - 8, T["text"], bold=True, align="r", raw=True)
             P.text(l2, 32, rx, py + th / 2 + 34, T["text"], bold=True, align="r", raw=True)
         for pos, n in enumerate(cells):
@@ -5200,8 +5201,6 @@ class ControlCenter:
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
             w_, h_ = tw, th
-            if n is not None and n < 0:                  # in der Fläche: ringsum etwas Rand
-                tx, ty, tw, th = tx + 10, ty + 10, tw - 20, th - 20
             usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
             f = self._slot_file(n)
