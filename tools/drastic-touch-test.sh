@@ -35,8 +35,11 @@ sleep 3
 swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1   # wie beim Schnellwechsel: über beide Bildschirme
 say "DraStic gestartet – 12 s (Touch in Zelda darf benutzt werden)"
 sleep 12
-pkill -TERM -x drastic; sleep 2; pkill -9 -x drastic 2>/dev/null; pkill -x gptokeyb 2>/dev/null
-say "DraStic beendet"
+for p in $(pidof drastic); do kill -TERM "$p"; done
+for i in 1 2 3 4 5 6 7 8 9 10; do pidof drastic >/dev/null || break; sleep 0.3; done
+for p in $(pidof drastic) $(pidof gptokeyb); do kill -KILL "$p" 2>/dev/null; done
+sleep 0.5
+if pidof drastic >/dev/null; then say "WARNUNG: DraStic läuft noch (PID $(pidof drastic))"; else say "DraStic beendet"; fi
 sleep 1
 kill -CONT $DSP
 say "SM64 aufgeweckt – jetzt Touch prüfen!"
