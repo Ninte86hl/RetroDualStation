@@ -24,7 +24,7 @@ def walk(n,out=None):
         r=n["rect"]; print("   %-12s %-28s out=%s fs=%s rect=%dx%d+%d+%d" % (n.get("app_id"),(n.get("name") or "")[:28],out,n.get("fullscreen_mode"),r["width"],r["height"],r["x"],r["y"]))
     for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
 walk(json.load(sys.stdin))' | tee -a "$LOG"; }
-ROM_RA=$(find /storage/roms -type f -iname "*${RA:-Super Metroid}*" ! -path "*/nds/*" | head -1)
+ROM_RA=$(find /storage/roms -type f -iname "*${RA:-Super Metroid}*" ! -path "*/nds/*" | grep -viE '\.(srm|sav|state[0-9]*|png|jpg|txt|xml|cfg|auto)$' | grep -v "/images/\|/videos/\|/manuals/" | head -1)
 ROM_DS=$(ls /storage/roms/nds/*.nds | grep -i "${DS:-mario.*64}" | head -1)
 [ -n "$ROM_RA" ] && [ -n "$ROM_DS" ] || { say "FEHLER: ROMs nicht gefunden"; exit 1; }
 say "RetroArch-Spiel: $ROM_RA"
@@ -53,16 +53,25 @@ EMUNAME=$(cat /proc/$EMU/comm)
 say "1/3 DS-Spiel läuft ($EMUNAME) – bitte prüfen:"
 frage "Vorher DS" "$EMUNAME"
 PIDS=$(desc $RU | tr '\n' ' ')
+CONS=$(swaymsg -t get_tree | python3 -c '
+import json,sys
+def walk(n,out=None):
+    if n.get("type")=="output": out=n["name"]
+    if n.get("pid")==int(sys.argv[1]) and n.get("type") in ("con","floating_con"): print("%s:%s" % (n["id"],out))
+    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
+walk(json.load(sys.stdin))' $EMU)
+for c in $CONS; do swaymsg "[con_id=${c%%:*}] move to scratchpad" >/dev/null; done
 kill -STOP $PIDS
-say "DS-Spiel eingefroren ($PIDS) · $(mem)"
+say "DS-Spiel ausgeblendet und eingefroren ($PIDS) · $(mem)"
 
 # 3. RetroArch an ES vorbei, Umgebung und Ordner vom Anker
 CWD=$(readlink /proc/$RU/cwd)
 mapfile -d '' ENVS < /proc/$RU/environ
 T0=$(date +%s%N)
 ( cd "$CWD" && env -i "${ENVS[@]}" setsid "${RA_ARGS[@]}" >/dev/null 2>&1 & )
-for i in $(seq 1 120); do RAP=$(pidof retroarch) && break; sleep 0.25; done
-for i in $(seq 1 60); do swaymsg -t get_tree | grep -q '"app_id": "retroarch"' && break; sleep 0.25; done
+for i in $(seq 1 120); do RAP=$(pidof retroarch) && break; sleep 0.1; done
+say "RetroArch-Prozess nach $(( ($(date +%s%N) - T0) / 1000000 )) ms"
+for i in $(seq 1 150); do swaymsg -t get_tree | grep -qi '"app_id": "[^"]*retroarch' && break; sleep 0.1; done
 say "RetroArch-Fenster nach $(( ($(date +%s%N) - T0) / 1000000 )) ms · $(mem)"
 sleep 3
 say "Fenster:"; fenster
@@ -75,6 +84,7 @@ kill -TERM $(pidof retroarch); for i in $(seq 1 40); do pidof retroarch >/dev/nu
 pkill -KILL retroarch 2>/dev/null
 T0=$(date +%s%N)
 swaymsg 'input type:touch map_to_output *' >/dev/null
+for c in $CONS; do swaymsg "[con_id=${c%%:*}] scratchpad show, floating disable, move to output ${c#*:}, fullscreen enable" >/dev/null; done
 kill -CONT $PIDS
 swaymsg "[pid=$EMU title=Bottom] focus" >/dev/null 2>&1
 say "DS-Spiel aufgeweckt nach $(( ($(date +%s%N) - T0) / 1000000 )) ms · $(mem)"
