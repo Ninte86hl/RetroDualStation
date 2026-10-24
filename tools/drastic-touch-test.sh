@@ -74,10 +74,18 @@ if [ "$A" = n ] && [ "$REPAIR" = 1 ]; then
     say "  Seats nachher: $(seats)"
     read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 1: $A"
     if [ "$A" = n ]; then
-        say "Reparatur 2: kurz ein neues Fenster öffnen und schließen (wie ES zwischendurch)"
-        ( retroarch >/dev/null 2>&1 & ); sleep 2.5; kill -TERM $(pidof retroarch) 2>/dev/null; sleep 1
-        say "  Seats nachher: $(seats)"
+        say "Reparatur 2: Zeiger-Sperre lösen (pointer_constraint escape) auf beiden Seats"
+        for st in seat0 seat1; do swaymsg "seat $st pointer_constraint escape" >/dev/null 2>&1; done
         read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 2: $A"
+        if [ "$A" = n ]; then
+            say "Reparatur 3: Touchscreen in Sway neu anmelden (Gerät kurz trennen)"
+            dev=$(basename "$(readlink -f /sys/class/input/event1/device/device)")
+            drv=$(basename "$(readlink -f /sys/class/input/event1/device/device/driver)")
+            echo "$dev" > /sys/bus/i2c/drivers/$drv/unbind 2>/dev/null; sleep 1
+            echo "$dev" > /sys/bus/i2c/drivers/$drv/bind 2>/dev/null; sleep 2
+            say "  Treiber $drv / $dev neu gebunden"
+            read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 3: $A"
+        fi
     fi
 fi
 kill -TERM $DSP
