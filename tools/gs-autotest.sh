@@ -5,8 +5,9 @@
 # Beide Spiele müssen schon im Gameswitcher stehen (einmal gespielt). Ergebnis: /storage/gs-autotest.log
 A="Mario 64"; B="Zelda"
 [ "$1" = "umgekehrt" ] && { A="Zelda"; B="Mario 64"; }
+[ -n "$2" ] && { A="$1"; B="$2"; }          # eigene Spiele: bash gs-autotest.sh "Mario 64" "Metroid"
 LOG=/storage/gs-autotest.log
-ROM_A=$(ls /storage/roms/nds/*.nds | grep -i "${A// /.*}" | head -1)
+ROM_A=$(ls /storage/roms/*/* 2>/dev/null | grep -i "${A// /.*}" | grep -viE "\.(png|jpg|xml|txt)$" | head -1)
 [ -n "$ROM_A" ] || { echo "Spiel nicht gefunden: $A"; exit 1; }
 T0=$(date +%s)
 say() { echo "$(date +%H:%M:%S) $*"; }
@@ -19,6 +20,7 @@ step "Wechsel zu $B" "$B";  sleep 16
 step "Zurück zu $A" "$A";   sleep 12
 step "Beenden" "quit";      sleep 6
 say "fertig"
+[ "$KEEP" = 1 ] || true
 { echo "=== Gameswitcher-Test $A ⇄ $B ==="
   journalctl -u rds-controlcenter --since "@$T0" --no-pager | grep -E "Test:|Schnellwechsel|Gameswitcher|Spiel beenden|Fehler|Traceback|Error" | sed 's/^.*\[rds-cc\] //'
   free -m | head -2; } > "$LOG"
