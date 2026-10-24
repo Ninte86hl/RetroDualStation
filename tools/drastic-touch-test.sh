@@ -58,5 +58,18 @@ snap nachher
 say "Unterschiede vorher/nachher:"; diff /storage/dtt-vorher.txt /storage/dtt-nachher.txt | grep -vE '"(id|pid)"' | head -30 | tee -a "$LOG"
 read -r -p "Geht der Touch in SM64? (j/n) " A
 say "Ergebnis Touch nach DraStic: $A"
+if [ "$A" = n ] && [ "$REPAIR" = 1 ]; then
+    seats() { swaymsg -t get_seats | grep -E '"name": "seat|"focus"' | tr -d ' \n'; }
+    say "Reparatur 1: Fokus auf das untere DSperate-Fenster · Seats vorher: $(seats)"
+    swaymsg "[app_id=dsperate title=Bottom] focus" >/dev/null
+    say "  Seats nachher: $(seats)"
+    read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 1: $A"
+    if [ "$A" = n ]; then
+        say "Reparatur 2: kurz ein neues Fenster öffnen und schließen (wie ES zwischendurch)"
+        ( retroarch >/dev/null 2>&1 & ); sleep 2.5; kill -TERM $(pidof retroarch) 2>/dev/null; sleep 1
+        say "  Seats nachher: $(seats)"
+        read -r -p "Touch jetzt? (j/n) " A; say "  Ergebnis Reparatur 2: $A"
+    fi
+fi
 kill -TERM $DSP
 say "SM64 beendet – zurück in ES"
