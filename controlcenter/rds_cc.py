@@ -1204,10 +1204,17 @@ _META = {}
 
 def game_meta(rom):
     """Name und Icon (PNG) aus der gamelist.xml des Systems; zwischengespeichert."""
-    if not rom or rom in _META:
-        return _META.get(rom, (None, None))
-    name = icon = None
+    if not rom:
+        return None, None
     folder = os.path.dirname(rom)
+    try:   # neu lesen, wenn sich die gamelist.xml geändert hat (z. B. nach dem Artwork Manager)
+        stamp = os.path.getmtime(os.path.join(folder, "gamelist.xml"))
+    except OSError:
+        stamp = None
+    cached = _META.get(rom)
+    if cached and cached[0] == stamp:
+        return cached[1], cached[2]
+    name = icon = None
     try:
         import xml.etree.ElementTree as ET
         rel = "./" + os.path.relpath(rom, folder)
@@ -1231,7 +1238,7 @@ def game_meta(rom):
             if os.path.exists(cand):
                 icon = cand
                 break
-    _META[rom] = (name, icon)
+    _META[rom] = (stamp, name, icon)
     return name, icon
 
 
@@ -1656,6 +1663,10 @@ class Switcher:
             self.items = []
         changed = False
         for i in self.items:
+            icon = game_meta(i["rom"])[1]          # Bild aus der aktuellen gamelist.xml (Artwork Manager)
+            if icon and icon != i.get("icon"):
+                i["icon"] = icon
+                changed = True
             emu = es_emulator(i["rom"])
             if emu and emu != i.get("emu"):
                 # In ES auf einen anderen Emulator gewechselt: dessen eigenen Stand nutzen,
