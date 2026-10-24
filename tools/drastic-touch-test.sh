@@ -12,6 +12,12 @@ V="${1:-a}"
 LOG=/storage/drastic-touch-test.log
 export XDG_RUNTIME_DIR=/run/0-runtime-dir WAYLAND_DISPLAY=wayland-1 SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 say() { echo "$(date +%H:%M:%S) [$V] $*" | tee -a "$LOG"; }
+frage() {   # $1 = Bezeichnung, $2 = Spiel (Standard SM64); setzt A = Touch-Antwort
+    local g="${2:-SM64}"
+    read -r -p "  Gehen die TASTEN in $g? (j/n) " K
+    read -r -p "  Geht der TOUCH in $g? (j/n) " A
+    say "$1: Tasten $K · Touch $A"
+}
 ROM_A=$(ls /storage/roms/nds/*.nds | grep -i "mario.*64" | head -1)
 ROM_B=$(ls /storage/roms/nds/*.nds | grep -i "zelda.*phantom" | head -1)
 
@@ -23,12 +29,6 @@ DSP=$(pidof dsperate); RU=$(pgrep -f "runemu.sh.*Mario" | head -1)
 [ -n "$DSP" ] || { say "FEHLER: DSperate läuft nicht"; exit 1; }
 say "1/3 SM64 läuft – bitte prüfen:"
 frage "Vorher SM64"
-frage() {   # $1 = Bezeichnung, $2 = Spiel (Standard SM64); setzt A = Touch-Antwort
-    local g="${2:-SM64}"
-    read -r -p "  Gehen die TASTEN in $g? (j/n) " K
-    read -r -p "  Geht der TOUCH in $g? (j/n) " A
-    say "$1: Tasten $K · Touch $A"
-}
 holders() { for p in /proc/[0-9]*; do ls -l $p/fd 2>/dev/null | grep -q "/dev/input/event1$" && echo "$(basename $p) $(cat $p/comm)"; done | tr '\n' ' '; }
 snap() { { swaymsg -t get_seats; swaymsg -t get_inputs; ps -o pid,args | grep -iE "[x]wayland|[g]ptokeyb|[d]rastic"; } > "/storage/dtt-$1.txt" 2>&1; }
 snap vorher
