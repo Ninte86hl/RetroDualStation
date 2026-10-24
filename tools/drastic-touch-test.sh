@@ -5,6 +5,8 @@
 #   b = DraStic über runemu.sh – genau wie der Schnellwechsel
 #   c = DraStic nackt: ohne gptokeyb, ohne libdrastouch
 #   d = DraStic mit libdrastouch, aber ohne gptokeyb
+#   e = Gegenprobe: RetroArch (nur Menü) statt DraStic, ebenfalls global im Vollbild
+#   f = Gegenprobe: wie e, aber RetroArch nur auf dem oberen Bildschirm (kein globales Vollbild)
 # Ablauf: SM64 über ES starten → einfrieren → DraStic (Zelda) 15 s → DraStic beenden → SM64 aufwecken → Touch prüfen.
 V="${1:-a}"
 LOG=/storage/drastic-touch-test.log
@@ -30,14 +32,19 @@ case "$V" in
      ( cd "$(readlink /proc/$RU/cwd)"; setsid "${NEW[@]}" >/dev/null 2>&1 & ) ;;
   c) ( cd /storage/.config/drastic && SDL_TOUCH_MOUSE_EVENTS=0 ./drastic "$ROM_B" >/dev/null 2>&1 & ) ;;
   d) ( cd /storage/.config/drastic && LD_PRELOAD=/usr/lib/libdrastouch.so SDL_TOUCH_MOUSE_EVENTS=0 ./drastic "$ROM_B" >/dev/null 2>&1 & ) ;;
+  e|f) ( retroarch >/dev/null 2>&1 & ) ;;
 esac
 sleep 3
-swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1   # wie beim Schnellwechsel: über beide Bildschirme
+case "$V" in
+  e) swaymsg "[pid=$(pidof retroarch)] fullscreen enable global, focus" >/dev/null 2>&1 ;;
+  f) swaymsg "[pid=$(pidof retroarch)] move to output DSI-2, fullscreen enable, focus" >/dev/null 2>&1 ;;
+  *) swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1 ;;   # wie beim Schnellwechsel
+esac
 say "DraStic gestartet – 12 s (Touch in Zelda darf benutzt werden)"
 sleep 12
-for p in $(pidof drastic); do kill -TERM "$p"; done
-for i in 1 2 3 4 5 6 7 8 9 10; do pidof drastic >/dev/null || break; sleep 0.3; done
-for p in $(pidof drastic) $(pidof gptokeyb); do kill -KILL "$p" 2>/dev/null; done
+for p in $(pidof drastic) $(pidof retroarch); do kill -TERM "$p"; done
+for i in 1 2 3 4 5 6 7 8 9 10; do pidof drastic retroarch >/dev/null || break; sleep 0.3; done
+for p in $(pidof drastic) $(pidof retroarch) $(pidof gptokeyb); do kill -KILL "$p" 2>/dev/null; done
 sleep 0.5
 if pidof drastic >/dev/null; then say "WARNUNG: DraStic läuft noch (PID $(pidof drastic))"; else say "DraStic beendet"; fi
 sleep 1
