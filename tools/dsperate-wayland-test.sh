@@ -80,6 +80,12 @@ walk(json.load(sys.stdin))' $DSP); do
     sleep 1; fenster
     mark "REPARATUR"
     frage "Nach Reparatur"
+    if [ "$A" = n ]; then
+        say "Reparatur 2: Touchscreen wieder fest dem unteren Bildschirm (DSI-1) zuordnen"
+        swaymsg "input type:touch map_to_output DSI-1" | tee -a "$LOG"
+        mark "REPARATUR2"
+        frage "Nach Reparatur 2"
+    fi
 fi
 mark "ENDE"
 kill -TERM $DSP
@@ -97,7 +103,7 @@ awk '
   /wl_keyboard[#@][0-9]+\.(enter|leave)/ { } /wl_surface[#@][0-9]+\.(enter|leave)/ { el[sec]++ }
   /wl_keyboard[#@][0-9]+\.(enter|leave)/ { kb[sec]++ }
   END {
-    n=split("START VORHER-Pruefung EINFRIEREN AUFWECKEN NACHHER-Pruefung REPARATUR", o, " ")
+    n=split("START VORHER-Pruefung EINFRIEREN AUFWECKEN NACHHER-Pruefung REPARATUR REPARATUR2", o, " ")
     for (i=1;i<=n;i++) { s=o[i]
       printf "%-17s touch-down %3d · touch-cancel %2d · maus-klick %3d · configure %3d · enter/leave %2d · tastatur-fokus %2d\n",
              s, t[s]+0, c[s]+0, p[s]+0, cf[s]+0, el[s]+0, kb[s]+0
