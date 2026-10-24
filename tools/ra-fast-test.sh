@@ -80,6 +80,21 @@ say "Fenster:"; fenster
 say "2/3 RetroArch läuft – bitte prüfen (Bild auf dem richtigen Bildschirm?):"
 frage "Während RetroArch" "RetroArch"
 say "Speicher mit beiden Spielen: $(mem)"
+if [[ "$A" != j* ]]; then
+    rest() { read -r -p "  Ist das Restbild noch da? (j/n) " R; say "  $1 → Restbild $R"; }
+    say "Probe 1: RetroArch-Vollbild neu setzen"
+    swaymsg '[app_id="(?i)retroarch"] fullscreen disable' >/dev/null 2>&1; sleep 0.3
+    swaymsg '[app_id="(?i)retroarch"] fullscreen enable, focus' >/dev/null 2>&1; sleep 1; rest "Vollbild neu"
+    if [ "$R" = j ]; then
+        say "Probe 2: oberen Bildschirm neu zeichnen lassen (kurz aus und an)"
+        swaymsg "output DSI-2 power off" >/dev/null; sleep 0.5; swaymsg "output DSI-2 power on" >/dev/null; sleep 1; rest "Bildschirm aus/an"
+    fi
+    if [ "$R" = j ]; then
+        say "Probe 3: RetroArch-Menü kurz öffnen und schließen"
+        echo -n "MENU_TOGGLE" | nc -u -w1 127.0.0.1 55355 2>/dev/null; sleep 1
+        echo -n "MENU_TOGGLE" | nc -u -w1 127.0.0.1 55355 2>/dev/null; sleep 1; rest "Menü auf/zu"
+    fi
+fi
 
 # 4. RetroArch beenden, Anker zurück
 kill -TERM $(pidof retroarch); for i in $(seq 1 40); do pidof retroarch >/dev/null || break; sleep 0.25; done
