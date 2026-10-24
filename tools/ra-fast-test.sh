@@ -60,7 +60,7 @@ def walk(n,out=None):
     if n.get("pid")==int(sys.argv[1]) and n.get("type") in ("con","floating_con"): print("%s:%s" % (n["id"],out))
     for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
 walk(json.load(sys.stdin))' $EMU)
-for c in $CONS; do swaymsg "[con_id=${c%%:*}] move to scratchpad" >/dev/null; done
+for c in $CONS; do swaymsg "[con_id=${c%%:*}] fullscreen disable, move to scratchpad" >/dev/null; done
 sleep ${WARTE:-0.6}     # DSperate muss das Ausblenden noch bestätigen, sonst behält Sway sein letztes Bild
 kill -STOP $PIDS
 say "DS-Spiel ausgeblendet und eingefroren ($PIDS) · $(mem)"
