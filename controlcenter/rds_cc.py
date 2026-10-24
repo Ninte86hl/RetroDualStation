@@ -5600,6 +5600,34 @@ def main():
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
+
+    # Wischgeste (Test): vom oberen Rand des unteren Bildschirms nach unten → Kontrollcenter, wie bei Android.
+    # Nur in ES und in Spielen ohne Touch (DS-Emulatoren nutzen den unteren Bildschirm selbst).
+    edge = {"y": None}
+
+    def edge_swipe(t):
+        if not cc.cfg.get("swipe_open", True):
+            return
+        kind = t[0]
+        sx, sy = touch.to_surface(t[1], t[2], 4.0, 3.0)     # Bruchteile des unteren Bildschirms (4:3)
+        fy = sy / 3.0
+        if kind == "down":
+            edge["y"] = None
+            if fy <= 0.10:
+                g = running_game()
+                if not g or g.get("emu") not in ("DSperate", "DraStic", "melonDS"):
+                    edge["y"] = fy
+        elif kind == "move" and edge["y"] is not None:
+            if fy - edge["y"] >= 0.20:
+                edge["y"] = None
+                edge["swallow"] = True
+                log("Wischgeste: Kontrollcenter")
+                if cc.screen_bottom_off:
+                    cc.screen_on()
+                toggle("cc")
+                state["dirty"] = True
+        elif kind == "up":
+            edge["y"] = None
     joy = open_event(JOYPAD_NAME)
     pads = {}   # fd -> {"name", "path", "ext", "range"}: eingebautes Joypad + externe Controller
     if joy is not None:
@@ -6465,6 +6493,13 @@ def main():
                     if fd == tfd:
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                             t = touch.feed(*ev)
+                            if t and edge.get("swallow"):     # Finger der Wischgeste: erst nach dem Loslassen bedienen
+                                if t[0] == "up":
+                                    edge["swallow"] = False
+                                continue
+                            if t and not ui.view and not cc.loading:
+                                edge_swipe(t)
+                                continue
                             if t and ui.view and ui.size:
                                 if cc.screen_bottom_off:
                                     continue   # Touch ignorieren wenn Screen aus
