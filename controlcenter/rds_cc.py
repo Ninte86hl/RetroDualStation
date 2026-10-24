@@ -1639,13 +1639,15 @@ def rom_of(pid):
 
 
 # ------------------------------------------------- Schnellwechsel (Test) ----
-# Das von ES gestartete Spiel („Anker“) wird beim Wechsel eingefroren und versteckt, das neue Spiel läuft als
-# „Zusatzspiel“ über runemu.sh (Aufruf vom Anker übernommen). Zurück zum Anker: Zusatzspiel beenden, Anker
+# Das von ES gestartete Spiel („Anker“) wird beim Wechsel eingefroren und auf einen unsichtbaren Arbeitsbereich
+# geschoben, das neue Spiel läuft als „Zusatzspiel“ über runemu.sh (gemerkter Startbefehl bzw. Aufruf vom Anker). Zurück zum Anker: Zusatzspiel beenden, Anker
 # aufwecken – unter einer Sekunde. Höchstens zwei Spiele im Speicher. Ein mit: touch FAST_FLAG
 
 FAST_FLAG = "/storage/.config/retrodualstation/fastswitch"
 FAST_STATE = "/tmp/rds-frozen.json"
 FAST_EMUS = {"DSperate": ("dsperate", "dsperate-sa"), "DraStic": ("drastic", "drastic-sa")}
+FAST_ALL = set(FAST_EMUS) | {"RetroArch"}     # RetroArch nur mit gemerktem Startbefehl (Gameswitcher-Eintrag)
+FAST_PARK = "rdspark"                         # unsichtbarer Arbeitsbereich für das geparkte Spiel
 FAST_MIN_MB = 180
 FROZEN = {"pids": [], "runemu": None, "rom": None, "name": None, "emu": None, "cons": [], "busy": False}
 
@@ -1699,8 +1701,8 @@ def runemu_of(pid):
     return None
 
 
-def sway_windows(pids):
-    """[(con_id, Ausgang)] aller Fenster dieser Prozesse."""
+def sway_windows(pids, with_ws=False):
+    """[(con_id, Ausgang)] aller Fenster dieser Prozesse – mit with_ws zusätzlich der Arbeitsbereich."""
     try:
         tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True, timeout=2,
                           env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout)
@@ -1708,14 +1710,16 @@ def sway_windows(pids):
         return []
     out = []
 
-    def walk(n, output):
+    def walk(n, output, ws):
         if n.get("type") == "output":
             output = n.get("name")
+        if n.get("type") == "workspace":
+            ws = n.get("name")
         if n.get("pid") in pids and n.get("type") in ("con", "floating_con"):
-            out.append((n["id"], output))
+            out.append((n["id"], output, ws) if with_ws else (n["id"], output))
         for c in n.get("nodes", []) + n.get("floating_nodes", []):
-            walk(c, output)
-    walk(tree, None)
+            walk(c, output, ws)
+    walk(tree, None, None)
     return out
 
 
@@ -1726,18 +1730,85 @@ def fast_save():
         pass
 
 
+def evdev_flush(pids):
+    """Eingaben verwerfen, die sich für eingefrorene Prozesse angesammelt haben – sonst spielt das Spiel nach dem
+    Aufwecken alle Tasten aus dem Zusatzspiel nach. pidfd_getfd liefert eine Kopie genau seiner Geräte-Datei."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    total = 0
+    for pid in pids:
+        try:
+            fds = [int(n) for n in os.listdir(f"/proc/{pid}/fd")
+                   if os.readlink(f"/proc/{pid}/fd/{n}").startswith("/dev/input/event")]
+        except OSError:
+            continue
+        if not fds:
+            continue
+        pfd = libc.syscall(434, pid, 0)                  # pidfd_open
+        if pfd < 0:
+            continue
+        for n in fds:
+            fd = libc.syscall(438, pfd, n, 0)            # pidfd_getfd
+            if fd < 0:
+                continue
+            try:
+                os.set_blocking(fd, False)
+                while True:
+                    b = os.read(fd, 24 * 64)
+                    if not b:
+                        break
+                    total += len(b)
+            except (BlockingIOError, OSError):
+                pass
+            os.close(fd)
+        os.close(pfd)
+    return total // 24
+
+
+def _wait_parked(cons, limit=1.0):
+    """Warten, bis Sway die Fenster verschoben hat und das Spiel das bestätigen konnte (vor dem Einfrieren).
+    Eingefroren könnte es nicht mehr antworten und Sway zeichnete sein letztes Bild weiter."""
+    end = time.time() + limit
+    ids = {c for c, _o, _w in cons}
+    while time.time() < end:
+        if all(w == FAST_PARK for c, _o, w in sway_windows_by_id(ids)):
+            break
+        time.sleep(0.1)
+    time.sleep(0.3)                                      # Luft zum Bestätigen der neuen Größe
+
+
+def sway_windows_by_id(ids):
+    try:
+        tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True, timeout=2,
+                          env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout)
+    except Exception:
+        return []
+    out = []
+
+    def walk(n, output, ws):
+        if n.get("type") == "output":
+            output = n.get("name")
+        if n.get("type") == "workspace":
+            ws = n.get("name")
+        if n.get("id") in ids and n.get("type") in ("con", "floating_con"):
+            out.append((n["id"], output, ws))
+        for c in n.get("nodes", []) + n.get("floating_nodes", []):
+            walk(c, output, ws)
+    walk(tree, None, None)
+    return out
+
+
 def fast_freeze(game):
-    """Anker-Spiel einfrieren und seine Fenster verstecken. False, wenn es nicht geht."""
+    """Anker-Spiel parken (unsichtbarer Arbeitsbereich) und einfrieren. False, wenn es nicht geht."""
     ru = runemu_of(game["pid"])
     if not ru:
         return False
     pids = proc_tree(ru)
     pids = [p for p in pids if p != ru]          # runemu.sh selbst wartet nur
-    cons = sway_windows(set(pids))
-    hide = gs_wait("hide", 0) >= 1                # Test: Fenster in den Scratchpad (1) oder liegen lassen (0)
-    if cons and hide:
-        sway_cmd("; ".join(f"[con_id={con}] move to scratchpad" for con, _out in cons))
-    cons = [(c, o, hide) for c, o in cons]
+    cons = sway_windows(set(pids), with_ws=True)
+    if cons:
+        # Scratchpad taugt nicht: DSperate fordert dort sofort wieder Vollbild an und Sway zeichnet es über allem
+        sway_cmd("; ".join(f"[con_id={c}] move container to workspace {FAST_PARK}" for c, _o, _w in cons))
+        _wait_parked(cons)
     for p in pids:
         try:
             os.kill(p, signal.SIGSTOP)
@@ -1749,29 +1820,41 @@ def fast_freeze(game):
     return True
 
 
-def fast_start(item):
-    """Zusatzspiel mit dem runemu-Aufruf des Ankers starten (ROM und Emulator getauscht)."""
+def launch_args(item):
+    """Startbefehl fürs Zusatzspiel: der beim letzten Spielen gemerkte (genau wie ES ihn gebaut hat), sonst bei
+    DS-Emulatoren der Aufruf des Ankers mit getauschtem ROM und Emulator. None = kein Schnellwechsel möglich."""
+    rec = item.get("launch")
+    if rec and item["rom"] in rec:
+        return list(rec)
+    if item["emu"] in FAST_EMUS and FROZEN.get("emu") in FAST_EMUS:
+        emu, core = FAST_EMUS[item["emu"]]
+        new = []
+        for a in _cmdline(FROZEN["runemu"]):
+            if a == FROZEN["rom"]:
+                a = item["rom"]
+            elif a.startswith("--emulator="):
+                a = "--emulator=" + emu
+            elif a.startswith("--core="):
+                a = "--core=" + core
+            new.append(a)
+        return new
+    return None
+
+
+def fast_start(item, args):
+    """Zusatzspiel starten – Umgebung und Ordner vom (von ES gestarteten) Anker."""
     ru = FROZEN["runemu"]
-    args = _cmdline(ru)
-    emu, core = FAST_EMUS[item["emu"]]
-    new = []
-    for a in args:
-        if a == FROZEN["rom"]:
-            a = item["rom"]
-        elif a.startswith("--emulator="):
-            a = "--emulator=" + emu
-        elif a.startswith("--core="):
-            a = "--core=" + core
-        new.append(a)
     try:
         env = dict(x.split("=", 1) for x in open(f"/proc/{ru}/environ", "rb").read().decode("utf-8", "replace")
                    .split("\0") if "=" in x)
         cwd = os.readlink(f"/proc/{ru}/cwd")
     except OSError:
         env, cwd = dict(os.environ), "/"
-    subprocess.Popen(new, env=env, cwd=cwd, start_new_session=True,
+    if item["emu"] == "RetroArch":
+        sway_cmd("focus output " + TOP_OUTPUT)    # RetroArch öffnet dort, wo der Fokus liegt
+    subprocess.Popen(args, env=env, cwd=cwd, start_new_session=True,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), emu)
+    log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), item["emu"])
 
 
 def fast_fullscreen():
@@ -1780,7 +1863,12 @@ def fast_fullscreen():
     if not g:
         return
     cons = sway_windows(set(proc_tree(g["pid"])))
-    mode = "fullscreen enable global" if g.get("emu") == "DraStic" else "fullscreen enable"   # DraStic: beide Bildschirme
+    if g.get("emu") == "DraStic":
+        mode = "fullscreen enable global"          # DraStic: beide Bildschirme
+    elif g.get("emu") == "RetroArch":
+        mode = "move to output %s, fullscreen enable" % TOP_OUTPUT
+    else:
+        mode = "fullscreen enable"
     cmds = [f"[con_id={c}] {mode}, focus" for c, _o in cons]
     tm = touch_map(g.get("emu"))
     if tm:
@@ -1790,13 +1878,13 @@ def fast_fullscreen():
 
 
 def fast_resume():
-    """Anker wieder zeigen und aufwecken."""
+    """Anker zurückholen und aufwecken."""
     full = "fullscreen enable global" if FROZEN.get("emu") == "DraStic" else "fullscreen enable"
     cmds = []
-    for con, out, hidden in [tuple(x) + (False,) * (3 - len(x)) for x in FROZEN["cons"]]:
-        if hidden:
-            cmds.append(f"[con_id={con}] scratchpad show, floating disable" + (f", move to output {out}" if out else "")
-                        + ", " + full)
+    for x in FROZEN["cons"]:
+        con, out, ws = (list(x) + [None, None])[:3]
+        if isinstance(ws, str) and ws != FAST_PARK:
+            cmds.append(f"[con_id={con}] move container to workspace {ws}, {full}")
         else:
             cmds.append(f"[con_id={con}] {full}")
     tm = touch_map(FROZEN.get("emu"))             # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
@@ -1807,12 +1895,13 @@ def fast_resume():
         cmds.append(f"[con_id={top}] focus")
     if cmds:
         sway_cmd("; ".join(cmds))                 # ein Aufruf: Reihenfolge bleibt erhalten
+    n = evdev_flush(FROZEN["pids"])
     for p in reversed(FROZEN["pids"]):
         try:
             os.kill(p, signal.SIGCONT)
         except OSError:
             pass
-    log("Schnellwechsel: Anker aufgeweckt", FROZEN["name"])
+    log("Schnellwechsel: Anker aufgeweckt", FROZEN["name"], "(%d alte Eingaben verworfen)" % n)
     FROZEN.update(pids=[], runemu=None, rom=None, name=None, emu=None, cons=[])
     try:
         os.remove(FAST_STATE)
@@ -1835,9 +1924,7 @@ def fast_quit_anchor():
     """Zusatzspiel wurde außerhalb des Gameswitchers beendet (Home, Spielmenü, CC): auch den Anker beenden,
     damit man wie gewohnt in ES landet. Fenster sofort weg (nicht nochmal zeigen), SIGTERM vormerken, dann aufwecken –
     ein eingefrorener Prozess bekommt das Signal erst beim Aufwecken."""
-    name, pids, cons = FROZEN["name"], list(FROZEN["pids"]), [x[0] for x in FROZEN["cons"]]
-    if cons:
-        sway_cmd("; ".join(f"[con_id={c}] move to scratchpad" for c in cons))
+    name, pids = FROZEN["name"], list(FROZEN["pids"])   # Fenster liegen schon auf dem unsichtbaren Arbeitsbereich
     for sig in (signal.SIGTERM, signal.SIGCONT):
         for p in reversed(pids):
             try:
@@ -1909,6 +1996,7 @@ class Switcher:
                 # Vorschau vom alten Emulator passt nicht mehr → Spielbild statt Screenshot
                 log("Gameswitcher: Emulator gewechselt", i["name"], i.get("emu"), "->", emu)
                 i["emu"], i["shot"] = emu, None
+                i.pop("launch", None)              # gemerkter Startbefehl gehört zum alten Emulator
                 changed = True
         if changed:
             try:
@@ -1932,6 +2020,12 @@ class Switcher:
         entry = {"rom": rom, "name": game["name"], "system": game.get("system", ""),
                  "emu": game["emu"], "icon": game.get("icon"), "time": time.time(),
                  "shot": shot or old.get("shot")}
+        ru = runemu_of(game["pid"]) if game.get("pid") else None
+        args = _cmdline(ru) if ru else []
+        if rom in args:                                   # Startbefehl merken (für den Schnellwechsel)
+            entry["launch"] = args
+        elif old.get("launch") and old.get("emu") == game["emu"]:
+            entry["launch"] = old["launch"]
         self.items = [entry] + [i for i in self.items if i["rom"] != rom]
         self.items = self.items[:GS_MAX]
         self.save()
@@ -2089,8 +2183,9 @@ class Switcher:
                     fast_resume()                                 # zurück zum Anker
                     log("Gameswitcher: Schnellwechsel zurück nach %.1f s" % (time.monotonic() - t0))
                     return True
-                if item["emu"] in FAST_EMUS and item["emu"] != FROZEN.get("emu") and mem_available_mb() >= FAST_MIN_MB:
-                    fast_start(item)                              # anderes Zusatzspiel, Anker bleibt eingefroren
+                args = launch_args(item) if item["emu"] != FROZEN.get("emu") else None
+                if args and mem_available_mb() >= FAST_MIN_MB:
+                    fast_start(item, args)                        # anderes Zusatzspiel, Anker bleibt eingefroren
                     self.resume_steps(item, fresh)
                     fast_fullscreen()
                     log("Gameswitcher: Schnellwechsel (Zusatzspiel) fertig nach %.1f s" % (time.monotonic() - t0))
@@ -2098,15 +2193,21 @@ class Switcher:
                 fast_resume()                                     # sonst: Anker zurück, dann normaler Weg
                 time.sleep(0.5)
                 return running_game() or False
-            emus_ok = current.get("emu") in FAST_EMUS and item["emu"] in FAST_EMUS and current.get("emu") != item["emu"]
+            emus_ok = current.get("emu") in FAST_ALL and item["emu"] in FAST_ALL and current.get("emu") != item["emu"]
             mem = mem_available_mb()
             if not emus_ok or mem < FAST_MIN_MB:
                 log("Gameswitcher: kein Schnellwechsel (%s, %d MB frei)" % (
                     "Emulatoren" if not emus_ok else "Speicher", mem))
                 return False
+            FROZEN.update(runemu=runemu_of(current["pid"]), rom=current.get("rom"), emu=current.get("emu"))
+            args = launch_args(item)               # vor dem Einfrieren klären, sonst gar nicht erst parken
+            FROZEN.update(runemu=None, rom=None, emu=None)
+            if not args:
+                log("Gameswitcher: kein Schnellwechsel (kein Startbefehl gemerkt für %s)" % item.get("name"))
+                return False
             if not fast_freeze(current):
                 return False
-            fast_start(item)
+            fast_start(item, args)
             self.resume_steps(item, fresh)
             fast_fullscreen()
             log("Gameswitcher: Schnellwechsel fertig nach %.1f s (%d MB frei)" % (time.monotonic() - t0, mem_available_mb()))
