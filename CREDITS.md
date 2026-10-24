@@ -3,6 +3,12 @@
 RetroDualStation (RDS) is only a small layer on top of the work of many people.
 Thank you to everyone who made it possible.
 
+## How RDS is made
+
+A hobby project: the code was written with the help of AI (Claude by Anthropic). All designs, ideas and
+decisions – including the Control Center, Game switcher and Power menu – and all testing on real devices
+are by Michel ([Ninte86hl](https://github.com/Ninte86hl)).
+
 ## Operating system and EmulationStation
 
 - **[ROCKNIX](https://github.com/ROCKNIX) team and contributors** – the
