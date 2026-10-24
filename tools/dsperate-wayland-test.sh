@@ -26,7 +26,7 @@ aufraeumen() { umount /usr/bin/dsperate 2>/dev/null; rm -f /storage/.dsp-real /s
 trap aufraeumen EXIT
 say "SM64 über ES starten (mit Wayland-Protokoll) …"
 curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
-for i in $(seq 1 80); do DSP=$(pgrep -f /storage/.dsp-real | head -1) && break; sleep 0.25; done
+for i in $(seq 1 80); do DSP=$(pgrep -x .dsp-real | head -1) && break; sleep 0.25; done
 [ -n "$DSP" ] || { say "FEHLER: DSperate startet nicht"; exit 1; }
 sleep 10
 say "1/3 SM64 läuft – bitte prüfen (ruhig ein paar Mal unten tippen):"
