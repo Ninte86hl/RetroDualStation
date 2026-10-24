@@ -7,6 +7,8 @@
 #   d = DraStic mit libdrastouch, aber ohne gptokeyb
 #   e = Gegenprobe: RetroArch (nur Menü) statt DraStic, ebenfalls global im Vollbild
 #   f = Gegenprobe: wie e, aber RetroArch nur auf dem oberen Bildschirm (kein globales Vollbild)
+# Zusatz: MAP=1 ordnet den Touchscreen nach dem DraStic-Start und nach dem Aufwecken fest dem unteren Bildschirm zu
+#         (UNTEN=<Ausgang>, Standard DSI-1) und setzt den Fokus aufs untere DSperate-Fenster.
 # Ablauf: SM64 über ES starten → einfrieren → DraStic (Zelda) 15 s → DraStic beenden → SM64 aufwecken → Touch prüfen.
 V="${1:-a}"
 LOG=/storage/drastic-touch-test.log
@@ -53,6 +55,7 @@ case "$V" in
   *) if [ "$NOGLOBAL" = 1 ]; then say "ohne globales Vollbild"; else
        swaymsg "[pid=$(pidof drastic)] fullscreen enable global, focus" >/dev/null 2>&1; fi ;;   # wie beim Schnellwechsel
 esac
+if [ "$MAP" = 1 ]; then swaymsg "input type:touch map_to_output ${UNTEN:-DSI-1}" >/dev/null; say "Touch fest auf ${UNTEN:-DSI-1} (während DraStic)"; fi
 say "Fenster: $(swaymsg -t get_tree | grep -oE '"(app_id|shell|name)": "[^"]*"' | grep -iE -A2 -B1 'drastic|retroarch' | tr '\n' ' ' | head -c 300)"
 snap waehrend
 say "Touchscreen (event1) offen bei: $(holders)"
@@ -65,6 +68,12 @@ sleep 0.5
 if pidof drastic >/dev/null; then say "WARNUNG: DraStic läuft noch (PID $(pidof drastic))"; else say "DraStic beendet"; fi
 sleep 1
 kill -CONT $DSP
+if [ "$MAP" = 1 ]; then
+    sleep 0.5
+    swaymsg "input type:touch map_to_output ${UNTEN:-DSI-1}" >/dev/null
+    swaymsg "[pid=$DSP title=Bottom] focus" >/dev/null 2>&1
+    say "Touch fest auf ${UNTEN:-DSI-1}, Fokus aufs untere DSperate-Fenster"
+fi
 say "3/3 SM64 aufgeweckt – gleich prüfen"
 snap nachher
 say "Touchscreen (event1) offen bei: $(holders)"
