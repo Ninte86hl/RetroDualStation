@@ -15,6 +15,4 @@
 | ✅ | ScreenScraper im Dual-Modus, Meldungen oben, RetroAchievements auch in DSperate *(ab v15)* |
 | ✅ | Farben folgen dem Theme, 16 DS-Akzentfarben, eigene Ladebildschirme *(ab v15.1)* |
 | 💭 vielleicht | Einstellungsmenü wie am Smartphone, aufgerufen aus dem Kontrollcenter |
-| 💭 vielleicht | Benutzerprofile mit eigenen Spielständen |
-| 🕓 später | Artwork Manager: Spielelisten bearbeiten, M3U in Unterordnern |
 
