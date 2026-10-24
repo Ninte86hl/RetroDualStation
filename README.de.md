@@ -93,6 +93,17 @@ ssh root@<IP> "cd /storage/roms/ports && unzip retrodualstation-v15.1.zip && rm 
 
 Technik und manuelle Installation: [docs/TECHNIK.md](docs/TECHNIK.md)
 
+## Wie RDS entsteht
+
+RetroDualStation ist ein **Hobbyprojekt**. Ich bin kein professioneller Entwickler – ohne die Hilfe von KI
+(Claude von Anthropic) hätte ich es nicht umsetzen können. Der Code ist größtenteils mit ihrer Hilfe
+entstanden, und das möchte ich offen sagen.
+
+**Alle Designs, Ideen und Entscheidungen stammen von mir** – auch Aussehen und Bedienung von Kontrollcenter,
+Gameswitcher und Power-Menü – und jede Funktion habe ich vor dem Release **selbst auf echten Geräten getestet**
+(RG DS und RG DS Plus). Rückmeldungen, Fehlerberichte und Ideen sind als
+[Issues](https://github.com/Ninte86hl/RetroDualStation/issues) herzlich willkommen.
+
 ## Danksagung & Lizenz
 
 Ein besonderer Dank geht an die beiden Theme-Ersteller, ohne die RDS nicht so aussähe:
