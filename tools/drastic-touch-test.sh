@@ -15,6 +15,7 @@ say() { echo "$(date +%H:%M:%S) [$V] $*" | tee -a "$LOG"; }
 ROM_A=$(ls /storage/roms/nds/*.nds | grep -i "mario.*64" | head -1)
 ROM_B=$(ls /storage/roms/nds/*.nds | grep -i "zelda.*phantom" | head -1)
 
+T0=$(date +%s)
 say "Start SM64 über ES"
 curl -s -X POST --data-binary "$ROM_A" http://127.0.0.1:1234/launch >/dev/null
 sleep 12
@@ -59,6 +60,10 @@ kill -CONT $DSP
 say "SM64 aufgeweckt – jetzt Touch prüfen!"
 snap nachher
 say "Touchscreen (event1) offen bei: $(holders)"
+sleep 1
+say "DSperate: $(grep -E '^State' /proc/$DSP/status 2>/dev/null || echo 'Prozess weg!') · Threads $(ls /proc/$DSP/task 2>/dev/null | wc -l) · Fenster $(swaymsg -t get_tree | grep -c '"app_id": "dsperate"')"
+say "Meldungen von DSperate/Wayland seit dem Start:"
+journalctl --since "@$T0" --no-pager 2>/dev/null | grep -iE "dsperate|wayland|broken pipe|display|wl_|disconnect|EPIPE|error" | grep -v rds-cc | tail -12 | tee -a "$LOG"
 say "Unterschiede vorher/nachher:"; diff /storage/dtt-vorher.txt /storage/dtt-nachher.txt | grep -vE '"(id|pid)"' | head -30 | tee -a "$LOG"
 read -r -p "Geht der Touch in SM64? (j/n) " A
 say "Ergebnis Touch nach DraStic: $A"
