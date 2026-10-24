@@ -55,6 +55,30 @@ sleep 2
 say "3/3 SM64 aufgeweckt – bitte prüfen (ruhig ein paar Mal unten tippen):"
 mark "NACHHER-Pruefung"
 frage "Nachher SM64"
+fenster() { swaymsg -t get_tree | python3 -c '
+import json,sys
+def walk(n,out=None):
+    if n.get("type")=="output": out=n["name"]
+    if n.get("app_id") in ("dsperate","drastic"):
+        r=n["rect"]; print("   %s %-22s out=%s fs=%s rect=%dx%d+%d+%d id=%s" % (n["app_id"],n.get("name"),out,n.get("fullscreen_mode"),r["width"],r["height"],r["x"],r["y"],n["id"]))
+    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c,out)
+walk(json.load(sys.stdin))' | tee -a "$LOG"; }
+say "Fenster nach dem Aufwecken:"; fenster
+if [ "$A" = n ]; then
+    say "Reparatur: Vollbild beider DSperate-Fenster neu setzen, Fokus aufs untere"
+    for id in $(swaymsg -t get_tree | python3 -c '
+import json,sys
+def walk(n):
+    if n.get("app_id")=="dsperate": print(n["id"])
+    for c in n.get("nodes",[])+n.get("floating_nodes",[]): walk(c)
+walk(json.load(sys.stdin))'); do
+        swaymsg "[con_id=$id] fullscreen disable" >/dev/null; swaymsg "[con_id=$id] fullscreen enable" >/dev/null
+    done
+    swaymsg "[app_id=dsperate title=Bottom] focus" >/dev/null 2>&1
+    sleep 1; fenster
+    mark "REPARATUR"
+    frage "Nach Reparatur"
+fi
 mark "ENDE"
 kill -TERM $DSP
 
@@ -63,18 +87,19 @@ say "=== Auswertung (Zeilen je Abschnitt) ==="
 awk '
   /=== RDS-MARKE/ { sec=$3; next }
   { if (sec=="") sec="START" }
-  /wl_touch@[0-9]+\.down/          { t[sec]++ }
-  /wl_touch@[0-9]+\.(cancel)/      { c[sec]++ }
-  /wl_pointer@[0-9]+\.button/      { p[sec]++ }
-  /xdg_toplevel@[0-9]+\.configure/ { cf[sec]++; last[sec]=$0 }
+  /wl_touch[#@][0-9]+\.down/          { t[sec]++; match($0,/wl_surface#[0-9]+/); ziel[sec]=ziel[sec] " " substr($0,RSTART,RLENGTH) }
+  /wl_touch[#@][0-9]+\.(cancel)/      { c[sec]++ }
+  /wl_pointer[#@][0-9]+\.button/      { p[sec]++ }
+  /xdg_toplevel[#@][0-9]+\.configure/ { cf[sec]++; last[sec]=$0 }
   /wl_seat@[0-9]+\.capabilities/   { cap[sec]=cap[sec] " " $0 }
-  /wl_surface@[0-9]+\.(enter|leave)/ { el[sec]++ }
-  /wl_keyboard@[0-9]+\.(enter|leave)/ { kb[sec]++ }
+  /wl_keyboard[#@][0-9]+\.(enter|leave)/ { } /wl_surface[#@][0-9]+\.(enter|leave)/ { el[sec]++ }
+  /wl_keyboard[#@][0-9]+\.(enter|leave)/ { kb[sec]++ }
   END {
-    n=split("START VORHER-Pruefung EINFRIEREN AUFWECKEN NACHHER-Pruefung", o, " ")
+    n=split("START VORHER-Pruefung EINFRIEREN AUFWECKEN NACHHER-Pruefung REPARATUR", o, " ")
     for (i=1;i<=n;i++) { s=o[i]
       printf "%-17s touch-down %3d · touch-cancel %2d · maus-klick %3d · configure %3d · enter/leave %2d · tastatur-fokus %2d\n",
              s, t[s]+0, c[s]+0, p[s]+0, cf[s]+0, el[s]+0, kb[s]+0
+      if (ziel[s] != "") print "    Touch ging an:" ziel[s]
       if (last[s] != "") print "    letzte configure: " substr(last[s], 1, 160)
     }
   }' "$WL" | tee -a "$LOG"
