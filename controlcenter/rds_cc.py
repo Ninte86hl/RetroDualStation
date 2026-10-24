@@ -3858,6 +3858,7 @@ class ControlCenter:
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
         self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
         self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
+        self.save_confirm = None  # belegter Slot, der beim zweiten A überschrieben wird
         self.ghelp = False        # Tastenbelegung offen
         self.toasts = []          # wartende Meldungen oben: {"kind": "volume"|"cheevo", ...}
         self.toast_now = None     # angezeigte Meldung
@@ -3980,7 +3981,7 @@ class ControlCenter:
         """Beim Schließen des Overlays: Tastatur und Untermenü verlassen."""
         self.kbd = None
         self.slot_pick = None
-        self.del_confirm = None
+        self.del_confirm = self.save_confirm = None
         self.ghelp = False
         self.ra_detail = False
         self.back()
@@ -4088,7 +4089,7 @@ class ControlCenter:
             n = self.slot_pick + dx + dy * 3
             if 0 <= n < SLOTS_USER:
                 self.slot_pick = n
-                self.del_confirm = None
+                self.del_confirm = self.save_confirm = None
             return
         if self.page == 1:
             acts = game_actions(self.game)
@@ -4138,6 +4139,8 @@ class ControlCenter:
             return
         if self.page == 1 and self.slot_pick is not None:
             if self.slot_mode == "load" and not self._slot_exists(self.slot_pick):
+                return
+            if self._needs_save_confirm(self.slot_pick):
                 return
             return ("game", "setslot")
         if self.page == 1:
@@ -4276,6 +4279,8 @@ class ControlCenter:
                 if self.slot_mode == "load" and not self._slot_exists(val):
                     return
                 self.slot_pick = val
+                if self._needs_save_confirm(val):
+                    return
                 return ("game", "setslot")
 
     def _hit(self, x, y):
@@ -4335,7 +4340,10 @@ class ControlCenter:
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
-            left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
+            if self.slot_mode == "save" and self._slot_exists(self.slot_pick):
+                left = [("A", "nochmal: überschreiben" if self.save_confirm == self.slot_pick else "überschreiben")]
+            else:
+                left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
             if self._slot_exists(self.slot_pick):
                 left.append(("X", "nochmal: löschen" if self.del_confirm == self.slot_pick else "löschen"))
             left.append(("B", "zurück"))
@@ -5077,6 +5085,15 @@ class ControlCenter:
                 pass
         log("Seite Spiel: Slot", n, "gelöscht")
         self.del_confirm = None
+
+    def _needs_save_confirm(self, n):
+        """Speichern auf einen belegten Slot: erst beim zweiten A bzw. Tippen überschreiben."""
+        if self.slot_mode != "save" or not self._slot_exists(n) or self.save_confirm == n:
+            self.save_confirm = None
+            return False
+        self.save_confirm = n
+        self.changed = True
+        return True
 
     def _slot_exists(self, n):
         f = self._slot_file(n)
