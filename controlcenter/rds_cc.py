@@ -2273,9 +2273,9 @@ class Switcher:
                 chained = False
                 if current:
                     # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau).
-                    # Test: nach DraStic nicht verketten – der nächste DS-Emulator bekam sonst keinen Touch
-                    # (über ES gestartet geht er); ES kommt einmal kurz zurück, dann startet das Spiel per /launch.
-                    chain_req = current.get("emu") != "DraStic"
+                    # Nach DraStic stimmt dabei die Touch-Zuordnung nicht (ROCKNIX-Regel, ES setzt sie nur beim
+                    # Neuaufbau zurück) – das korrigiert touch_map unten, sobald DraStic weg ist.
+                    chain_req = gs_wait("chain_drastic", 1) >= 1 or current.get("emu") != "DraStic"
                     if chain_req:
                         try:
                             wr(CHAIN_FILE, item["rom"] + "\n")
@@ -2287,6 +2287,10 @@ class Switcher:
                             break
                         time.sleep(0.15)
                     log("Gameswitcher: altes Spiel beendet nach %.1f s" % (time.monotonic() - t0))
+                    if current.get("emu") == "DraStic":
+                        tm = touch_map(item["emu"])         # Touch wieder richtig zuordnen (vor dem nächsten Start)
+                        if tm:
+                            sway_cmd(tm)
                     # Hat ES den Auftrag übernommen? (Datei weg = gelesen)
                     for _ in range(20 if chain_req else 0):
                         if not os.path.exists(CHAIN_FILE):
