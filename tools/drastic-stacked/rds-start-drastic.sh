@@ -30,7 +30,7 @@ echo "DSHOOK_WINDOW_SIZE=$DSHOOK_WINDOW_SIZE"
     echo "$(date +%T) Touch: $MAP (gilt für beide Goodix-Geräte, udev-Kalibrierung trennt oben/unten)"
     # Die ROCKNIX-Regel (for_window app_id=drastic → Touch auf DSI-2) greift bei jeder Fensteränderung erneut,
     # z. B. nach dem DraStic-Menü (Fenstergröße/Titel). Auf Fenster-Ereignisse von DraStic hin nachsetzen.
-    swaymsg -m -t subscribe '["window"]' 2>/dev/null | while IFS= read -r ev; do
+    swaymsg -m -r -t subscribe '["window"]' 2>/dev/null | while IFS= read -r ev; do
         case "$ev" in
             *'"app_id": "drastic"'*|*'"app_id":"drastic"'*)
                 sleep 0.2; swaymsg "input \"$TOUCH\" $MAP" >/dev/null
