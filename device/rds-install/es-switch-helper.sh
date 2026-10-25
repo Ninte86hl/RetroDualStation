@@ -78,6 +78,18 @@ if [ -f "$ESCFG" ]; then
         log "es_settings.cfg ohne </config>, Theme nicht gesetzt"
     fi
     log "Theme: $(grep 'name="ThemeSet"' "$ESCFG")"
+    # Theme-Optionen (Farbschema, Ansicht, Statusleiste …) speichert ES für alle Themes gemeinsam als subset.*.
+    # Je Modus merken und die des Zielmodus wiederherstellen – sonst landet z. B. das Farbschema „famicom“ von
+    # canvas-rds im System-Theme, das es nicht kennt (falsche Farben). Erster Wechsel: Standard des Themes.
+    grep '<string name="subset\.' "$ESCFG" > "$STATEDIR/subsets.$CURRENT"
+    sed -i '/<string name="subset\./d' "$ESCFG"
+    if [ -s "$STATEDIR/subsets.$MODE" ]; then
+        awk -v f="$STATEDIR/subsets.$MODE" '/<\/config>/ { while ((getline l < f) > 0) print l } { print }' \
+            "$ESCFG" > "$ESCFG.rds-tmp" && mv "$ESCFG.rds-tmp" "$ESCFG"
+        log "Theme-Optionen fuer $MODE wiederhergestellt: $(tr -d '\t\n' < "$STATEDIR/subsets.$MODE" | head -c 300)"
+    else
+        log "Theme-Optionen: Standard des Themes (noch nichts fuer $MODE gemerkt)"
+    fi
     # Dual: Spielstart ohne Überblendung (schnellerer Wechsel im Gameswitcher)
     if [ "$MODE" = "dual" ]; then
         if grep -q 'name="GameTransitionStyle"' "$ESCFG"; then
