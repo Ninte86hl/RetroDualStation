@@ -15,10 +15,10 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 Für RetroArch, DSperate und DraStic:
 - **Speichern / Laden** – Plätze 1–9 mit Vorschaubild, beim Laden zusätzlich der geschützte **automatische Speicherpunkt**; Platz löschen über den Papierkorb
 - **Emulator-Menü**, **Neu starten**, **Vorspulen**, **Zeitlupe**, **Screenshot**, **Tasten**, **Beenden**
-- **Tauschen** *(DraStic, DSperate)* – oberen und unteren Bildschirm tauschen, der Touch zieht mit (z. B. Laden in Zelda Phantom Hourglass); auch mit **L3**
+- **Tauschen** *(DraStic)* – oberen und unteren Bildschirm tauschen, der Touch zieht mit (z. B. Laden in Zelda Phantom Hourglass); auch mit **L3**
 
 ## Einheitliche Kürzel
-**Anbernic + R1** – Vorspulen · **Anbernic + R2 / L2** – Speichern / Laden · **Anbernic + X** – Emulator-Menü · **Anbernic + Y** – FPS (RetroArch, DSperate) · **Anbernic + Start** – Beenden · **Anbernic + ◀ / ▶** – Platz wechseln · **L3** – Bildschirme tauschen (DraStic, DSperate)
+**Anbernic + R1** – Vorspulen · **Anbernic + R2 / L2** – Speichern / Laden · **Anbernic + X** – Emulator-Menü · **Anbernic + Y** – FPS (RetroArch, DSperate) · **Anbernic + Start** – Beenden · **Anbernic + ◀ / ▶** – Platz wechseln · **L3** – Bildschirme tauschen (DraStic)
 
 ## Aussehen *(v15.1)*
 Oben rechts im Kontrollcenter:

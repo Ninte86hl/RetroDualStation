@@ -29,7 +29,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       „Follow 3D Renderer“ (ES-Option follow_3d_renderer → fix_main_2d_screen über start_drastic.sh) auch vor dem Start
       gesetzt und frisch aus ES gestartet (ohne Stand): Intro flackert, beide Bildschirme zeigen dasselbe Bild, Touch geht
       nicht (RG DS 25.10.) → in der ROCKNIX-DraStic mit zwei Bildschirmen unbrauchbar, L3 bleibt. Spielende getauscht →
-      screen_swap = 0. DSperate: Kürzel screen_swap (mod+dpup). Prüfen: Zelda-Laden, Schnellwechsel, Neustart, DSperate-Touch.
+      screen_swap = 0. DSperate: screen_swap tauscht im Zwei-Fenster-Betrieb nicht (auch von Hand) → nur DraStic. Zelda-Laden, Neustart
+      getauscht (DraStic merkt sich den Tausch nicht) auf RG DS + Plus ok.
 - [ ] **DraStic: Touchbild landet oben (Zelda Phantom Hourglass, Laden)** (gemeldet 25.10.2026) – Gegenstand wird oben
       angezeigt, lässt sich nicht antippen. Vermutung: Spiel tauscht intern die DS-Bildschirme, DraStic folgt
       („Follow 3D renderer“/automatischer Tausch) und legt das Touchbild auf den oberen echten Bildschirm ohne Touch.

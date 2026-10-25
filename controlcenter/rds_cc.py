@@ -1795,14 +1795,12 @@ DRASTIC_CFG = "/storage/.config/drastic/config/drastic.cfg"
 
 
 def swap_screens(g):
-    """Bildschirme des laufenden DraStic-/DSperate-Spiels tauschen bzw. zurücktauschen."""
+    """Bildschirme des laufenden DraStic-Spiels tauschen bzw. zurücktauschen."""
     emu, pid = g["emu"], g["pid"]
     on = pid not in SWAP
     if emu == "DraStic":
         how = drastic_press("SWAP_SCREENS")
-    elif emu == "DSperate":
-        how = "Kürzel" if dsperate_press("screen_swap") else None
-    else:
+    else:                    # DSperate: screen_swap tauscht im Zwei-Fenster-Betrieb nicht (Test 25.10., auch von Hand)
         return
     if not how:
         log("Bildschirme tauschen:", emu, "nicht belegt")
@@ -2661,7 +2659,7 @@ GAME_ACTIONS = {
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
     "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("swap", "Tauschen"), ("reset", "Neu starten"),
                 ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("swap", "Tauschen"), ("reset", "Neu starten"),
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
                  ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
@@ -2843,7 +2841,7 @@ def dsperate_shortcuts():
         base, alt = (k[:-4], True) if k.endswith(".alt") else (k, False)
         label = DSP_LABELS.get(base, base) + (" (2)" if alt else "")
         combo = " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)
-        rows.append((label, "L3  ·  " + combo if base == "screen_swap" and not alt else combo))   # L3 übernimmt das CC
+        rows.append((label, combo))
     return rows
 
 
@@ -6162,7 +6160,7 @@ BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
 BTN_NORTH, BTN_WEST = 307, 308
-BTN_THUMBL = 317                       # L3: Bildschirme tauschen (DraStic, DSperate)
+BTN_THUMBL = 317                       # L3: Bildschirme tauschen (DraStic)
 KNOWN_UNUSED = {312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
 EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
@@ -6880,7 +6878,7 @@ def main():
         if key == "quit":
             do_quit()
             return
-        if emu in ("DraStic", "DSperate") and key == "swap":
+        if emu == "DraStic" and key == "swap":
             toggle("cc")
             def later():
                 time.sleep(0.5)                      # Spiel läuft wieder und hat den Fokus zurück
@@ -7364,9 +7362,9 @@ def main():
                     threading.Thread(target=run, daemon=True).start()
             return
         if typ == EV_KEY and code == BTN_THUMBL and not ui.view:
-            # L3 allein: Bildschirme tauschen (DraStic samt Touch, DSperate über sein Kürzel)
+            # L3 allein: Bildschirme tauschen (DraStic; den Touch nimmt DraStic selbst mit)
             g = running_game()
-            if g and g["emu"] in ("DraStic", "DSperate"):
+            if g and g["emu"] == "DraStic":
                 threading.Thread(target=swap_screens, args=(g,), daemon=True).start()
             return
         if not ui.view:
