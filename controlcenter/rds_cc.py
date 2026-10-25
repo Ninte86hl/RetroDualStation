@@ -1647,6 +1647,39 @@ def es_emulator(rom):
     return None
 
 
+SYSTEM_CFG = "/storage/.config/system/configs/system.cfg"
+
+
+def game_setting_set(rom, name, value):
+    """ROCKNIX-Einstellung für ein einzelnes Spiel setzen (system.cfg: <system>["<datei>"].<name>=<wert>, hat Vorrang
+    vor System und global). Liefert eine Funktion, die den vorherigen Zustand wiederherstellt."""
+    key = '%s["%s"].%s' % (os.path.basename(os.path.dirname(rom or "")), os.path.basename(rom or ""), name)
+    lines = (rd(SYSTEM_CFG) or "").splitlines()
+    old = next((l for l in lines if l.startswith(key + "=")), None)
+
+    def write(new_line):
+        cur = [l for l in (rd(SYSTEM_CFG) or "").splitlines() if not l.startswith(key + "=")]
+        if new_line is not None:
+            cur.append(new_line)
+        tmp = SYSTEM_CFG + ".rds-tmp"
+        with open(tmp, "w") as f:
+            f.write("\n".join(cur) + "\n")
+        os.replace(tmp, SYSTEM_CFG)
+
+    try:
+        write("%s=%s" % (key, value))
+    except OSError as exc:
+        log("Einstellung setzen fehlgeschlagen:", key, exc)
+        return None
+
+    def restore():
+        try:
+            write(old)
+        except OSError as exc:
+            log("Einstellung zurücksetzen fehlgeschlagen:", key, exc)
+    return restore
+
+
 def autosave_on(rom):
     """Auto-Speichern/Laden laut ES (system.cfg): <system>.autosave hat Vorrang vor global.autosave."""
     cfg = rd("/storage/.config/system/configs/system.cfg") or ""
@@ -2365,7 +2398,7 @@ class Switcher:
             nonlocal current                    # kann beim Schnellwechsel auf den Anker wechseln
             spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])   # Startton/Musik nicht hören
             before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
-            restore = hidden = None
+            restore = None
             t0 = time.monotonic()
             try:
                 try:
@@ -2373,20 +2406,11 @@ class Switcher:
                 except Exception:
                     pass
                 # vor dem Beenden: ES startet das nächste Spiel ggf. sofort
-                if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
-                    txt = rd(ini) or ""
-                    if "autoload = true" in txt:
-                        restore = txt
-                        wr(ini, txt.replace("autoload = true", "autoload = false"))
                 if fresh and item["emu"] == "DSperate":
-                    # ROCKNIX startet DSperate mit --autoload (dsperate.ini allein reicht nicht): den automatischen
-                    # Stand für den Start beiseitelegen, damit das Spiel wirklich von vorn beginnt
-                    code = nds_gamecode(item["rom"]) or ""
-                    auto = os.path.join("/storage/roms/savestates/nds", "%s.auto.dss" % code) if code else None
-                    if auto and os.path.exists(auto):
-                        os.replace(auto, auto + ".rdsfresh")
-                        hidden = auto
-                        log("Gameswitcher: DSperate-Auto-Stand für den Neustart beiseitegelegt")
+                    # start_dsperate.sh startet mit --autoload, wenn get_setting autosave <System> <Spiel> 1–3 ergibt.
+                    # Die Einstellung für genau dieses Spiel hat Vorrang: für den Neustart kurz auf 0 (→ --no-autoload)
+                    restore = game_setting_set(item["rom"], "autosave", "0")
+                    log("Gameswitcher: DSperate-Neustart ohne Auto-Laden (Spiel-Einstellung autosave=0)")
                 if current and fast_enabled():
                     res = self.fast_switch(item, fresh, current, t0)
                     if res is True:
@@ -2461,18 +2485,9 @@ class Switcher:
                 for path, old in before.items():
                     if old and rd(path) == "performance" and old != "performance":
                         wr(path, old)
-                if restore or hidden:
+                if restore:                     # DSperate hat die Einstellung beim Start gelesen – alten Wert zurück
                     time.sleep(10)
-                if restore:
-                    wr(ini, restore)
-                if hidden:                      # neuer Auto-Stand von DSperate hat Vorrang, sonst den alten zurück
-                    try:
-                        if os.path.exists(hidden):
-                            os.remove(hidden + ".rdsfresh")
-                        else:
-                            os.replace(hidden + ".rdsfresh", hidden)
-                    except OSError as exc:
-                        log("Gameswitcher: DSperate-Auto-Stand zurücklegen:", exc)
+                    restore()
         threading.Thread(target=work, daemon=True).start()
 
 
