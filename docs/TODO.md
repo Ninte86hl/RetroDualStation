@@ -36,10 +36,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       FPS im Spiel (DraStic/DSperate-Anzeige, gleiche Stelle), Start-/Ladezeiten, dazu Touch, Bildschirmzuordnung und
       Overlays prüfen. Umschalten über die ROCKNIX-Einstellung (autostart `003-gpudriver`; genauen Schlüssel/Menüpunkt
       am Gerät nachsehen). Ergebnis als Tabelle; ggf. Empfehlung in der Doku, kein automatisches Umschalten durch RDS.
-- [ ] **Spiel neu starten in DraStic und DSperate** (Wunsch 25.10.2026, nächste Runde) – wie bei RetroArch direkt im
-      laufenden Emulator, aus dem CC (Seite „Spiel“) und mit Y im Gameswitcher. Prüfen: Reset-Kürzel/Menüpunkt in
-      DraStic und DSperate, ob er sich per virtueller Taste auslösen lässt; sonst Neustart des Emulators ohne
-      Auto-Laden. Zusammen mit dem Punkt „DSperate Neu starten (Y)“ unten angehen.
 - [ ] **Kette DraStic → RetroArch beschleunigen** – umgesetzt (Anker unsichtbar aufwecken, `fast_wake_hidden`), messen (Messung 25.10.2026, RG DS Plus) – läuft ein DraStic-Spiel als
       Zusatzspiel und man wechselt zu einem *anderen* RetroArch-Spiel als dem geparkten, dauert es ≈ 11 s:
       DraStic beenden ≈ 3 s, geparkten RetroArch aufwecken + über ES beenden ≈ 2 s, neues RetroArch-Spiel ≈ 6 s
@@ -50,8 +46,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       wo genau (CC, Gameswitcher, ES?). Beeinträchtigt das laufende System nicht.
 - [ ] **Installer: DraStic `compress_savestates = 0`** – eingebaut (25.10.2026); noch prüfen, ob alte komprimierte
       Savestates danach weiter laden.
-- [ ] **DSperate „Neu starten“ (Y im Gameswitcher)** prüfen – Autoload kommt per `--autoload` aus ROCKNIX, nicht aus
-      dsperate.ini; das Abschalten im CC greift vermutlich nicht.
 - [ ] ES-Patch: In Listen fehlt auf Deutsch das ▲▼-Symbol in der Hinweisleiste. ROCKNIX übersetzt den Symbolnamen mit (`HelpPrompt(_("up/down"), …)` in `ComponentList.cpp` und `ComponentTab.cpp` → „Unknown help icon "hinauf/hinunter"“ im Log). Symbolnamen nicht übersetzen. (vorgemerkt 23.10.2026)
 - [ ] Issue #5 (maniman303) beantworten: ScreenScraper im Dual-Build (v15), Bildschirm-Bereiche (Patch 004/005)
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
