@@ -24,6 +24,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Vergleich GPU-Treiber libmali vs. panfrost** (Wunsch 25.10.2026) – Eindruck: mit panfrost bessere Leistung in
+      DS-Spielen (DraStic, DSperate). Auf beiden Geräten je Treiber messen: Gameswitcher-Kette (Mitschnitt wie
+      25.10.: `journalctl -u rds-controlcenter -f -o short-precise`, gleiche Wechsel RA ↔ DraStic ↔ DSperate),
+      FPS im Spiel (DraStic/DSperate-Anzeige, gleiche Stelle), Start-/Ladezeiten, dazu Touch, Bildschirmzuordnung und
+      Overlays prüfen. Umschalten über die ROCKNIX-Einstellung (autostart `003-gpudriver`; genauen Schlüssel/Menüpunkt
+      am Gerät nachsehen). Ergebnis als Tabelle; ggf. Empfehlung in der Doku, kein automatisches Umschalten durch RDS.
 - [ ] **Tour: veralteten Hinweis anpassen** – „einmal im Single-Screen-Modus scrapen“ beim Artwork Manager
       (Rest aus dem erledigten Punkt „Single-Modus: Kontrollcenter ruhen lassen“).
 - [ ] **Spiel neu starten in DraStic und DSperate** (Wunsch 25.10.2026, nächste Runde) – wie bei RetroArch direkt im
