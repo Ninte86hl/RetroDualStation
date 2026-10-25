@@ -2267,6 +2267,7 @@ class Switcher:
                     if fresh:
                         time.sleep(0.5)
                         ra_reset()               # Auto-Laden übergehen (Ladebildschirm verdeckt es)
+                        time.sleep(2.2)          # … auch die „Reset“-Meldung von RetroArch abwarten
                     elif not autosave_on(item["rom"]):
                         time.sleep(gs_wait("retroarch_slot", 1.5))   # ohne Auto-Laden: unseren Slot nachladen
                         ra_command(f"LOAD_STATE_SLOT {SLOT}")
@@ -6607,15 +6608,8 @@ def main():
         cur = cc.game
         same = cur and (cur.get("rom") or rom_of(cur["pid"])) == item["rom"]
         if same and fresh and cur["emu"] == "RetroArch":
-            ra_reset()                      # im laufenden RetroArch neu starten, ohne Beenden
-            time.sleep(0.3)
-            toggle("switcher")              # danach Pause aufheben
-            def unpause():                  # Sicherheitsnetz: RetroArch nie pausiert zurücklassen
-                time.sleep(0.8)
-                st = ra_command("GET_STATUS", reply=True) or ""
-                if "PAUSED" in st:
-                    ra_command("PAUSE_TOGGLE")
-            threading.Thread(target=unpause, daemon=True).start()
+            toggle("switcher")              # schließen, Pause aufheben
+            cover_ra_reset(cur)             # im laufenden RetroArch neu starten, Meldung verdeckt
             log("Gameswitcher: RetroArch zurückgesetzt", item["name"])
             return
         toggle("switcher")                 # schließen, Pause aufheben
@@ -6632,6 +6626,30 @@ def main():
         ui.show("loading")
         ui.show_top(cc.paint_top_loading)
         cc.switcher.launch(item, fresh, current=cur)
+
+    def cover_ra_reset(g):
+        """RetroArch-Neustart: RetroArch blendet „Reset“ (und die Rückfrage) fest ein – kein Schalter dafür. Den
+        Ladebildschirm „Wird neu gestartet …“ so lange zeigen, bis die Meldung abgelaufen ist (≈2 s), dann zurück."""
+        rom = g.get("rom") or rom_of(g["pid"]) or ""
+        item = next((i for i in cc.switcher.items if i["rom"] == rom), None) or \
+            {"rom": rom, "name": g["name"], "emu": g["emu"], "system": g.get("system", ""), "icon": g.get("icon")}
+        cc.switcher.done = False
+        cc.loading = (item, True)
+        cc.loading_t0 = time.monotonic()
+        if cc.screen_bottom_off:
+            cc.screen_on()
+        ui.show("loading")
+        ui.show_top(cc.paint_top_loading)
+
+        def work():
+            time.sleep(0.3)
+            ra_reset()
+            st = ra_command("GET_STATUS", reply=True) or ""   # Sicherheitsnetz: nie pausiert zurücklassen
+            if "PAUSED" in st:
+                ra_command("PAUSE_TOGGLE")
+            time.sleep(2.5)
+            cc.switcher.done = True
+        threading.Thread(target=work, daemon=True).start()
 
     def restart_game(g):
         """DraStic/DSperate haben keinen Neustart-Befehl: Spiel beenden und ohne Stand neu starten."""
@@ -6740,6 +6758,11 @@ def main():
                 if ok and key == "ff":
                     speed_event("ff", g)
             threading.Thread(target=later, daemon=True).start()
+            return
+        if emu == "RetroArch" and key == "reset":
+            toggle("cc")                     # schließen (Pause aufheben), dann neu starten – Meldung verdeckt
+            cover_ra_reset(g)
+            log("Seite Spiel: RESET")
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
             toggle("cc")                     # erst schließen (Pause aufheben), dann auslösen
