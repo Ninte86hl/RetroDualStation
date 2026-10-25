@@ -95,6 +95,9 @@ rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlc
       "$SYSD"/*.target.wants/rds-resume.service "$SYSD/rds-resume.service" \
       /storage/.config/logind.conf.d/rds-logind-powerkey.conf
 [ -f "$MARK" ] || rm -f "$SYSD/multi-user.target.wants/rds-uninstall-guard.service" "$SYSD/rds-uninstall-guard.service"
+for w in essway.service suspend.target hibernate.target hybrid-sleep.target multi-user.target; do
+    rmdir "$SYSD/$w.wants" 2>/dev/null                     # nur wenn leer (eigene Dienste anderer bleiben)
+done
 SS="$(cat /storage/.config/retrodualstation/savestates.done 2>/dev/null)"   # vor dem Löschen merken
 AH="$(cat /storage/.config/retrodualstation/autohotkeys.done 2>/dev/null)"
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
