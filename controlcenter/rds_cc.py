@@ -6150,6 +6150,44 @@ def info_toast(text, icon="ff"):
             pass
 
 
+def bt_agents():
+    """Laufende rocknix-bluetooth-agent-Prozesse als [(Startzeit, pid)] – direkt aus /proc (ohne pgrep)."""
+    found = []
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            with open("/proc/%s/cmdline" % d, "rb") as f:
+                argv = [a.decode(errors="replace") for a in f.read().split(b"\0") if a]
+            if not argv or not any(os.path.basename(a) == "rocknix-bluetooth-agent" for a in argv[:2]):
+                continue
+            if not (os.path.basename(argv[0]).startswith("python") or os.path.basename(argv[0]) == "rocknix-bluetooth-agent"):
+                continue                                 # z. B. eine Shell mit dem Namen in der Befehlszeile
+            with open("/proc/%s/stat" % d) as f:
+                start = int(f.read().rsplit(")", 1)[1].split()[19])   # Feld 22: Startzeit
+            found.append((start, int(d)))
+        except (OSError, ValueError, IndexError):
+            continue
+    return sorted(found)
+
+
+def bt_agent_watch():
+    """Bluetooth-Helfer nie doppelt: runemu startet ihn nach jedem Spiel per `systemd-run` neu, `rocknix-bluetooth
+    enable` zusätzlich als Dienst. Laufen einmal zwei, beendet runemu beim nächsten Spielstart keinen mehr
+    (`kill "$NPID"` mit mehreren PIDs schlägt fehl) – so kamen nach vielen Spielen 15 Stück zusammen.
+    Alle 30 s prüfen und nur den neuesten behalten (SIGTERM gilt für systemd als sauberes Ende → kein Neustart)."""
+    while True:
+        try:
+            agents = bt_agents()
+            if len(agents) > 1:
+                for _, pid in agents[:-1]:
+                    os.kill(pid, signal.SIGTERM)
+                log("Bluetooth-Helfer:", len(agents), "laufen – ältere beendet:", [p for _, p in agents[:-1]])
+        except Exception as exc:
+            log("Bluetooth-Helfer:", exc)
+        time.sleep(30)
+
+
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
     try:   # Diagnose bei Hängern: pkill -USR1 -f rds_cc.py → Stelle aller Threads ins Journal
@@ -6163,6 +6201,7 @@ def main():
     INFO_TOAST[:] = [cc]
     fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
     threading.Thread(target=drastic_watch, daemon=True).start()   # DraStic: Auto-Laden beim Start aus ES
+    threading.Thread(target=bt_agent_watch, daemon=True).start()  # Bluetooth-Helfer nie mehrfach
     if fast_enabled():
         threading.Thread(target=zram_setup, daemon=True).start()
         threading.Thread(target=fast_watch, daemon=True).start()
