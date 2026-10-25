@@ -24,7 +24,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
-- [ ] **Test: „Bildschirme tauschen“ (Kachel „Tauschen“ + L3, umgesetzt 25.10.)** – DraStic: SWAP_SCREENS auf F8 (321,
+- [x] **„Bildschirme tauschen“ (Kachel „Tauschen“ + L3) – v15.3.2 veröffentlicht 25.10.** – DraStic: SWAP_SCREENS auf F8 (321,
       Installer-Merker drastic-kuerzel-v4), Touch nimmt DraStic selbst mit (ROCKNIX-Zuordnung DSI-2 lassen – DSI-1 macht es kaputt, mirror_touch unnötig, Plus 25.10. ok);
       „Follow 3D Renderer“ (ES-Option follow_3d_renderer → fix_main_2d_screen über start_drastic.sh) auch vor dem Start
       gesetzt und frisch aus ES gestartet (ohne Stand): Intro flackert, beide Bildschirme zeigen dasselbe Bild, Touch geht
@@ -69,7 +69,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Bibliothek, Umgebungsvariable ohne Startskript (Bibliothek erkennt übereinander selbst?), Schnellwechsel/
       Gameswitcher-Kette, RG DS Plus (1024×768), ES während DraStic übereinander. Idee: Verbesserung an ROCKNIX
       vorschlagen (libdrastouch erkennt übereinander liegende Ausgänge und zwei Panels selbst).
-- [ ] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
+- [x] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
       Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
