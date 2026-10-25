@@ -6999,8 +6999,8 @@ def main():
                     txt = rd(ini) or ""
                     if re.search(r"(?m)^toasts\s*=\s*true", txt) and not run(["pidof", "dsperate"]):
                         try:   # Originalwert für die Deinstallation merken (nur, falls noch nicht gesichert)
-                            subprocess.run(["python3", "/storage/rgds-test/rds-settings.py", "save",
-                                            "/storage/rgds-test/settings-before-rds.json", ini, "kv", "toasts"],
+                            subprocess.run(["python3", "/storage/rds-install/rds-settings.py", "save",
+                                            "/storage/rds-install/settings-before-rds.json", ini, "kv", "toasts"],
                                            timeout=5, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         except Exception:
                             pass

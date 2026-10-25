@@ -1,7 +1,7 @@
 #!/bin/bash
 # RGDS Plus: zwischen Dual-Screen-Testversion und Original-ES umschalten.
 # Aufruf ueber systemd-run (laeuft ausserhalb von essway):
-#   systemd-run --no-block /storage/rgds-test/es-switch-helper.sh single|dual
+#   systemd-run --no-block /storage/rds-install/es-switch-helper.sh single|dual
 #
 # single: Original-ROCKNIX-ES, unterer Screen aus
 # dual:   Dual-Screen-ES ueber start-es-dualstation.sh
@@ -9,15 +9,15 @@
 # Theme pro Modus: Beim Umschalten wird das aktuell gewaehlte Theme fuer den
 # Modus gespeichert, den man verlaesst, und das zuletzt genutzte Theme des
 # Zielmodus wiederhergestellt.
-#   /storage/rgds-test/theme.single   (Standard: system-theme)
-#   /storage/rgds-test/theme.dual     (Standard: dii-ess-aye-rds)
+#   /storage/rds-install/theme.single   (Standard: system-theme)
+#   /storage/rds-install/theme.dual     (Standard: dii-ess-aye-rds)
 
 MODE="$1"
 DROPIN=/storage/.config/system.d/essway.service.d
 ESCFG=/storage/.config/emulationstation/es_settings.cfg
 SWAYCFG=/storage/.config/sway/config
 THEMEDIR=/storage/.config/emulationstation/themes
-STATEDIR=/storage/rgds-test
+STATEDIR=/storage/rds-install
 LOG=$STATEDIR/es-switch.log
 export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 

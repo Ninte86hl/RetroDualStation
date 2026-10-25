@@ -1,10 +1,10 @@
 #!/bin/bash
 # RGDS Plus: Diagnose, wenn ES nach dem Umschalten nicht mehr reagiert.
-# Per SSH ausfuehren: /storage/rgds-test/rgds-diag.sh
-# Ergebnis: /storage/rgds-test/diag-<Zeitstempel>.txt
+# Per SSH ausfuehren: /storage/rds-install/rgds-diag.sh
+# Ergebnis: /storage/rds-install/diag-<Zeitstempel>.txt
 
 export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
-OUT=/storage/rgds-test/diag-$(date +%Y%m%d-%H%M%S).txt
+OUT=/storage/rds-install/diag-$(date +%Y%m%d-%H%M%S).txt
 
 {
     echo "=== Zeit ==="
@@ -17,7 +17,7 @@ OUT=/storage/rgds-test/diag-$(date +%Y%m%d-%H%M%S).txt
     ls -l /storage/.config/system.d/essway.service.d/ 2>&1
 
     echo; echo "=== Umschalt-Log (Ende) ==="
-    tail -12 /storage/rgds-test/es-switch.log 2>&1
+    tail -12 /storage/rds-install/es-switch.log 2>&1
 
     echo; echo "=== systemd-run Einheiten ==="
     systemctl list-units --all --no-pager 'run-*' 2>&1 | head -10

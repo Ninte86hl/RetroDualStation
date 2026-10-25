@@ -12,7 +12,7 @@ export SDL_VIDEODRIVER=wayland
 export DISPLAY=:0.0
 
 # Sway-Config anpassen (wird von ROCKNIX bei jedem Boot neu geschrieben)
-/storage/rgds-test/rgds-sway-fix.sh
+/storage/rds-install/rgds-sway-fix.sh
 
 # Fenstergroesse = Rechteck um beide Bildschirme (aus screens.cfg; Standard RG DS Plus)
 RES="$(awk -F'[=,]' '/^(top|bottom)=/{ if($2+$4>w) w=$2+$4; if($3+$5>h) h=$3+$5 } END{ if(w&&h) print w, h }' \
@@ -21,7 +21,7 @@ RES="$(awk -F'[=,]' '/^(top|bottom)=/{ if($2+$4>w) w=$2+$4; if($3+$5>h) h=$3+$5 
 
 # Der Dateiname muss mit "emulationstation-rgds" beginnen,
 # sonst greift die Sway-Regel fuer das globale Vollbild nicht.
-exec /storage/rgds-test/emulationstation-rgds \
+exec /storage/rds-install/emulationstation-rgds \
   --log-path /var/log \
   --no-splash \
   --windowed \

@@ -31,7 +31,7 @@ Sway-Einrichtung, damit das Theme wie gedacht funktioniert:
 patches/                     ES-Patch für das ROCKNIX-Buildsystem
 installer/                   Installer und Deinstallation (Ports-Einträge)
 tools/make-installer.py      baut die Installations-ZIP
-device/rgds-test/            Skripte für /storage/rgds-test/ auf dem Gerät
+device/rds-install/          Skripte für /storage/rds-install/ auf dem Gerät (bis v15.1: rgds-test)
   start-es-dualstation.sh    Startskript der Dual-Version
   rgds-sway-fix.sh           passt die Sway-Config vor jedem Start an
   es-switch-helper.sh        Umschalten single/dual (Theme, Dienst, Sway)
@@ -52,10 +52,10 @@ Quellcode und **`emulationstation-rgds`** aus dem
 herunterladen, dann aus dem Quellcode-Ordner:
 
 ```bash
-ssh root@<IP> mkdir -p /storage/rgds-test
+ssh root@<IP> mkdir -p /storage/rds-install
 ```
 ```bash
-scp emulationstation-rgds device/rgds-test/*.sh installer/payload/uninstall.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds device/rds-install/*.sh device/rds-install/rds-settings.py installer/payload/uninstall.sh root@<IP>:/storage/rds-install/
 ```
 ```bash
 scp device/ports/*.sh installer/payload/ports/*.sh root@<IP>:/storage/roms/ports/
@@ -67,10 +67,10 @@ scp -r theme/dii-ess-aye-rds root@<IP>:/storage/.config/emulationstation/themes/
 Auf dem Gerät:
 
 ```bash
-chmod +x /storage/rgds-test/* /storage/roms/ports/*.sh
+chmod +x /storage/rds-install/* /storage/roms/ports/*.sh
 ```
 ```bash
-/storage/rgds-test/es-switch-helper.sh dual
+/storage/rds-install/es-switch-helper.sh dual
 ```
 
 Selbst bauen ist optional (siehe [`docs/BUILD.de.md`](BUILD.de.md)); eine
@@ -111,4 +111,4 @@ Port-Skripte laufen innerhalb von `essway`. Ein direkter Neustart des
 Dienstes würde sie mit beenden. Sie starten deshalb `es-switch-helper.sh`
 über `systemd-run`. Das Hilfsskript stoppt ES, setzt `ThemeSet` in
 `es_settings.cfg`, setzt oder entfernt den Drop-in und startet ES neu.
-Protokoll: `/storage/rgds-test/es-switch.log`.
+Protokoll: `/storage/rds-install/es-switch.log`.

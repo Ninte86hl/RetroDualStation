@@ -4,12 +4,13 @@
 #
 # 1. Pruefen: RG DS Plus oder RG DS (DSI-1 + DSI-2 gleich gross), ES-Binary laeuft auf
 #    dieser ROCKNIX-Version (keine fehlenden Bibliotheken)
-# 2. Dateien nach /storage/rgds-test, Theme, Ports-Eintraege kopieren
+# 2. Dateien nach /storage/rds-install, Theme, Ports-Eintraege kopieren
 # 3. Installer-Dateien entfernen und auf Dual umschalten
 
 PORTS="${1:-/storage/roms/ports}"
 SRC="$PORTS/.dualstation"
-DEST=/storage/rgds-test
+DEST=/storage/rds-install
+OLDDEST=/storage/rgds-test        # Name bis v15.1 – wird beim Update umbenannt
 THEMEDIR=/storage/.config/emulationstation/themes
 ESCFG=/storage/.config/emulationstation/es_settings.cfg
 LOG=/storage/dualstation-install.log
@@ -18,7 +19,7 @@ export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null)"
 BIN=emulationstation-rgds
 # Neuinstallation oder Update? (VERSION schreibt nur eine abgeschlossene Installation)
-OLDVER="$(cat "$DEST/VERSION" 2>/dev/null)"
+OLDVER="$(cat "$DEST/VERSION" 2>/dev/null || cat "$OLDDEST/VERSION" 2>/dev/null)"
 if [ -n "$OLDVER" ]; then MODE=update; else MODE=install; fi
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
@@ -102,6 +103,13 @@ fi
 sleep 2
 
 # --- 2. Dateien kopieren ---
+# Update von v15.1 oder älter: Programmordner umbenennen (gemerkte Themes, Sicherungen und Log ziehen mit).
+# Übergangsweise zeigt der alte Name dorthin, bis der Helfer am Ende ES vom neuen Ort startet.
+if [ -d "$OLDDEST" ] && [ ! -L "$OLDDEST" ] && [ ! -e "$DEST" ]; then
+    mv "$OLDDEST" "$DEST" || fail "Could not rename $OLDDEST."
+    ln -s "$DEST" "$OLDDEST"
+    log "Programmordner umbenannt: $OLDDEST -> $DEST"
+fi
 mkdir -p "$DEST" || fail "Could not create $DEST."
 
 if [ -f "$ESCFG" ] && [ ! -f "$DEST/es_settings.before-install.cfg" ]; then
@@ -118,7 +126,7 @@ for old in "$DEST"/emulationstation-rgds-* "$DEST"/start-es-v2-diag.sh; do
 done
 
 for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py; do
-    cp "$SRC/rgds-test/$f" "$DEST/$f" || fail "Could not copy $f."
+    cp "$SRC/rds-install/$f" "$DEST/$f" || fail "Could not copy $f."
     chmod +x "$DEST/$f"
 done
 echo "$VERSION" > "$DEST/VERSION"
@@ -513,5 +521,10 @@ log "Installer-Dateien entfernt"
 
 log "Umschalten auf Dual"
 /bin/bash "$DEST/es-switch-helper.sh" dual
+if [ -L "$OLDDEST" ]; then                     # ES läuft jetzt vom neuen Ort – Übergangs-Verweis weg
+    rm -f "$OLDDEST" && log "Uebergangs-Verweis entfernt: $OLDDEST"
+elif [ -d "$OLDDEST" ]; then
+    log "WARNUNG: alter Programmordner $OLDDEST bleibt (neuer Ordner gab es schon) – die Deinstallation entfernt ihn"
+fi
 [ "$MODE" = update ] && log "=== Update fertig ($OLDVER -> $VERSION) ===" || log "=== Neuinstallation fertig ==="
 exit 0

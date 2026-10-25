@@ -30,7 +30,7 @@ in EmulationStation and the Sway setup, so the theme can work as intended:
 patches/                     ES patch for the ROCKNIX build system
 installer/                   installer and uninstaller (Ports entries)
 tools/make-installer.py      builds the installer ZIP
-device/rgds-test/            scripts for /storage/rgds-test/ on the device
+device/rds-install/          scripts for /storage/rds-install/ on the device (up to v15.1: rgds-test)
   start-es-dualstation.sh    start script of the dual-screen build
   rgds-sway-fix.sh           adjusts the Sway config before every start
   es-switch-helper.sh        switches single/dual (theme, service, Sway)
@@ -51,10 +51,10 @@ Download the source code and **`emulationstation-rgds`** from the
 then from the source folder:
 
 ```bash
-ssh root@<IP> mkdir -p /storage/rgds-test
+ssh root@<IP> mkdir -p /storage/rds-install
 ```
 ```bash
-scp emulationstation-rgds device/rgds-test/*.sh installer/payload/uninstall.sh root@<IP>:/storage/rgds-test/
+scp emulationstation-rgds device/rds-install/*.sh device/rds-install/rds-settings.py installer/payload/uninstall.sh root@<IP>:/storage/rds-install/
 ```
 ```bash
 scp device/ports/*.sh installer/payload/ports/*.sh root@<IP>:/storage/roms/ports/
@@ -66,10 +66,10 @@ scp -r theme/dii-ess-aye-rds root@<IP>:/storage/.config/emulationstation/themes/
 On the device:
 
 ```bash
-chmod +x /storage/rgds-test/* /storage/roms/ports/*.sh
+chmod +x /storage/rds-install/* /storage/roms/ports/*.sh
 ```
 ```bash
-/storage/rgds-test/es-switch-helper.sh dual
+/storage/rds-install/es-switch-helper.sh dual
 ```
 
 Building ES yourself is optional (see [`docs/BUILD.md`](BUILD.md)); a
@@ -110,4 +110,4 @@ Port scripts run inside `essway`. Restarting the service directly would
 kill them as well, so they launch `es-switch-helper.sh` through
 `systemd-run`. The helper stops ES, sets `ThemeSet` in `es_settings.cfg`,
 adds or removes the drop-in and starts ES again.
-Log: `/storage/rgds-test/es-switch.log`.
+Log: `/storage/rds-install/es-switch.log`.

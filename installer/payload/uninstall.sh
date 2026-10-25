@@ -1,10 +1,11 @@
 #!/bin/bash
 # RDS – Deinstallation
-# Aufruf: systemd-run --no-block /bin/bash /storage/rgds-test/uninstall.sh
+# Aufruf: systemd-run --no-block /bin/bash /storage/rds-install/uninstall.sh
 # Schaltet auf das Original-ROCKNIX-ES zurueck und entfernt alle Dateien
 # von RDS. Spiele, Medien und Gamelists bleiben unberuehrt.
 
-DEST=/storage/rgds-test
+DEST=/storage/rds-install
+[ -d "$DEST" ] || DEST=/storage/rgds-test       # Name bis v15.1
 PORTS=/storage/roms/ports
 THEMEDIR=/storage/.config/emulationstation/themes
 LOG=/storage/dualstation-uninstall.log
@@ -115,7 +116,7 @@ if [ -d "$THEMEDIR/canvas-rds" ]; then
     log "entfernt: Theme canvas-rds"
 fi
 rm -f /storage/dualstation-canvas-install.log
-rm -rf "$DEST" && log "entfernt: $DEST"
+rm -rf "$DEST" /storage/rds-install /storage/rgds-test && log "entfernt: $DEST"
 rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
 
 # Restliche Dateien von RDS. Bleiben immer: Spiele, Artworks, Savestates, Spielstände, Screenshots,
