@@ -507,6 +507,8 @@ Modifier ist überall die **Anbernic-Taste** (RetroArch Taste 10, DSperate `guid
 
 R1 ist am leichtesten erreichbar → Vorspulen; Speichern/Laden auf den Triggern verhindert versehentliches Auslösen.
 DraStic kennt keinen Modifier: Speichern R2, Laden L2 (ohne Anbernic), Vorspulen R3, Menü L3.
+(Ab 25.10.2026: Speichern F9 = 322, Laden F10 = 323, Menü F11, Vorspulen F12 – virtuelle Tastatur „RDS Keys“;
+Anbernic + R2/L2/X/R1 übersetzt das CC, CC und Gameswitcher drücken die Tasten selbst. R2/L2 allein tun nichts.)
 Sicherungen vor jeder Änderung auf dem PC unter `~/RetroDualStation/backup/`.
 Später: Installer setzt dieses Schema optional (mit Sicherung).
 

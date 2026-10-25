@@ -83,7 +83,7 @@ Im Spiel mit **R1** zur Seite „Spiel“ (RetroArch, DSperate und DraStic):
 | **Start** | Spiel beenden |
 | **◀ / ▶** | Speicherplatz − / + |
 
-DraStic kennt keine Tastenkombinationen: Dort liegen Speichern und Laden auf R2 und L2, Menü und Vorspulen gibt es über das Kontrollcenter.
+DraStic kennt keine Tastenkombinationen – das Kontrollcenter übersetzt sie: **Anbernic + R2/L2** speichert und lädt, **Anbernic + X** öffnet das Menü, **Anbernic + R1** spult vor. R2/L2 allein tun nichts.
 
 ### RetroAchievements (Seite 3)
 

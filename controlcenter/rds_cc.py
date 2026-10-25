@@ -1583,11 +1583,12 @@ def inject_keys(seq):
     return True
 
 
-# Virtuelle Tastatur "RDS Keys" (uinput): Tasten, die es am Gerät nicht gibt (F11/F12).
-# DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F11 = 324, F12 = 325, getestet 22.10.2026)
+# Virtuelle Tastatur "RDS Keys" (uinput): Tasten, die es am Gerät nicht gibt (F9–F12).
+# DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {68: 87, 69: 88}          # SDL-Scancode F11/F12 → evdev KEY_F11/KEY_F12
+SDL_TO_EVDEV = {66: 67, 67: 68, 68: 87, 69: 88}   # SDL-Scancode F9–F12 → evdev KEY_F9–KEY_F12
+DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
 
@@ -2694,7 +2695,8 @@ def drastic_shortcuts():
             name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
         elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
-            rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1"}.get(k, tr("nur über das CC"))))
+            rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1", "SAVE_STATE": "Anbernic + R2",
+                                 "LOAD_STATE": "Anbernic + L2"}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
             rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
@@ -2736,9 +2738,8 @@ def drastic_io(game, n, key, after=0.5):
         if key == "load" and n != b:
             shutil.copy2(fn, fb)
         before = os.path.getmtime(fb) if os.path.exists(fb) else 0
-        code = 313 if key == "save" else 312            # R2 speichern, L2 laden
-        t_key = time.monotonic()
-        inject_keys([(code, 1), 0.1, (code, 0)])
+        t_key = time.monotonic()                         # Speichern/Laden wie in drastic.cfg belegt (RDS: F9/F10)
+        drastic_press("SAVE_STATE" if key == "save" else "LOAD_STATE", DRASTIC_SAVE if key == "save" else DRASTIC_LOAD)
         if key == "load":
             time.sleep(after)                            # DraStic liest die Datei
             ok = True
@@ -6769,8 +6770,8 @@ def main():
                             shot = fn + ".png"
                             subprocess.run(["grim", "-l", "1", "-o", TOP_OUTPUT, shot + ".tmp"], timeout=5,
                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        code = 313 if key == "save" else 312     # R2 speichern, L2 laden
-                        inject_keys([(code, 1), 0.1, (code, 0)])
+                        drastic_press("SAVE_STATE" if key == "save" else "LOAD_STATE",   # RDS: F9/F10
+                                      DRASTIC_SAVE if key == "save" else DRASTIC_LOAD)
                         ok = False
                         for _ in range(30):
                             time.sleep(0.1)
@@ -7096,13 +7097,14 @@ def main():
                 combo_feedback(code)
             elif typ == EV_ABS and code == ABS_HAT0X and value:
                 combo_feedback(546 if value < 0 else 547)
-            # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
-            if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
+            # DraStic kennt keine Kombinationen: Anbernic + R1 / X / R2 / L2 übernimmt das CC
+            # (virtuelle Tasten F12 / F11 / F9 / F10) – R2/L2 allein tun in DraStic so nichts mehr
+            if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH, 313, 312) and not ui.view:
                 g = running_game()
                 if g and g["emu"] == "DraStic":
-                    what = "FAST_FORWARD" if code == BTN_TR else "MENU"
+                    what = {BTN_TR: "FAST_FORWARD", BTN_NORTH: "MENU", 313: "SAVE_STATE", 312: "LOAD_STATE"}[code]
                     def run(what=what):
-                        how = drastic_press(what)
+                        how = drastic_press(what, {"SAVE_STATE": DRASTIC_SAVE, "LOAD_STATE": DRASTIC_LOAD}.get(what))
                         log("Kürzel DraStic:", what, "über", how or "nichts")
                     threading.Thread(target=run, daemon=True).start()
             return

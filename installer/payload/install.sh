@@ -149,6 +149,8 @@ rs save "$BK" "$DSPINI" kv modifier quit pause fast_forward fast_forward_toggle 
     slot_prev layout_next layout_prev screen_swap fps stylus_axis toasts --legacy "$DSPINI.vor-rds-kuerzel"
 rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_INDEX_MENU]" \
     "controls_a[CONTROL_INDEX_FAST_FORWARD]" "controls_b[CONTROL_INDEX_FAST_FORWARD]" compress_savestates \
+    "controls_a[CONTROL_INDEX_SAVE_STATE]" "controls_b[CONTROL_INDEX_SAVE_STATE]" \
+    "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -392,6 +394,15 @@ UNIT
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 325/' "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
         log "DraStic: Menue auf F11, Vorspulen auf F12 (virtuelle Tasten, nur ueber das CC)"
+    fi
+    # DraStic: Speichern/Laden auf F9 (322) / F10 (323) der virtuellen Tastatur – ROCKNIX legt sie auf R2/L2 allein,
+    # DraStic kennt keine Kombinationen. Anbernic + R2/L2 übersetzt das CC; R2/L2 allein tun nichts mehr. Einmal je Gerät.
+    DMARK3=/storage/.config/retrodualstation/drastic-kuerzel-v3.done
+    if [ ! -f "$DMARK3" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_SAVE_STATE\]) = .*/\1 = 322/' \
+                  -e 's/^(controls_[ab]\[CONTROL_INDEX_LOAD_STATE\]) = .*/\1 = 323/' "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK3"
+        log "DraStic: Speichern auf F9, Laden auf F10 (Anbernic + R2/L2 ueber das CC)"
     fi
     # DraStic: Savestates unkomprimiert – Speichern ≈0,3 s statt 1,8 s (Gameswitcher, Home kurz).
     # Nur wenn DraStic nicht läuft (es schreibt die Datei beim Beenden zurück).

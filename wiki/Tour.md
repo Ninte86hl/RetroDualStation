@@ -83,7 +83,7 @@ In a game, press **R1** for the game page (RetroArch, DSperate and DraStic):
 | **Start** | Quit game |
 | **◀ / ▶** | Save slot − / + |
 
-DraStic has no button combinations: save and load are on R2 and L2, menu and fast forward via the Control Center.
+DraStic has no button combinations – the Control Center translates them: **Anbernic + R2/L2** saves and loads, **Anbernic + X** opens the menu, **Anbernic + R1** fast-forwards. R2/L2 alone do nothing.
 
 ### RetroAchievements (page 3)
 

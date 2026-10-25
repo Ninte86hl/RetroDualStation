@@ -24,6 +24,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **DraStic: Speichern/Laden nur mit Anbernic** (25.10.2026) – ROCKNIX legt sie auf R2/L2 allein. Umgesetzt wie
+      Menü/Vorspulen: F9/F10 der virtuellen Tastatur, CC übersetzt Anbernic + R2/L2, Installer-Merker v3.
+      Testen: R2/L2 allein ohne Wirkung · Anbernic + R2/L2 · Speichern/Laden im CC (Slots) · Gameswitcher · Auto-Laden.
 - [ ] **Vergleich GPU-Treiber libmali vs. panfrost** (Wunsch 25.10.2026) – Eindruck: mit panfrost bessere Leistung in
       DS-Spielen (DraStic, DSperate). Auf beiden Geräten je Treiber messen: Gameswitcher-Kette (Mitschnitt wie
       25.10.: `journalctl -u rds-controlcenter -f -o short-precise`, gleiche Wechsel RA ↔ DraStic ↔ DSperate),
