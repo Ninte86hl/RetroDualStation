@@ -24,6 +24,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Kette DraStic → RetroArch beschleunigen** (Messung 25.10.2026, RG DS Plus) – läuft ein DraStic-Spiel als
+      Zusatzspiel und man wechselt zu einem *anderen* RetroArch-Spiel als dem geparkten, dauert es ≈ 11 s:
+      DraStic beenden ≈ 3 s, geparkten RetroArch aufwecken + über ES beenden ≈ 2 s, neues RetroArch-Spiel ≈ 6 s
+      (runemu → Prozess 3,5–4,6 s). Idee: geparkten RetroArch direkt beenden statt sichtbar aufzuwecken (≈ 0,5 s,
+      kein Aufblitzen). DraStic nicht hart beenden (`.dsv`-Spielstand). Übrige Werte: RA → DraStic 3,7 s,
+      DraStic → DraStic 4,0–4,5 s, RA → RA (ES-Kette) 6,1 s, Speichern RA 0,1 s / DraStic ≈ 0,45 s, Home kurz 0,4 s.
 - [ ] **Navigationspfeile** (25.10.2026) – geplante Änderung, Details vergessen; beim nächsten Mal klären,
       wo genau (CC, Gameswitcher, ES?). Beeinträchtigt das laufende System nicht.
 - [ ] **Savestates: Übergang für bestehende Nutzer** (25.10.2026) – Platz 0 ist jetzt der automatische Stand.
