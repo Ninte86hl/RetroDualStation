@@ -1258,7 +1258,8 @@ def game_meta(rom):
 
 
 # Eigene Ports-Einträge von RDS (Werkzeuge, keine Spiele) – nie im Gameswitcher
-RDS_PORTS = {"RDS Dual-Screen.sh", "RDS Single-Screen.sh", "Install RDS.sh", "Uninstall RDS.sh", "Artwork Manager.sh"}
+RDS_PORTS = {"RDS Dual-Screen.sh", "RDS Single-Screen.sh", "Install RDS.sh", "Uninstall RDS.sh", "Artwork Manager.sh",
+             "RDS Artwork Manager.sh"}
 
 
 def is_rds_port(rom):

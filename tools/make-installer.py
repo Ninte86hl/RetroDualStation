@@ -90,7 +90,7 @@ with zipfile.ZipFile(out, "w") as z:
     # Artwork Manager (Gerätefassung): Programm, Ports-Eintrag, Manager-Paket, Pillow
     for f in ("rds_artwork.py", "multidisc.py"):
         add(z, os.path.join(repo, "artworkmanager", f), p + "artworkmanager/" + f, FILE)
-    add(z, os.path.join(repo, "artworkmanager", "Artwork Manager.sh"), p + "ports/Artwork Manager.sh", EXEC)
+    add(z, os.path.join(repo, "artworkmanager", "RDS Artwork Manager.sh"), p + "ports/RDS Artwork Manager.sh", EXEC)
     borders = os.path.join(repo, "artworkmanager", "borders")    # iiSU-Rahmen (tools/make-iisu-borders.py)
     for root, dirs, files in os.walk(borders):
         dirs.sort()

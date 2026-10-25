@@ -2,7 +2,7 @@
 
 Start it from **Ports → Artwork Manager**. It fills in **boxart**, **cartridge icon** (1:1) and **hero image** for your games – the top screen shows a live preview, the bottom screen holds lists, search and buttons.
 
-- Sources: iiSU database and SteamGridDB (free API key in the settings), plus **your own images** from `ports/artworkmanager/eigene/`
+- Sources: iiSU database and SteamGridDB (free API key in the settings), plus **your own images** from `ports/rds-artworkmanager/eigene/`
 - **Single search** (Start) or **batch** (Select) through all games with missing artwork
 - **Icon editor** – turns any icon into a 1:1 image with the iiSU border (move, zoom, choose border)
 - **Filter**: all · missing · no artwork; **game search** across all systems

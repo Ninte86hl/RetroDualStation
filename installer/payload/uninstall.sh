@@ -28,7 +28,7 @@ zip_restore() {   # wie ROCKNIX' „backuptool restore“, aber mit unserer ZIP 
 }
 
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
-for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install RDS.sh" "Artwork Manager.sh" \
+for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install RDS.sh" "RDS Artwork Manager.sh" "Artwork Manager.sh" \
          "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do   # alte Namen bis v13.1
     rm -f "$PORTS/$f" && log "entfernt: $PORTS/$f"
 done
@@ -74,14 +74,17 @@ fi
 # Icons und gamelist-Einträge entfernen
 rm -f "$PORTS"/images/rds-dual.png "$PORTS"/images/rds-single.png "$PORTS"/images/rds-uninstall.png "$PORTS"/images/rds-install.png "$PORTS"/images/rds-artwork.png
 # Artwork Manager: Programm entfernen, Daten (settings.cfg, Sicherungen) bleiben im Ordner
-AMDIR="$PORTS/artworkmanager"
-rm -rf "$AMDIR/rocknixds_artwork_manager" "$AMDIR/__pycache__" "$AMDIR/rds_artwork.py" "$AMDIR/multidisc.py" "$AMDIR/manager.log"
-rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Daten bleiben: $AMDIR"
+for AMDIR in "$PORTS/rds-artworkmanager" "$PORTS/artworkmanager"; do   # Name bis v15.3: artworkmanager
+    [ -d "$AMDIR" ] || continue
+    rm -rf "$AMDIR/rocknixds_artwork_manager" "$AMDIR/__pycache__" "$AMDIR/rds_artwork.py" "$AMDIR/multidisc.py" "$AMDIR/manager.log"
+    rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Daten bleiben: $AMDIR"
+done
 [ -f "$PORTS/gamelist.xml" ] && python3 - "$PORTS/gamelist.xml" <<'PY' 2>>"$LOG"
 import sys, xml.etree.ElementTree as ET
 f = sys.argv[1]
 tree = ET.parse(f); root = tree.getroot()
 drop = {"./RDS Dual-Screen.sh", "./RDS Single-Screen.sh", "./Uninstall RDS.sh", "./Install RDS.sh", "./Artwork Manager.sh",
+        "./RDS Artwork Manager.sh",
         "./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh", "./Install ROCKNIX DualStation.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in drop]:
     root.remove(g)

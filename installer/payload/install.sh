@@ -251,7 +251,7 @@ fi
 
 # Ports-Einträge vor v14 hießen anders (ROCKNIX DualStation / RGDS) – alte Dateien entfernen
 for old in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh" \
-           "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh"; do
+           "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh" "Artwork Manager.sh"; do   # Artwork Manager: bis v15.3
     [ -f "$PORTS/$old" ] && rm -f "$PORTS/$old" && log "alter Ports-Eintrag entfernt: $old"
 done
 
@@ -269,7 +269,7 @@ f, version, date = sys.argv[1], sys.argv[2], sys.argv[3]
 de = (sys.argv[4] if len(sys.argv) > 4 else "").startswith("de")   # Sprache von ES bei der Installation
 root = ET.parse(f).getroot() if os.path.exists(f) and os.path.getsize(f) else ET.Element("gameList")
 old = {"./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./RDS Dual-Screen ES.sh", "./RDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh",
-       "./Install ROCKNIX DualStation.sh"}
+       "./Install ROCKNIX DualStation.sh", "./Artwork Manager.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in old]:
     root.remove(g)
 v = "RDS %s" % version
@@ -278,7 +278,7 @@ entries = {
         "Startet EmulationStation über beide Bildschirme (RetroDualStation). / Runs EmulationStation across both screens."),
     "RDS Single-Screen.sh": ("RDS Single-Screen", "rds-single.png",
         "Zurück zum Original-ES von ROCKNIX auf einem Bildschirm, z. B. zum Scrapen. / Back to stock ROCKNIX ES on one screen, e.g. for scraping."),
-    "Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png",
+    "RDS Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png",
         "Boxart, Icon und Hero-Bild für deine Spiele direkt am Gerät suchen und anpassen. / Find and fit boxart, icons and hero images on the device."),
     "Uninstall RDS.sh": ("Uninstall RDS", "rds-uninstall.png",
         "Entfernt RDS und stellt das Original-ES samt Theme wieder her. Spiele und Spielstände bleiben. / Removes RDS and restores stock ES; games and saves stay."),
@@ -542,8 +542,11 @@ UNIT
 fi
 
 # --- Artwork Manager (Ports) ---
-# Programm nach ports/artworkmanager; settings.cfg, Sicherungen und Zwischenspeicher bleiben erhalten.
-AMDIR="$PORTS/artworkmanager"
+# Programm nach ports/rds-artworkmanager; settings.cfg, Sicherungen und Zwischenspeicher bleiben erhalten.
+AMDIR="$PORTS/rds-artworkmanager"
+if [ -d "$PORTS/artworkmanager" ] && [ ! -e "$AMDIR" ]; then      # Name bis v15.3 – Daten ziehen mit um
+    mv "$PORTS/artworkmanager" "$AMDIR" && log "Artwork Manager: Ordner umbenannt in rds-artworkmanager"
+fi
 if [ -f "$SRC/artworkmanager/rds_artwork.py" ]; then
     mkdir -p "$AMDIR"
     cp "$SRC/artworkmanager/rds_artwork.py" "$SRC/artworkmanager/multidisc.py" "$AMDIR/"

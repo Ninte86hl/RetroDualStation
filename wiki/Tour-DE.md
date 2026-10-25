@@ -151,10 +151,10 @@ im ES-Menü unter *Scraper* (geht auch im Dual-Modus); RetroDualStation und das 
 | | **X** | Icon-Editor: aus dem gewählten Icon ein 1:1-Bild mit iiSU-Rahmen machen (◀ ▶ ▲ ▼ verschieben · L / R Zoom · Y Rahmen). Bei Icons, die den iiSU-Rahmen schon haben, nicht nötig und ausgegraut |
 
 Vor dem ersten Speichern pro System wird eine Sicherung angelegt (in den Einstellungen abschaltbar).
-**Eigene Bilder:** PNG-, JPG- oder WebP-Dateien in `ports/artworkmanager/eigene/` (oder `eigene/<System>/`) legen und wie das Spiel benennen – sie erscheinen vorn in jedem Tab als *Eigenes Bild*. Alles in `eigene/alle/` erscheint bei jedem Spiel.
+**Eigene Bilder:** PNG-, JPG- oder WebP-Dateien in `ports/rds-artworkmanager/eigene/` (oder `eigene/<System>/`) legen und wie das Spiel benennen – sie erscheinen vorn in jedem Tab als *Eigenes Bild*. Alles in `eigene/alle/` erscheint bei jedem Spiel.
 
 Den SteamGridDB-API-Key kannst du auch am PC eintragen:
-`/storage/roms/ports/artworkmanager/settings.cfg`.
+`/storage/roms/ports/rds-artworkmanager/settings.cfg`.
 
 ---
 

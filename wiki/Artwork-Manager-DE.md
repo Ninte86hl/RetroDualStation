@@ -2,7 +2,7 @@
 
 Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge-Icon** (1:1) und **Hero-Bild** für deine Spiele – oben siehst du live, wie alles zusammen wirkt, unten liegen Listen, Suche und Tasten.
 
-- Quellen: iiSU-Datenbank und SteamGridDB (kostenloser API-Key in den Einstellungen) sowie **eigene Bilder** aus `ports/artworkmanager/eigene/`
+- Quellen: iiSU-Datenbank und SteamGridDB (kostenloser API-Key in den Einstellungen) sowie **eigene Bilder** aus `ports/rds-artworkmanager/eigene/`
 - **Einzelsuche** (Start) oder **Mehrfachsuche** (Select) durch alle Spiele mit fehlenden Artworks
 - **Icon-Editor** – macht aus jedem Icon ein 1:1-Bild mit iiSU-Rahmen (verschieben, zoomen, Rahmen wählen)
 - **Filter**: alle · fehlende · keine Artworks; **Spielesuche** über alle Systeme
