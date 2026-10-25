@@ -2,6 +2,7 @@
 # Versuch: DraStic mit übereinander angeordneten Bildschirmen (vertikal) – Touch über die neuere libdrastouch.
 # Alles nur bis zum Neustart (Bind-Mounts), nichts im System wird dauerhaft geändert.
 #   sh /storage/rds-stest/rds-stest.sh an       in ES, DraStic beendet: neue libdrastouch + Start-Hülle einhängen
+#   sh /storage/rds-stest/rds-stest.sh an-original   nur die Start-Hülle (ROCKNIX-libdrastouch, Touch über map_to_region)
 #   → Zelda normal aus ES starten
 #   sh /storage/rds-stest/rds-stest.sh aus      DraStic beendet: alles aushängen, Anordnung und drastic.cfg zurück
 #   sh /storage/rds-stest/rds-stest.sh status
@@ -9,15 +10,19 @@ D=/storage/rds-stest
 export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 C=/storage/.config/drastic/config/drastic.cfg
 case "$1" in
-an)
+an|an-original)
     pidof drastic >/dev/null && { echo "DraStic läuft – erst beenden"; exit 1; }
     [ -s "$C" ] || { echo "drastic.cfg leer – abbrechen"; exit 1; }
     grep -q " /usr/bin/start_drastic.sh " /proc/mounts && { echo "Schon eingehängt"; exit 0; }
     [ -s "$D/drastic.cfg.vorher" ] || cp "$C" "$D/drastic.cfg.vorher"
     cp /usr/bin/start_drastic.sh "$D/start_drastic.orig.sh"
     chmod +x "$D/start_drastic.orig.sh" "$D/rds-start-drastic.sh"
-    mount --bind "$D/libdrastouch.so" /usr/lib/libdrastouch.so &&
-    mount --bind "$D/rds-start-drastic.sh" /usr/bin/start_drastic.sh && echo "Eingehängt – jetzt Zelda aus ES starten"
+    if [ "$1" = "an-original" ]; then   # Variante ohne eigene Bibliothek (ROCKNIX-libdrastouch, Touch über map_to_region)
+        mount --bind "$D/rds-start-drastic.sh" /usr/bin/start_drastic.sh && echo "Eingehängt (ROCKNIX-libdrastouch) – Spiel aus ES starten"
+    else
+        mount --bind "$D/libdrastouch.so" /usr/lib/libdrastouch.so &&
+        mount --bind "$D/rds-start-drastic.sh" /usr/bin/start_drastic.sh && echo "Eingehängt – jetzt Zelda aus ES starten"
+    fi
     ;;
 aus)
     pidof drastic >/dev/null && { echo "DraStic läuft – erst beenden"; exit 1; }

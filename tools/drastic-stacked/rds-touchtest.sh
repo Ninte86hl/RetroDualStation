@@ -19,7 +19,7 @@ zahl() { local n; n=$(grep -c "rds-touch" "$LOG" 2>/dev/null); echo "${n:-0}"; }
 echo "=== Touch-Test DraStic vertikal ($(date '+%d.%m. %H:%M')) ===" | tee "$OUT"
 if ! grep -q " /usr/bin/start_drastic.sh " /proc/mounts; then
     if pidof drastic >/dev/null; then echo "DraStic läuft ohne Versuch – bitte beenden und neu aufrufen"; exit 1; fi
-    sh $D/rds-stest.sh an || exit 1
+    sh $D/rds-stest.sh "${MODUS:-an}" || exit 1
 fi
 if ! pidof drastic >/dev/null; then
     ROM=$(ls /storage/roms/nds/* | grep -i -E "\.(nds|zip|7z)$" | grep -i -- "${1:-zelda.*phantom}" | head -1)
@@ -52,7 +52,8 @@ done
 
 {
     echo "--- Stand ---"
-    grep -E "Start|Bildschirm|DSHOOK|Touch auf" "$LOG"
+    grep -E "Start|Bildschirm|DSHOOK|Touch" "$LOG" | grep -v rds-touch
+    grep "drastouch\|start_drastic" /proc/mounts
     swaymsg -t get_outputs --raw | python3 -c 'import json,sys; [print(o["name"], o["rect"]) for o in json.load(sys.stdin)]'
     swaymsg -t get_inputs --raw | python3 -c 'import json,sys; [print(i["identifier"], i.get("libinput", {}).get("calibration_matrix", "")) for i in json.load(sys.stdin) if i["type"] == "touch"]'
 } >> "$OUT" 2>&1
