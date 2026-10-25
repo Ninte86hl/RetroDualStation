@@ -2267,7 +2267,8 @@ class Switcher:
                     if fresh:
                         time.sleep(0.5)
                         ra_reset()               # Auto-Laden übergehen (Ladebildschirm verdeckt es)
-                        time.sleep(2.2)          # … auch die „Reset“-Meldung von RetroArch abwarten
+                        time.sleep(3.5)          # … auch die „Reset“-Meldung abwarten (direkt nach dem Start
+                                                 # läuft sie länger als im laufenden Spiel – 2,2 s reichten nicht)
                     elif not autosave_on(item["rom"]):
                         time.sleep(gs_wait("retroarch_slot", 1.5))   # ohne Auto-Laden: unseren Slot nachladen
                         ra_command(f"LOAD_STATE_SLOT {SLOT}")
