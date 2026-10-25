@@ -3,6 +3,7 @@
 Repo `Ninte86hl/RetroDualStation`, Arbeitszweig **kontrollcenter** (main = Release). Alles committet und gepusht.
 Geräte: RG DS Plus `root@192.168.178.80`, RG DS `root@192.168.178.21`. PC-Repo: `~/RetroDualStation/retrodualstation`.
 Übertragen: `scp controlcenter/rds_cc.py root@<ip>:/storage/.config/retrodualstation/controlcenter/ && ssh root@<ip> 'systemctl restart essway'`
+(Programmordner ab v15.2 `/storage/rds-install`, vorher `/storage/rgds-test`.)
 
 ## Arbeitsweise (Michel)
 Deutsch, kurz · Befehle vollständig, je ein Block, mit `git pull` · „Einfach und gut steuerbar“, „Sicherheit vor
@@ -36,6 +37,16 @@ Funktionsumfang“ · erst testen, dann TODO/Notizen · keine Zugangsdaten zeige
   CC prüft alle 30 s in /proc und behält nur den neuesten. Getestet auf dem Plus.
 - **Schalter Schnellwechsel** (`4dbfd84`): CC oben 4. Symbol (Pfeile), gesperrt solange ein Spiel geparkt ist;
   Installer schaltet ihn einmal je Gerät ein (Merker `fastswitch-default.done`). Getestet auf dem Plus.
+- **Single-Modus** (`918af52`): CC-Dienst nur mit Dual-Drop-in, Power-Taste im Single-Modus wieder ROCKNIX (logind
+  über es-switch-helper.sh). Noch nicht getestet.
+- **Installer/Deinstallation** (`e64cba0` … `95390ef`, noch nicht auf dem Gerät getestet):
+  `rds-settings.py` sichert Originalwerte je Einstellung (JSON) und setzt sie zurück; Notfall-ZIP
+  `roms/backup/RDS_ORIGINAL_BACKUP.zip` (backuptool-Format, nur beim ersten Mal); bei Fehler sofort eingespielt,
+  bei Abbruch per `rds-uninstall-guard.service` beim nächsten Start (Merker `/storage/.config/rds-uninstall.running`);
+  saubere Deinstallation bis aufs Log (Artworks, Savestates, Spielstände, AM-Daten bleiben; `*.dss.png` weg);
+  Update-Erkennung, Port-Eintrag heißt danach „Update RDS“; Programmordner jetzt **/storage/rds-install**
+  (Update benennt `rgds-test` um). **Achtung:** neue `es-switch-helper.sh` nicht mehr per scp in den alten Ordner
+  kopieren – erst per Installer updaten.
 - **Installer**: DraStic `compress_savestates = 0` (`0038ade`) – offen: laden alte komprimierte Stände noch?
 
 ## Offen (docs/TODO.md)
@@ -43,5 +54,7 @@ Funktionsumfang“ · erst testen, dann TODO/Notizen · keine Zugangsdaten zeige
 - Installer DraStic `compress_savestates = 0`: prüfen, ob alte komprimierte Stände noch laden.
 - DSperate „Neu starten“ (Y) prüfen – Autoload kommt per `--autoload`, nicht aus dsperate.ini.
 - RG DS: neue Laden-Ansicht und Auto-Laden noch nicht getestet; `drastic` 0,3 s dort gegenprüfen.
+- Durchlauf RG DS: Neuinstallation, Update, Deinstallation (Vergleich, Reste), Abbruch-Fall, wieder installieren.
+- Optional: Rücksicherung der vorherigen Version beim Update.
 - Optimierungsliste: 2) mehrere Spiele parken auf dem RG DS (über 2 GB frei) · 5) Testskripte in `tools/` aufräumen.
 - Wiki/Anleitung (Home-Belegung, Slots 1–9) erst nach Abnahme anpassen.
