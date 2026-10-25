@@ -1,6 +1,6 @@
 # To-do – RetroDualStation & Artwork Manager
 
-Stand: 25.10.2026 (nach v15.2) · Eine Liste für alles, damit nichts verloren geht. Erledigtes steht in den
+Stand: 25.10.2026 (nach v15.3) · Eine Liste für alles, damit nichts verloren geht. Erledigtes steht in den
 Release-Notes (`docs/releases/`) und im Git-Verlauf.
 
 > **Leitsatz:** RetroDualStation – one system, two screens, everything in sync.
@@ -27,21 +27,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] **DSperate: Schnellspeichern im Spiel landet auf Platz 0** (`CODE.0.dss`) – Anbernic + R2 speichert in DSperates
       aktuellen Slot (Start: 0); den zeigt das Menü nicht (automatisch = `.auto.dss`). Prüfen: DSperate-Startslot
       auf 1 setzen oder Platz 0 in der Kachel „Automatisch“ mit anzeigen. (RetroArch/DraStic: Platz 0 = automatisch.)
-- [ ] **DraStic: Speichern/Laden nur mit Anbernic** (25.10.2026) – ROCKNIX legt sie auf R2/L2 allein. Umgesetzt wie
-      Menü/Vorspulen: F9/F10 der virtuellen Tastatur, CC übersetzt Anbernic + R2/L2, Installer-Merker v3.
-      Testen: R2/L2 allein ohne Wirkung · Anbernic + R2/L2 · Speichern/Laden im CC (Slots) · Gameswitcher · Auto-Laden.
 - [ ] **Vergleich GPU-Treiber libmali vs. panfrost** (Wunsch 25.10.2026) – Eindruck: mit panfrost bessere Leistung in
       DS-Spielen (DraStic, DSperate). Auf beiden Geräten je Treiber messen: Gameswitcher-Kette (Mitschnitt wie
       25.10.: `journalctl -u rds-controlcenter -f -o short-precise`, gleiche Wechsel RA ↔ DraStic ↔ DSperate),
       FPS im Spiel (DraStic/DSperate-Anzeige, gleiche Stelle), Start-/Ladezeiten, dazu Touch, Bildschirmzuordnung und
       Overlays prüfen. Umschalten über die ROCKNIX-Einstellung (autostart `003-gpudriver`; genauen Schlüssel/Menüpunkt
       am Gerät nachsehen). Ergebnis als Tabelle; ggf. Empfehlung in der Doku, kein automatisches Umschalten durch RDS.
-- [ ] **Kette DraStic → RetroArch beschleunigen** – umgesetzt (Anker unsichtbar aufwecken, `fast_wake_hidden`), messen (Messung 25.10.2026, RG DS Plus) – läuft ein DraStic-Spiel als
-      Zusatzspiel und man wechselt zu einem *anderen* RetroArch-Spiel als dem geparkten, dauert es ≈ 11 s:
-      DraStic beenden ≈ 3 s, geparkten RetroArch aufwecken + über ES beenden ≈ 2 s, neues RetroArch-Spiel ≈ 6 s
-      (runemu → Prozess 3,5–4,6 s). Idee: geparkten RetroArch direkt beenden statt sichtbar aufzuwecken (≈ 0,5 s,
-      kein Aufblitzen). DraStic nicht hart beenden (`.dsv`-Spielstand). Übrige Werte: RA → DraStic 3,7 s,
-      DraStic → DraStic 4,0–4,5 s, RA → RA (ES-Kette) 6,1 s, Speichern RA 0,1 s / DraStic ≈ 0,45 s, Home kurz 0,4 s.
 - [ ] **Navigationspfeile** (25.10.2026) – geplante Änderung, Details vergessen; beim nächsten Mal klären,
       wo genau (CC, Gameswitcher, ES?). Beeinträchtigt das laufende System nicht.
 - [ ] **Installer: DraStic `compress_savestates = 0`** – eingebaut (25.10.2026); noch prüfen, ob alte komprimierte
