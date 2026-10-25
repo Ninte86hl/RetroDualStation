@@ -24,6 +24,14 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version
+      selbst finden und laden, statt die ZIP am PC zu holen und per SD/scp in ports zu kopieren. Ideen: Abfrage
+      `api.github.com/repos/Ninte86hl/RetroDualStation/releases/latest` (Tag mit `rds-install/VERSION` vergleichen);
+      Hinweis im CC („Update verfügbar: v…“) und Eintrag/Kachel „Update laden“; ZIP nach `/storage/roms/ports`
+      laden (Fortschritt, genug Speicher prüfen, SHA256/Größe gegen die Release-Angaben), entpacken, dann wie
+      bisher **Update RDS** (gleiche Sicherheitsnetze). Nur auf Wunsch laden, nie automatisch installieren; kein Netz →
+      still nichts tun. Später: Release-Notes kurz im CC anzeigen. (Entscheidung 21.10.: Updates erst bei größerer
+      Nutzerbasis – damit jetzt eingeplant.)
 - [ ] **Idee, noch nicht entschieden (25.10.2026): Start aus ES ohne Auto-Laden, Fortsetzen nur über den Gameswitcher** – automatischer Stand
       wird weiter über Home kurz, Gameswitcher und CC-Beenden angelegt. Umsetzung: Installer setzt ES-Autoload aus
       (gesichert, Deinstallation stellt zurück); Gameswitcher lädt den Auto-Stand immer selbst (neu: DSperate, wie die
