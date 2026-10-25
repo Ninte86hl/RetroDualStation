@@ -17,6 +17,9 @@ export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null)"
 BIN=emulationstation-rgds
+# Neuinstallation oder Update? (VERSION schreibt nur eine abgeschlossene Installation)
+OLDVER="$(cat "$DEST/VERSION" 2>/dev/null)"
+if [ -n "$OLDVER" ]; then MODE=update; else MODE=install; fi
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -30,7 +33,11 @@ fail() {
     exit 1
 }
 
-log "=== Installation RDS $VERSION ==="
+if [ "$MODE" = update ]; then
+    log "=== Update RDS $OLDVER -> $VERSION ==="
+else
+    log "=== Neuinstallation RDS $VERSION ==="
+fi
 log "Quelle: $SRC"
 grep -E '^(NAME|VERSION|VERSION_ID|BUILD_ID)=' /etc/os-release 2>/dev/null | while read -r l; do log "os-release: $l"; done
 
@@ -87,7 +94,11 @@ if [ -n "$MISSING" ]; then
 fi
 log "ES-Binary: $BIN, Bibliotheken ok"
 
-notify "Installing RDS – EmulationStation will restart in a moment..."
+if [ "$MODE" = update ]; then
+    notify "Updating RDS $OLDVER → $VERSION – EmulationStation will restart in a moment..."
+else
+    notify "Installing RDS – EmulationStation will restart in a moment..."
+fi
 sleep 2
 
 # --- 2. Dateien kopieren ---
@@ -137,6 +148,7 @@ rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.bef
 # Format wie ROCKNIX' backuptool: umbenannt in ROCKNIX_BACKUP.zip stellt „backuptool restore“ sie zurück.
 RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
 if [ ! -f "$RDSZIP" ]; then
+    [ "$MODE" = update ] && log "Hinweis: Notfall-Sicherung wird beim Update angelegt – Stand von vor RDS nur, soweit aeltere Sicherungen ihn enthalten"
     rs snapshot "$RDSZIP" "$RACFG=$RACFG.vor-rds-kuerzel" "$DCFG=$DCFG.vor-rds-kuerzel" "$DSPINI=$DSPINI.vor-rds-kuerzel" \
         "$ESCFG=$DEST/es_settings.before-install.cfg" "$ESINPUT=$ESINPUT.before-rds" \
         /storage/.config/system/configs/system.cfg /storage/.config/sway/config /storage/.config/mako/config
@@ -207,6 +219,8 @@ if [ -d "$SRC/images" ]; then
     mkdir -p "$PORTS/images"
     cp "$SRC"/images/rds-*.png "$PORTS/images/"
     RDSLANG="$( . /etc/profile >/dev/null 2>&1; get_setting system.language )"
+    # „Install RDS.sh“ heißt nach der Installation „Update RDS“: ein später kopiertes neues Paket erscheint so als
+    # Update. Die Deinstallation entfernt den Eintrag wieder – auf einem frischen Gerät steht dann „Install RDS“.
     python3 - "$PORTS/gamelist.xml" "$VERSION" "${RDSDATE:-$(date +%Y%m%d)}" "$RDSLANG" <<'PY' 2>>"$LOG"
 import os, sys, xml.etree.ElementTree as ET
 f, version, date = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -226,8 +240,8 @@ entries = {
         "Boxart, Icon und Hero-Bild für deine Spiele direkt am Gerät suchen und anpassen. / Find and fit boxart, icons and hero images on the device."),
     "Uninstall RDS.sh": ("Uninstall RDS", "rds-uninstall.png",
         "Entfernt RDS und stellt das Original-ES samt Theme wieder her. Spiele und Spielstände bleiben. / Removes RDS and restores stock ES; games and saves stay."),
-    "Install RDS.sh": ("Install RDS", "rds-install.png",
-        "Installiert oder aktualisiert RDS (RetroDualStation). / Installs or updates RDS."),
+    "Install RDS.sh": ("Update RDS", "rds-install.png",
+        "Aktualisiert RDS auf die neue Version – Einstellungen, Spielstände und Sicherungen bleiben. / Updates RDS to the new version – settings, saves and backups stay."),
 }
 for script, (name, img, desc) in entries.items():
     path = "./" + script
@@ -499,5 +513,5 @@ log "Installer-Dateien entfernt"
 
 log "Umschalten auf Dual"
 /bin/bash "$DEST/es-switch-helper.sh" dual
-log "=== Installation fertig ==="
+[ "$MODE" = update ] && log "=== Update fertig ($OLDVER -> $VERSION) ===" || log "=== Neuinstallation fertig ==="
 exit 0
