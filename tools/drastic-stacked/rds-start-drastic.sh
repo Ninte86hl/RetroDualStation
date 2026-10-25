@@ -21,8 +21,9 @@ echo "DSHOOK_WINDOW_SIZE=$DSHOOK_WINDOW_SIZE"
     echo "$(date +%T) Touch auf DSI-1 (beide Goodix-Geräte haben dieselbe Kennung – Zuordnung gilt für beide)"
     swaymsg -t get_tree | grep -A3 '"app_id": "drastic"' | grep -E "rect|width|height" | head -4
 ) &
-bash "$D/start_drastic.orig.sh" "$@" 2>&1 | while IFS= read -r l; do case "$l" in *ticks*) ;; *) echo "$l";; esac; done
-RC=${PIPESTATUS[0]}
+# stdout (DraStic-Zeitmeldungen, gepuffert) verwerfen – sonst zerreißt es die Touch-Zeilen von stderr
+bash "$D/start_drastic.orig.sh" "$@" >/dev/null
+RC=$?
 echo "$(date +%T) DraStic beendet ($RC)"
 swaymsg "output DSI-2 position 0 0; output DSI-1 position $W 0"
 sed -i -E 's/^screen_orientation *= *.*/screen_orientation = 1/' "$C"
