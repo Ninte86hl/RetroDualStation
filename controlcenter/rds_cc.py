@@ -1257,6 +1257,14 @@ def game_meta(rom):
     return name, icon
 
 
+# Eigene Ports-Einträge von RDS (Werkzeuge, keine Spiele) – nie im Gameswitcher
+RDS_PORTS = {"RDS Dual-Screen.sh", "RDS Single-Screen.sh", "Install RDS.sh", "Uninstall RDS.sh", "Artwork Manager.sh"}
+
+
+def is_rds_port(rom):
+    return bool(rom) and "/ports/" in rom and os.path.basename(rom) in RDS_PORTS
+
+
 def running_port():
     """PortMaster selbst (pugwash) oder ein gestarteter Port (/roms/ports/*.sh)."""
     tool = None
@@ -2079,7 +2087,8 @@ class Switcher:
     def load(self):
         try:
             with open(GS_HISTORY) as f:
-                self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))][:GS_MAX]
+                self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))
+                          and not is_rds_port(i.get("rom"))][:GS_MAX]
         except (OSError, ValueError):
             self.items = []
         changed = False
@@ -2112,7 +2121,7 @@ class Switcher:
     def remember(self, game, shot=None):
         """Laufendes Spiel oben in die Liste setzen."""
         rom = game.get("rom") or rom_of(game["pid"])
-        if not rom:
+        if not rom or is_rds_port(rom):              # RDS-Werkzeuge (Dual/Single, Installer …) sind keine Spiele
             return
         old = next((i for i in self.items if i["rom"] == rom), {})
         entry = {"rom": rom, "name": game["name"], "system": game.get("system", ""),
@@ -2141,7 +2150,7 @@ class Switcher:
         if not game:
             return
         rom = game.get("rom") or rom_of(game["pid"])
-        if not rom:
+        if not rom or is_rds_port(rom):
             return
         os.makedirs(GS_DIR, exist_ok=True)
         shot = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
