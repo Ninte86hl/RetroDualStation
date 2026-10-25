@@ -2503,16 +2503,9 @@ class Pauser:
     def pause(self, game):
         if self.how or not game:
             return
-        if game["emu"] == "RetroArch":
-            status = ra_command("GET_STATUS", reply=True)
-            if status is not None:
-                if "PLAYING" in status:
-                    ra_command("PAUSE_TOGGLE")
-                    self.how = "ra"
-                    log("Pause: RetroArch angehalten")
-                else:
-                    log("Pause: RetroArch meldet", status.strip()[:40], "– nichts zu tun")
-                return
+        # Alle Emulatoren einfrieren – auch RetroArch: dessen eigene Pause (PAUSE_TOGGLE) zeichnet mit Widgets eine
+        # „Pausiert“-Kachel aufs Spiel. Netzbefehle (Speichern in Slot …) bleiben im Puffer und laufen nach dem
+        # Aufwecken. (Der Schnellwechsel friert RetroArch genauso ein.)
         try:
             self.pids = proc_tree(game["pid"])
             for p in reversed(self.pids):
@@ -2526,9 +2519,7 @@ class Pauser:
             log("Pause fehlgeschlagen:", exc)
 
     def resume(self):
-        if self.how == "ra":
-            ra_command("PAUSE_TOGGLE")
-        elif self.how == "stop":
+        if self.how == "stop":
             for p in getattr(self, "pids", [self.pid]):
                 try:
                     os.kill(p, signal.SIGCONT)

@@ -148,7 +148,7 @@ rs save "$BK" "$RACFG" kv confirm_reset confirm_close notification_show_save_sta
     notification_show_netplay_extra cheevos_visibility_unlock cheevos_visibility_mastery cheevos_visibility_account \
     cheevos_visibility_lboard_start cheevos_visibility_lboard_submit cheevos_visibility_lboard_cancel \
     cheevos_visibility_lboard_trackers cheevos_visibility_progress_tracker cheevos_visibility_summary \
-    cheevos_challenge_indicators video_message_color \
+    cheevos_challenge_indicators video_message_color pause_nonactive \
     menu_enable_widgets network_cmd_enable quit_press_twice input_enable_hotkey_btn input_toggle_fast_forward_btn \
     input_save_state_btn input_load_state_btn input_rewind_btn input_menu_toggle_btn input_fps_toggle_btn \
     input_exit_emulator_btn input_state_slot_decrease_btn input_state_slot_increase_btn --legacy "$RACFG.vor-rds-kuerzel"
@@ -359,7 +359,8 @@ UNIT
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
         # Bildschirmtext an (sonst gibt es keine FPS-Anzeige mit Anbernic + Y), Einblendungen aber einzeln aus –
         # Speichern, Laden, Vorspulen, Screenshot und Erfolge meldet das Kontrollcenter selbst. Erfolge-Zusammenfassung
-        # beim Start aus (summary 2 = aus). Widgets an: FPS wie gewohnt weiß auf dunkler Kachel oben rechts
+        # beim Start aus (summary 2 = aus). pause_nonactive aus: eine Berührung unten nahm RetroArch den Fokus und
+        # pausierte es (mit „Pausiert“-Kachel) – das Anhalten übernimmt das CC. Widgets an: FPS wie gewohnt weiß auf dunkler Kachel oben rechts
         # (ohne Widgets gelber Text – dafür bleibt video_message_color weiß).
         for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=true' \
                   'network_cmd_enable=true' 'quit_press_twice=false' \
@@ -373,7 +374,7 @@ UNIT
                   'cheevos_visibility_lboard_start=false' 'cheevos_visibility_lboard_submit=false' \
                   'cheevos_visibility_lboard_cancel=false' 'cheevos_visibility_lboard_trackers=false' \
                   'cheevos_visibility_progress_tracker=false' 'cheevos_visibility_summary=2' \
-                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff'; do
+                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff' 'pause_nonactive=false'; do
             k="${kv%%=*}"; v="${kv#*=}"
             if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
         done
