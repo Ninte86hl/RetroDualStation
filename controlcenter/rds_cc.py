@@ -1817,12 +1817,16 @@ def swap_screens(g):
         SWAP[pid] = emu
     else:
         SWAP.pop(pid, None)
-    if emu == "DraStic":
-        tm = touch_map("DraStic", on)
-        if tm:
-            time.sleep(0.15)
+    tm = touch_map("DraStic", on) if emu == "DraStic" else None
+    log("Bildschirme tauschen:", emu, "an" if on else "aus", "über", how, "· Touch:", tm or "–")
+    if tm:
+        # DraStic baut sein Fenster beim Tauschen neu auf; dabei greift die for_window-Regel von ROCKNIX erneut und
+        # setzt den Touch auf DSI-2 zurück – deshalb mehrmals nachsetzen, solange der Zustand gilt
+        for wait in (0.15, 0.5, 1.0, 2.0):
+            time.sleep(wait)
+            if (pid in SWAP) != on:
+                break
             sway_cmd(tm)
-    log("Bildschirme tauschen:", emu, "an" if on else "aus", "über", how)
     info_toast("Bildschirme getauscht" if on else "Bildschirme normal", "swap")
 
 
