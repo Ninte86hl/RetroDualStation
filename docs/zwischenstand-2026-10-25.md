@@ -34,10 +34,11 @@ Funktionsumfang“ · erst testen, dann TODO/Notizen · keine Zugangsdaten zeige
   Theme-Farbe mit „Automatischer Speicherpunkt“ mittig und Kachel „Automatisch“ unter Slot 7. Speichern bleibt 3×3.
 - **Bluetooth-Agent** (`034d7f7`): Ursache runemu.sh – `kill "$NPID"` scheitert bei 2 PIDs, danach je Spiel einer mehr.
   CC prüft alle 30 s in /proc und behält nur den neuesten. Getestet auf dem Plus.
+- **Schalter Schnellwechsel** (`4dbfd84`): CC oben 4. Symbol (Pfeile), gesperrt solange ein Spiel geparkt ist;
+  Installer schaltet ihn einmal je Gerät ein (Merker `fastswitch-default.done`). Getestet auf dem Plus.
 - **Installer**: DraStic `compress_savestates = 0` (`0038ade`) – offen: laden alte komprimierte Stände noch?
 
 ## Offen (docs/TODO.md)
-- Schnellwechsel: Schalter im CC + Standard an/aus.
 - Savestates-Übergang für bestehende Nutzer (eigene Stände auf Platz 0, v. a. DSperate → freien Slot; RA `.state9`).
 - Installer DraStic `compress_savestates = 0`: prüfen, ob alte komprimierte Stände noch laden.
 - DSperate „Neu starten“ (Y) prüfen – Autoload kommt per `--autoload`, nicht aus dsperate.ini.

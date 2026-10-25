@@ -31,9 +31,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Savestates danach weiter laden.
 - [ ] **DSperate „Neu starten“ (Y im Gameswitcher)** prüfen – Autoload kommt per `--autoload` aus ROCKNIX, nicht aus
       dsperate.ini; das Abschalten im CC greift vermutlich nicht.
-- [ ] **Schnellwechsel: Schalter im Kontrollcenter** (24.10.2026) – bisher nur über die Testdatei
-      `/storage/.config/retrodualstation/fastswitch`. Für v15.2 einen Schalter im CC (mit kurzer Erklärung) und
-      entscheiden, ob er standardmäßig an oder aus ist. Getestet auf RG DS Plus und RG DS (DSperate, DraStic, RetroArch).
 - [ ] **Single-Modus: Kontrollcenter ruhen lassen** (gemeldet 24.10.2026) – im Single-Screen-Modus reagiert der
       CC-Dienst weiter auf Anbernic, Home und Power: Vibration, und vermutlich versucht er CC, Gameswitcher und
       Power-Menü zu öffnen. Es fühlt sich an wie die Dual-Bedienung mit nur einem Bildschirm. Im Single-Modus
