@@ -24,6 +24,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **RetroArch „Neu starten“ aus CC/Gameswitcher prüfen** (25.10.2026) – ging auf dem RG DS nach Deinstallation +
+      Neuinstallation nur noch übers RA-Menü. Ursache: Installer ersetzte `confirm_reset`/`confirm_close` nur, wenn die
+      Zeile existiert (Deinstallation entfernt sie korrekt wieder) → RA-Standard mit Rückfrage. Fix: ersetzen oder
+      hinzufügen. Nach dem Fix auf beiden Geräten testen, auch auf frischem ROCKNIX.
 - [ ] **Kette DraStic → RetroArch beschleunigen** (Messung 25.10.2026, RG DS Plus) – läuft ein DraStic-Spiel als
       Zusatzspiel und man wechselt zu einem *anderen* RetroArch-Spiel als dem geparkten, dauert es ≈ 11 s:
       DraStic beenden ≈ 3 s, geparkten RetroArch aufwecken + über ES beenden ≈ 2 s, neues RetroArch-Spiel ≈ 6 s
