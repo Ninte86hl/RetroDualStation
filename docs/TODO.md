@@ -43,12 +43,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Savestates danach weiter laden.
 - [ ] **DSperate „Neu starten“ (Y im Gameswitcher)** prüfen – Autoload kommt per `--autoload` aus ROCKNIX, nicht aus
       dsperate.ini; das Abschalten im CC greift vermutlich nicht.
-- [ ] **Single-Modus: Kontrollcenter ruhen lassen** (gemeldet 24.10.2026) – im Single-Screen-Modus reagiert der
-      CC-Dienst weiter auf Anbernic, Home und Power: Vibration, und vermutlich versucht er CC, Gameswitcher und
-      Power-Menü zu öffnen. Es fühlt sich an wie die Dual-Bedienung mit nur einem Bildschirm. Im Single-Modus
-      soll der Dienst nichts tun (keine Tasten abgreifen, keine Vibration, kein Power-Menü – ROCKNIX übernimmt);
-      z. B. beim Umschalten (`es-switch-helper.sh single`) stoppen bzw. im CC den Modus erkennen und ruhen.
-      Dabei auch den veralteten Tour-Hinweis „einmal im Single-Screen-Modus scrapen“ (Artwork Manager) anpassen.
 - [ ] **Uninstaller: Sicherungen zurückspielen** (24.10.2026) – `system.cfg`-Werte, Sway und mako stellt er schon her,
       aber nicht: RetroArch-Kürzel (`retroarch.cfg.vor-rds-kuerzel`), DSperate (`dsperate.ini.vor-rds-kuerzel`, auch `toasts`),
       DraStic (`drastic.cfg.vor-rds-kuerzel`), ES-Tastenbelegung (`es_input.cfg.before-rds`), RetroArch „Rückfragen und
