@@ -1,6 +1,7 @@
 #!/bin/bash
 # Geführter Touch-Test für DraStic vertikal (Bildschirme übereinander). Mit Eingaben je Schritt.
-# Aufruf vom PC:  ssh -t root@IP 'bash /storage/rds-stest/rds-touchtest.sh'
+# Aufruf vom PC:  ssh -t root@IP 'bash /storage/rds-stest/rds-touchtest.sh [TEIL-DES-ROM-NAMENS]'
+# Ohne Angabe: Zelda Phantom Hourglass. Eine Touch-Test-ROM (zeigt die Stiftposition) ist ideal.
 # Ablauf: hängt bei Bedarf ein, startet Zelda über ES, fragt sechs Tipps ab, schreibt alles nach ergebnis.txt.
 D=/storage/rds-stest
 LOG=$D/start.log
@@ -21,8 +22,10 @@ if ! grep -q " /usr/bin/start_drastic.sh " /proc/mounts; then
     sh $D/rds-stest.sh an || exit 1
 fi
 if ! pidof drastic >/dev/null; then
-    ROM=$(ls /storage/roms/nds/*.nds | grep -i "zelda.*phantom" | head -1)
-    frage "Zelda jetzt starten? (j = automatisch über ES, n = ich starte es selbst)"
+    ROM=$(ls /storage/roms/nds/* | grep -i -E "\.(nds|zip|7z)$" | grep -i -- "${1:-zelda.*phantom}" | head -1)
+    [ -n "$ROM" ] || { echo "Keine ROM gefunden zu: ${1:-zelda.*phantom}"; ls /storage/roms/nds/ | grep -v -E "\.(dsv|sav)$" | head -40; exit 1; }
+    echo "ROM: $(basename "$ROM")"
+    frage "Jetzt starten? (j = automatisch über ES, n = ich starte es selbst)"
     if [ "$A" = "j" ]; then
         rm -f "$LOG"
         curl -s -X POST --data-binary "$ROM" http://127.0.0.1:1234/launch >/dev/null
@@ -32,7 +35,7 @@ if ! pidof drastic >/dev/null; then
     for i in $(seq 1 120); do pidof drastic >/dev/null && break; sleep 0.5; done
     pidof drastic >/dev/null || { echo "DraStic startet nicht"; exit 1; }
 fi
-frage "Läuft das Spiel und siehst du die Spielwelt (nicht das Intro)? Enter = weiter"
+frage "Läuft das Spiel bzw. die Test-ROM und reagiert sie auf Touch (nicht im Intro)? Enter = weiter"
 
 for P in "UNTEN links oben" "UNTEN rechts oben" "UNTEN links unten" "UNTEN rechts unten" "OBEN links oben" "OBEN rechts unten"; do
     N=$(zahl)
@@ -55,4 +58,4 @@ done
 } >> "$OUT" 2>&1
 echo
 echo "Fertig. Ergebnis schicken mit:  ssh root@$(hostname -i 2>/dev/null | cut -d' ' -f1) 'cat $OUT'"
-echo "Zelda danach beenden und zurückstellen:  sh $D/rds-stest.sh aus"
+echo "Spiel danach beenden und zurückstellen:  sh $D/rds-stest.sh aus"
