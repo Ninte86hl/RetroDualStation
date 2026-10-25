@@ -310,6 +310,13 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         fi
         log "DraStic: Savestates unkomprimiert (schnelleres Speichern)"
     fi
+    # Schnellwechsel standardmäßig an (ab v15.2) – einmal je Gerät; danach entscheidet der Schalter im CC
+    FSMARK=/storage/.config/retrodualstation/fastswitch-default.done
+    if [ ! -f "$FSMARK" ]; then
+        mkdir -p /storage/.config/retrodualstation
+        touch /storage/.config/retrodualstation/fastswitch && date > "$FSMARK"
+        log "Schnellwechsel: an (im Kontrollcenter oben abschaltbar)"
+    fi
     # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
     SSMARK=/storage/.config/retrodualstation/savestates.done
     if [ ! -f "$SSMARK" ]; then

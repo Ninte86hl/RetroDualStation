@@ -237,6 +237,8 @@ EN = {
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
     "Automatischer": "Automatic", "Speicherpunkt": "save point",
+    "Schnellwechsel an": "Fast switch on", "Schnellwechsel aus": "Fast switch off",
+    "Erst das geparkte Spiel beenden": "Quit the parked game first",
     "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap", "Automatisch": "Automatic",
     "überschreiben": "overwrite", "nochmal: überschreiben": "again: overwrite",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
@@ -649,6 +651,11 @@ class Pen:
         elif kind == "battery":                   # voller Akku
             self.rrect(cx - 18, cy - 10, 32, 20, 4, c)
             self.rrect(cx + 14, cy - 4, 4, 8, 1, c)
+        elif kind == "switch":                    # Schnellwechsel: Pfeile hin und her
+            self.rrect(cx - 16, cy - 9, 22, 4, 2, c)
+            self.poly([(cx + 5, cy - 15), (cx + 16, cy - 7), (cx + 5, cy + 1)], c)
+            self.rrect(cx - 6, cy + 5, 22, 4, 2, c)
+            self.poly([(cx - 5, cy - 1), (cx - 16, cy + 7), (cx - 5, cy + 15)], c)
         elif kind == "bolt":                      # Laden (Blitz)
             self.poly([(cx + 3, cy - 18), (cx - 10, cy + 3), (cx - 1, cy + 3), (cx - 4, cy + 18),
                        (cx + 10, cy - 3), (cx + 1, cy - 3)], c)
@@ -1415,7 +1422,9 @@ TOUR = [
                ("Im Spiel pausiert das Spiel, solange das Kontrollcenter offen ist.",
                 "In a game, the game pauses while the Control Center is open."),
                ("Oben: Dunkel, Hell oder Automatisch (Farben des ES-Themes) und 16 Akzentfarben wie beim DS.",
-                "Top: dark, light or automatic (ES theme colours) and 16 accent colours like on the DS.")],
+                "Top: dark, light or automatic (ES theme colours) and 16 accent colours like on the DS."),
+               ("Daneben Vibration und Schnellwechsel: das vorige Spiel wartet im Speicher, zurück in unter 1 s.",
+                "Next to it vibration and fast switch: the previous game waits in memory, back in under 1 s.")],
      "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
     {"title": ("Seite „Spiel“", "Game page"),
      "img": ("tour-spiel.png", "tour-spiel.png"),
@@ -3880,7 +3889,7 @@ class ControlCenter:
                 log("Helligkeit wiederhergestellt:", b.name, v, "%")
         self.page = 0
         self.focus = 1          # Zeile auf Seite 1 (0 = Darstellung oben)
-        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration
+        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration, 3 = Schnellwechsel
         self.tile = 0           # Spalte in der Kachelzeile
         self.values = {}
         self.perf = 1
@@ -3980,6 +3989,26 @@ class ControlCenter:
         self.cfg["haptics"] = HAPTIC_ON[0]
         save_config(self.cfg)
         haptic("open")                                       # beim Einschalten spürbar bestätigen
+
+    def toggle_fast(self):
+        """Schnellwechsel an/aus (Datei FAST_FLAG). Nie umschalten, solange ein Spiel geparkt ist – sonst bliebe
+        ein eingefrorenes Spiel ohne Aufsicht zurück. zram bleibt nach dem Ausschalten bis zum Neustart aktiv."""
+        if FROZEN["pids"] or FROZEN["busy"]:
+            info_toast(tr("Erst das geparkte Spiel beenden"), "switch")
+            return
+        try:
+            if fast_enabled():
+                os.remove(FAST_FLAG)
+            else:
+                os.makedirs(os.path.dirname(FAST_FLAG), exist_ok=True)
+                open(FAST_FLAG, "w").close()
+                threading.Thread(target=zram_setup, daemon=True).start()
+        except OSError as exc:
+            log("Schnellwechsel umschalten:", exc)
+        on = fast_enabled()
+        log("Schnellwechsel", "an" if on else "aus")
+        info_toast(tr("Schnellwechsel an" if on else "Schnellwechsel aus"), "switch")
+        haptic("open")
 
     def apply_auto_theme(self):
         """Farben nach dem Modus setzen (beim Öffnen und regelmäßig) – gemeinsame Regel: resolve_colors."""
@@ -4169,7 +4198,7 @@ class ControlCenter:
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
         elif kind == "top":
-            self.top_sel = max(0, min(2, self.top_sel + dx))
+            self.top_sel = max(0, min(3, self.top_sel + dx))
 
     def confirm(self):
         if self.kbd:
@@ -4212,7 +4241,7 @@ class ControlCenter:
         elif kind == "top":
             if self.top_sel == -1:
                 return "power"
-            (self.toggle_theme, self.open_colors, self.toggle_haptics)[self.top_sel]()
+            (self.toggle_theme, self.open_colors, self.toggle_haptics, self.toggle_fast)[self.top_sel]()
 
     def turn_page(self, d):
         if self.sub:
@@ -4300,7 +4329,7 @@ class ControlCenter:
                 self.page = val
             elif kind == "top":
                 self.focus, self.top_sel = 0, val
-                (self.toggle_theme, self.open_colors, self.toggle_haptics)[val]()
+                (self.toggle_theme, self.open_colors, self.toggle_haptics, self.toggle_fast)[val]()
             elif kind == "power_btn":
                 return "power"
             elif kind == "quit":
@@ -4487,11 +4516,17 @@ class ControlCenter:
 
         # Darstellung: Hell/Dunkel und Akzentfarbe
         top_focus = self.rows()[self.focus][0] == "top"
-        for i in (2, 1, 0):
+        for i in (3, 2, 1, 0):
             x -= 54
             cx = x + 27
             P.circle(cx, 97, 27, T["pill"])
-            if i == 2:   # Vibration: Gerät mit Wellen, aus = durchgestrichen
+            if i == 3:   # Schnellwechsel: Pfeile hin und her, aus = durchgestrichen
+                on = fast_enabled()
+                col = T["text"] if on else T["muted"]
+                P.game_icon("switch", cx, 97, col)
+                if not on:
+                    P.poly([(cx - 15, 83), (cx - 12, 80), (cx + 15, 109), (cx + 12, 112)], col)
+            elif i == 2:   # Vibration: Gerät mit Wellen, aus = durchgestrichen
                 col = T["text"] if HAPTIC_ON[0] else T["muted"]
                 P.rrect(cx - 6, 85, 12, 24, 3, col)
                 for sgn in (-1, 1):
@@ -6202,9 +6237,9 @@ def main():
     fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
     threading.Thread(target=drastic_watch, daemon=True).start()   # DraStic: Auto-Laden beim Start aus ES
     threading.Thread(target=bt_agent_watch, daemon=True).start()  # Bluetooth-Helfer nie mehrfach
+    threading.Thread(target=fast_watch, daemon=True).start()      # wirkt nur bei geparktem Spiel
     if fast_enabled():
         threading.Thread(target=zram_setup, daemon=True).start()
-        threading.Thread(target=fast_watch, daemon=True).start()
     state = {"dirty": False}
 
     gs_swipe = {"from": None, "last": (0, 0)}
