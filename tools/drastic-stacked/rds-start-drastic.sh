@@ -28,12 +28,23 @@ echo "DSHOOK_WINDOW_SIZE=$DSHOOK_WINDOW_SIZE"
     fi
     for t in 0.5 1.5 3; do sleep $t; swaymsg "input \"$TOUCH\" $MAP" >/dev/null; done
     echo "$(date +%T) Touch: $MAP (gilt für beide Goodix-Geräte, udev-Kalibrierung trennt oben/unten)"
-    swaymsg -t get_tree | grep -A3 '"app_id": "drastic"' | grep -E "rect|width|height" | head -4
+    # Die ROCKNIX-Regel (for_window app_id=drastic → Touch auf DSI-2) greift bei jeder Fensteränderung erneut,
+    # z. B. nach dem DraStic-Menü (Fenstergröße/Titel). Auf Fenster-Ereignisse von DraStic hin nachsetzen.
+    swaymsg -m -t subscribe '["window"]' 2>/dev/null | while IFS= read -r ev; do
+        case "$ev" in
+            *'"app_id": "drastic"'*|*'"app_id":"drastic"'*)
+                sleep 0.2; swaymsg "input \"$TOUCH\" $MAP" >/dev/null
+                echo "$(date +%T) Touch nachgesetzt ($(echo "$ev" | grep -o '"change": *"[a-z_]*"' | head -1))" ;;
+        esac
+        pidof drastic >/dev/null || break
+    done
 ) &
+HELPER=$!
 # stdout (DraStic-Zeitmeldungen, gepuffert) verwerfen – sonst zerreißt es die Touch-Zeilen von stderr
 bash "$D/start_drastic.orig.sh" "$@" >/dev/null
 RC=$?
 echo "$(date +%T) DraStic beendet ($RC)"
+pkill -P "$HELPER" 2>/dev/null; kill "$HELPER" 2>/dev/null
 swaymsg "output DSI-2 position 0 0; output DSI-1 position $W 0"
 sed -i -E 's/^screen_orientation *= *.*/screen_orientation = 1/' "$C"
 exit $RC
