@@ -107,6 +107,8 @@ sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>
 log "Kontrollcenter und Geraeteeinstellungen entfernt"
 
 rm -rf "$THEMEDIR/dii-ess-aye-rds" "$THEMEDIR/dii-ess-aye-rgds-plus" && log "entfernt: Theme dii-ess-aye-rds"
+rm -f /storage/.config/emulationstation/themesettings/dii-ess-aye-rds.cfg \
+      /storage/.config/emulationstation/themesettings/dii-ess-aye-rgds-plus.cfg
 rm -rf "$THEMEDIR/canvas-ds-rgds-plus" /storage/.config/emulationstation/themesettings/canvas-ds-rgds-plus.cfg   # Namen bis v13.1
 if [ -d "$THEMEDIR/canvas-rds" ]; then
     rm -rf "$THEMEDIR/canvas-rds" /storage/.config/emulationstation/themesettings/canvas-rds.cfg
@@ -116,6 +118,16 @@ rm -f /storage/dualstation-canvas-install.log
 rm -rf "$DEST" && log "entfernt: $DEST"
 rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
 
-[ -f /storage/roms/backup/RDS_ORIGINAL_BACKUP.zip ] && log "Notfall-Sicherung bleibt: /storage/roms/backup/RDS_ORIGINAL_BACKUP.zip"
+# Restliche Dateien von RDS. Bleiben immer: Spiele, Artworks, Savestates (samt Vorschaubildern), Spielstände,
+# Screenshots, die Daten des Artwork Managers (Einstellungen, Bildsicherungen) und dieses Log.
+rm -rf "$PORTS/.dualstation"                                    # Reste eines abgebrochenen Installers
+rm -f /storage/logs/rds-report-*.tar.gz                         # Fehlerberichte des Kontrollcenters
+rm -rf /storage/thumbnails/cheevos/badges                       # Zwischenspeicher der Erfolgs-Symbole (lädt bei Bedarf neu)
+rmdir /storage/thumbnails/cheevos /storage/thumbnails 2>/dev/null
+if [ -f "$MARK" ]; then
+    log "Notfall-Sicherung bleibt (Einstellungen nicht zurueckgesetzt): $RDSZIP"
+else
+    rm -f "$RDSZIP" "${RDSZIP%.zip}.txt" && log "entfernt: Notfall-Sicherung (nicht mehr noetig)"
+fi
 log "=== Deinstallation fertig ==="
 exit 0
