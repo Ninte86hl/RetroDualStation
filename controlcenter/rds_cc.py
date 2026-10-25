@@ -236,6 +236,7 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
+    "Gelöscht": "Deleted", "Löschen fehlgeschlagen": "Delete failed",
     "Automatischer": "Automatic", "Speicherpunkt": "save point",
     "Schnellwechsel an": "Fast switch on", "Schnellwechsel aus": "Fast switch off",
     "Erst das geparkte Spiel beenden": "Quit the parked game first",
@@ -5284,14 +5285,28 @@ class ControlCenter:
         return True
 
     def delete_slot(self, n):
-        f = self._slot_file(n)
-        for path in (f, f + ".png"):
+        """Slot n (1–9) löschen: Spielstand und Vorschaubild. Der automatische Stand ist nie löschbar."""
+        self.del_confirm = None
+        f = self._slot_file(n) if n >= 0 else None
+        if not f:
+            log("Seite Spiel: Slot", n + 1, "– keine Datei bekannt, nichts gelöscht")
+            return
+        left = []
+        for path in (f, f + ".png", f + ".png.tmp"):
             try:
                 os.remove(path)
-            except OSError:
+            except FileNotFoundError:
                 pass
-        log("Seite Spiel: Slot", n + 1, "gelöscht")
-        self.del_confirm = None
+            except OSError as exc:
+                log("Seite Spiel: Löschen fehlgeschlagen:", path, exc)
+            if os.path.exists(path):
+                left.append(os.path.basename(path))
+        if left:
+            info_toast(tr("Löschen fehlgeschlagen"), "trash")
+            log("Seite Spiel: Slot", n + 1, "NICHT vollständig gelöscht:", ", ".join(left))
+        else:
+            info_toast(tr("Gelöscht") + " · Slot %d" % (n + 1), "trash")
+            log("Seite Spiel: Slot", n + 1, "gelöscht:", os.path.basename(f))
 
     def _slot_cells(self):
         """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9). Laden 4 Spalten: Spiel-Icon, Slot 1–9 (Slot 9 unter
