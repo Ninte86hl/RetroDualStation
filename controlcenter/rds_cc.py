@@ -5204,11 +5204,10 @@ class ControlCenter:
                 continue
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
-            if n == SLOT_ICON:                           # Spiel-Icon mittig, Rahmen in Schemafarbe so groß wie eine Slot-Kachel
-                P.rrect(tx, ty, tw, th, 20, mix(T["bg"], A, 0.6), stroke=3)
-                d = th - 30
+            if n == SLOT_ICON:                           # Spiel-Icon quadratisch in Kachelhöhe, mittig, ohne Rahmen
+                d = th
                 icon = self._game_icon()
-                if not (icon and P.image(icon, tx + (tw - d) / 2, ty + 15, d, d, 18)):
+                if not (icon and P.image(icon, tx + (tw - d) / 2, ty, d, d, 20)):
                     P.logo(tx + (tw - 110) / 2, ty + (th - 110) / 2, 110, T["muted"], T["bg"])
                 continue
             w_, h_ = tw, th
