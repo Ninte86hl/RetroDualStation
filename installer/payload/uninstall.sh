@@ -98,5 +98,6 @@ rm -f /storage/dualstation-canvas-install.log
 rm -rf "$DEST" && log "entfernt: $DEST"
 rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
 
+[ -f /storage/roms/backup/RDS_ORIGINAL_BACKUP.zip ] && log "Notfall-Sicherung bleibt: /storage/roms/backup/RDS_ORIGINAL_BACKUP.zip"
 log "=== Deinstallation fertig ==="
 exit 0

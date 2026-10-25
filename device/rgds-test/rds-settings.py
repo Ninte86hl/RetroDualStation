@@ -9,6 +9,12 @@ wird er beim Zurücksetzen wieder entfernt.
   rds-settings.py save STORE FILE kv|esxml KEY... [--legacy ALTE_SICHERUNG]
   rds-settings.py save-esinput STORE FILE [--legacy ALTE_SICHERUNG]
   rds-settings.py restore STORE
+  rds-settings.py snapshot ZIP DATEI[=ALTE_SICHERUNG]...
+
+snapshot: Notfall-Sicherung der ganzen Dateien von vor RDS als ZIP im Format von ROCKNIX' backuptool
+(Pfade ohne führenden /, wiederherstellbar mit „unzip -o ZIP -d /“). Wird nur angelegt, wenn es sie noch nicht gibt –
+eine spätere Installation überschreibt sie nie. Mit =ALTE_SICHERUNG wird statt der aktuellen Datei die Sicherung
+einer früheren RDS-Version eingepackt (dort steht noch der Stand von vor RDS), unter dem Namen der Originaldatei.
 
 kv     = Zeilen „schlüssel = wert“ (RetroArch, DraStic, DSperate)
 esxml  = Zeilen <typ name="schlüssel" value="…" /> (es_settings.cfg)
@@ -152,6 +158,31 @@ def cmd_restore(store):
     return ok
 
 
+def cmd_snapshot(zpath, specs):
+    import zipfile
+    import time
+    if os.path.exists(zpath):
+        return True
+    os.makedirs(os.path.dirname(zpath), exist_ok=True)
+    tmp = zpath + ".rds-tmp"
+    done = []
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        for spec in specs:
+            path, _, legacy = spec.partition("=")
+            src = legacy if legacy and os.path.isfile(legacy) else path
+            if not os.path.isfile(src):
+                continue
+            info = zipfile.ZipInfo(os.path.realpath(path).lstrip("/"), time.localtime(os.path.getmtime(src))[:6])
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            with open(src, "rb") as f:
+                z.writestr(info, f.read())
+            done.append(path + (" (aus %s)" % legacy if src == legacy else ""))
+    os.replace(tmp, zpath)
+    print("Notfall-Sicherung %s: %s" % (zpath, ", ".join(done) or "keine Dateien"))
+    return True
+
+
 def main(argv):
     legacy = None
     if "--legacy" in argv:
@@ -162,6 +193,8 @@ def main(argv):
         cmd_save(argv[1], argv[2], argv[3], argv[4:], legacy)
     elif len(argv) == 3 and argv[0] == "save-esinput":
         cmd_save_esinput(argv[1], argv[2], legacy)
+    elif len(argv) >= 3 and argv[0] == "snapshot":
+        cmd_snapshot(argv[1], argv[2:])
     elif len(argv) == 2 and argv[0] == "restore":
         return 0 if cmd_restore(argv[1]) else 1
     else:

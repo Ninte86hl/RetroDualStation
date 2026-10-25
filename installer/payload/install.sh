@@ -133,6 +133,29 @@ rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_IN
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
+# Notfall-Sicherung der ganzen Dateien (nur beim ersten Mal, bleibt auch nach der Deinstallation liegen).
+# Format wie ROCKNIX' backuptool: umbenannt in ROCKNIX_BACKUP.zip stellt „backuptool restore“ sie zurück.
+RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
+if [ ! -f "$RDSZIP" ]; then
+    rs snapshot "$RDSZIP" "$RACFG=$RACFG.vor-rds-kuerzel" "$DCFG=$DCFG.vor-rds-kuerzel" "$DSPINI=$DSPINI.vor-rds-kuerzel" \
+        "$ESCFG=$DEST/es_settings.before-install.cfg" "$ESINPUT=$ESINPUT.before-rds" \
+        /storage/.config/system/configs/system.cfg /storage/.config/sway/config /storage/.config/mako/config
+    cat > "${RDSZIP%.zip}.txt" <<'TXT'
+RetroDualStation (RDS) – Sicherung der Einstellungen von vor der ersten Installation
+=====================================================================================
+RDS_ORIGINAL_BACKUP.zip enthält RetroArch, DraStic, DSperate, EmulationStation (Einstellungen und Tastenbelegung),
+system.cfg, Sway und mako im Zustand vor RDS. Die Deinstallation setzt diese Werte normalerweise selbst zurück –
+diese Datei ist nur für den Notfall gedacht.
+
+Wiederherstellen (überschreibt diese Dateien komplett, spätere eigene Änderungen daran gehen verloren):
+  1. Eine vorhandene ROCKNIX_BACKUP.zip in diesem Ordner umbenennen (sonst geht sie verloren).
+  2. RDS_ORIGINAL_BACKUP.zip kopieren und die Kopie in ROCKNIX_BACKUP.zip umbenennen.
+  3. Die Wiederherstellung von ROCKNIX ausführen (per SSH: backuptool restore), danach neu starten.
+
+Restore (overwrites these files completely): rename an existing ROCKNIX_BACKUP.zip first, copy
+RDS_ORIGINAL_BACKUP.zip to ROCKNIX_BACKUP.zip, then run the ROCKNIX restore (via SSH: backuptool restore), reboot.
+TXT
+fi
 
 if [ -d "$SRC/theme/dii-ess-aye-rds" ]; then
     mkdir -p "$THEMEDIR"
