@@ -71,6 +71,10 @@ Every hint that helps the project is credited here. Thank you for taking the tim
   pointed out that RDS was tied to the RG DS Plus screen size. That led to the screen areas
   (`screens.cfg`, theme variables) and made the **RG DS support in v14** possible. Also shared his
   IGDB/SteamGridDB scraper work as an alternative to ScreenScraper.
+- **[GammaOSNext](https://github.com/TheGammaSqueeze/GammaOSNext)** – the discussion in
+  [issue #225](https://github.com/TheGammaSqueeze/GammaOSNext/issues/225) explained that DraStic's threaded 3D renderer
+  swaps top and bottom screen in some games while touch stays behind. That led to the **Threaded 3D = Off** tip for
+  games like *Zelda: Phantom Hourglass* (v15.3.2).
 
 ## Libraries and tools
 

@@ -56,7 +56,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Bekannt seit v8 (Wiki Gut zu wissen): Follow 3D Renderer = An → Touch geht nicht, „Auto“ nötig.
 - [ ] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
-      `nds["<rom>"].threaded_3d=0`. Offen: Touch im Laden, Leistung (Ruckeln?), Plus. Dann: Wiki „Gut zu wissen“, evtl.
+      `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
       Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
 - [ ] **drastic.cfg war leer (RG DS 25.10. 20:10)** – nach Vertikal-Test/Beenden 0 Bytes; aus dem Plus wiederhergestellt.
       Ursache unklar (DraStic beim Schreiben beendet? Test-Skript hatte keinen Schutz – nachgerüstet). Überlegen: CC/Installer

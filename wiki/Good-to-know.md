@@ -5,6 +5,7 @@
 - **PS1:** the installer sets **pcsx_rearmed** if no working core is selected.
 - **DS:** DraStic and DSperate work; RetroArch DS cores are untested.
 - **DraStic touch not responding?** Set **Follow 3D Renderer** to *Auto* (also happens on stock ROCKNIX).
+- **DraStic: picture or touch on the wrong screen?** Some games swap top and bottom (e.g. the shop in *Zelda: Phantom Hourglass*). With **Threaded 3D = Off** for that game (select the game → advanced game settings) DraStic follows the swap correctly, touch included. Otherwise press **L3** or use the **Swap** tile in the [Control Center](Control-Center).
 - **Back to stock:** *Ports → RDS Single-Screen*; *Uninstall* restores stock ES, theme and your original settings and removes everything from RDS – games, artwork, game lists, save states and saves stay untouched. A safety copy of your original settings is kept in `roms/backup` until the uninstall has finished.
 
 Which files RDS creates: [RDS files](Files)
