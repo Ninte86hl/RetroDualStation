@@ -790,7 +790,7 @@ int SDL_PollEvent(SDL_Event* event) {
                 if (!actual_touch)
                     actual_touch = 1;
 
-                if (!touch_rect) return 0;
+                if (!touch_rect) { if (getenv("RDS_TOUCH_DEBUG")) fprintf(stderr, "[rds-touch] down ohne touch_rect\n"); return 0; }
 
                 int x = (int)(event->tfinger.x * phys_width);
                 int y = (int)(event->tfinger.y * phys_height);
@@ -798,6 +798,10 @@ int SDL_PollEvent(SDL_Event* event) {
                     x *= 2;
                 if (touch_scaled && xy_idx == 2)
                     y *= 2;
+                if (getenv("RDS_TOUCH_DEBUG"))   /* RDS: Touch-Protokoll für den Versuch */
+                    fprintf(stderr, "[rds-touch] tf=%.3f,%.3f phys=%dx%d idx=%d scaled=%d -> %d,%d rect=%d,%d %dx%d\n",
+                            event->tfinger.x, event->tfinger.y, phys_width, phys_height, xy_idx, touch_scaled,
+                            x, y, touch_rect->x, touch_rect->y, touch_rect->w, touch_rect->h);
 
                 if (x < touch_rect->x || x > touch_rect->x + touch_rect->w ||
                     y < touch_rect->y || y > touch_rect->y + touch_rect->h)
