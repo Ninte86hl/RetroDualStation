@@ -17,7 +17,7 @@ For RetroArch, DSperate and DraStic:
 - **Emulator menu**, **Restart**, **Fast forward**, **Slow motion**, **Screenshot**, **Button layout**, **Quit**
 
 ## Same shortcuts everywhere
-**Anbernic + R1** – fast forward · **Anbernic + R2 / L2** – save / load · **Anbernic + X** – emulator menu · **Anbernic + Y** – FPS · **Anbernic + Start** – quit · **Anbernic + ◀ / ▶** – change slot
+**Anbernic + R1** – fast forward · **Anbernic + R2 / L2** – save / load · **Anbernic + X** – emulator menu · **Anbernic + Y** – FPS (RetroArch, DSperate) · **Anbernic + Start** – quit · **Anbernic + ◀ / ▶** – change slot
 
 ## Look *(v15.1)*
 Top right in the Control Center:

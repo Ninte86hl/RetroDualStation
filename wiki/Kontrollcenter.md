@@ -17,7 +17,7 @@ Für RetroArch, DSperate und DraStic:
 - **Emulator-Menü**, **Neu starten**, **Vorspulen**, **Zeitlupe**, **Screenshot**, **Tasten**, **Beenden**
 
 ## Einheitliche Kürzel
-**Anbernic + R1** – Vorspulen · **Anbernic + R2 / L2** – Speichern / Laden · **Anbernic + X** – Emulator-Menü · **Anbernic + Y** – FPS · **Anbernic + Start** – Beenden · **Anbernic + ◀ / ▶** – Platz wechseln
+**Anbernic + R1** – Vorspulen · **Anbernic + R2 / L2** – Speichern / Laden · **Anbernic + X** – Emulator-Menü · **Anbernic + Y** – FPS (RetroArch, DSperate) · **Anbernic + Start** – Beenden · **Anbernic + ◀ / ▶** – Platz wechseln
 
 ## Aussehen *(v15.1)*
 Oben rechts im Kontrollcenter:

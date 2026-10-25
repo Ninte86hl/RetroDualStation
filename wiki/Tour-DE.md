@@ -79,7 +79,7 @@ Im Spiel mit **R1** zur Seite „Spiel“ (RetroArch, DSperate und DraStic):
 | **R1** | Vorspulen an/aus |
 | **R2 / L2** | Speichern / Laden |
 | **X** | Emulator-Menü |
-| **Y** | FPS anzeigen |
+| **Y** | FPS anzeigen (RetroArch, DSperate – DraStic: im eigenen Menü) |
 | **Start** | Spiel beenden |
 | **◀ / ▶** | Speicherplatz − / + |
 

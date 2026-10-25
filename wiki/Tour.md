@@ -79,7 +79,7 @@ In a game, press **R1** for the game page (RetroArch, DSperate and DraStic):
 | **R1** | Fast forward on/off |
 | **R2 / L2** | Save / Load |
 | **X** | Emulator menu |
-| **Y** | Show FPS |
+| **Y** | Show FPS (RetroArch, DSperate – DraStic: in its menu) |
 | **Start** | Quit game |
 | **◀ / ▶** | Save slot − / + |
 

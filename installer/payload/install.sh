@@ -142,6 +142,12 @@ DCFG=/storage/.config/drastic/config/drastic.cfg
 DSPINI=/storage/.config/dsperate/dsperate.ini
 ESINPUT=/storage/.emulationstation/es_input.cfg
 rs save "$BK" "$RACFG" kv confirm_reset confirm_close notification_show_save_state video_font_enable \
+    notification_show_fast_forward notification_show_screenshot notification_show_cheats_applied \
+    notification_show_patch_applied notification_show_refresh_rate notification_show_set_initial_disk \
+    notification_show_autoconfig notification_show_remap_load notification_show_config_override_load \
+    notification_show_netplay_extra cheevos_visibility_unlock cheevos_visibility_mastery cheevos_visibility_account \
+    cheevos_visibility_lboard_start cheevos_visibility_lboard_submit cheevos_visibility_lboard_cancel \
+    cheevos_visibility_lboard_trackers cheevos_visibility_progress_tracker \
     menu_enable_widgets network_cmd_enable quit_press_twice input_enable_hotkey_btn input_toggle_fast_forward_btn \
     input_save_state_btn input_load_state_btn input_rewind_btn input_menu_toggle_btn input_fps_toggle_btn \
     input_exit_emulator_btn input_state_slot_decrease_btn input_state_slot_increase_btn --legacy "$RACFG.vor-rds-kuerzel"
@@ -350,8 +356,20 @@ UNIT
         # beim Neustart trotzdem nach – das CC sendet RESET deshalb zweimal, siehe ra_reset.)
         # Netzbefehle (Port 55355, nur lokal genutzt): Kontrollcenter/Gameswitcher speichern, laden, neu starten
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
-        for kv in 'confirm_reset=false' 'confirm_close=false' 'notification_show_save_state=false' \
-                  'video_font_enable=false' 'menu_enable_widgets=false' 'network_cmd_enable=true' 'quit_press_twice=false'; do
+        # Bildschirmtext an (sonst gibt es keine FPS-Anzeige mit Anbernic + Y), Einblendungen aber einzeln aus –
+        # Speichern, Laden, Vorspulen, Screenshot und Erfolge meldet das Kontrollcenter selbst.
+        for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=false' \
+                  'network_cmd_enable=true' 'quit_press_twice=false' \
+                  'notification_show_save_state=false' 'notification_show_fast_forward=false' \
+                  'notification_show_screenshot=false' 'notification_show_cheats_applied=false' \
+                  'notification_show_patch_applied=false' 'notification_show_refresh_rate=false' \
+                  'notification_show_set_initial_disk=false' 'notification_show_autoconfig=false' \
+                  'notification_show_remap_load=false' 'notification_show_config_override_load=false' \
+                  'notification_show_netplay_extra=false' 'cheevos_visibility_unlock=false' \
+                  'cheevos_visibility_mastery=false' 'cheevos_visibility_account=false' \
+                  'cheevos_visibility_lboard_start=false' 'cheevos_visibility_lboard_submit=false' \
+                  'cheevos_visibility_lboard_cancel=false' 'cheevos_visibility_lboard_trackers=false' \
+                  'cheevos_visibility_progress_tracker=false'; do
             k="${kv%%=*}"; v="${kv#*=}"
             if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
         done
