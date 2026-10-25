@@ -25,7 +25,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Als Nächstes
 - [ ] **Test: „Bildschirme tauschen“ (Kachel „Tauschen“ + L3, umgesetzt 25.10.)** – DraStic: SWAP_SCREENS auf F8 (321,
-      Installer-Merker drastic-kuerzel-v4), Touch nimmt DraStic selbst mit (ROCKNIX-Zuordnung DSI-2 lassen – DSI-1 macht es kaputt, mirror_touch unnötig, Plus 25.10. ok); Spielende getauscht →
+      Installer-Merker drastic-kuerzel-v4), Touch nimmt DraStic selbst mit (ROCKNIX-Zuordnung DSI-2 lassen – DSI-1 macht es kaputt, mirror_touch unnötig, Plus 25.10. ok);
+      „Follow 3D Renderer“ (ES-Option follow_3d_renderer → fix_main_2d_screen über start_drastic.sh) auch vor dem Start
+      gesetzt: Startsequenz flackert auf beiden Bildschirmen, Touch geht nicht (RG DS 25.10.) → unbrauchbar, L3 bleibt. Spielende getauscht →
       screen_swap = 0. DSperate: Kürzel screen_swap (mod+dpup). Prüfen: Zelda-Laden, Schnellwechsel, Neustart, DSperate-Touch.
 - [ ] **DraStic: Touchbild landet oben (Zelda Phantom Hourglass, Laden)** (gemeldet 25.10.2026) – Gegenstand wird oben
       angezeigt, lässt sich nicht antippen. Vermutung: Spiel tauscht intern die DS-Bildschirme, DraStic folgt
