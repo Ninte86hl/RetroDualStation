@@ -36,7 +36,8 @@ restore_pos() {
 case "$1" in
 vorbereiten)
     pidof drastic >/dev/null && { echo "DraStic läuft – erst beenden"; exit 1; }
-    [ -f "$B" ] || cp "$C" "$B"
+    [ -s "$C" ] || { echo "drastic.cfg ist leer – erst wiederherstellen"; exit 1; }
+    [ -s "$B" ] || cp "$C" "$B"
     [ -f "$P" ] || outputs > "$P"
     sed -i -E "s/^screen_orientation *= *.*/screen_orientation = ${2:-0}/" "$C"
     echo "Gesichert: $B · Anordnung: $(tr '\n' ' ' < "$P")"
@@ -57,7 +58,8 @@ aus)
 zurueck)
     pidof drastic >/dev/null && { echo "DraStic läuft – erst beenden"; exit 1; }
     restore_pos
-    [ -f "$B" ] && cp "$B" "$C" && rm -f "$B" && echo "drastic.cfg wiederhergestellt"
+    if [ -s "$B" ]; then cp "$B" "$C" && rm -f "$B" && echo "drastic.cfg wiederhergestellt"
+    else echo "Sicherung fehlt oder leer – drastic.cfg NICHT angefasst"; fi
     rm -f "$P"
     grep -E "^screen_orientation|^fix_main_2d_screen|^screen_swap" "$C"
     ;;

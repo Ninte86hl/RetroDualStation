@@ -54,6 +54,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Spiel richtig, Tasten gehen, **Touch nie** (map_to_output DSI-1, *, map_to_region rechte/linke Hälfte). ROCKNIX lädt
       /usr/lib/libdrastouch.so (LD_PRELOAD, ersetzt SDL Touch→Maus) – rechnet offenbar fest waagerecht. → verworfen.
       Bekannt seit v8 (Wiki Gut zu wissen): Follow 3D Renderer = An → Touch geht nicht, „Auto“ nötig.
+- [ ] **drastic.cfg war leer (RG DS 25.10. 20:10)** – nach Vertikal-Test/Beenden 0 Bytes; aus dem Plus wiederhergestellt.
+      Ursache unklar (DraStic beim Schreiben beendet? Test-Skript hatte keinen Schutz – nachgerüstet). Überlegen: CC/Installer
+      prüft nach DraStic-Ende auf leere drastic.cfg und stellt eine gute Kopie wieder her.
 - [ ] **Prüfen: DSperate v3.0.5** (github.com/beebono/DSperate, 21.10.2026) – neu: `--saves`/`--states`, Fehlerbild beim
       Start, Vulkan-Ausgabe zuerst bei `video.gpu_present = true` (Render-Pass), RGA ganzzahlig, Fix: PipeWire-Taktung
       (RLIMIT_RTTIME-Abbruch), GPU-Ausgabe bleibt nach Menü, JIT/2D-Ruckler, 3D-Kanten. Einbindung: abwarten bis
