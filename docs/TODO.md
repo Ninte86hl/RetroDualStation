@@ -33,6 +33,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       DraStic folgt dem Hauptbild-Wechsel des Spiels), SWAP_SCREENS unbelegt. Test im Laden: DraStic-Menü „Swap screens“,
       sonst „Fix main 2D screen“ = an. Je nach Ergebnis: fix_main_2d_screen = 1 als Standard ODER SWAP_SCREENS auf
       virtuelle Taste + CC-Kachel „Bildschirme tauschen“.
+      **Test 25.10.: bestätigt** – „Fix main 2D screen“ flackert (raus). „Swap screens“ + Touch auf DSI-1
+      (`swaymsg input "1046:911:Goodix_Capacitive_TouchScreen" map_to_output DSI-1`) → Gegenstand antippbar. Die
+      ROCKNIX-DraStic folgt dem Bildschirmwechsel des Spiels nicht; automatisch nicht erkennbar. **Plan:** CC-Kachel
+      „Bildschirme tauschen“ (Seite Spiel) + Anbernic-Kürzel: SWAP_SCREENS auf freie virtuelle Taste (F8?) drücken UND
+      Touch-Zuordnung DSI-2 ↔ DSI-1 umschalten; Zustand merken, beim Spielwechsel/-ende zurücksetzen (touch_map).
+      Außerdem: Szene in DSperate testen; advanced_drastic passt Touch auf dem RG DS dynamisch an (siehe dort).
 - [ ] **Prüfen: DSperate v3.0.5** (github.com/beebono/DSperate, 21.10.2026) – neu: `--saves`/`--states`, Fehlerbild beim
       Start, Vulkan-Ausgabe zuerst bei `video.gpu_present = true` (Render-Pass), RGA ganzzahlig, Fix: PipeWire-Taktung
       (RLIMIT_RTTIME-Abbruch), GPU-Ausgabe bleibt nach Menü, JIT/2D-Ruckler, 3D-Kanten. Einbindung: abwarten bis
