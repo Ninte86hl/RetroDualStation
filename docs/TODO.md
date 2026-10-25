@@ -32,6 +32,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       bisher **Update RDS** (gleiche Sicherheitsnetze). Nur auf Wunsch laden, nie automatisch installieren; kein Netz →
       still nichts tun. Später: Release-Notes kurz im CC anzeigen. (Entscheidung 21.10.: Updates erst bei größerer
       Nutzerbasis – damit jetzt eingeplant.)
+      Voraussetzung: RDS ist schon installiert – die Erstinstallation bleibt wie bisher (ZIP in ports). Ziel: Updates
+      ohne PC, direkt am Gerät; möglichst einfach halten (eine Kachel, eine Rückfrage).
 - [ ] **Idee, noch nicht entschieden (25.10.2026): Start aus ES ohne Auto-Laden, Fortsetzen nur über den Gameswitcher** – automatischer Stand
       wird weiter über Home kurz, Gameswitcher und CC-Beenden angelegt. Umsetzung: Installer setzt ES-Autoload aus
       (gesichert, Deinstallation stellt zurück); Gameswitcher lädt den Auto-Stand immer selbst (neu: DSperate, wie die
