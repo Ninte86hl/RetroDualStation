@@ -11,6 +11,11 @@ by itself, touch included. Only this game is affected; all others keep Threaded 
 
 **Fallback:** **L3** or the **Swap** tile in the [Control Center](Control-Center) swaps the screens by hand.
 
+**RG DS only – Follow 3D Renderer:** the RG DS has touch on **both** screens. With *Follow 3D Renderer = On* the touch
+picture follows the 3D image, sometimes to the top – then just tap on top. Title screens with 3D on both screens flicker
+(e.g. Zelda). The **RG DS Plus** has touch only at the bottom: with Follow 3D nothing responds while the touch picture is
+on top – so there use *Follow 3D = Auto/Off* and *Threaded 3D = Off* or **L3**.
+
 ## List
 
 | Game | Needs Threaded 3D off | Status |

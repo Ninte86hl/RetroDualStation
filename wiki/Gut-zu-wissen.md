@@ -4,7 +4,7 @@
 - **RetroAchievements:** *Hauptmenü → RetroAchievements* öffnet die Einstellungen; Fortschritt und Erfolge stehen auf Seite 3 im [Kontrollcenter](Kontrollcenter) – auch für DS-Spiele in DSperate, nicht in DraStic ([mehr](RetroAchievements-DE)).
 - **PS1:** Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - **DS:** DraStic und DSperate funktionieren; RetroArch-DS-Cores sind ungetestet.
-- **Touch in DraStic reagiert nicht?** **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).
+- **Touch in DraStic reagiert nicht?** Mit **Follow 3D Renderer = An** kann das Touchbild oben liegen – auf dem RG DS einfach oben tippen (dort hat auch der obere Bildschirm Touch), auf dem RG DS Plus *Follow 3D* auf *Auto* stellen (auch im Original-ROCKNIX).
 - **DraStic: Bild bzw. Touch auf dem falschen Bildschirm?** Manche Spiele tauschen oben und unten (z. B. der Laden in *Zelda: Phantom Hourglass*). Mit **Threaded 3D = Aus** für dieses Spiel (Spiel auswählen → erweiterte Spieleinstellungen) macht DraStic den Wechsel samt Touch von selbst richtig. Sonst hilft **L3** bzw. die Kachel **Tauschen** im [Kontrollcenter](Kontrollcenter). Bekannte Spiele: [DraStic-Spiele](DraStic-Spiele).
 - **Zurück zum Original:** *Ports → RDS Single-Screen*; *Uninstall* stellt Original-ES, Theme und deine ursprünglichen Einstellungen wieder her und entfernt alles von RDS – Spiele, Artworks, Spielelisten, Savestates und Spielstände bleiben unberührt. Eine Sicherung deiner ursprünglichen Einstellungen liegt bis zum Ende der Deinstallation in `roms/backup`.
 

@@ -11,6 +11,11 @@ dem Wechsel von selbst, samt Touch. Gilt nur für dieses Spiel, alle anderen beh
 
 **Notlösung:** **L3** bzw. die Kachel **Tauschen** im [Kontrollcenter](Kontrollcenter) tauscht die Bildschirme von Hand.
 
+**Nur RG DS – Follow 3D Renderer:** Der RG DS hat auf **beiden** Bildschirmen Touch. Mit *Follow 3D Renderer = An* folgt
+das Touchbild dem 3D-Bild, manchmal nach oben – dann einfach oben tippen. Titelbilder mit 3D auf beiden Bildschirmen
+flackern dabei (z. B. Zelda). Der **RG DS Plus** hat nur unten Touch: Dort reagiert mit Follow 3D nichts, wenn das
+Touchbild oben liegt – deshalb dort *Follow 3D = Auto/Aus* und *Threaded 3D = Aus* bzw. **L3**.
+
 ## Liste
 
 | Spiel | Threaded 3D aus nötig | Stand |

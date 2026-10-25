@@ -76,8 +76,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] **Neu 25.10. 21:40: Follow 3D Renderer funktioniert auf dem RG DS** – Touch-Bild folgt der 3D-Einheit und liegt
       dann OBEN; der RG DS hat oben einen zweiten Touchscreen (event1), also oben tippen. Der RG DS Plus hat nur EINEN
       Touchscreen → dort „Touch geht nicht“ (deshalb nie aufgefallen; erklärt auch den v8-Tipp „Follow 3D auf Auto“).
-      Klären: Flackern im Intro, Wiki/Release-Notes v15.3.2 („Follow 3D flackert“) richtigstellen, Wiki DraStic-Spiele
-      nach Gerät unterscheiden (RG DS: Follow 3D oder Threaded 3D aus; Plus: Threaded 3D aus / L3).
+      Flackern nur bei 3D auf beiden Bildschirmen (Titelbild: 3D-Einheit wechselt jedes Bild) – Spiel ruhig. Wiki,
+      Release-Notes richtiggestellt. Offen: Leistung (Zelda hatte noch Threaded 3D aus – Follow 3D + Threaded an testen).
 - [ ] **Threaded 3D global aus?** (Frage 25.10.) – erst messen: RG DS + Plus, 2–3 anspruchsvolle Spiele (Mario Kart DS,
       Zelda auf See, Kampf), Bildzähler (DraStic-Menü → Show frame counter) mit/ohne. Kein Verlust → Installer stellt
       nds.threaded_3d=0 global (gesichert, Deinstallation rückgängig); sonst Tipp pro Spiel lassen.
