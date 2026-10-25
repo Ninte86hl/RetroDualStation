@@ -14,6 +14,7 @@ swaymsg "output DSI-2 position 0 0; output DSI-1 position 0 $H"
 sed -i -E 's/^screen_orientation *= *.*/screen_orientation = 0/' "$C"
 export DSHOOK_WINDOW_SIZE="${W}x$((H * 2))"
 export RDS_TOUCH_DEBUG=1
+export DSHOOK_RDS_SPLIT=1   # RG DS: Touch oben = linke, unten = rechte Hälfte einer gemeinsamen Fläche
 echo "DSHOOK_WINDOW_SIZE=$DSHOOK_WINDOW_SIZE"
 (   # nach dem Erscheinen des Fensters: Touch auf den unteren Bildschirm (die ROCKNIX-Regel setzt DSI-2)
     for i in $(seq 1 80); do swaymsg -t get_tree | grep -q '"app_id": "drastic"' && break; sleep 0.25; done

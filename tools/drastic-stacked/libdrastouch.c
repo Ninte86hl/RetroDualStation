@@ -91,6 +91,7 @@ static int phys_height = -1;
 static int logical_width = -1;
 static int logical_height = -1;
 static int actual_touch = 0;
+static int rds_split = 0;   /* RDS: DSHOOK_RDS_SPLIT=1 – RG DS: Touch beider Bildschirme als eine Fläche nebeneinander */
 
 // Microphone monitoring
 static SDL_AudioDeviceID mic_device = 0;
@@ -566,6 +567,7 @@ SDL_Window* SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint
 
     // Layouts where the displays differ in width need an explicit size
     const char *size_override = getenv("DSHOOK_WINDOW_SIZE");
+    rds_split = getenv("DSHOOK_RDS_SPLIT") && getenv("DSHOOK_RDS_SPLIT")[0] == '1';
     int override_w, override_h, override_set = 0;
     char *size_x = NULL;
     if (size_override) {   /* RDS-Build: ohne sscanf (vermeidet __isoc23_sscanf, läuft mit älterem glibc) */
@@ -792,7 +794,12 @@ int SDL_PollEvent(SDL_Event* event) {
 
                 if (!touch_rect) { if (getenv("RDS_TOUCH_DEBUG")) fprintf(stderr, "[rds-touch] down ohne touch_rect\n"); return 0; }
 
-                int x = (int)(event->tfinger.x * phys_width);
+                float fx = event->tfinger.x;
+                if (rds_split) {          /* RDS: beide Touchscreens = eine Fläche nebeneinander (oben links, unten rechts) */
+                    if (fx < 0.5f) return 0;              /* oberer Touchscreen: ignorieren */
+                    fx = (fx - 0.5f) * 2.0f;              /* unterer Touchscreen: auf volle Breite */
+                }
+                int x = (int)(fx * phys_width);
                 int y = (int)(event->tfinger.y * phys_height);
                 if (touch_scaled && xy_idx == 1)
                     x *= 2;
@@ -834,7 +841,12 @@ int SDL_PollEvent(SDL_Event* event) {
             case SDL_FINGERMOTION: {
                 if (!touch_rect) return 0;
 
-                int x = (int)(event->tfinger.x * phys_width);
+                float fx = event->tfinger.x;
+                if (rds_split) {          /* RDS: beide Touchscreens = eine Fläche nebeneinander (oben links, unten rechts) */
+                    if (fx < 0.5f) return 0;              /* oberer Touchscreen: ignorieren */
+                    fx = (fx - 0.5f) * 2.0f;              /* unterer Touchscreen: auf volle Breite */
+                }
+                int x = (int)(fx * phys_width);
                 int y = (int)(event->tfinger.y * phys_height);
                 if (touch_scaled && xy_idx == 1)
                     x *= 2;
