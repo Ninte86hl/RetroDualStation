@@ -1,6 +1,6 @@
 # To-do – RetroDualStation & Artwork Manager
 
-Stand: 23.10.2026 (nach v15.1) · Eine Liste für alles, damit nichts verloren geht. Erledigtes steht in den
+Stand: 25.10.2026 (nach v15.2) · Eine Liste für alles, damit nichts verloren geht. Erledigtes steht in den
 Release-Notes (`docs/releases/`) und im Git-Verlauf.
 
 > **Leitsatz:** RetroDualStation – one system, two screens, everything in sync.
