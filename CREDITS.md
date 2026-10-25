@@ -74,7 +74,9 @@ Every hint that helps the project is credited here. Thank you for taking the tim
 - **[GammaOSNext](https://github.com/TheGammaSqueeze/GammaOSNext)** – the discussion in
   [issue #225](https://github.com/TheGammaSqueeze/GammaOSNext/issues/225) explained that DraStic's threaded 3D renderer
   swaps top and bottom screen in some games while touch stays behind. That led to the **Threaded 3D = Off** tip for
-  games like *Zelda: Phantom Hourglass* (v15.3.2).
+  games like *Zelda: Phantom Hourglass* (v15.3.2). The game reports there – including
+  [WGB-works](https://github.com/WGB-works) (*Dragon Quest IV*, *The Rub Rabbits!*) – started the
+  [DraStic games list](https://github.com/Ninte86hl/RetroDualStation/wiki/DraStic-Games) in the wiki.
 
 ## Libraries and tools
 

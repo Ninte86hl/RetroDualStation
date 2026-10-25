@@ -7,6 +7,7 @@
 - [Themes](Themes)
 - [Artwork Manager](Artwork-Manager)
 - [Good to know](Good-to-know)
+- [DraStic games](DraStic-Games)
 - [RDS files](Files)
 - [Roadmap](Roadmap)
 
@@ -19,6 +20,7 @@
 - [Themes](Themes-DE)
 - [Artwork Manager](Artwork-Manager-DE)
 - [Gut zu wissen](Gut-zu-wissen)
+- [DraStic-Spiele](DraStic-Spiele)
 - [Dateien von RDS](Dateien)
 - [Roadmap](Roadmap-DE)
 
