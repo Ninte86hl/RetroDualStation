@@ -24,9 +24,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
-- [ ] **DSperate: Schnellspeichern im Spiel landet auf Platz 0** (`CODE.0.dss`) – Anbernic + R2 speichert in DSperates
-      aktuellen Slot (Start: 0); den zeigt das Menü nicht (automatisch = `.auto.dss`). Prüfen: DSperate-Startslot
-      auf 1 setzen oder Platz 0 in der Kachel „Automatisch“ mit anzeigen. (RetroArch/DraStic: Platz 0 = automatisch.)
 - [ ] **Vergleich GPU-Treiber libmali vs. panfrost** (Wunsch 25.10.2026) – Eindruck: mit panfrost bessere Leistung in
       DS-Spielen (DraStic, DSperate). Auf beiden Geräten je Treiber messen: Gameswitcher-Kette (Mitschnitt wie
       25.10.: `journalctl -u rds-controlcenter -f -o short-precise`, gleiche Wechsel RA ↔ DraStic ↔ DSperate),

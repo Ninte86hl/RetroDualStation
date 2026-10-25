@@ -5275,8 +5275,13 @@ class ControlCenter:
                 g["_code"] = nds_gamecode(rom) or ""
             if not g["_code"]:
                 return None
-            if n == 0:                          # DSperate legt seinen automatischen Stand selbst an (.auto)
-                return os.path.join("/storage/roms/savestates/nds", "%s.auto.dss" % g["_code"])
+            if n == 0:
+                # „Automatisch“ = der neuere von .auto.dss (DSperate beim Beenden / Gameswitcher) und .0.dss
+                # (Anbernic + R2 im Spiel speichert in DSperates aktuellen Slot, Start 0) – wie bei RetroArch/DraStic
+                d = "/storage/roms/savestates/nds"
+                auto, zero = (os.path.join(d, "%s.%s.dss" % (g["_code"], x)) for x in ("auto", "0"))
+                have = [f for f in (auto, zero) if os.path.exists(f)]
+                return max(have, key=os.path.getmtime) if have else auto
             return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n))
         return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
@@ -6812,11 +6817,13 @@ def main():
                     # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
                     n = idx + 1                         # Platz 1–9, 0 = automatisch
                     if n == 0:
-                        # DSperate lädt .auto nicht per Slot-Kürzel: auf den (unbenutzten) Platz 0 kopieren
+                        # „Automatisch“: der neuere Stand (siehe _slot_file). DSperate lädt .auto nicht per
+                        # Slot-Kürzel – ist .auto der neuere, nach Platz 0 kopieren (.0 ist dann älter)
                         auto = cc._slot_file(-1)
                         if not auto or not os.path.exists(auto):
                             raise RuntimeError("DSperate: kein automatischer Stand")
-                        shutil.copy2(auto, auto.replace(".auto.dss", ".0.dss"))
+                        if auto.endswith(".auto.dss"):
+                            shutil.copy2(auto, auto.replace(".auto.dss", ".0.dss"))
                     step = "slot_next" if n > cc.dsp_slot else "slot_prev"
                     for _ in range(abs(n - cc.dsp_slot)):
                         if not dsperate_press(step):
