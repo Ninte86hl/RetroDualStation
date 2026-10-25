@@ -125,7 +125,7 @@ for old in "$DEST"/emulationstation-rgds-* "$DEST"/start-es-v2-diag.sh; do
     [ -f "$old" ] && rm -f "$old" && log "entfernt: $old"
 done
 
-for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py; do
+for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py rds-migrate-savestates.py; do
     cp "$SRC/rds-install/$f" "$DEST/$f" || fail "Could not copy $f."
     chmod +x "$DEST/$f"
 done
@@ -142,6 +142,13 @@ DCFG=/storage/.config/drastic/config/drastic.cfg
 DSPINI=/storage/.config/dsperate/dsperate.ini
 ESINPUT=/storage/.emulationstation/es_input.cfg
 rs save "$BK" "$RACFG" kv confirm_reset confirm_close notification_show_save_state video_font_enable \
+    notification_show_fast_forward notification_show_screenshot notification_show_cheats_applied \
+    notification_show_patch_applied notification_show_refresh_rate notification_show_set_initial_disk \
+    notification_show_autoconfig notification_show_remap_load notification_show_config_override_load \
+    notification_show_netplay_extra cheevos_visibility_unlock cheevos_visibility_mastery cheevos_visibility_account \
+    cheevos_visibility_lboard_start cheevos_visibility_lboard_submit cheevos_visibility_lboard_cancel \
+    cheevos_visibility_lboard_trackers cheevos_visibility_progress_tracker cheevos_visibility_summary \
+    cheevos_challenge_indicators video_message_color pause_nonactive \
     menu_enable_widgets network_cmd_enable quit_press_twice input_enable_hotkey_btn input_toggle_fast_forward_btn \
     input_save_state_btn input_load_state_btn input_rewind_btn input_menu_toggle_btn input_fps_toggle_btn \
     input_exit_emulator_btn input_state_slot_decrease_btn input_state_slot_increase_btn --legacy "$RACFG.vor-rds-kuerzel"
@@ -149,6 +156,8 @@ rs save "$BK" "$DSPINI" kv modifier quit pause fast_forward fast_forward_toggle 
     slot_prev layout_next layout_prev screen_swap fps stylus_axis toasts --legacy "$DSPINI.vor-rds-kuerzel"
 rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_INDEX_MENU]" \
     "controls_a[CONTROL_INDEX_FAST_FORWARD]" "controls_b[CONTROL_INDEX_FAST_FORWARD]" compress_savestates \
+    "controls_a[CONTROL_INDEX_SAVE_STATE]" "controls_b[CONTROL_INDEX_SAVE_STATE]" \
+    "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -348,8 +357,24 @@ UNIT
         # beim Neustart trotzdem nach – das CC sendet RESET deshalb zweimal, siehe ra_reset.)
         # Netzbefehle (Port 55355, nur lokal genutzt): Kontrollcenter/Gameswitcher speichern, laden, neu starten
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
-        for kv in 'confirm_reset=false' 'confirm_close=false' 'notification_show_save_state=false' \
-                  'video_font_enable=false' 'menu_enable_widgets=false' 'network_cmd_enable=true' 'quit_press_twice=false'; do
+        # Bildschirmtext an (sonst gibt es keine FPS-Anzeige mit Anbernic + Y), Einblendungen aber einzeln aus –
+        # Speichern, Laden, Vorspulen, Screenshot und Erfolge meldet das Kontrollcenter selbst. Erfolge-Zusammenfassung
+        # beim Start aus (summary 2 = aus). pause_nonactive aus: eine Berührung unten nahm RetroArch den Fokus und
+        # pausierte es (mit „Pausiert“-Kachel) – das Anhalten übernimmt das CC. Widgets an: FPS wie gewohnt weiß auf dunkler Kachel oben rechts
+        # (ohne Widgets gelber Text – dafür bleibt video_message_color weiß).
+        for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=true' \
+                  'network_cmd_enable=true' 'quit_press_twice=false' \
+                  'notification_show_save_state=false' 'notification_show_fast_forward=false' \
+                  'notification_show_screenshot=false' 'notification_show_cheats_applied=false' \
+                  'notification_show_patch_applied=false' 'notification_show_refresh_rate=false' \
+                  'notification_show_set_initial_disk=false' 'notification_show_autoconfig=false' \
+                  'notification_show_remap_load=false' 'notification_show_config_override_load=false' \
+                  'notification_show_netplay_extra=false' 'cheevos_visibility_unlock=false' \
+                  'cheevos_visibility_mastery=false' 'cheevos_visibility_account=false' \
+                  'cheevos_visibility_lboard_start=false' 'cheevos_visibility_lboard_submit=false' \
+                  'cheevos_visibility_lboard_cancel=false' 'cheevos_visibility_lboard_trackers=false' \
+                  'cheevos_visibility_progress_tracker=false' 'cheevos_visibility_summary=2' \
+                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff' 'pause_nonactive=false'; do
             k="${kv%%=*}"; v="${kv#*=}"
             if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
         done
@@ -393,6 +418,15 @@ UNIT
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
         log "DraStic: Menue auf F11, Vorspulen auf F12 (virtuelle Tasten, nur ueber das CC)"
     fi
+    # DraStic: Speichern/Laden auf F9 (322) / F10 (323) der virtuellen Tastatur – ROCKNIX legt sie auf R2/L2 allein,
+    # DraStic kennt keine Kombinationen. Anbernic + R2/L2 übersetzt das CC; R2/L2 allein tun nichts mehr. Einmal je Gerät.
+    DMARK3=/storage/.config/retrodualstation/drastic-kuerzel-v3.done
+    if [ ! -f "$DMARK3" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_SAVE_STATE\]) = .*/\1 = 322/' \
+                  -e 's/^(controls_[ab]\[CONTROL_INDEX_LOAD_STATE\]) = .*/\1 = 323/' "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK3"
+        log "DraStic: Speichern auf F9, Laden auf F10 (Anbernic + R2/L2 ueber das CC)"
+    fi
     # DraStic: Savestates unkomprimiert – Speichern ≈0,3 s statt 1,8 s (Gameswitcher, Home kurz).
     # Nur wenn DraStic nicht läuft (es schreibt die Datei beim Beenden zurück).
     # TODO: prüfen, ob alte komprimierte Stände danach noch laden (Test 25.10. lief mit gelöschten Ständen).
@@ -403,6 +437,23 @@ UNIT
             echo "compress_savestates = 0" >> "$DCFG"
         fi
         log "DraStic: Savestates unkomprimiert (schnelleres Speichern)"
+    fi
+    # Savestates einmalig auf das Schema ab v15.2 umziehen (Platz 0 = automatisch, Slots 1–9 = Emulator-Plätze).
+    # Update von v15.1 oder älter: Gameswitcher-Stand und Nutzer-Platz 0 tauschen; Neuinstallation: eigene Stände
+    # von Platz 0 in freie Slots. Wer schon mit v15.2 gespielt hat, hat das neue Schema – dort nichts tun.
+    SMMARK=/storage/.config/retrodualstation/savestates-v15.2.done
+    if [ ! -f "$SMMARK" ] && ! pidof retroarch drastic dsperate >/dev/null; then
+        case "$OLDVER" in
+            v15.2*|v15.[3-9]*|v1[6-9]*|v[2-9][0-9]*) SMARG=skip ;;
+            "") SMARG=--fresh ;;
+            *)  SMARG= ;;
+        esac
+        if [ "$SMARG" != skip ]; then
+            python3 "$DEST/rds-migrate-savestates.py" $SMARG >>"$LOG" 2>&1 \
+                && log "Savestates auf Slots 1-9 umgezogen (${SMARG:-Update von $OLDVER})" \
+                || log "WARNUNG: Umzug der Savestates fehlgeschlagen"
+        fi
+        mkdir -p /storage/.config/retrodualstation && date > "$SMMARK"
     fi
     # Schnellwechsel standardmäßig an (ab v15.2) – einmal je Gerät; danach entscheidet der Schalter im CC
     FSMARK=/storage/.config/retrodualstation/fastswitch-default.done

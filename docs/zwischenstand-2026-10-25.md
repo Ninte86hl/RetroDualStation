@@ -67,3 +67,10 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
 - RetroArch-Neustart: RA 1.22 fragt nach (Meldung ausgeblendet) → `ra_reset()` sendet RESET zweimal (`438dbc9`),
   getestet RG DS Plus (CC, Gameswitcher Y, Gameswitcher-Neustart). Installer: RA-Einstellungen ersetzen oder hinzufügen (`d2a283a`).
 - Messung Gameswitcher-Zeiten im TODO (Kette DraStic → RetroArch).
+
+## v15.3 (25.10.2026 Nachmittag, getestet RG DS Plus)
+- DraStic Speichern/Laden auf F9/F10 (Anbernic + R2/L2 übers CC) · Neustart DraStic/DSperate (DSperate: Spiel-
+  Einstellung autosave=0 für den Start) · RA-Neustart mit Ladebildschirm verdeckt (GS: `retroarch_reset` 2,7 s)
+- RA: Bildschirmtext + Widgets an (FPS), Einblendungen einzeln aus, `pause_nonactive` aus, Pauser friert RA ein
+- Savestates-Umzug `rds-migrate-savestates.py` (Merker `savestates-v15.2.done`) · Anker unsichtbar aufwecken
+- Scraper-Hinweis: Scraper in ES (Dual geht seit v15)

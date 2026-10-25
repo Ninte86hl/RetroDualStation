@@ -1494,11 +1494,11 @@ TOUR = [
                 "In Ports: boxart, cartridge and image for your games – with an icon editor"),
                ("für 1:1-Bilder mit iiSU-Rahmen, eigenen Bildern und M3U für Mehr-CD-Spiele.",
                 "for 1:1 images with iiSU border, your own images and M3U for multi-disc games."),
-               ("Voraussetzung: eine Spieleliste – einmal im Single-Screen-Modus scrapen.",
-                "Requirement: a game list – scrape your games once in single-screen mode.")],
+               ("Voraussetzung: eine Spieleliste – einmal mit ScreenScraper im ES-Menü (Scraper) anlegen.",
+                "Requirement: a game list – create it once with ScreenScraper in the ES menu (Scraper).")],
      "keys": [("Start", ("Einzelsuche", "single search")), ("Select", ("Mehrfachsuche", "batch search")),
               ("X", ("Icon-Editor: 1:1 mit iiSU-Rahmen", "icon editor: 1:1 with iiSU border")),
-              ("L3 / R3", ("Suche aktualisieren / Ansicht oben", "refresh search / top view")),
+              ("L3", ("Suche aktualisieren", "refresh search")),
               ("Y", ("Filter (Spieleliste) / Spiel suchen", "filter (game list) / search game"))]},
 ]
 
@@ -1583,11 +1583,12 @@ def inject_keys(seq):
     return True
 
 
-# Virtuelle Tastatur "RDS Keys" (uinput): Tasten, die es am Gerät nicht gibt (F11/F12).
-# DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F11 = 324, F12 = 325, getestet 22.10.2026)
+# Virtuelle Tastatur "RDS Keys" (uinput): Tasten, die es am Gerät nicht gibt (F9–F12).
+# DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {68: 87, 69: 88}          # SDL-Scancode F11/F12 → evdev KEY_F11/KEY_F12
+SDL_TO_EVDEV = {66: 67, 67: 68, 68: 87, 69: 88}   # SDL-Scancode F9–F12 → evdev KEY_F9–KEY_F12
+DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
 
@@ -1644,6 +1645,39 @@ def es_emulator(rom):
             val = m.group(1).lower()
             return next((v for k, v in EMULATORS.items() if val.startswith(k)), None)
     return None
+
+
+SYSTEM_CFG = "/storage/.config/system/configs/system.cfg"
+
+
+def game_setting_set(rom, name, value):
+    """ROCKNIX-Einstellung für ein einzelnes Spiel setzen (system.cfg: <system>["<datei>"].<name>=<wert>, hat Vorrang
+    vor System und global). Liefert eine Funktion, die den vorherigen Zustand wiederherstellt."""
+    key = '%s["%s"].%s' % (os.path.basename(os.path.dirname(rom or "")), os.path.basename(rom or ""), name)
+    lines = (rd(SYSTEM_CFG) or "").splitlines()
+    old = next((l for l in lines if l.startswith(key + "=")), None)
+
+    def write(new_line):
+        cur = [l for l in (rd(SYSTEM_CFG) or "").splitlines() if not l.startswith(key + "=")]
+        if new_line is not None:
+            cur.append(new_line)
+        tmp = SYSTEM_CFG + ".rds-tmp"
+        with open(tmp, "w") as f:
+            f.write("\n".join(cur) + "\n")
+        os.replace(tmp, SYSTEM_CFG)
+
+    try:
+        write("%s=%s" % (key, value))
+    except OSError as exc:
+        log("Einstellung setzen fehlgeschlagen:", key, exc)
+        return None
+
+    def restore():
+        try:
+            write(old)
+        except OSError as exc:
+            log("Einstellung zurücksetzen fehlgeschlagen:", key, exc)
+    return restore
 
 
 def autosave_on(rom):
@@ -1943,6 +1977,27 @@ def fast_resume():
         pass
 
 
+def fast_wake_hidden():
+    """Anker aufwecken, aber unsichtbar lassen – er wird gleich über ES beendet (Wechsel zu einem Spiel, das nicht
+    als Zusatzspiel starten kann, z. B. ein anderes RetroArch-Spiel). Spart das Zurückholen der Fenster und das
+    kurze Aufblitzen des alten Spiels; Touch-Zuordnung wie beim Aufwecken korrigieren."""
+    tm = touch_map(FROZEN.get("emu"))
+    if tm:
+        sway_cmd(tm)
+    n = evdev_flush(FROZEN["pids"])
+    for p in reversed(FROZEN["pids"]):
+        try:
+            os.kill(p, signal.SIGCONT)
+        except OSError:
+            pass
+    log("Schnellwechsel: Anker unsichtbar aufgeweckt (wird beendet)", FROZEN["name"], "(%d alte Eingaben verworfen)" % n)
+    FROZEN.update(pids=[], runemu=None, rom=None, name=None, emu=None, cons=[])
+    try:
+        os.remove(FAST_STATE)
+    except OSError:
+        pass
+
+
 def fast_recover():
     """Nach einem Neustart des CC: eingefrorenes Spiel nie zurücklassen."""
     try:
@@ -2212,6 +2267,8 @@ class Switcher:
                     if fresh:
                         time.sleep(0.5)
                         ra_reset()               # Auto-Laden übergehen (Ladebildschirm verdeckt es)
+                        time.sleep(gs_wait("retroarch_reset", 2.7))   # … auch die „Reset“-Meldung abwarten
+                                                 # (getestet 25.10.2026: 2,2–2,6 s zu kurz, 2,7 s passt)
                     elif not autosave_on(item["rom"]):
                         time.sleep(gs_wait("retroarch_slot", 1.5))   # ohne Auto-Laden: unseren Slot nachladen
                         ra_command(f"LOAD_STATE_SLOT {SLOT}")
@@ -2302,9 +2359,14 @@ class Switcher:
                     fast_fullscreen()
                     log("Gameswitcher: Schnellwechsel (Zusatzspiel) fertig nach %.1f s" % (time.monotonic() - t0))
                     return True
-                fast_resume()                                     # sonst: Anker zurück, dann normaler Weg
-                time.sleep(0.5)
-                return running_game() or False
+                # sonst: Anker unsichtbar aufwecken, normaler Weg beendet ihn über ES (kein Aufblitzen, ≈0,5 s schneller)
+                fast_wake_hidden()
+                for _ in range(10):
+                    g = running_game()
+                    if g:
+                        return g
+                    time.sleep(0.05)
+                return False
             emus_ok = current.get("emu") in FAST_ALL and item["emu"] in FAST_ALL and current.get("emu") != item["emu"]
             mem = mem_available_mb()
             if not emus_ok or mem < FAST_MIN_MB:
@@ -2346,11 +2408,11 @@ class Switcher:
                 except Exception:
                     pass
                 # vor dem Beenden: ES startet das nächste Spiel ggf. sofort
-                if fresh and item["emu"] == "DSperate" and os.path.exists(ini):
-                    txt = rd(ini) or ""
-                    if "autoload = true" in txt:
-                        restore = txt
-                        wr(ini, txt.replace("autoload = true", "autoload = false"))
+                if fresh and item["emu"] == "DSperate":
+                    # start_dsperate.sh startet mit --autoload, wenn get_setting autosave <System> <Spiel> 1–3 ergibt.
+                    # Die Einstellung für genau dieses Spiel hat Vorrang: für den Neustart kurz auf 0 (→ --no-autoload)
+                    restore = game_setting_set(item["rom"], "autosave", "0")
+                    log("Gameswitcher: DSperate-Neustart ohne Auto-Laden (Spiel-Einstellung autosave=0)")
                 if current and fast_enabled():
                     res = self.fast_switch(item, fresh, current, t0)
                     if res is True:
@@ -2425,9 +2487,9 @@ class Switcher:
                 for path, old in before.items():
                     if old and rd(path) == "performance" and old != "performance":
                         wr(path, old)
-                if restore:
+                if restore:                     # DSperate hat die Einstellung beim Start gelesen – alten Wert zurück
                     time.sleep(10)
-                    wr(ini, restore)
+                    restore()
         threading.Thread(target=work, daemon=True).start()
 
 
@@ -2441,16 +2503,9 @@ class Pauser:
     def pause(self, game):
         if self.how or not game:
             return
-        if game["emu"] == "RetroArch":
-            status = ra_command("GET_STATUS", reply=True)
-            if status is not None:
-                if "PLAYING" in status:
-                    ra_command("PAUSE_TOGGLE")
-                    self.how = "ra"
-                    log("Pause: RetroArch angehalten")
-                else:
-                    log("Pause: RetroArch meldet", status.strip()[:40], "– nichts zu tun")
-                return
+        # Alle Emulatoren einfrieren – auch RetroArch: dessen eigene Pause (PAUSE_TOGGLE) zeichnet mit Widgets eine
+        # „Pausiert“-Kachel aufs Spiel. Netzbefehle (Speichern in Slot …) bleiben im Puffer und laufen nach dem
+        # Aufwecken. (Der Schnellwechsel friert RetroArch genauso ein.)
         try:
             self.pids = proc_tree(game["pid"])
             for p in reversed(self.pids):
@@ -2464,9 +2519,7 @@ class Pauser:
             log("Pause fehlgeschlagen:", exc)
 
     def resume(self):
-        if self.how == "ra":
-            ra_command("PAUSE_TOGGLE")
-        elif self.how == "stop":
+        if self.how == "stop":
             for p in getattr(self, "pids", [self.pid]):
                 try:
                     os.kill(p, signal.SIGCONT)
@@ -2498,10 +2551,10 @@ GAME_ACTIONS = {
     "RetroArch": [("save", "Speichern"), ("load", "Laden"),
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
-                ("help", "Tasten"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
-                 ("help", "Tasten"), ("quit", "Beenden")],
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
+                ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
+                 ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
 
@@ -2694,7 +2747,8 @@ def drastic_shortcuts():
             name = RA_BTN.get(str(v - 1024), "Taste %d" % (v - 1024))
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
         elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
-            rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1"}.get(k, tr("nur über das CC"))))
+            rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1", "SAVE_STATE": "Anbernic + R2",
+                                 "LOAD_STATE": "Anbernic + L2"}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
             rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
@@ -2736,9 +2790,8 @@ def drastic_io(game, n, key, after=0.5):
         if key == "load" and n != b:
             shutil.copy2(fn, fb)
         before = os.path.getmtime(fb) if os.path.exists(fb) else 0
-        code = 313 if key == "save" else 312            # R2 speichern, L2 laden
-        t_key = time.monotonic()
-        inject_keys([(code, 1), 0.1, (code, 0)])
+        t_key = time.monotonic()                         # Speichern/Laden wie in drastic.cfg belegt (RDS: F9/F10)
+        drastic_press("SAVE_STATE" if key == "save" else "LOAD_STATE", DRASTIC_SAVE if key == "save" else DRASTIC_LOAD)
         if key == "load":
             time.sleep(after)                            # DraStic liest die Datei
             ok = True
@@ -6547,28 +6600,59 @@ def main():
         cur = cc.game
         same = cur and (cur.get("rom") or rom_of(cur["pid"])) == item["rom"]
         if same and fresh and cur["emu"] == "RetroArch":
-            ra_reset()                      # im laufenden RetroArch neu starten, ohne Beenden
-            time.sleep(0.3)
-            toggle("switcher")              # danach Pause aufheben
-            def unpause():                  # Sicherheitsnetz: RetroArch nie pausiert zurücklassen
-                time.sleep(0.8)
-                st = ra_command("GET_STATUS", reply=True) or ""
-                if "PAUSED" in st:
-                    ra_command("PAUSE_TOGGLE")
-            threading.Thread(target=unpause, daemon=True).start()
+            toggle("switcher")              # schließen, Pause aufheben
+            cover_ra_reset(cur)             # im laufenden RetroArch neu starten, Meldung verdeckt
             log("Gameswitcher: RetroArch zurückgesetzt", item["name"])
             return
         toggle("switcher")                 # schließen, Pause aufheben
         if same and not fresh:
             return                          # einfach zurück ins laufende Spiel
-        # Ladebildschirm auf beiden Screens, bis das Spiel läuft und der Stand geladen ist
+        start_loading(item, fresh, cur)
+
+    def start_loading(item, fresh, cur):
+        """Ladebildschirm auf beiden Screens, bis das Spiel läuft und der Stand geladen ist."""
         cc.loading = (item, fresh)
         cc.loading_t0 = time.monotonic()
         if cc.screen_bottom_off:
             cc.screen_on()
         ui.show("loading")
         ui.show_top(cc.paint_top_loading)
-        sw.launch(item, fresh, current=cur)
+        cc.switcher.launch(item, fresh, current=cur)
+
+    def cover_ra_reset(g):
+        """RetroArch-Neustart: RetroArch blendet „Reset“ (und die Rückfrage) fest ein – kein Schalter dafür. Den
+        Ladebildschirm „Wird neu gestartet …“ so lange zeigen, bis die Meldung abgelaufen ist (≈2 s), dann zurück."""
+        rom = g.get("rom") or rom_of(g["pid"]) or ""
+        item = next((i for i in cc.switcher.items if i["rom"] == rom), None) or \
+            {"rom": rom, "name": g["name"], "emu": g["emu"], "system": g.get("system", ""), "icon": g.get("icon")}
+        cc.switcher.done = False
+        cc.loading = (item, True)
+        cc.loading_t0 = time.monotonic()
+        if cc.screen_bottom_off:
+            cc.screen_on()
+        ui.show("loading")
+        ui.show_top(cc.paint_top_loading)
+
+        def work():
+            time.sleep(0.3)
+            ra_reset()
+            st = ra_command("GET_STATUS", reply=True) or ""   # Sicherheitsnetz: nie pausiert zurücklassen
+            if "PAUSED" in st:
+                ra_command("PAUSE_TOGGLE")
+            time.sleep(2.5)
+            cc.switcher.done = True
+        threading.Thread(target=work, daemon=True).start()
+
+    def restart_game(g):
+        """DraStic/DSperate haben keinen Neustart-Befehl: Spiel beenden und ohne Stand neu starten."""
+        rom = g.get("rom") or rom_of(g["pid"])
+        if not rom:
+            return
+        item = next((i for i in cc.switcher.items if i["rom"] == rom), None) or \
+            {"rom": rom, "name": g["name"], "emu": g["emu"], "system": g.get("system", ""), "icon": g.get("icon")}
+        log("Seite Spiel: neu starten", g["emu"], g["name"])
+        toggle("cc")                       # schließen, Pause aufheben
+        start_loading(item, True, g)
 
     stick = {"dir": 0, "next": 0.0}
     rep = {"ev": None, "next": 0.0}   # gehaltene Richtungstaste (Wiederholung)
@@ -6643,6 +6727,9 @@ def main():
         if key == "quit":
             do_quit()
             return
+        if emu in ("DraStic", "DSperate") and key == "reset":
+            restart_game(g)                  # Emulator neu starten, ohne Stand (wie Y im Gameswitcher)
+            return
         if emu == "DraStic" and key in ("menu", "ff"):
             toggle("cc")
             def later():
@@ -6663,6 +6750,11 @@ def main():
                 if ok and key == "ff":
                     speed_event("ff", g)
             threading.Thread(target=later, daemon=True).start()
+            return
+        if emu == "RetroArch" and key == "reset":
+            toggle("cc")                     # schließen (Pause aufheben), dann neu starten – Meldung verdeckt
+            cover_ra_reset(g)
+            log("Seite Spiel: RESET")
             return
         if emu == "RetroArch" and key in ("ff", "slow", "reset", "menu"):
             toggle("cc")                     # erst schließen (Pause aufheben), dann auslösen
@@ -6769,8 +6861,8 @@ def main():
                             shot = fn + ".png"
                             subprocess.run(["grim", "-l", "1", "-o", TOP_OUTPUT, shot + ".tmp"], timeout=5,
                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        code = 313 if key == "save" else 312     # R2 speichern, L2 laden
-                        inject_keys([(code, 1), 0.1, (code, 0)])
+                        drastic_press("SAVE_STATE" if key == "save" else "LOAD_STATE",   # RDS: F9/F10
+                                      DRASTIC_SAVE if key == "save" else DRASTIC_LOAD)
                         ok = False
                         for _ in range(30):
                             time.sleep(0.1)
@@ -7096,13 +7188,14 @@ def main():
                 combo_feedback(code)
             elif typ == EV_ABS and code == ABS_HAT0X and value:
                 combo_feedback(546 if value < 0 else 547)
-            # DraStic kennt keine Kombinationen: Anbernic + R1 / + X übernimmt das CC (virtuelle Tasten F12/F11)
-            if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH) and not ui.view:
+            # DraStic kennt keine Kombinationen: Anbernic + R1 / X / R2 / L2 übernimmt das CC
+            # (virtuelle Tasten F12 / F11 / F9 / F10) – R2/L2 allein tun in DraStic so nichts mehr
+            if typ == EV_KEY and value == 1 and code in (BTN_TR, BTN_NORTH, 313, 312) and not ui.view:
                 g = running_game()
                 if g and g["emu"] == "DraStic":
-                    what = "FAST_FORWARD" if code == BTN_TR else "MENU"
+                    what = {BTN_TR: "FAST_FORWARD", BTN_NORTH: "MENU", 313: "SAVE_STATE", 312: "LOAD_STATE"}[code]
                     def run(what=what):
-                        how = drastic_press(what)
+                        how = drastic_press(what, {"SAVE_STATE": DRASTIC_SAVE, "LOAD_STATE": DRASTIC_LOAD}.get(what))
                         log("Kürzel DraStic:", what, "über", how or "nichts")
                     threading.Thread(target=run, daemon=True).start()
             return

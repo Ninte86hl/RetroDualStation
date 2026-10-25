@@ -58,7 +58,7 @@ with zipfile.ZipFile(out, "w") as z:
     import datetime
     z.writestr(zipfile.ZipInfo(p + "DATE"), datetime.date.today().strftime("%Y%m%d") + "\n")   # Release-Datum (Ports-Liste)
     add(z, binary, p + binname, EXEC)
-    for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh", "rds-settings.py"):
+    for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh", "rds-settings.py", "rds-migrate-savestates.py"):
         add(z, os.path.join(repo, "device", "rds-install", f), p + "rds-install/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "uninstall.sh"), p + "rds-install/uninstall.sh", EXEC)
     for f in ("RDS Dual-Screen.sh", "RDS Single-Screen.sh"):

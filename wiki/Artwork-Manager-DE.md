@@ -9,7 +9,7 @@ Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge-I
 - **Mehrteilige Spiele** zu einem `.m3u`-Eintrag zusammenfassen, Arcade-Namen aus der FBNeo-Liste
 - Sicherung jeder `gamelist.xml` vor dem ersten Speichern, Wiederherstellen in den Einstellungen
 
-**Voraussetzung:** Jedes System braucht eine `gamelist.xml` – einmalig mit dem Scraper im Single-Screen-Modus erstellen.
+**Voraussetzung:** Jedes System braucht eine `gamelist.xml` – einmalig mit ScreenScraper im ES-Menü unter *Scraper* erstellen (geht auch im Dual-Modus).
 
 | | | |
 |:-:|:-:|:-:|

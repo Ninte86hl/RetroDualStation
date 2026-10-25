@@ -79,11 +79,11 @@ Im Spiel mit **R1** zur Seite „Spiel“ (RetroArch, DSperate und DraStic):
 | **R1** | Vorspulen an/aus |
 | **R2 / L2** | Speichern / Laden |
 | **X** | Emulator-Menü |
-| **Y** | FPS anzeigen |
+| **Y** | FPS anzeigen (RetroArch, DSperate – DraStic: im eigenen Menü) |
 | **Start** | Spiel beenden |
 | **◀ / ▶** | Speicherplatz − / + |
 
-DraStic kennt keine Tastenkombinationen: Dort liegen Speichern und Laden auf R2 und L2, Menü und Vorspulen gibt es über das Kontrollcenter.
+DraStic kennt keine Tastenkombinationen – das Kontrollcenter übersetzt sie: **Anbernic + R2/L2** speichert und lädt, **Anbernic + X** öffnet das Menü, **Anbernic + R1** spult vor. R2/L2 allein tun nichts.
 
 ### RetroAchievements (Seite 3)
 
@@ -131,8 +131,8 @@ Power gedrückt halten schickt das Gerät sofort in den Ruhemodus.
 Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge** (1:1-Icon) und
 **Image** (Hero) – der obere Bildschirm zeigt, wie die drei zusammen wirken.
 
-**Voraussetzung:** Jedes System braucht eine `gamelist.xml`. Sie entsteht einmalig mit dem Scraper
-im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt dieselbe Liste.
+**Voraussetzung:** Jedes System braucht eine `gamelist.xml`. Sie entsteht einmalig mit ScreenScraper
+im ES-Menü unter *Scraper* (geht auch im Dual-Modus); RetroDualStation und das Original-ES nutzen dieselbe Liste.
 
 | Wo | Taste | Funktion |
 |---|---|---|
@@ -148,7 +148,6 @@ im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt d
 | | **Start** | Speichern |
 | | **Y** | Anderes Spiel suchen |
 | | **L3** | Artwork-Suche aktualisieren |
-| | **R3** | Mix-Ansicht / Großansicht oben |
 | | **X** | Icon-Editor: aus dem gewählten Icon ein 1:1-Bild mit iiSU-Rahmen machen (◀ ▶ ▲ ▼ verschieben · L / R Zoom · Y Rahmen). Bei Icons, die den iiSU-Rahmen schon haben, nicht nötig und ausgegraut |
 
 Vor dem ersten Speichern pro System wird eine Sicherung angelegt (in den Einstellungen abschaltbar).

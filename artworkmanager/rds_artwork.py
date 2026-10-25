@@ -22,7 +22,7 @@ from pathlib import Path
 
 BASE = "/storage/.config/retrodualstation"
 BTN_THUMBL = 317                                # linker Stick drücken: Suche aktualisieren
-BTN_THUMBR = 318                                # rechter Stick drücken: Mix-/Großansicht oben
+BTN_THUMBR = 318                                # rechter Stick drücken: nicht belegt (Großansicht entfernt)
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (HERE, BASE + "/lib", BASE + "/controlcenter",
           os.path.join(os.path.dirname(HERE), "controlcenter")):
@@ -235,8 +235,8 @@ EN_AM = {
         "Every system therefore needs a gamelist.xml in its ROM folder.",
     "Systeme ohne Liste sind in der Systemliste markiert.": "Systems without a list are marked in the system list.",
     "So entsteht die Spieleliste": "How to create the game list",
-    "Im Single-Screen-Modus (originale ROCKNIX-Oberfläche) mit dem Scraper":
-        "In single-screen mode (original ROCKNIX interface), use the scraper",
+    "Im ES-Menü unter Scraper mit ScreenScraper (geht auch im Dual-Modus)":
+        "In the ES menu under Scraper, use ScreenScraper (works in dual mode, too)",
     "die Spiele einmal scrapen. Die Liste gilt auch für RetroDualStation.":
         "to scrape your games once. The list is also used by RetroDualStation.",
     "Gespeichert wird in der gamelist.xml und im Ordner images des Systems.":
@@ -289,8 +289,8 @@ EN_AM = {
     "alle Artworks": "all artwork", "teilweise": "partial", "keine": "none",
     "Kein Spiel gefunden": "No game found", "Keine Treffer – anderen Namen probieren": "No results – try another name",
     "Keine Artworks gefunden – mit Y anderes Spiel suchen": "No artwork found – press Y to search another game",
-    "Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen":
-        "No game list – create one with the scraper in single-screen mode",
+    "Keine Spieleliste – mit ScreenScraper in ES anlegen":
+        "No game list – create one with ScreenScraper in ES",
     "Erst mit A ein Bild übernehmen, dann mit Start speichern": "Take an image with A first, then save with Start",
     "Alle Stile übernommen – mit Start speichern": "All styles taken – save with Start",
     "Alle Spiele haben bereits alle Artworks": "All games already have all artwork",
@@ -1463,7 +1463,7 @@ class App:
             return
         if self.view == "systems":
             if self.systems and not has_gamelist(self.systems[i]["key"]):
-                self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
+                self.say("Keine Spieleliste – mit ScreenScraper in ES anlegen")
             elif self.systems:
                 self.open_system(i)
         elif self.view == "settings":
@@ -1872,16 +1872,13 @@ class App:
             self.transfer()
         elif code == BTN_THUMBL and self.view == "game":
             self.refresh_search()
-        elif code == BTN_THUMBR and self.view == "game":
-            pass                                             # Großansicht entfernt (RG DS Plus hat kein R3)
-            self.top_dirty = True
         elif code == BTN_START and self.view == "systems" and self.systems:
             self.activate()                                  # Einzelsuche (prüft die Spieleliste)
         elif code == BTN_SELECT and self.view == "systems" and self.systems:
             if has_gamelist(self.systems[self.sel]["key"]):
                 self.open_system(self.sel, batch=True)       # Mehrfachsuche
             else:
-                self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
+                self.say("Keine Spieleliste – mit ScreenScraper in ES anlegen")
         elif code == BTN_SELECT and self.view == "game" and self.batch:
             if self.chosen:
                 self.bq_add()                                # mit der bisherigen Auswahl einreihen
@@ -2087,7 +2084,7 @@ class App:
             ("Systeme ohne Liste sind in der Systemliste markiert.", False),
             ("", False),
             ("So entsteht die Spieleliste", True),
-            ("Im Single-Screen-Modus (originale ROCKNIX-Oberfläche) mit dem Scraper", False),
+            ("Im ES-Menü unter Scraper mit ScreenScraper (geht auch im Dual-Modus)", False),
             ("die Spiele einmal scrapen. Die Liste gilt auch für RetroDualStation.", False),
             ("", False),
             ("Gespeichert wird in der gamelist.xml und im Ordner images des Systems.", False),
@@ -2470,7 +2467,6 @@ class App:
         if c and self.chosen.get(kind) is c:
             P.rrect(1000, 870, 220, 56, 28, "2bb673")
             P.text("✓ übernommen", 24, 1110, 906, "ffffff", bold=True, align="c", raw=True)
-        P.hint([("R3", "Mix-Ansicht")], 22, 1225, 925, "8a8a8a", "bdbdbd", align="r")
 
 
     def cover(self, P, path, x, y, w, h):

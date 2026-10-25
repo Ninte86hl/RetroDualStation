@@ -79,11 +79,11 @@ In a game, press **R1** for the game page (RetroArch, DSperate and DraStic):
 | **R1** | Fast forward on/off |
 | **R2 / L2** | Save / Load |
 | **X** | Emulator menu |
-| **Y** | Show FPS |
+| **Y** | Show FPS (RetroArch, DSperate – DraStic: in its menu) |
 | **Start** | Quit game |
 | **◀ / ▶** | Save slot − / + |
 
-DraStic has no button combinations: save and load are on R2 and L2, menu and fast forward via the Control Center.
+DraStic has no button combinations – the Control Center translates them: **Anbernic + R2/L2** saves and loads, **Anbernic + X** opens the menu, **Anbernic + R1** fast-forwards. R2/L2 alone do nothing.
 
 ### RetroAchievements (page 3)
 
@@ -130,8 +130,8 @@ Holding Power sends the device to sleep right away.
 Start it from **Ports → Artwork Manager**. It adds **Boxart**, **Cartridge** (1:1 icon) and
 **Image** (hero) to your games – the top screen shows how the three look together.
 
-**Requirement:** every system needs a `gamelist.xml`. Create it once with the scraper in
-single-screen mode (original ROCKNIX interface); RetroDualStation uses the same list.
+**Requirement:** every system needs a `gamelist.xml`. Create it once with ScreenScraper in
+the ES menu under *Scraper* (works in dual mode, too); RetroDualStation and stock ES use the same list.
 
 | Where | Button | Action |
 |---|---|---|
@@ -147,7 +147,6 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **Start** | Save |
 | | **Y** | Search another game |
 | | **L3** | Refresh the artwork search |
-| | **R3** | Mix view / large view on top |
 | | **X** | Icon editor: turn the chosen icon into a 1:1 image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border). Not needed – and greyed out – for icons that already have the iiSU border |
 
 Before the first save per system a backup is created (can be turned off in the settings).
