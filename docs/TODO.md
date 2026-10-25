@@ -24,6 +24,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Navigationspfeile** (25.10.2026) – geplante Änderung, Details vergessen; beim nächsten Mal klären,
+      wo genau (CC, Gameswitcher, ES?). Beeinträchtigt das laufende System nicht.
 - [ ] **Savestates: Übergang für bestehende Nutzer** (25.10.2026) – Platz 0 ist jetzt der automatische Stand.
       Eigene Stände auf Platz 0 (v. a. DSperate, z. B. `AMCE.0.dss`) einmalig in den nächsten freien Slot verschieben;
       alte RetroArch-Gameswitcher-Stände auf Platz 9 (`.state9`) erscheinen sonst als Slot 9.
