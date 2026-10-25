@@ -799,8 +799,8 @@ int SDL_PollEvent(SDL_Event* event) {
                 if (touch_scaled && xy_idx == 2)
                     y *= 2;
                 if (getenv("RDS_TOUCH_DEBUG"))   /* RDS: Touch-Protokoll für den Versuch */
-                    fprintf(stderr, "[rds-touch] tf=%.3f,%.3f phys=%dx%d idx=%d scaled=%d -> %d,%d rect=%d,%d %dx%d\n",
-                            event->tfinger.x, event->tfinger.y, phys_width, phys_height, xy_idx, touch_scaled,
+                    fprintf(stderr, "[rds-touch] dev=%lld tf=%.3f,%.3f phys=%dx%d idx=%d scaled=%d -> %d,%d rect=%d,%d %dx%d\n",
+                            (long long)event->tfinger.touchId, event->tfinger.x, event->tfinger.y, phys_width, phys_height, xy_idx, touch_scaled,
                             x, y, touch_rect->x, touch_rect->y, touch_rect->w, touch_rect->h);
 
                 if (x < touch_rect->x || x > touch_rect->x + touch_rect->w ||
