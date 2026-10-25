@@ -1494,11 +1494,11 @@ TOUR = [
                 "In Ports: boxart, cartridge and image for your games – with an icon editor"),
                ("für 1:1-Bilder mit iiSU-Rahmen, eigenen Bildern und M3U für Mehr-CD-Spiele.",
                 "for 1:1 images with iiSU border, your own images and M3U for multi-disc games."),
-               ("Voraussetzung: eine Spieleliste – einmal mit dem Scraper in ES anlegen.",
-                "Requirement: a game list – create it once with the scraper in ES.")],
+               ("Voraussetzung: eine Spieleliste – einmal mit ScreenScraper im ES-Menü (Scraper) anlegen.",
+                "Requirement: a game list – create it once with ScreenScraper in the ES menu (Scraper).")],
      "keys": [("Start", ("Einzelsuche", "single search")), ("Select", ("Mehrfachsuche", "batch search")),
               ("X", ("Icon-Editor: 1:1 mit iiSU-Rahmen", "icon editor: 1:1 with iiSU border")),
-              ("L3 / R3", ("Suche aktualisieren / Ansicht oben", "refresh search / top view")),
+              ("L3", ("Suche aktualisieren", "refresh search")),
               ("Y", ("Filter (Spieleliste) / Spiel suchen", "filter (game list) / search game"))]},
 ]
 

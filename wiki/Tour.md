@@ -130,8 +130,8 @@ Holding Power sends the device to sleep right away.
 Start it from **Ports → Artwork Manager**. It adds **Boxart**, **Cartridge** (1:1 icon) and
 **Image** (hero) to your games – the top screen shows how the three look together.
 
-**Requirement:** every system needs a `gamelist.xml`. Create it once with the scraper in
-the ES menu (works in dual mode, too); RetroDualStation and stock ES use the same list.
+**Requirement:** every system needs a `gamelist.xml`. Create it once with ScreenScraper in
+the ES menu under *Scraper* (works in dual mode, too); RetroDualStation and stock ES use the same list.
 
 | Where | Button | Action |
 |---|---|---|
@@ -147,7 +147,6 @@ the ES menu (works in dual mode, too); RetroDualStation and stock ES use the sam
 | | **Start** | Save |
 | | **Y** | Search another game |
 | | **L3** | Refresh the artwork search |
-| | **R3** | Mix view / large view on top |
 | | **X** | Icon editor: turn the chosen icon into a 1:1 image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border). Not needed – and greyed out – for icons that already have the iiSU border |
 
 Before the first save per system a backup is created (can be turned off in the settings).
