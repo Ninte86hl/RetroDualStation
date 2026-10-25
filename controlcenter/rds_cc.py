@@ -6238,9 +6238,14 @@ def ra_slot_step(game, d):
     """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: state_slot aus retroarch.cfg."""
     if RA_SLOT["pid"] != game.get("pid"):
         m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
-        RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
-    RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
-    info_toast("Slot %d" % RA_SLOT["slot"], "save")   # RetroArch-Zählung = Anzeige im Kontrollcenter (0 = automatisch)
+        RA_SLOT.update(pid=game.get("pid"), slot=max(1, int(m.group(1))) if m else 1)
+    new = min(9, max(1, RA_SLOT["slot"] + d))           # manuelle Slots 1–9; Platz 0 gehört dem automatischen Stand
+    if RA_SLOT["slot"] + d < 1:                         # RetroArch ist schon auf 0 gesprungen → zurück auf 1
+        ra_command("STATE_SLOT_PLUS")
+    elif RA_SLOT["slot"] + d > 9:
+        ra_command("STATE_SLOT_MINUS")
+    RA_SLOT["slot"] = new
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")   # RetroArch-Zählung = Anzeige im Kontrollcenter
 
 
 def info_toast(text, icon="ff"):
