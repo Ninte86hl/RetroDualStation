@@ -19,6 +19,25 @@ for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install
     rm -f "$PORTS/$f" && log "entfernt: $PORTS/$f"
 done
 
+# Originalwerte von vor RDS zurücksetzen (RetroArch, DraStic, DSperate, ES-Einstellungen, ES-Tastenbelegung).
+# ES vorher anhalten, damit es seine Einstellungen nicht beim Beenden zurückschreibt; der Helfer startet es danach.
+systemctl stop essway
+RACFG=/storage/.config/retroarch/retroarch.cfg
+DCFG=/storage/.config/drastic/config/drastic.cfg
+DSPINI=/storage/.config/dsperate/dsperate.ini
+ESINPUT=/storage/.emulationstation/es_input.cfg
+if [ -f "$DEST/settings-before-rds.json" ] && [ -f "$DEST/rds-settings.py" ]; then
+    if python3 "$DEST/rds-settings.py" restore "$DEST/settings-before-rds.json" >>"$LOG" 2>&1; then
+        rm -f "$RACFG.vor-rds-kuerzel" "$DSPINI.vor-rds-kuerzel" "$DCFG.vor-rds-kuerzel" "$ESINPUT.before-rds"
+        log "Originalwerte zurueckgesetzt, alte Sicherungen entfernt"
+    else
+        log "WARNUNG: Zuruecksetzen unvollstaendig – Sicherungen *.vor-rds-kuerzel / *.before-rds bleiben"
+    fi
+else
+    log "Keine Sicherung der Originalwerte gefunden (Installation vor v15.2) – Einstellungen bleiben"
+fi
+sed -i '/for_window \[app_id="^emulationstation-rgds"\] fullscreen enable global/d' /storage/.config/sway/config 2>/dev/null
+
 # Zurueck auf Single (Original-ES, Original-Theme, Drop-in weg, Sway zurueck)
 if [ -x "$DEST/es-switch-helper.sh" ]; then
     /bin/bash "$DEST/es-switch-helper.sh" single

@@ -106,12 +106,33 @@ for old in "$DEST"/emulationstation-rgds-* "$DEST"/start-es-v2-diag.sh; do
     [ -f "$old" ] && rm -f "$old" && log "entfernt: $old"
 done
 
-for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh; do
+for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py; do
     cp "$SRC/rgds-test/$f" "$DEST/$f" || fail "Could not copy $f."
     chmod +x "$DEST/$f"
 done
 echo "$VERSION" > "$DEST/VERSION"
 log "Skripte kopiert nach $DEST"
+
+# --- Originalwerte sichern, bevor RDS etwas ändert (uninstall.sh setzt sie zurück) ---
+# Je Einstellung nur beim ersten Mal gemerkt; Sicherungen älterer RDS-Versionen (*.vor-rds-kuerzel, *.before-rds)
+# liefern dabei die Werte von vor RDS. Werte aus system.cfg (set_setting) merken die Blöcke weiter unten selbst.
+BK="$DEST/settings-before-rds.json"
+rs() { python3 "$DEST/rds-settings.py" "$@" >>"$LOG" 2>&1 || log "WARNUNG: Sicherung fehlgeschlagen: $*"; }
+RACFG=/storage/.config/retroarch/retroarch.cfg
+DCFG=/storage/.config/drastic/config/drastic.cfg
+DSPINI=/storage/.config/dsperate/dsperate.ini
+ESINPUT=/storage/.emulationstation/es_input.cfg
+rs save "$BK" "$RACFG" kv confirm_reset confirm_close notification_show_save_state video_font_enable \
+    menu_enable_widgets network_cmd_enable quit_press_twice input_enable_hotkey_btn input_toggle_fast_forward_btn \
+    input_save_state_btn input_load_state_btn input_rewind_btn input_menu_toggle_btn input_fps_toggle_btn \
+    input_exit_emulator_btn input_state_slot_decrease_btn input_state_slot_increase_btn --legacy "$RACFG.vor-rds-kuerzel"
+rs save "$BK" "$DSPINI" kv modifier quit pause fast_forward fast_forward_toggle save_state load_state slot_next \
+    slot_prev layout_next layout_prev screen_swap fps stylus_axis toasts --legacy "$DSPINI.vor-rds-kuerzel"
+rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_INDEX_MENU]" \
+    "controls_a[CONTROL_INDEX_FAST_FORWARD]" "controls_b[CONTROL_INDEX_FAST_FORWARD]" compress_savestates \
+    --legacy "$DCFG.vor-rds-kuerzel"
+rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
+[ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
 
 if [ -d "$SRC/theme/dii-ess-aye-rds" ]; then
     mkdir -p "$THEMEDIR"
