@@ -24,12 +24,14 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
-- [ ] **Prüfen: advanced_drastic** (https://github.com/trngaje/advanced_drastic, Hinweis 25.10.2026) – LD_PRELOAD-Hook
-      für DraStic 64-Bit (Layouts/Themes, Eingabemenü, Touch, Vibration, SDL2-Ton, falsches Mikrofon, Cheats, .sav);
-      nennt ROCKNIX RK3566 inkl. RG DS. Bedenken: für Einzelbildschirm-Layouts gedacht (Konflikt mit ROCKNIX-Dual-
-      Screen, Sway-/Touch-Regeln?), eigene Tasten L2/R2 allein + Select-Kombis (Konflikt mit Anbernic-Schema/F9–F12),
-      ROCKNIX lädt schon libdrastouch.so vor, **keine Lizenz** → nicht mitliefern. Erst separat auf dem RG DS testen;
-      interessant v. a. falsches Mikrofon und Cheats.
+- [ ] **Prüfen: advanced_drastic** (https://github.com/trngaje/advanced_drastic) – Update 23./24.10.2026: **RG DS mit
+      zwei eigenen Fenstern** (vorher ein schwebendes Fenster + Sway-Zeilen; Skript kannte auch „RG DS Plus“).
+      LD_PRELOAD-Hook für DraStic v2522, eigenes Menü (Auto-Speichern/Laden mit Slot, FPS, Save/Load-Taste, Cheats,
+      falsches Mikrofon). Installer ersetzt den DraStic-Starter (eigenes drastic_v2522, eigenes LD_PRELOAD statt
+      libdrastouch.so, beendet gptokeyb), Sicherung drastic.tar.gz + Deinstallation. **Keine Lizenz** → nicht mitliefern.
+      Konflikte mit RDS: `fullscreen enable global` (Gameswitcher/Schnellwechsel/Sicherheitsnetz) und `touch_map`
+      gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
+      Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version
       selbst finden und laden, statt die ZIP am PC zu holen und per SD/scp in ports zu kopieren. Ideen: Abfrage
       `api.github.com/repos/Ninte86hl/RetroDualStation/releases/latest` (Tag mit `rds-install/VERSION` vergleichen);
