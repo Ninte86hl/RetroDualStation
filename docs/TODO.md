@@ -40,7 +40,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       laufenden Emulator, aus dem CC (Seite „Spiel“) und mit Y im Gameswitcher. Prüfen: Reset-Kürzel/Menüpunkt in
       DraStic und DSperate, ob er sich per virtueller Taste auslösen lässt; sonst Neustart des Emulators ohne
       Auto-Laden. Zusammen mit dem Punkt „DSperate Neu starten (Y)“ unten angehen.
-- [ ] **Kette DraStic → RetroArch beschleunigen** (Messung 25.10.2026, RG DS Plus) – läuft ein DraStic-Spiel als
+- [ ] **Kette DraStic → RetroArch beschleunigen** – umgesetzt (Anker unsichtbar aufwecken, `fast_wake_hidden`), messen (Messung 25.10.2026, RG DS Plus) – läuft ein DraStic-Spiel als
       Zusatzspiel und man wechselt zu einem *anderen* RetroArch-Spiel als dem geparkten, dauert es ≈ 11 s:
       DraStic beenden ≈ 3 s, geparkten RetroArch aufwecken + über ES beenden ≈ 2 s, neues RetroArch-Spiel ≈ 6 s
       (runemu → Prozess 3,5–4,6 s). Idee: geparkten RetroArch direkt beenden statt sichtbar aufzuwecken (≈ 0,5 s,

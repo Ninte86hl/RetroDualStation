@@ -1944,6 +1944,27 @@ def fast_resume():
         pass
 
 
+def fast_wake_hidden():
+    """Anker aufwecken, aber unsichtbar lassen – er wird gleich über ES beendet (Wechsel zu einem Spiel, das nicht
+    als Zusatzspiel starten kann, z. B. ein anderes RetroArch-Spiel). Spart das Zurückholen der Fenster und das
+    kurze Aufblitzen des alten Spiels; Touch-Zuordnung wie beim Aufwecken korrigieren."""
+    tm = touch_map(FROZEN.get("emu"))
+    if tm:
+        sway_cmd(tm)
+    n = evdev_flush(FROZEN["pids"])
+    for p in reversed(FROZEN["pids"]):
+        try:
+            os.kill(p, signal.SIGCONT)
+        except OSError:
+            pass
+    log("Schnellwechsel: Anker unsichtbar aufgeweckt (wird beendet)", FROZEN["name"], "(%d alte Eingaben verworfen)" % n)
+    FROZEN.update(pids=[], runemu=None, rom=None, name=None, emu=None, cons=[])
+    try:
+        os.remove(FAST_STATE)
+    except OSError:
+        pass
+
+
 def fast_recover():
     """Nach einem Neustart des CC: eingefrorenes Spiel nie zurücklassen."""
     try:
@@ -2303,9 +2324,14 @@ class Switcher:
                     fast_fullscreen()
                     log("Gameswitcher: Schnellwechsel (Zusatzspiel) fertig nach %.1f s" % (time.monotonic() - t0))
                     return True
-                fast_resume()                                     # sonst: Anker zurück, dann normaler Weg
-                time.sleep(0.5)
-                return running_game() or False
+                # sonst: Anker unsichtbar aufwecken, normaler Weg beendet ihn über ES (kein Aufblitzen, ≈0,5 s schneller)
+                fast_wake_hidden()
+                for _ in range(10):
+                    g = running_game()
+                    if g:
+                        return g
+                    time.sleep(0.05)
+                return False
             emus_ok = current.get("emu") in FAST_ALL and item["emu"] in FAST_ALL and current.get("emu") != item["emu"]
             mem = mem_available_mb()
             if not emus_ok or mem < FAST_MIN_MB:
