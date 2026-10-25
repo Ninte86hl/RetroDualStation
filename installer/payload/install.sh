@@ -148,7 +148,7 @@ rs save "$BK" "$RACFG" kv confirm_reset confirm_close notification_show_save_sta
     notification_show_netplay_extra cheevos_visibility_unlock cheevos_visibility_mastery cheevos_visibility_account \
     cheevos_visibility_lboard_start cheevos_visibility_lboard_submit cheevos_visibility_lboard_cancel \
     cheevos_visibility_lboard_trackers cheevos_visibility_progress_tracker cheevos_visibility_summary \
-    cheevos_challenge_indicators video_message_color pause_nonactive \
+    cheevos_challenge_indicators video_message_color pause_nonactive state_slot \
     menu_enable_widgets network_cmd_enable quit_press_twice input_enable_hotkey_btn input_toggle_fast_forward_btn \
     input_save_state_btn input_load_state_btn input_rewind_btn input_menu_toggle_btn input_fps_toggle_btn \
     input_exit_emulator_btn input_state_slot_decrease_btn input_state_slot_increase_btn --legacy "$RACFG.vor-rds-kuerzel"
@@ -157,7 +157,7 @@ rs save "$BK" "$DSPINI" kv modifier quit pause fast_forward fast_forward_toggle 
 rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_INDEX_MENU]" \
     "controls_a[CONTROL_INDEX_FAST_FORWARD]" "controls_b[CONTROL_INDEX_FAST_FORWARD]" compress_savestates \
     "controls_a[CONTROL_INDEX_SAVE_STATE]" "controls_b[CONTROL_INDEX_SAVE_STATE]" \
-    "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" \
+    "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" savestate_number \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -359,7 +359,8 @@ UNIT
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
         # Bildschirmtext an (sonst gibt es keine FPS-Anzeige mit Anbernic + Y), Einblendungen aber einzeln aus –
         # Speichern, Laden, Vorspulen, Screenshot und Erfolge meldet das Kontrollcenter selbst. Erfolge-Zusammenfassung
-        # beim Start aus (summary 2 = aus). pause_nonactive aus: eine Berührung unten nahm RetroArch den Fokus und
+        # beim Start aus (summary 2 = aus). state_slot 1: manuell speichern (Anbernic + R2) geht auf Slot 1,
+        # Platz 0 bleibt dem automatischen Stand (Home, Beenden, Gameswitcher). pause_nonactive aus: eine Berührung unten nahm RetroArch den Fokus und
         # pausierte es (mit „Pausiert“-Kachel) – das Anhalten übernimmt das CC. Widgets an: FPS wie gewohnt weiß auf dunkler Kachel oben rechts
         # (ohne Widgets gelber Text – dafür bleibt video_message_color weiß).
         for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=true' \
@@ -374,7 +375,8 @@ UNIT
                   'cheevos_visibility_lboard_start=false' 'cheevos_visibility_lboard_submit=false' \
                   'cheevos_visibility_lboard_cancel=false' 'cheevos_visibility_lboard_trackers=false' \
                   'cheevos_visibility_progress_tracker=false' 'cheevos_visibility_summary=2' \
-                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff' 'pause_nonactive=false'; do
+                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff' 'pause_nonactive=false' \
+                  'state_slot=1'; do
             k="${kv%%=*}"; v="${kv#*=}"
             if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
         done
@@ -426,6 +428,15 @@ UNIT
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_LOAD_STATE\]) = .*/\1 = 323/' "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK3"
         log "DraStic: Speichern auf F9, Laden auf F10 (Anbernic + R2/L2 ueber das CC)"
+    fi
+    # DraStic: manuell speichern (Anbernic + R2 → F9) auf Platz 1, Platz 0 bleibt automatisch (das CC kopiert dafür)
+    if [ -f "$DCFG" ] && ! pidof drastic >/dev/null && ! grep -q '^savestate_number *= *1$' "$DCFG"; then
+        if grep -q '^savestate_number' "$DCFG"; then
+            sed -i -E 's/^savestate_number *= *.*/savestate_number = 1/' "$DCFG"
+        else
+            echo "savestate_number = 1" >> "$DCFG"
+        fi
+        log "DraStic: manuelles Speichern auf Slot 1"
     fi
     # DraStic: Savestates unkomprimiert – Speichern ≈0,3 s statt 1,8 s (Gameswitcher, Home kurz).
     # Nur wenn DraStic nicht läuft (es schreibt die Datei beim Beenden zurück).

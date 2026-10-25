@@ -7363,6 +7363,16 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        if g and g["emu"] == "DSperate":
+                            # DSperate beginnt mit Slot 0 – manuell speichern (Anbernic + R2) soll wie bei RetroArch
+                            # (state_slot 1) und DraStic (savestate_number 1) auf Slot 1 gehen; Platz 0 bleibt frei
+                            def dsp_slot1(pid=g["pid"]):
+                                time.sleep(4)            # DSperate fertig gestartet (Stand geladen)
+                                if os.path.exists("/proc/%d" % pid) and cc.dsp_slot == 0 and not ui.view:
+                                    if dsperate_press("slot_next"):
+                                        cc.dsp_slot = 1
+                                        log("DSperate: Slot 1 für manuelles Speichern")
+                            threading.Thread(target=dsp_slot1, daemon=True).start()
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee
