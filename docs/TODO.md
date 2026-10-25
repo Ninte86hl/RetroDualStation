@@ -24,6 +24,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **DraStic: Touchbild landet oben (Zelda Phantom Hourglass, Laden)** (gemeldet 25.10.2026) – Gegenstand wird oben
+      angezeigt, lässt sich nicht antippen. Vermutung: Spiel tauscht intern die DS-Bildschirme, DraStic folgt
+      („Follow 3D renderer“/automatischer Tausch) und legt das Touchbild auf den oberen echten Bildschirm ohne Touch.
+      Tipp „vertikal statt horizontal“ gilt für Ein-Bildschirm-Geräte. Klären: Bildschirm-Optionen in drastic.cfg,
+      Screenshot oben im Laden. Lösung: Tausch-Option aus (Installer, gesichert) und/oder SWAP_SCREENS als Kachel/Kürzel.
 - [ ] **Prüfen: DSperate v3.0.5** (github.com/beebono/DSperate, 21.10.2026) – neu: `--saves`/`--states`, Fehlerbild beim
       Start, Vulkan-Ausgabe zuerst bei `video.gpu_present = true` (Render-Pass), RGA ganzzahlig, Fix: PipeWire-Taktung
       (RLIMIT_RTTIME-Abbruch), GPU-Ausgabe bleibt nach Menü, JIT/2D-Ruckler, 3D-Kanten. Einbindung: abwarten bis
