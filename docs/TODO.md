@@ -24,6 +24,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Idee (25.10.2026): Start aus ES ohne Auto-Laden, Fortsetzen nur über den Gameswitcher** – automatischer Stand
+      wird weiter über Home kurz, Gameswitcher und CC-Beenden angelegt. Umsetzung: Installer setzt ES-Autoload aus
+      (gesichert, Deinstallation stellt zurück); Gameswitcher lädt den Auto-Stand immer selbst (neu: DSperate, wie die
+      Kachel „Automatisch“); Sonderwege fürs ES-Autoload (DSperate autosave=0 beim Neustart, RA-Reset verdecken) nur
+      noch, wenn jemand ES-Autoload selbst einschaltet; Tour/Wiki: „Start aus ES = von vorn, Fortsetzen = Home 2×“.
+      Offen: alle Systeme oder nur RetroArch/DraStic/DSperate? Zusätzlicher Schalter im CC?
 - [ ] **ES `global.savestates`**: RDS setzt seit v13 „auto“ (Savestate-Manager aus) – ES gibt damit beim Start den
       nächsten freien Slot an RetroArch. Prüfen, ob ein anderer Wert den Manager ausblendet, ohne den Slot vorzugeben
       (für manuelles Speichern egal, das macht seit v15.3.1 das CC).
