@@ -1343,6 +1343,15 @@ def ra_command(cmd, reply=False):
         return None
 
 
+def ra_reset():
+    """RetroArch neu starten. RetroArch 1.22 fragt beim Neustart nach (zweites Mal drücken) – die Meldung ist bei RDS
+    ausgeblendet. Deshalb zweimal senden: mit Rückfrage bestätigt das zweite, ohne Rückfrage startet das Spiel
+    zweimal kurz hintereinander neu (nicht sichtbar). Test RG DS Plus 25.10.2026: einmal nein, zweimal (0,4 s) ja."""
+    ok = ra_command("RESET") is not None
+    time.sleep(0.4)
+    return ra_command("RESET") is not None and ok
+
+
 def quit_game(game):
     """Laufenden Emulator beenden (RetroArch sauber per Befehl, sonst SIGTERM)."""
     if not game:
@@ -2202,7 +2211,7 @@ class Switcher:
                     sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT + ', focus')   # Fenster existiert jetzt sicher
                     if fresh:
                         time.sleep(0.5)
-                        ra_command("RESET")      # Auto-Laden übergehen (Ladebildschirm verdeckt es)
+                        ra_reset()               # Auto-Laden übergehen (Ladebildschirm verdeckt es)
                     elif not autosave_on(item["rom"]):
                         time.sleep(gs_wait("retroarch_slot", 1.5))   # ohne Auto-Laden: unseren Slot nachladen
                         ra_command(f"LOAD_STATE_SLOT {SLOT}")
@@ -6538,7 +6547,7 @@ def main():
         cur = cc.game
         same = cur and (cur.get("rom") or rom_of(cur["pid"])) == item["rom"]
         if same and fresh and cur["emu"] == "RetroArch":
-            ra_command("RESET")             # im laufenden RetroArch neu starten, ohne Beenden
+            ra_reset()                      # im laufenden RetroArch neu starten, ohne Beenden
             time.sleep(0.3)
             toggle("switcher")              # danach Pause aufheben
             def unpause():                  # Sicherheitsnetz: RetroArch nie pausiert zurücklassen
@@ -6660,7 +6669,7 @@ def main():
             cmd = {"ff": "FAST_FORWARD", "slow": "SLOWMOTION", "reset": "RESET", "menu": "MENU_TOGGLE"}[key]
             def later():
                 time.sleep(0.3)
-                ok = ra_command(cmd) is not None
+                ok = ra_reset() if cmd == "RESET" else ra_command(cmd) is not None
                 log("Seite Spiel:", cmd)
                 if ok and key in ("ff", "slow"):
                     speed_event(key, g)

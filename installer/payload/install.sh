@@ -343,14 +343,13 @@ UNIT
     # RetroArch: keine Rückfragen bei Neustart/Beenden, keine Speicherstand-Einblendung (Gameswitcher)
     RACFG=/storage/.config/retroarch/retroarch.cfg
     if [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
-        sed -i -e 's/^confirm_reset = .*/confirm_reset = "false"/' \
-               -e 's/^confirm_close = .*/confirm_close = "false"/' \
-               -e 's/^notification_show_save_state = .*/notification_show_save_state = "false"/' \
-               -e 's/^video_font_enable = .*/video_font_enable = "false"/' \
-               -e 's/^menu_enable_widgets = .*/menu_enable_widgets = "false"/' "$RACFG"
-        # Netzbefehle (Port 55355, nur lokal genutzt): Kontrollcenter/Gameswitcher speichern, laden
+        # Ersetzen oder hinzufügen: fehlt eine Zeile (frisches ROCKNIX oder nach einer Deinstallation, die sie wieder
+        # entfernt hat), gilt sonst der RetroArch-Standard. (RetroArch 1.22 kennt confirm_reset nicht mehr und fragt
+        # beim Neustart trotzdem nach – das CC sendet RESET deshalb zweimal, siehe ra_reset.)
+        # Netzbefehle (Port 55355, nur lokal genutzt): Kontrollcenter/Gameswitcher speichern, laden, neu starten
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
-        for kv in 'network_cmd_enable=true' 'quit_press_twice=false'; do
+        for kv in 'confirm_reset=false' 'confirm_close=false' 'notification_show_save_state=false' \
+                  'video_font_enable=false' 'menu_enable_widgets=false' 'network_cmd_enable=true' 'quit_press_twice=false'; do
             k="${kv%%=*}"; v="${kv#*=}"
             if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
         done
