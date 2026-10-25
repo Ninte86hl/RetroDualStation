@@ -1776,25 +1776,20 @@ FAST_MIN_MB = 180
 FROZEN = {"pids": [], "runemu": None, "rom": None, "name": None, "emu": None, "cons": [], "busy": False}
 
 
-def touch_map(emu, swapped=False):
+def touch_map(emu):
     """swaymsg-Befehl für die Touch-Zuordnung. ROCKNIX ordnet den Touchscreen beim Erscheinen eines DraStic-Fensters
     per for_window-Regel einem Bildschirm zu und nimmt das nie zurück; ES setzt es nur durch sein reload zurück.
-    Ohne ES (Schnellwechsel): für DraStic die Regel aus der Sway-Konfiguration nachbilden, sonst Zuordnung aufheben.
-    swapped: DraStic zeigt die Bildschirme getauscht – Touch dem anderen Bildschirm zuordnen."""
+    Ohne ES (Schnellwechsel): für DraStic die Regel aus der Sway-Konfiguration nachbilden, sonst Zuordnung aufheben."""
     if emu == "DraStic":
         m = re.search(r'for_window \[app_id="drastic"\][^\n]*?(input "[^"]+" map_to_output \S+)',
                       rd("/storage/.config/sway/config") or "")
-        if not m:
-            return None
-        if not swapped:
-            return m.group(1)
-        flip = {OUTPUT_NAME: TOP_OUTPUT, TOP_OUTPUT: OUTPUT_NAME}
-        return re.sub(r"map_to_output (\S+)$", lambda x: "map_to_output " + flip.get(x.group(1), x.group(1)), m.group(1))
+        return m.group(1) if m else None
     return "input type:touch map_to_output *"
 
 
 # Bildschirme tauschen (Kachel „Tauschen“ und L3): DraStic folgt dem Bildschirmtausch mancher Spiele nicht (z. B. Zelda
-# Phantom Hourglass, Laden). Getauschte Spiele: pid → Emulator. DraStic-Touch zieht automatisch mit.
+# Phantom Hourglass, Laden). Getauschte Spiele: pid → Emulator. Den Touch nimmt DraStic selbst mit, solange die
+# ROCKNIX-Zuordnung (DSI-2) bleibt – Umstellen auf DSI-1 macht es kaputt (Test 25.10.).
 SWAP = {}
 DRASTIC_CFG = "/storage/.config/drastic/config/drastic.cfg"
 
@@ -1817,14 +1812,8 @@ def swap_screens(g):
         SWAP[pid] = emu
     else:
         SWAP.pop(pid, None)
-    # Touch-Zuordnung bleibt wie von ROCKNIX gesetzt (Umstellen auf DSI-1 half nicht, Test 25.10.) – nächster Ansatz:
-    # DraStic-Einstellung „Mirror touchscreen“ mitschalten
     log("Bildschirme tauschen:", emu, "an" if on else "aus", "über", how)
     info_toast("Bildschirme getauscht" if on else "Bildschirme normal", "swap")
-
-
-def swap_swapped(pids):
-    return any(p in SWAP for p in pids or [])
 
 
 def swap_cleanup():
