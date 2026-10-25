@@ -54,6 +54,12 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Spiel richtig, Tasten gehen, **Touch nie** (map_to_output DSI-1, *, map_to_region rechte/linke Hälfte). ROCKNIX lädt
       /usr/lib/libdrastouch.so (LD_PRELOAD, ersetzt SDL Touch→Maus) – rechnet offenbar fest waagerecht. → verworfen.
       Bekannt seit v8 (Wiki Gut zu wissen): Follow 3D Renderer = An → Touch geht nicht, „Auto“ nötig.
+      **Neuer Anlauf 25.10. abends (tools/drastic-stacked):** RG DS hat ZWEI Touchscreens mit gleicher Kennung
+      (event1 oben, event2 unten, je 640×480 roh). ROCKNIX legt per udev-Kalibrierung oben → linke, unten → rechte
+      Hälfte der zugeordneten Ausgabe; libdrastouch (waagerecht) verdoppelt x. Neuere libdrastouch (ROCKNIX ab 6.10.,
+      DSHOOK_WINDOW_SIZE) kann übereinander; eigener Build mit DSHOOK_RDS_SPLIT (linke Hälfte verwerfen, rechte strecken).
+      Sway-calibration_matrix NICHT setzen – überschreibt die udev-Matrizen beider Panels (Neustart stellt sie wieder her).
+      Alternative ohne eigene Bibliothek: map_to_region -320 480 640 480 mit der ROCKNIX-libdrastouch (ungetestet).
 - [ ] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
