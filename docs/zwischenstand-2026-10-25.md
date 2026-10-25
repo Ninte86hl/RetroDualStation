@@ -62,3 +62,8 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
 - Optional: Rücksicherung der vorherigen Version beim Update.
 - Optimierungsliste: 2) mehrere Spiele parken auf dem RG DS (über 2 GB frei) · 5) Testskripte in `tools/` aufräumen.
 - Wiki/Anleitung (Home-Belegung, Slots 1–9) erst nach Abnahme anpassen.
+
+## v15.2.1 (25.10.2026 früh)
+- RetroArch-Neustart: RA 1.22 fragt nach (Meldung ausgeblendet) → `ra_reset()` sendet RESET zweimal (`438dbc9`),
+  getestet RG DS Plus (CC, Gameswitcher Y, Gameswitcher-Neustart). Installer: RA-Einstellungen ersetzen oder hinzufügen (`d2a283a`).
+- Messung Gameswitcher-Zeiten im TODO (Kette DraStic → RetroArch).
