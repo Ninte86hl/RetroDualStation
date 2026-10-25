@@ -6234,11 +6234,38 @@ def speed_event(kind, game):
 RA_SLOT = {"pid": None, "slot": 0}
 
 
+def ra_start_slot():
+    """Slot, mit dem RetroArch gestartet wurde. ROCKNIX gibt ihn per --appendconfig mit (/tmp/.retroarch.cfg):
+    ES wählt bei „Savestates: auto“ den Slot des neuesten Stands, ohne Stand 0."""
+    for path in ("/tmp/.retroarch.cfg", "/storage/.config/retroarch/retroarch.cfg"):
+        m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd(path) or "", re.M)
+        if m:
+            return int(m.group(1))
+    return 0
+
+
+def ra_slot1(pid):
+    """Nach dem Start: steht RetroArch auf Platz 0 (automatischer Stand), einen Slot weiter auf Slot 1 – manuell
+    speichern (Anbernic + R2) soll nie den automatischen Stand überschreiben."""
+    end = time.time() + 20
+    while time.time() < end and os.path.exists("/proc/%d" % pid):
+        if "PLAYING" in (ra_command("GET_STATUS", reply=True) or ""):
+            break
+        time.sleep(0.5)
+    else:
+        return
+    slot = ra_start_slot()
+    if slot <= 0:
+        ra_command("STATE_SLOT_PLUS")
+        slot = 1
+        log("RetroArch: Slot 1 für manuelles Speichern")
+    RA_SLOT.update(pid=pid, slot=slot)
+
+
 def ra_slot_step(game, d):
-    """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: state_slot aus retroarch.cfg."""
+    """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: wie ra_slot1 (mindestens Slot 1)."""
     if RA_SLOT["pid"] != game.get("pid"):
-        m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
-        RA_SLOT.update(pid=game.get("pid"), slot=max(1, int(m.group(1))) if m else 1)
+        RA_SLOT.update(pid=game.get("pid"), slot=max(1, ra_start_slot()))
     new = min(9, max(1, RA_SLOT["slot"] + d))           # manuelle Slots 1–9; Platz 0 gehört dem automatischen Stand
     if RA_SLOT["slot"] + d < 1:                         # RetroArch ist schon auf 0 gesprungen → zurück auf 1
         ra_command("STATE_SLOT_PLUS")
@@ -7368,6 +7395,8 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        if g and g["emu"] == "RetroArch":
+                            threading.Thread(target=ra_slot1, args=(g["pid"],), daemon=True).start()
                         if g and g["emu"] == "DSperate":
                             # DSperate beginnt mit Slot 0 – manuell speichern (Anbernic + R2) soll wie bei RetroArch
                             # (state_slot 1) und DraStic (savestate_number 1) auf Slot 1 gehen; Platz 0 bleibt frei
