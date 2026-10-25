@@ -2339,7 +2339,7 @@ class Switcher:
             nonlocal current                    # kann beim Schnellwechsel auf den Anker wechseln
             spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])   # Startton/Musik nicht hören
             before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
-            restore = None
+            restore = hidden = None
             t0 = time.monotonic()
             try:
                 try:
@@ -2352,6 +2352,15 @@ class Switcher:
                     if "autoload = true" in txt:
                         restore = txt
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
+                if fresh and item["emu"] == "DSperate":
+                    # ROCKNIX startet DSperate mit --autoload (dsperate.ini allein reicht nicht): den automatischen
+                    # Stand für den Start beiseitelegen, damit das Spiel wirklich von vorn beginnt
+                    code = nds_gamecode(item["rom"]) or ""
+                    auto = os.path.join("/storage/roms/savestates/nds", "%s.auto.dss" % code) if code else None
+                    if auto and os.path.exists(auto):
+                        os.replace(auto, auto + ".rdsfresh")
+                        hidden = auto
+                        log("Gameswitcher: DSperate-Auto-Stand für den Neustart beiseitegelegt")
                 if current and fast_enabled():
                     res = self.fast_switch(item, fresh, current, t0)
                     if res is True:
@@ -2426,9 +2435,18 @@ class Switcher:
                 for path, old in before.items():
                     if old and rd(path) == "performance" and old != "performance":
                         wr(path, old)
-                if restore:
+                if restore or hidden:
                     time.sleep(10)
+                if restore:
                     wr(ini, restore)
+                if hidden:                      # neuer Auto-Stand von DSperate hat Vorrang, sonst den alten zurück
+                    try:
+                        if os.path.exists(hidden):
+                            os.remove(hidden + ".rdsfresh")
+                        else:
+                            os.replace(hidden + ".rdsfresh", hidden)
+                    except OSError as exc:
+                        log("Gameswitcher: DSperate-Auto-Stand zurücklegen:", exc)
         threading.Thread(target=work, daemon=True).start()
 
 
@@ -2499,10 +2517,10 @@ GAME_ACTIONS = {
     "RetroArch": [("save", "Speichern"), ("load", "Laden"),
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
-                ("help", "Tasten"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("ff", "Vorspulen"), ("shot", "Screenshot"),
-                 ("help", "Tasten"), ("quit", "Beenden")],
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
+                ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
+                 ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
 
@@ -6562,14 +6580,28 @@ def main():
         toggle("switcher")                 # schließen, Pause aufheben
         if same and not fresh:
             return                          # einfach zurück ins laufende Spiel
-        # Ladebildschirm auf beiden Screens, bis das Spiel läuft und der Stand geladen ist
+        start_loading(item, fresh, cur)
+
+    def start_loading(item, fresh, cur):
+        """Ladebildschirm auf beiden Screens, bis das Spiel läuft und der Stand geladen ist."""
         cc.loading = (item, fresh)
         cc.loading_t0 = time.monotonic()
         if cc.screen_bottom_off:
             cc.screen_on()
         ui.show("loading")
         ui.show_top(cc.paint_top_loading)
-        sw.launch(item, fresh, current=cur)
+        cc.switcher.launch(item, fresh, current=cur)
+
+    def restart_game(g):
+        """DraStic/DSperate haben keinen Neustart-Befehl: Spiel beenden und ohne Stand neu starten."""
+        rom = g.get("rom") or rom_of(g["pid"])
+        if not rom:
+            return
+        item = next((i for i in cc.switcher.items if i["rom"] == rom), None) or \
+            {"rom": rom, "name": g["name"], "emu": g["emu"], "system": g.get("system", ""), "icon": g.get("icon")}
+        log("Seite Spiel: neu starten", g["emu"], g["name"])
+        toggle("cc")                       # schließen, Pause aufheben
+        start_loading(item, True, g)
 
     stick = {"dir": 0, "next": 0.0}
     rep = {"ev": None, "next": 0.0}   # gehaltene Richtungstaste (Wiederholung)
@@ -6643,6 +6675,9 @@ def main():
 
         if key == "quit":
             do_quit()
+            return
+        if emu in ("DraStic", "DSperate") and key == "reset":
+            restart_game(g)                  # Emulator neu starten, ohne Stand (wie Y im Gameswitcher)
             return
         if emu == "DraStic" and key in ("menu", "ff"):
             toggle("cc")

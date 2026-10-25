@@ -125,7 +125,7 @@ for old in "$DEST"/emulationstation-rgds-* "$DEST"/start-es-v2-diag.sh; do
     [ -f "$old" ] && rm -f "$old" && log "entfernt: $old"
 done
 
-for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py; do
+for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py rds-migrate-savestates.py; do
     cp "$SRC/rds-install/$f" "$DEST/$f" || fail "Could not copy $f."
     chmod +x "$DEST/$f"
 done
@@ -414,6 +414,23 @@ UNIT
             echo "compress_savestates = 0" >> "$DCFG"
         fi
         log "DraStic: Savestates unkomprimiert (schnelleres Speichern)"
+    fi
+    # Savestates einmalig auf das Schema ab v15.2 umziehen (Platz 0 = automatisch, Slots 1–9 = Emulator-Plätze).
+    # Update von v15.1 oder älter: Gameswitcher-Stand und Nutzer-Platz 0 tauschen; Neuinstallation: eigene Stände
+    # von Platz 0 in freie Slots. Wer schon mit v15.2 gespielt hat, hat das neue Schema – dort nichts tun.
+    SMMARK=/storage/.config/retrodualstation/savestates-v15.2.done
+    if [ ! -f "$SMMARK" ] && ! pidof retroarch drastic dsperate >/dev/null; then
+        case "$OLDVER" in
+            v15.2*|v15.[3-9]*|v1[6-9]*|v[2-9][0-9]*) SMARG=skip ;;
+            "") SMARG=--fresh ;;
+            *)  SMARG= ;;
+        esac
+        if [ "$SMARG" != skip ]; then
+            python3 "$DEST/rds-migrate-savestates.py" $SMARG >>"$LOG" 2>&1 \
+                && log "Savestates auf Slots 1-9 umgezogen (${SMARG:-Update von $OLDVER})" \
+                || log "WARNUNG: Umzug der Savestates fehlgeschlagen"
+        fi
+        mkdir -p /storage/.config/retrodualstation && date > "$SMMARK"
     fi
     # Schnellwechsel standardmäßig an (ab v15.2) – einmal je Gerät; danach entscheidet der Schalter im CC
     FSMARK=/storage/.config/retrodualstation/fastswitch-default.done

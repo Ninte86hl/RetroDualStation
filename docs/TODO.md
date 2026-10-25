@@ -24,6 +24,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **DSperate: Schnellspeichern im Spiel landet auf Platz 0** (`CODE.0.dss`) – Anbernic + R2 speichert in DSperates
+      aktuellen Slot (Start: 0); den zeigt das Menü nicht (automatisch = `.auto.dss`). Prüfen: DSperate-Startslot
+      auf 1 setzen oder Platz 0 in der Kachel „Automatisch“ mit anzeigen. (RetroArch/DraStic: Platz 0 = automatisch.)
 - [ ] **DraStic: Speichern/Laden nur mit Anbernic** (25.10.2026) – ROCKNIX legt sie auf R2/L2 allein. Umgesetzt wie
       Menü/Vorspulen: F9/F10 der virtuellen Tastatur, CC übersetzt Anbernic + R2/L2, Installer-Merker v3.
       Testen: R2/L2 allein ohne Wirkung · Anbernic + R2/L2 · Speichern/Laden im CC (Slots) · Gameswitcher · Auto-Laden.
@@ -47,19 +50,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       DraStic → DraStic 4,0–4,5 s, RA → RA (ES-Kette) 6,1 s, Speichern RA 0,1 s / DraStic ≈ 0,45 s, Home kurz 0,4 s.
 - [ ] **Navigationspfeile** (25.10.2026) – geplante Änderung, Details vergessen; beim nächsten Mal klären,
       wo genau (CC, Gameswitcher, ES?). Beeinträchtigt das laufende System nicht.
-- [ ] **Savestates: Übergang für bestehende Nutzer** (25.10.2026) – Platz 0 ist jetzt der automatische Stand.
-      Eigene Stände auf Platz 0 (v. a. DSperate, z. B. `AMCE.0.dss`) einmalig in den nächsten freien Slot verschieben;
-      alte RetroArch-Gameswitcher-Stände auf Platz 9 (`.state9`) erscheinen sonst als Slot 9.
 - [ ] **Installer: DraStic `compress_savestates = 0`** – eingebaut (25.10.2026); noch prüfen, ob alte komprimierte
       Savestates danach weiter laden.
 - [ ] **DSperate „Neu starten“ (Y im Gameswitcher)** prüfen – Autoload kommt per `--autoload` aus ROCKNIX, nicht aus
       dsperate.ini; das Abschalten im CC greift vermutlich nicht.
-- [ ] **Uninstaller: Sicherungen zurückspielen** (24.10.2026) – `system.cfg`-Werte, Sway und mako stellt er schon her,
-      aber nicht: RetroArch-Kürzel (`retroarch.cfg.vor-rds-kuerzel`), DSperate (`dsperate.ini.vor-rds-kuerzel`, auch `toasts`),
-      DraStic (`drastic.cfg.vor-rds-kuerzel`), ES-Tastenbelegung (`es_input.cfg.before-rds`), RetroArch „Rückfragen und
-      Einblendungen aus“ und PS1-Core (nur im Log, keine Sicherung). Wie bei Multi Pop: nur zurückspielen, wenn die Datei
-      seit der Installation unverändert ist (Prüfsumme beim Installieren merken) – sonst nicht überschreiben und im Log/Hinweis
-      nennen, damit spätere eigene Änderungen erhalten bleiben. Kein ES-Build nötig.
 - [ ] ES-Patch: In Listen fehlt auf Deutsch das ▲▼-Symbol in der Hinweisleiste. ROCKNIX übersetzt den Symbolnamen mit (`HelpPrompt(_("up/down"), …)` in `ComponentList.cpp` und `ComponentTab.cpp` → „Unknown help icon "hinauf/hinunter"“ im Log). Symbolnamen nicht übersetzen. (vorgemerkt 23.10.2026)
 - [ ] Issue #5 (maniman303) beantworten: ScreenScraper im Dual-Build (v15), Bildschirm-Bereiche (Patch 004/005)
 - [ ] Artwork Manager: Baustellen sammeln (Stichpunkte vom Nutzer) und der Reihe nach beheben – **Grundlage vor allen Erweiterungen**
