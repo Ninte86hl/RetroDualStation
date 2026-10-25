@@ -24,6 +24,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Präfix rds- für den Config-Ordner** – `/storage/.config/retrodualstation` → `/storage/.config/rds-config`
+      beim nächsten ES-Build (Patch 004 liest `screens.cfg` dort, Pfad ist ins ES einkompiliert). Dann CC, Artwork
+      Manager (`BASE`), Dienste, Installer (Umzug + Merker), Deinstallation und Doku mit umstellen.
 - [ ] **Vergleich GPU-Treiber libmali vs. panfrost** (Wunsch 25.10.2026) – Eindruck: mit panfrost bessere Leistung in
       DS-Spielen (DraStic, DSperate). Auf beiden Geräten je Treiber messen: Gameswitcher-Kette (Mitschnitt wie
       25.10.: `journalctl -u rds-controlcenter -f -o short-precise`, gleiche Wechsel RA ↔ DraStic ↔ DSperate),

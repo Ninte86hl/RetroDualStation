@@ -6382,12 +6382,12 @@ def bt_agent_watch():
         time.sleep(30)
 
 
-DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rgds.conf"   # vorhanden = Dual-Modus (es-switch-helper.sh)
+DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rds-dual.conf"   # vorhanden = Dual-Modus (es-switch-helper.sh)
 
 
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
-    if not os.path.exists(DUAL_DROPIN):
+    if not (os.path.exists(DUAL_DROPIN) or os.path.exists(DUAL_DROPIN.replace("rds-dual.conf", "rgds.conf"))):
         # Single-Modus (Original-ES): CC, Gameswitcher und Power-Menü ruhen – keine Tasten, keine Vibration.
         # Die Power-Taste übernimmt wieder ROCKNIX (es-switch-helper.sh entfernt dafür die logind-Einstellung).
         log("Single-Modus – Kontrollcenter ruht")

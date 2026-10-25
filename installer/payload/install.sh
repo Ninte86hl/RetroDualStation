@@ -13,7 +13,7 @@ DEST=/storage/rds-install
 OLDDEST=/storage/rgds-test        # Name bis v15.1 – wird beim Update umbenannt
 THEMEDIR=/storage/.config/emulationstation/themes
 ESCFG=/storage/.config/emulationstation/es_settings.cfg
-LOG=/storage/dualstation-install.log
+LOG=/storage/rds-install.log
 export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null)"
@@ -21,6 +21,16 @@ BIN=emulationstation-rgds
 # Neuinstallation oder Update? (VERSION schreibt nur eine abgeschlossene Installation)
 OLDVER="$(cat "$DEST/VERSION" 2>/dev/null || cat "$OLDDEST/VERSION" 2>/dev/null)"
 if [ -n "$OLDVER" ]; then MODE=update; else MODE=install; fi
+
+# Einheitlicher Präfix rds- (bis v15.3: dualstation-*.log, RDS_ORIGINAL_BACKUP.*): vorhandene Dateien umbenennen
+for pair in "dualstation-install.log:rds-install.log" "dualstation-uninstall.log:rds-uninstall.log" \
+            "dualstation-canvas-install.log:rds-canvas-install.log"; do
+    [ -f "/storage/${pair%%:*}" ] && [ ! -e "/storage/${pair#*:}" ] && mv "/storage/${pair%%:*}" "/storage/${pair#*:}"
+done
+for d in /storage/roms/backup /storage/.config/rds-backup; do
+    [ -f "$d/RDS_ORIGINAL_BACKUP.zip" ] && [ ! -e "$d/rds-original-backup.zip" ] && mv "$d/RDS_ORIGINAL_BACKUP.zip" "$d/rds-original-backup.zip"
+    rm -f "$d/RDS_ORIGINAL_BACKUP.txt"            # Anleitung wird mit neuem Namen neu geschrieben
+done
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -165,8 +175,8 @@ rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.bef
 # Format wie ROCKNIX' backuptool: umbenannt in ROCKNIX_BACKUP.zip stellt „backuptool restore“ sie zurück.
 # Zwei Kopien: intern (immer sofort da – roms hängt ROCKNIX beim Start erst nach unseren Diensten ein) für die
 # automatische Wiederherstellung, und in roms/backup sichtbar für den Nutzer.
-RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
-RDSZIPI=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip
+RDSZIP=/storage/roms/backup/rds-original-backup.zip
+RDSZIPI=/storage/.config/rds-backup/rds-original-backup.zip
 if [ ! -f "$RDSZIPI" ] && [ -f "$RDSZIP" ]; then
     mkdir -p "${RDSZIPI%/*}" && cp "$RDSZIP" "$RDSZIPI" && log "Notfall-Sicherung intern abgelegt: $RDSZIPI"
 fi
@@ -176,6 +186,10 @@ if [ ! -f "$RDSZIPI" ]; then
         "$ESCFG=$DEST/es_settings.before-install.cfg" "$ESINPUT=$ESINPUT.before-rds" \
         /storage/.config/system/configs/system.cfg /storage/.config/sway/config /storage/.config/mako/config
 fi
+# Alte Einzelsicherungen (bis v15.3) sind jetzt in settings-before-rds.json und der Notfall-ZIP aufgehoben – weg damit
+if [ -s "$BK" ] && [ -f "$RDSZIPI" ]; then
+    rm -f "$RACFG.vor-rds-kuerzel" "$DCFG.vor-rds-kuerzel" "$DSPINI.vor-rds-kuerzel" "$ESINPUT.before-rds"
+fi
 if [ -f "$RDSZIPI" ] && [ ! -f "$RDSZIP" ]; then
     mkdir -p "${RDSZIP%/*}" && cp "$RDSZIPI" "$RDSZIP"
 fi
@@ -183,17 +197,17 @@ if [ -f "$RDSZIP" ] && [ ! -f "${RDSZIP%.zip}.txt" ]; then
     cat > "${RDSZIP%.zip}.txt" <<'TXT'
 RetroDualStation (RDS) – Sicherung der Einstellungen von vor der ersten Installation
 =====================================================================================
-RDS_ORIGINAL_BACKUP.zip enthält RetroArch, DraStic, DSperate, EmulationStation (Einstellungen und Tastenbelegung),
+rds-original-backup.zip enthält RetroArch, DraStic, DSperate, EmulationStation (Einstellungen und Tastenbelegung),
 system.cfg, Sway und mako im Zustand vor RDS. Die Deinstallation setzt diese Werte normalerweise selbst zurück –
 diese Datei ist nur für den Notfall gedacht.
 
 Wiederherstellen (überschreibt diese Dateien komplett, spätere eigene Änderungen daran gehen verloren):
   1. Eine vorhandene ROCKNIX_BACKUP.zip in diesem Ordner umbenennen (sonst geht sie verloren).
-  2. RDS_ORIGINAL_BACKUP.zip kopieren und die Kopie in ROCKNIX_BACKUP.zip umbenennen.
+  2. rds-original-backup.zip kopieren und die Kopie in ROCKNIX_BACKUP.zip umbenennen.
   3. Die Wiederherstellung von ROCKNIX ausführen (per SSH: backuptool restore), danach neu starten.
 
 Restore (overwrites these files completely): rename an existing ROCKNIX_BACKUP.zip first, copy
-RDS_ORIGINAL_BACKUP.zip to ROCKNIX_BACKUP.zip, then run the ROCKNIX restore (via SSH: backuptool restore), reboot.
+rds-original-backup.zip to ROCKNIX_BACKUP.zip, then run the ROCKNIX restore (via SSH: backuptool restore), reboot.
 TXT
 fi
 
@@ -320,7 +334,7 @@ Before=essway.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'Z=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip; [ -f "$$Z" ] || Z=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip; L=/storage/dualstation-uninstall.log; if [ -f "$$Z" ] && unzip -o "$$Z" -d / >>"$$L" 2>&1; then rm -f /storage/.config/rds-uninstall.running; echo "$$(date) Start: Notfall-Sicherung wiederhergestellt" >>"$$L"; else echo "$$(date) Start: Wiederherstellung fehlgeschlagen" >>"$$L"; fi'
+ExecStart=/bin/sh -c 'Z=/storage/.config/rds-backup/rds-original-backup.zip; [ -f "$$Z" ] || Z=/storage/roms/backup/rds-original-backup.zip; L=/storage/rds-uninstall.log; if [ -f "$$Z" ] && unzip -o "$$Z" -d / >>"$$L" 2>&1; then rm -f /storage/.config/rds-uninstall.running; echo "$$(date) Start: Notfall-Sicherung wiederhergestellt" >>"$$L"; else echo "$$(date) Start: Wiederherstellung fehlgeschlagen" >>"$$L"; fi'
 
 [Install]
 WantedBy=multi-user.target
@@ -386,7 +400,6 @@ UNIT
     # Nur einmal pro Gerät (Merker), vorher Sicherung; eigene spätere Änderungen bleiben unangetastet.
     KMARK=/storage/.config/retrodualstation/kuerzel.done
     if [ ! -f "$KMARK" ] && [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
-        cp "$RACFG" "$RACFG.vor-rds-kuerzel"
         set_ra(){ if grep -q "^$1 = " "$RACFG"; then sed -i "s/^$1 = .*/$1 = \"$2\"/" "$RACFG"; else echo "$1 = \"$2\"" >> "$RACFG"; fi; }
         set_ra input_enable_hotkey_btn 10; set_ra input_toggle_fast_forward_btn 5; set_ra input_save_state_btn 7
         set_ra input_load_state_btn 6; set_ra input_rewind_btn 4; set_ra input_menu_toggle_btn 2
@@ -394,7 +407,6 @@ UNIT
         set_ra input_state_slot_decrease_btn 15; set_ra input_state_slot_increase_btn 16
         DSPINI=/storage/.config/dsperate/dsperate.ini
         if [ -f "$DSPINI" ] && ! pidof dsperate >/dev/null; then
-            cp "$DSPINI" "$DSPINI.vor-rds-kuerzel"
             sed -i -e 's/^modifier = .*/modifier = guide/' -e 's/^quit = .*/quit = mod+start/' \
                    -e 's/^pause = .*/pause = mod+x/' -e 's/^fast_forward = .*/fast_forward = none/' \
                    -e 's/^fast_forward_toggle = .*/fast_forward_toggle = mod+rightshoulder/' \
@@ -404,7 +416,7 @@ UNIT
                    -e 's/^screen_swap = .*/screen_swap = mod+dpup/' -e 's/^fps = .*/fps = mod+y/' "$DSPINI"
         fi
         mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
-        log "Kuerzel: einheitliches Schema gesetzt (Sicherungen *.vor-rds-kuerzel)"
+        log "Kuerzel: einheitliches Schema gesetzt (Originalwerte in rds-install/settings-before-rds.json)"
     fi
     # DraStic: Menü und Vorspulen auf Tasten, die es am Gerät nicht gibt – F11 (324) und F12 (325)
     # der virtuellen Tastatur des Kontrollcenters. Stick, L3 und R3 bleiben frei; die Anbernic-Taste
@@ -414,7 +426,6 @@ UNIT
     DMARK2=/storage/.config/retrodualstation/drastic-kuerzel-v2.done
     DCFG=/storage/.config/drastic/config/drastic.cfg
     if [ ! -f "$DMARK2" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
-        [ -f "$DMARK" ] || cp "$DCFG" "$DCFG.vor-rds-kuerzel"
         sed -i -E -e 's/^(controls_[ab]\[CONTROL_INDEX_MENU\]) = .*/\1 = 324/' \
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 325/' "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
@@ -502,7 +513,6 @@ UNIT
     ESINPUT=/storage/.emulationstation/es_input.cfg
     if [ "$DEVICE" = "RG DS Plus" ] && [ -f "$ESINPUT" ] \
        && sed -n '/deviceName="retrogame_joypad"/,/<\/inputConfig>/p' "$ESINPUT" | grep -q rightanalog; then
-        [ -f "$ESINPUT.before-rds" ] || cp "$ESINPUT" "$ESINPUT.before-rds"
         sed -i '/deviceName="retrogame_joypad"/,/<\/inputConfig>/{/rightanalog/d}' "$ESINPUT"
         log "ES (RG DS Plus): Phantom-Stick aus der Tastenbelegung entfernt"
     fi

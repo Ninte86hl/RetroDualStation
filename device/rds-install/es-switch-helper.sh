@@ -35,7 +35,7 @@ if [ "$MODE" = "dual" ] && [ ! -x $STATEDIR/start-es-dualstation.sh ]; then
 fi
 
 # Aktueller Modus: Drop-in vorhanden = dual
-if [ -f "$DROPIN/rgds.conf" ]; then CURRENT=dual; else CURRENT=single; fi
+if [ -f "$DROPIN/rds-dual.conf" ] || [ -f "$DROPIN/rgds.conf" ]; then CURRENT=dual; else CURRENT=single; fi
 
 log "Umschalten gestartet (aktuell: $CURRENT), stoppe essway"
 systemctl stop essway
@@ -132,10 +132,11 @@ fi
 # --- Drop-in und Sway-Config ---
 if [ "$MODE" = "dual" ]; then
     mkdir -p "$DROPIN"
-    printf '[Service]\nExecStart=\nExecStart=%s/start-es-dualstation.sh\n' "$STATEDIR" > "$DROPIN/rgds.conf"
+    printf '[Service]\nExecStart=\nExecStart=%s/start-es-dualstation.sh\n' "$STATEDIR" > "$DROPIN/rds-dual.conf"
+    rm -f "$DROPIN/rgds.conf"                     # Name bis v15.3
     # Sway-Anpassung erledigt rgds-sway-fix.sh beim Start
 else
-    rm -f "$DROPIN/rgds.conf"
+    rm -f "$DROPIN/rds-dual.conf" "$DROPIN/rgds.conf"
     rmdir "$DROPIN" 2>/dev/null
     # Nur die ES-Zeile zuruecksetzen, nicht die DraStic-/Secondary-Regeln
     if [ -f "$SWAYCFG" ]; then

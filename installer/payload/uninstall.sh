@@ -8,7 +8,7 @@ DEST=/storage/rds-install
 [ -d "$DEST" ] || DEST=/storage/rgds-test       # Name bis v15.1
 PORTS=/storage/roms/ports
 THEMEDIR=/storage/.config/emulationstation/themes
-LOG=/storage/dualstation-uninstall.log
+LOG=/storage/rds-uninstall.log
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -17,8 +17,8 @@ log "=== Deinstallation RDS $(cat $DEST/VERSION 2>/dev/null) ==="
 # Absicherung: Merker bis die Einstellungen zurückgesetzt sind. Bricht die Deinstallation vorher ab (Akku leer,
 # Absturz), stellt rds-uninstall-guard.service beim nächsten Start die Notfall-Sicherung wieder her.
 MARK=/storage/.config/rds-uninstall.running
-RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
-RDSZIPI=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip      # interne Kopie (immer erreichbar)
+RDSZIP=/storage/roms/backup/rds-original-backup.zip
+RDSZIPI=/storage/.config/rds-backup/rds-original-backup.zip      # interne Kopie (immer erreichbar)
 touch "$MARK"
 zip_restore() {   # wie ROCKNIX' „backuptool restore“, aber mit unserer ZIP (ROCKNIX_BACKUP.zip bleibt unberührt)
     local z="$RDSZIPI"
@@ -64,7 +64,7 @@ if [ -x "$DEST/es-switch-helper.sh" ]; then
     /bin/bash "$DEST/es-switch-helper.sh" single
     log "auf Single umgeschaltet"
 else
-    rm -f /storage/.config/system.d/essway.service.d/rgds.conf
+    rm -f /storage/.config/system.d/essway.service.d/rds-dual.conf /storage/.config/system.d/essway.service.d/rgds.conf
     rmdir /storage/.config/system.d/essway.service.d 2>/dev/null
     systemctl daemon-reload
     systemctl restart essway
@@ -138,9 +138,9 @@ if [ -d "$THEMEDIR/canvas-rds" ]; then
     rm -rf "$THEMEDIR/canvas-rds" /storage/.config/emulationstation/themesettings/canvas-rds.cfg
     log "entfernt: Theme canvas-rds"
 fi
-rm -f /storage/dualstation-canvas-install.log
+rm -f /storage/dualstation-canvas-install.log /storage/rds-canvas-install.log
 rm -rf "$DEST" /storage/rds-install /storage/rgds-test && log "entfernt: $DEST"
-rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
+rm -f /storage/dualstation-install.log /storage/rds-install.log && log "entfernt: Installations-Log"
 
 # Restliche Dateien von RDS. Bleiben immer: Spiele, Artworks, Savestates, Spielstände, Screenshots,
 # die Daten des Artwork Managers (Einstellungen, Bildsicherungen) und dieses Log.

@@ -9,7 +9,8 @@ Description=RetroDualStation Kontrollcenter
 After=essway.service
 PartOf=essway.service
 # Nur im Dual-Modus (Drop-in von es-switch-helper.sh); im Single-Modus ruht das CC, ROCKNIX übernimmt
-ConditionPathExists=/storage/.config/system.d/essway.service.d/rgds.conf
+ConditionPathExists=|/storage/.config/system.d/essway.service.d/rds-dual.conf
+ConditionPathExists=|/storage/.config/system.d/essway.service.d/rgds.conf
 
 [Service]
 Type=simple
