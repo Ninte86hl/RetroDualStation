@@ -59,7 +59,16 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Hälfte der zugeordneten Ausgabe; libdrastouch (waagerecht) verdoppelt x. Neuere libdrastouch (ROCKNIX ab 6.10.,
       DSHOOK_WINDOW_SIZE) kann übereinander; eigener Build mit DSHOOK_RDS_SPLIT (linke Hälfte verwerfen, rechte strecken).
       Sway-calibration_matrix NICHT setzen – überschreibt die udev-Matrizen beider Panels (Neustart stellt sie wieder her).
-      Alternative ohne eigene Bibliothek: map_to_region -320 480 640 480 mit der ROCKNIX-libdrastouch (ungetestet).
+      **Ergebnis 25.10. (Diagnose-ROM, RG DS):** Bildschirme übereinander + screen_orientation 0 →
+      eigene libdrastouch (DSHOOK_WINDOW_SIZE + DSHOOK_RDS_SPLIT, map_to_output DSI-1): Touch unten genau, oben ignoriert,
+      Menü richtig, auch nach DraStic-Menü. ROCKNIX-libdrastouch (1.10.) + map_to_region -320 480 640 480: Touch ebenso
+      richtig, aber Menü nur linke Hälfte oben (rechnet waagerecht). Mit neuerer ROCKNIX-Bibliothek wäre es
+      map_to_region -640 480 1280 480 + DSHOOK_WINDOW_SIZE – die Variable setzt ROCKNIX aber nur für den Duo Lite.
+      Einhängen: ES führt /storage/.emulationstation/scripts/game-start|game-end/*.sh aus (Argumente: ROM, Name),
+      aber OHNE zu warten (game-start +0,4 s, DraStic-Prozess +2,0 s). Offen: Weg ohne Bind-Mount für die eigene
+      Bibliothek, Umgebungsvariable ohne Startskript (Bibliothek erkennt übereinander selbst?), Schnellwechsel/
+      Gameswitcher-Kette, RG DS Plus (1024×768), ES während DraStic übereinander. Idee: Verbesserung an ROCKNIX
+      vorschlagen (libdrastouch erkennt übereinander liegende Ausgänge und zwei Panels selbst).
 - [ ] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
