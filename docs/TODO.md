@@ -46,6 +46,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       „Bildschirme tauschen“ (Seite Spiel) + Anbernic-Kürzel: SWAP_SCREENS auf freie virtuelle Taste (F8?) drücken UND
       Touch-Zuordnung DSI-2 ↔ DSI-1 umschalten; Zustand merken, beim Spielwechsel/-ende zurücksetzen (touch_map).
       Außerdem: Szene in DSperate testen; advanced_drastic passt Touch auf dem RG DS dynamisch an (siehe dort).
+- [ ] **Versuch: DraStic vertikal statt horizontal** (Idee 25.10.) – Flackern/gleiches Bild mit „Follow 3D Renderer“
+      evtl. Folge der horizontalen Anordnung (screen_orientation = 1, Fenster global über beide Ausgänge nebeneinander).
+      Vertikal hieße: Sway-Ausgänge übereinander + screen_orientation vertikal – betrifft ES (screens.cfg), CC, Touch-
+      Regel. Erst nur vorübergehend testen (Sway-Positionen per swaymsg, drastic.cfg gesichert); L3 bleibt bis dahin.
 - [ ] **Prüfen: DSperate v3.0.5** (github.com/beebono/DSperate, 21.10.2026) – neu: `--saves`/`--states`, Fehlerbild beim
       Start, Vulkan-Ausgabe zuerst bei `video.gpu_present = true` (Render-Pass), RGA ganzzahlig, Fix: PipeWire-Taktung
       (RLIMIT_RTTIME-Abbruch), GPU-Ausgabe bleibt nach Menü, JIT/2D-Ruckler, 3D-Kanten. Einbindung: abwarten bis
