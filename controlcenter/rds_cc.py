@@ -5191,25 +5191,27 @@ class ControlCenter:
             ax = 45 + (pos % cols) * (tw + gap)          # Spalte von Slot 7 (darüber)
             py = top + (pos // cols) * (th + gap)
             l1, l2 = tr("Automatischer"), tr("Speicherpunkt")
-            rx = ax - 26                                 # Text rechtsbündig direkt neben der Kachel
             px = ax - tw - gap                           # links bündig mit der Spalte von Slot 6
+            cx = (px + ax) / 2                           # Text mittig im Bereich neben der Kachel
             P.rrect(px, py, ax + tw - px, th, 20, mix(T["bg"], A, 0.35))   # rechts bündig mit der Kachel
             fs = 32                                      # bei langen Wörtern (Deutsch) etwas kleiner
-            while fs > 22 and max(P.width(l1, fs, bold=True, raw=True), P.width(l2, fs, bold=True, raw=True)) > rx - px - 22:
+            while fs > 22 and max(P.width(l1, fs, bold=True, raw=True), P.width(l2, fs, bold=True, raw=True)) > ax - px - 40:
                 fs -= 2
-            P.text(l1, fs, rx, py + th / 2 - fs / 4, T["text"], bold=True, align="r", raw=True)
-            P.text(l2, fs, rx, py + th / 2 + fs * 1.06, T["text"], bold=True, align="r", raw=True)
+            P.text(l1, fs, cx, py + th / 2 - fs / 4, T["text"], bold=True, align="c", raw=True)
+            P.text(l2, fs, cx, py + th / 2 + fs * 1.06, T["text"], bold=True, align="c", raw=True)
         for pos, n in enumerate(cells):
             if n is None:
                 continue
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
-            if n == SLOT_ICON:                           # Spiel-Icon (Artwork Manager/Scraper), sonst RDS-Logo
-                P.rrect(tx, ty, tw, th, 20, T["card"])
+            if n == SLOT_ICON:                           # Spiel-Icon frei mit schmalem Rahmen in Schemafarbe, sonst RDS-Logo
                 d = th - 30
+                ix, iy = tx + (tw - d) / 2, ty + 15
                 icon = self._game_icon()
-                if not (icon and P.image(icon, tx + (tw - d) / 2, ty + 15, d, d, 18)):
-                    P.logo(tx + (tw - 110) / 2, ty + (th - 110) / 2, 110, T["muted"], T["card"])
+                if icon and P.image(icon, ix, iy, d, d, 18):
+                    P.rrect(ix - 4, iy - 4, d + 8, d + 8, 22, mix(T["bg"], A, 0.6), stroke=3)
+                else:
+                    P.logo(tx + (tw - 110) / 2, ty + (th - 110) / 2, 110, T["muted"], T["bg"])
                 continue
             w_, h_ = tw, th
             usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
