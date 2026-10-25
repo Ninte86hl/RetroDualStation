@@ -13,7 +13,7 @@ DraStic, DSperate und PortMaster. Das Spiel pausiert und läuft danach an dersel
 
 ## Seite „Spiel“ *(v13)*
 Für RetroArch, DSperate und DraStic:
-- **Speichern / Laden** – 9 Plätze mit Vorschaubild; Platz löschen über den Papierkorb
+- **Speichern / Laden** – Plätze 1–9 mit Vorschaubild, beim Laden zusätzlich der geschützte **automatische Speicherpunkt**; Platz löschen über den Papierkorb
 - **Emulator-Menü**, **Neu starten**, **Vorspulen**, **Zeitlupe**, **Screenshot**, **Tasten**, **Beenden**
 
 ## Einheitliche Kürzel

@@ -17,11 +17,11 @@ Nach der Installation findest du RDS unter **Ports** an diesen Icons:
 
 | | Eintrag | Wofür |
 |:-:|---|---|
-| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-install.png" width="48"> | **Install RDS** | Installiert oder aktualisiert RDS |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-install.png" width="48"> | **Install RDS** | Installiert RDS – danach erscheint ein neues Paket hier als **Update RDS** |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES über beide Bildschirme |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Original-ES auf einem Bildschirm |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, Icon und Hero am Gerät |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Zurück zum Original, Spiele und Spielstände bleiben |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Zurück zum Original: stellt deine ursprünglichen Einstellungen wieder her; Spiele, Artworks und Spielstände bleiben |
 
 ---
 
@@ -33,8 +33,8 @@ Nach der Installation findest du RDS unter **Ports** an diesen Icons:
 |---|---|---|
 | **Anbernic** | kurz | **Kontrollcenter** öffnen / schließen |
 | **Home** | kurz | Im Spiel: **speichern** und zurück zu EmulationStation |
-| **Home** | lang (1,5 s) | **Gameswitcher** öffnen |
-| **Home** | 2× | Im Spiel: direkt zum **vorherigen Spiel** (in ES: Gameswitcher) |
+| **Home** | 2× | **Gameswitcher** öffnen |
+| **Home** | halten (0,8 s) | Im Spiel: zum **vorherigen Spiel** wechseln |
 | **Power** | kurz | **Power-Menü** öffnen |
 | **Power** | lang (0,8 s) | Sofort **Ruhemodus** |
 
@@ -62,7 +62,7 @@ Nach der Installation findest du RDS unter **Ports** an diesen Icons:
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-spiel.png" alt="Seite Spiel"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-slots.png" alt="Speicherplätze"> |
 
 Im Spiel mit **R1** zur Seite „Spiel“ (RetroArch, DSperate und DraStic):
-- **Speichern / Laden** öffnen die Speicherplätze 0–8 mit Vorschaubild und Uhrzeit. Beim Laden ist der neueste vorausgewählt.
+- **Speichern / Laden** öffnen die Speicherplätze 1–9 (dieselben Nummern wie in den Emulatoren) mit Vorschaubild und Uhrzeit. Beim Laden gibt es zusätzlich den geschützten **automatischen Speicherpunkt** (Gameswitcher, Home kurz). Speichern auf einen belegten Platz fragt erst nach.
   Der **Mülleimer** (oder **X**, **X**) löscht einen Spielstand.
 - Symbole: **Emulator-Menü · Neu starten · Vorspulen · Zeitlupe · Screenshot · Tasten · Beenden**.
 - **Tasten** zeigt die Original-Tasten des Systems (z. B. NES: Steuerkreuz, A, B, Select, Start) und die Kürzel des Emulators.
@@ -102,7 +102,7 @@ Anmelden in ES: *Spieleinstellungen → RetroAchievements-Einstellungen*. Unters
 
 <p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-gameswitcher.png" alt="Gameswitcher" width="480"></p>
 
-**Home** 1,5 Sekunden halten. Im Spiel bringt dich **Home zweimal** direkt zum vorherigen Spiel. Die zuletzt gespielten Spiele erscheinen als Karten mit ihrem letzten Bild.
+**Home** zweimal drücken. Im Spiel wechselst du mit **Home halten** (0,8 s) direkt zum vorherigen Spiel. Die zuletzt gespielten Spiele erscheinen als Karten mit ihrem letzten Bild.
 Beim Wechseln wird das laufende Spiel automatisch gesichert und das nächste dort fortgesetzt,
 wo du aufgehört hast.
 

@@ -12,7 +12,7 @@ python3 tools/make-installer.py emulationstation-rgds v9
 |---|---|
 | `Install RDS.sh` | Ports-Eintrag, startet `install.sh` über `systemd-run` (außerhalb von ES) |
 | `payload/install.sh` | prüft Gerät (DSI-1 + DSI-2 1024×768) und ES-Binary (`ldd`), kopiert alles, entfernt den Installer, schaltet auf Dual |
-| `payload/uninstall.sh` | zurück auf Original-ES, entfernt Ports-Einträge, Theme und `/storage/rgds-test` |
+| `payload/uninstall.sh` | zurück auf Original-ES, entfernt Ports-Einträge, Theme und `/storage/rds-install` |
 | `payload/ports/Uninstall RDS.sh` | Ports-Eintrag für die Deinstallation |
 
 Fehler (falsches Gerät, unpassende ROCKNIX-Version) erscheinen als Meldung in

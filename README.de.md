@@ -65,29 +65,29 @@ Fortschritt und alle Erfolge im Kontrollcenter, Meldung oben über dem Spiel. �
 
 ## Installation
 
-1. **`retrodualstation-v15.1.zip`** (enthält canvas-ds) aus dem [aktuellen Release](https://github.com/Ninte86hl/RetroDualStation/releases/latest) laden.
+1. **`retrodualstation-v15.2.zip`** (enthält canvas-ds) aus dem [aktuellen Release](https://github.com/Ninte86hl/RetroDualStation/releases/latest) laden.
 2. In den Ordner **`ports`** bei den ROMs entpacken (`/storage/roms/ports`).
 3. In ES **Ports** → <img src="docs/icons/rds-install.png" width="24"> **Install RDS** starten.
 
 Der Installer prüft vorher Gerät und ROCKNIX-Version und verändert nichts, wenn sie nicht passen.
-Ein Update funktioniert genauso. Danach stehen unter **Ports**:
+Ein Update funktioniert genauso – nach der Installation heißt der Eintrag eines neuen Pakets **Update RDS**. Danach stehen unter **Ports**:
 
 | | Eintrag | Wofür |
 |:-:|---|---|
-| <img src="docs/icons/rds-install.png" width="48"> | **Install RDS** | Installiert oder aktualisiert RDS |
+| <img src="docs/icons/rds-install.png" width="48"> | **Install RDS** / **Update RDS** | Installiert bzw. aktualisiert RDS |
 | <img src="docs/icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES über beide Bildschirme |
 | <img src="docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Original-ES auf einem Bildschirm |
 | <img src="docs/icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, Icon und Hero am Gerät |
-| <img src="docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Zurück zum Original, Spiele und Spielstände bleiben |
+| <img src="docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Zurück zum Original samt deiner Einstellungen; Spiele, Artworks und Spielstände bleiben |
 
 <details>
 <summary>ROMs auf einer ext4-Partition? ZIP über das Netzwerk kopieren</summary>
 
 ```bash
-scp retrodualstation-v15.1.zip root@<IP>:/storage/roms/ports/
+scp retrodualstation-v15.2.zip root@<IP>:/storage/roms/ports/
 ```
 ```bash
-ssh root@<IP> "cd /storage/roms/ports && unzip retrodualstation-v15.1.zip && rm retrodualstation-v15.1.zip"
+ssh root@<IP> "cd /storage/roms/ports && unzip retrodualstation-v15.2.zip && rm retrodualstation-v15.2.zip"
 ```
 </details>
 

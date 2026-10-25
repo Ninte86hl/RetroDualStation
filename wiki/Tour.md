@@ -17,11 +17,11 @@ After installing, you'll find RDS in **Ports** by these icons:
 
 | | Entry | What for |
 |:-:|---|---|
-| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-install.png" width="48"> | **Install RDS** | Installs or updates RDS |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-install.png" width="48"> | **Install RDS** | Installs RDS – after installing, a new package shows up here as **Update RDS** |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-dual.png" width="48"> | **RDS Dual-Screen** | ES across both screens |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-single.png" width="48"> | **RDS Single-Screen** | Stock ES on one screen |
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-artwork.png" width="48"> | **Artwork Manager** | Boxart, icons and hero images on the device |
-| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Back to stock; games and saves stay |
+| <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/icons/rds-uninstall.png" width="48"> | **Uninstall RDS** | Back to stock: restores your original settings; games, artwork and saves stay |
 
 ---
 
@@ -33,8 +33,8 @@ After installing, you'll find RDS in **Ports** by these icons:
 |---|---|---|
 | **Anbernic** | short | Open / close the **Control Center** |
 | **Home** | short | In a game: **save** and return to EmulationStation |
-| **Home** | long (1.5 s) | Open the **Game switcher** |
-| **Home** | twice | In a game: jump to the **previous game** (in ES: Game switcher) |
+| **Home** | twice | Open the **Game switcher** |
+| **Home** | hold (0.8 s) | In a game: swap to the **previous game** |
 | **Power** | short | Open the **Power menu** |
 | **Power** | long (0.8 s) | **Sleep** immediately |
 
@@ -62,7 +62,7 @@ Open it with the **Anbernic** button – in EmulationStation and in every game (
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-spiel.png" alt="Game page"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-slots.png" alt="Save slots"> |
 
 In a game, press **R1** for the game page (RetroArch, DSperate and DraStic):
-- **Save / Load** open slots 0–8 with preview picture and time. Loading preselects the newest one.
+- **Save / Load** open slots 1–9 (the same numbers as in the emulators) with preview picture and time. Loading also offers the protected **Automatic** save point (game switcher, Home short). Saving onto a used slot asks first.
   The **bin** (or **X**, **X**) deletes a save.
 - Icons: **Emulator menu · Restart · Fast forward · Slow motion · Screenshot · Buttons · Quit**.
 - **Buttons** shows the original system's buttons (e.g. NES: D-pad, A, B, Select, Start) and the emulator's shortcuts.
@@ -102,7 +102,7 @@ Sign in in ES: *Game settings → RetroAchievements settings*. Supported: RetroA
 
 <p align="center"><img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/tour/tour-gameswitcher.png" alt="Game switcher" width="480"></p>
 
-Hold **Home** for 1.5 seconds. In a game, **Home twice** jumps straight to the previous game. Your recently played games appear as cards with their last screen.
+Press **Home twice**. In a game, **hold Home** (0.8 s) to swap straight to the previous game. Your recently played games appear as cards with their last screen.
 Switching saves the running game automatically and continues the next one where you left off.
 
 **◀ ▶** – choose · **A** – Resume · **Y** – Restart · **X** – Remove from list · **B** – Close

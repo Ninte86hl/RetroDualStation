@@ -17,7 +17,7 @@ fail()   { log "ABBRUCH: $1"; msgbox "canvas-ds: $1 Nothing was changed. Log: $L
 log "=== Installation canvas-ds ($(cat "$SRC/VERSION" 2>/dev/null)) ==="
 
 [ -f "$SRC/$NAME/theme.xml" ] || fail "Installer files are incomplete (.canvas-ds folder missing?)."
-[ -x /storage/rgds-test/es-switch-helper.sh ] || fail "Please install ROCKNIX DualStation first – this theme needs the dual-screen EmulationStation."
+[ -x /storage/rds-install/es-switch-helper.sh ] || [ -x /storage/rgds-test/es-switch-helper.sh ] || fail "Please install ROCKNIX DualStation first – this theme needs the dual-screen EmulationStation."
 
 notify "Installing the canvas-ds theme – EmulationStation will restart in a moment..."
 sleep 2

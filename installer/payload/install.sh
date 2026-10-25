@@ -4,12 +4,13 @@
 #
 # 1. Pruefen: RG DS Plus oder RG DS (DSI-1 + DSI-2 gleich gross), ES-Binary laeuft auf
 #    dieser ROCKNIX-Version (keine fehlenden Bibliotheken)
-# 2. Dateien nach /storage/rgds-test, Theme, Ports-Eintraege kopieren
+# 2. Dateien nach /storage/rds-install, Theme, Ports-Eintraege kopieren
 # 3. Installer-Dateien entfernen und auf Dual umschalten
 
 PORTS="${1:-/storage/roms/ports}"
 SRC="$PORTS/.dualstation"
-DEST=/storage/rgds-test
+DEST=/storage/rds-install
+OLDDEST=/storage/rgds-test        # Name bis v15.1 – wird beim Update umbenannt
 THEMEDIR=/storage/.config/emulationstation/themes
 ESCFG=/storage/.config/emulationstation/es_settings.cfg
 LOG=/storage/dualstation-install.log
@@ -17,6 +18,9 @@ export SWAYSOCK=/run/0-runtime-dir/sway-ipc.0.sock
 
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null)"
 BIN=emulationstation-rgds
+# Neuinstallation oder Update? (VERSION schreibt nur eine abgeschlossene Installation)
+OLDVER="$(cat "$DEST/VERSION" 2>/dev/null || cat "$OLDDEST/VERSION" 2>/dev/null)"
+if [ -n "$OLDVER" ]; then MODE=update; else MODE=install; fi
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -30,7 +34,11 @@ fail() {
     exit 1
 }
 
-log "=== Installation RDS $VERSION ==="
+if [ "$MODE" = update ]; then
+    log "=== Update RDS $OLDVER -> $VERSION ==="
+else
+    log "=== Neuinstallation RDS $VERSION ==="
+fi
 log "Quelle: $SRC"
 grep -E '^(NAME|VERSION|VERSION_ID|BUILD_ID)=' /etc/os-release 2>/dev/null | while read -r l; do log "os-release: $l"; done
 
@@ -87,10 +95,21 @@ if [ -n "$MISSING" ]; then
 fi
 log "ES-Binary: $BIN, Bibliotheken ok"
 
-notify "Installing RDS – EmulationStation will restart in a moment..."
+if [ "$MODE" = update ]; then
+    notify "Updating RDS $OLDVER → $VERSION – EmulationStation will restart in a moment..."
+else
+    notify "Installing RDS – EmulationStation will restart in a moment..."
+fi
 sleep 2
 
 # --- 2. Dateien kopieren ---
+# Update von v15.1 oder älter: Programmordner umbenennen (gemerkte Themes, Sicherungen und Log ziehen mit).
+# Übergangsweise zeigt der alte Name dorthin, bis der Helfer am Ende ES vom neuen Ort startet.
+if [ -d "$OLDDEST" ] && [ ! -L "$OLDDEST" ] && [ ! -e "$DEST" ]; then
+    mv "$OLDDEST" "$DEST" || fail "Could not rename $OLDDEST."
+    ln -s "$DEST" "$OLDDEST"
+    log "Programmordner umbenannt: $OLDDEST -> $DEST"
+fi
 mkdir -p "$DEST" || fail "Could not create $DEST."
 
 if [ -f "$ESCFG" ] && [ ! -f "$DEST/es_settings.before-install.cfg" ]; then
@@ -106,12 +125,68 @@ for old in "$DEST"/emulationstation-rgds-* "$DEST"/start-es-v2-diag.sh; do
     [ -f "$old" ] && rm -f "$old" && log "entfernt: $old"
 done
 
-for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh; do
-    cp "$SRC/rgds-test/$f" "$DEST/$f" || fail "Could not copy $f."
+for f in start-es-dualstation.sh rgds-sway-fix.sh es-switch-helper.sh rgds-diag.sh uninstall.sh rds-settings.py; do
+    cp "$SRC/rds-install/$f" "$DEST/$f" || fail "Could not copy $f."
     chmod +x "$DEST/$f"
 done
 echo "$VERSION" > "$DEST/VERSION"
 log "Skripte kopiert nach $DEST"
+
+# --- Originalwerte sichern, bevor RDS etwas ändert (uninstall.sh setzt sie zurück) ---
+# Je Einstellung nur beim ersten Mal gemerkt; Sicherungen älterer RDS-Versionen (*.vor-rds-kuerzel, *.before-rds)
+# liefern dabei die Werte von vor RDS. Werte aus system.cfg (set_setting) merken die Blöcke weiter unten selbst.
+BK="$DEST/settings-before-rds.json"
+rs() { python3 "$DEST/rds-settings.py" "$@" >>"$LOG" 2>&1 || log "WARNUNG: Sicherung fehlgeschlagen: $*"; }
+RACFG=/storage/.config/retroarch/retroarch.cfg
+DCFG=/storage/.config/drastic/config/drastic.cfg
+DSPINI=/storage/.config/dsperate/dsperate.ini
+ESINPUT=/storage/.emulationstation/es_input.cfg
+rs save "$BK" "$RACFG" kv confirm_reset confirm_close notification_show_save_state video_font_enable \
+    menu_enable_widgets network_cmd_enable quit_press_twice input_enable_hotkey_btn input_toggle_fast_forward_btn \
+    input_save_state_btn input_load_state_btn input_rewind_btn input_menu_toggle_btn input_fps_toggle_btn \
+    input_exit_emulator_btn input_state_slot_decrease_btn input_state_slot_increase_btn --legacy "$RACFG.vor-rds-kuerzel"
+rs save "$BK" "$DSPINI" kv modifier quit pause fast_forward fast_forward_toggle save_state load_state slot_next \
+    slot_prev layout_next layout_prev screen_swap fps stylus_axis toasts --legacy "$DSPINI.vor-rds-kuerzel"
+rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_INDEX_MENU]" \
+    "controls_a[CONTROL_INDEX_FAST_FORWARD]" "controls_b[CONTROL_INDEX_FAST_FORWARD]" compress_savestates \
+    --legacy "$DCFG.vor-rds-kuerzel"
+rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
+[ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
+# Notfall-Sicherung der ganzen Dateien (nur beim ersten Mal; nach erfolgreicher Deinstallation entfernt).
+# Format wie ROCKNIX' backuptool: umbenannt in ROCKNIX_BACKUP.zip stellt „backuptool restore“ sie zurück.
+# Zwei Kopien: intern (immer sofort da – roms hängt ROCKNIX beim Start erst nach unseren Diensten ein) für die
+# automatische Wiederherstellung, und in roms/backup sichtbar für den Nutzer.
+RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
+RDSZIPI=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip
+if [ ! -f "$RDSZIPI" ] && [ -f "$RDSZIP" ]; then
+    mkdir -p "${RDSZIPI%/*}" && cp "$RDSZIP" "$RDSZIPI" && log "Notfall-Sicherung intern abgelegt: $RDSZIPI"
+fi
+if [ ! -f "$RDSZIPI" ]; then
+    [ "$MODE" = update ] && log "Hinweis: Notfall-Sicherung wird beim Update angelegt – Stand von vor RDS nur, soweit aeltere Sicherungen ihn enthalten"
+    rs snapshot "$RDSZIPI" "$RACFG=$RACFG.vor-rds-kuerzel" "$DCFG=$DCFG.vor-rds-kuerzel" "$DSPINI=$DSPINI.vor-rds-kuerzel" \
+        "$ESCFG=$DEST/es_settings.before-install.cfg" "$ESINPUT=$ESINPUT.before-rds" \
+        /storage/.config/system/configs/system.cfg /storage/.config/sway/config /storage/.config/mako/config
+fi
+if [ -f "$RDSZIPI" ] && [ ! -f "$RDSZIP" ]; then
+    mkdir -p "${RDSZIP%/*}" && cp "$RDSZIPI" "$RDSZIP"
+fi
+if [ -f "$RDSZIP" ] && [ ! -f "${RDSZIP%.zip}.txt" ]; then
+    cat > "${RDSZIP%.zip}.txt" <<'TXT'
+RetroDualStation (RDS) – Sicherung der Einstellungen von vor der ersten Installation
+=====================================================================================
+RDS_ORIGINAL_BACKUP.zip enthält RetroArch, DraStic, DSperate, EmulationStation (Einstellungen und Tastenbelegung),
+system.cfg, Sway und mako im Zustand vor RDS. Die Deinstallation setzt diese Werte normalerweise selbst zurück –
+diese Datei ist nur für den Notfall gedacht.
+
+Wiederherstellen (überschreibt diese Dateien komplett, spätere eigene Änderungen daran gehen verloren):
+  1. Eine vorhandene ROCKNIX_BACKUP.zip in diesem Ordner umbenennen (sonst geht sie verloren).
+  2. RDS_ORIGINAL_BACKUP.zip kopieren und die Kopie in ROCKNIX_BACKUP.zip umbenennen.
+  3. Die Wiederherstellung von ROCKNIX ausführen (per SSH: backuptool restore), danach neu starten.
+
+Restore (overwrites these files completely): rename an existing ROCKNIX_BACKUP.zip first, copy
+RDS_ORIGINAL_BACKUP.zip to ROCKNIX_BACKUP.zip, then run the ROCKNIX restore (via SSH: backuptool restore), reboot.
+TXT
+fi
 
 if [ -d "$SRC/theme/dii-ess-aye-rds" ]; then
     mkdir -p "$THEMEDIR"
@@ -163,6 +238,8 @@ if [ -d "$SRC/images" ]; then
     mkdir -p "$PORTS/images"
     cp "$SRC"/images/rds-*.png "$PORTS/images/"
     RDSLANG="$( . /etc/profile >/dev/null 2>&1; get_setting system.language )"
+    # „Install RDS.sh“ heißt nach der Installation „Update RDS“: ein später kopiertes neues Paket erscheint so als
+    # Update. Die Deinstallation entfernt den Eintrag wieder – auf einem frischen Gerät steht dann „Install RDS“.
     python3 - "$PORTS/gamelist.xml" "$VERSION" "${RDSDATE:-$(date +%Y%m%d)}" "$RDSLANG" <<'PY' 2>>"$LOG"
 import os, sys, xml.etree.ElementTree as ET
 f, version, date = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -182,8 +259,8 @@ entries = {
         "Boxart, Icon und Hero-Bild für deine Spiele direkt am Gerät suchen und anpassen. / Find and fit boxart, icons and hero images on the device."),
     "Uninstall RDS.sh": ("Uninstall RDS", "rds-uninstall.png",
         "Entfernt RDS und stellt das Original-ES samt Theme wieder her. Spiele und Spielstände bleiben. / Removes RDS and restores stock ES; games and saves stay."),
-    "Install RDS.sh": ("Install RDS", "rds-install.png",
-        "Installiert oder aktualisiert RDS (RetroDualStation). / Installs or updates RDS."),
+    "Install RDS.sh": ("Update RDS", "rds-install.png",
+        "Aktualisiert RDS auf die neue Version – Einstellungen, Spielstände und Sicherungen bleiben. / Updates RDS to the new version – settings, saves and backups stay."),
 }
 for script, (name, img, desc) in entries.items():
     path = "./" + script
@@ -223,6 +300,24 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         ln -sf "$SYSD/rds-resume.service" "$SYSD/$t.target.wants/rds-resume.service"
     done
     cp "$SRC/controlcenter/rds-logind-powerkey.conf" /storage/.config/logind.conf.d/
+    # Absicherung der Deinstallation: bricht sie ab, bevor die Einstellungen zurückgesetzt sind, stellt dieser
+    # Dienst beim nächsten Start die Notfall-Sicherung wieder her (nur mit Merker, sonst tut er nichts)
+    cat > "$SYSD/rds-uninstall-guard.service" <<'UNIT'
+# RetroDualStation: unterbrochene Deinstallation – Einstellungen von vor RDS wiederherstellen
+[Unit]
+Description=RetroDualStation – Einstellungen nach unterbrochener Deinstallation wiederherstellen
+ConditionPathExists=/storage/.config/rds-uninstall.running
+Before=essway.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'Z=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip; [ -f "$$Z" ] || Z=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip; L=/storage/dualstation-uninstall.log; if [ -f "$$Z" ] && unzip -o "$$Z" -d / >>"$$L" 2>&1; then rm -f /storage/.config/rds-uninstall.running; echo "$$(date) Start: Notfall-Sicherung wiederhergestellt" >>"$$L"; else echo "$$(date) Start: Wiederherstellung fehlgeschlagen" >>"$$L"; fi'
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+    mkdir -p "$SYSD/multi-user.target.wants"
+    ln -sf "$SYSD/rds-uninstall-guard.service" "$SYSD/multi-user.target.wants/rds-uninstall-guard.service"
     systemctl daemon-reload
     systemctl kill -s HUP systemd-logind 2>/dev/null   # Power-Taste übernimmt das CC
     log "Kontrollcenter installiert: $CCDIR"
@@ -298,6 +393,24 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_FAST_FORWARD\]) = .*/\1 = 325/' "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK2" && date > "$DMARK"
         log "DraStic: Menue auf F11, Vorspulen auf F12 (virtuelle Tasten, nur ueber das CC)"
+    fi
+    # DraStic: Savestates unkomprimiert – Speichern ≈0,3 s statt 1,8 s (Gameswitcher, Home kurz).
+    # Nur wenn DraStic nicht läuft (es schreibt die Datei beim Beenden zurück).
+    # TODO: prüfen, ob alte komprimierte Stände danach noch laden (Test 25.10. lief mit gelöschten Ständen).
+    if [ -f "$DCFG" ] && ! pidof drastic >/dev/null && ! grep -q '^compress_savestates *= *0' "$DCFG"; then
+        if grep -q '^compress_savestates' "$DCFG"; then
+            sed -i -E 's/^compress_savestates *= *.*/compress_savestates = 0/' "$DCFG"
+        else
+            echo "compress_savestates = 0" >> "$DCFG"
+        fi
+        log "DraStic: Savestates unkomprimiert (schnelleres Speichern)"
+    fi
+    # Schnellwechsel standardmäßig an (ab v15.2) – einmal je Gerät; danach entscheidet der Schalter im CC
+    FSMARK=/storage/.config/retrodualstation/fastswitch-default.done
+    if [ ! -f "$FSMARK" ]; then
+        mkdir -p /storage/.config/retrodualstation
+        touch /storage/.config/retrodualstation/fastswitch && date > "$FSMARK"
+        log "Schnellwechsel: an (im Kontrollcenter oben abschaltbar)"
     fi
     # ES-Savestate-Manager aus: Speicherplätze verwaltet das Kontrollcenter (einmalig, alter Wert gemerkt)
     SSMARK=/storage/.config/retrodualstation/savestates.done
@@ -419,5 +532,10 @@ log "Installer-Dateien entfernt"
 
 log "Umschalten auf Dual"
 /bin/bash "$DEST/es-switch-helper.sh" dual
-log "=== Installation fertig ==="
+if [ -L "$OLDDEST" ]; then                     # ES läuft jetzt vom neuen Ort – Übergangs-Verweis weg
+    rm -f "$OLDDEST" && log "Uebergangs-Verweis entfernt: $OLDDEST"
+elif [ -d "$OLDDEST" ]; then
+    log "WARNUNG: alter Programmordner $OLDDEST bleibt (neuer Ordner gab es schon) – die Deinstallation entfernt ihn"
+fi
+[ "$MODE" = update ] && log "=== Update fertig ($OLDVER -> $VERSION) ===" || log "=== Neuinstallation fertig ==="
 exit 0

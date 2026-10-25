@@ -19,7 +19,7 @@ Das Binary wird im Paket immer als "emulationstation-rgds" abgelegt
 Ergebnis: retrodualstation-<version>.zip
 Inhalt (wird in den Ordner "ports" auf der SD-Karte entpackt):
     Install RDS.sh
-    .dualstation/   install.sh, VERSION, Binary, rgds-test/, ports/, theme/, controlcenter/
+    .dualstation/   install.sh, VERSION, Binary, rds-install/, ports/, theme/, controlcenter/
 """
 import os, sys, zipfile
 
@@ -58,9 +58,9 @@ with zipfile.ZipFile(out, "w") as z:
     import datetime
     z.writestr(zipfile.ZipInfo(p + "DATE"), datetime.date.today().strftime("%Y%m%d") + "\n")   # Release-Datum (Ports-Liste)
     add(z, binary, p + binname, EXEC)
-    for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh"):
-        add(z, os.path.join(repo, "device", "rgds-test", f), p + "rgds-test/" + f, EXEC)
-    add(z, os.path.join(repo, "installer", "payload", "uninstall.sh"), p + "rgds-test/uninstall.sh", EXEC)
+    for f in ("start-es-dualstation.sh", "rgds-sway-fix.sh", "es-switch-helper.sh", "rgds-diag.sh", "rds-settings.py"):
+        add(z, os.path.join(repo, "device", "rds-install", f), p + "rds-install/" + f, EXEC)
+    add(z, os.path.join(repo, "installer", "payload", "uninstall.sh"), p + "rds-install/uninstall.sh", EXEC)
     for f in ("RDS Dual-Screen.sh", "RDS Single-Screen.sh"):
         add(z, os.path.join(repo, "device", "ports", f), p + "ports/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "ports", "Uninstall RDS.sh"),

@@ -51,8 +51,8 @@ HOME_NAMES = [os.environ["RDS_CC_HOMEKEY"]] if os.environ.get("RDS_CC_HOMEKEY") 
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
-HOME_LONG_S = 1.5      # Home länger gehalten → Gameswitcher, kurz → speichern und zurück zu ES
-HOME_DOUBLE_S = 0.35   # Home zweimal kurz hintereinander → Gameswitcher
+HOME_LONG_S = 0.8      # Home gehalten → im Spiel die letzten beiden Spiele tauschen, kurz → speichern und zurück zu ES
+HOME_DOUBLE_S = 0.35   # Home zweimal kurz hintereinander → Gameswitcher (Übersicht)
 CONFIG_PATH = "/storage/.config/retrodualstation/controlcenter.json"
 os.environ.setdefault("XDG_RUNTIME_DIR", "/var/run/0-runtime-dir")
 os.environ.setdefault("WAYLAND_DISPLAY", "wayland-1")
@@ -236,6 +236,11 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
+    "Automatischer": "Automatic", "Speicherpunkt": "save point",
+    "Schnellwechsel an": "Fast switch on", "Schnellwechsel aus": "Fast switch off",
+    "Erst das geparkte Spiel beenden": "Quit the parked game first",
+    "Überschreiben?": "Overwrite?", "nochmal A oder tippen": "A again or tap", "Automatisch": "Automatic",
+    "überschreiben": "overwrite", "nochmal: überschreiben": "again: overwrite",
     "Kein Spielstand": "No save state", "Slot wählen": "Choose slot", "Zuletzt": "Last",
     "Emulator": "Emulator", "Zeitlupe": "Slow motion", "Beenden": "Quit", "Erfolg freigeschaltet!": "Achievement unlocked!", "Akku fast leer": "Battery almost empty", "Verbunden": "Connected", "Getrennt": "Disconnected", "Akku voll": "Battery full", "Keine Erfolge für dieses Spiel": "No achievements for this game", "Erfolge": "achievements", "WLAN verbunden": "Wi-Fi connected", "WLAN getrennt": "Wi-Fi disconnected", "Kopfhörer": "Headphones", "Lautsprecher": "Speaker", "Wird geladen": "Charging", "Akku schwach": "Battery low", "Jetzt laden – sonst geht das Gerät gleich aus": "Charge now – the device will turn off soon", "Bitte bald laden": "Please charge soon", 
     "Punkte": "points", "Erfolge": "achievements", "von": "of", "Erfolgen": "achievements",
@@ -605,6 +610,11 @@ class Pen:
                 self.poly([(cx + dx - 6, cy - 14), (cx + dx + 14, cy), (cx + dx - 6, cy + 14)], c)
         elif kind == "play":                      # normale Geschwindigkeit
             self.poly([(cx - 9, cy - 15), (cx + 15, cy), (cx - 9, cy + 15)], c)
+        elif kind == "lock":                      # Schloss: geschützter automatischer Stand
+            self.rrect(cx - 12, cy - 2, 24, 18, 4, c)
+            self.rrect(cx - 9, cy - 16, 4, 16, 2, c)
+            self.rrect(cx + 5, cy - 16, 4, 16, 2, c)
+            self.rrect(cx - 9, cy - 16, 18, 4, 2, c)
         elif kind in ("save", "load"):            # Pfeil nach unten (speichern) bzw. oben (laden) in eine Schale
             self.rrect(cx - 16, cy + 10, 32, 5, 2, c)
             self.rrect(cx - 16, cy + 2, 5, 13, 2, c)
@@ -641,6 +651,11 @@ class Pen:
         elif kind == "battery":                   # voller Akku
             self.rrect(cx - 18, cy - 10, 32, 20, 4, c)
             self.rrect(cx + 14, cy - 4, 4, 8, 1, c)
+        elif kind == "switch":                    # Schnellwechsel: Pfeile hin und her
+            self.rrect(cx - 16, cy - 9, 22, 4, 2, c)
+            self.poly([(cx + 5, cy - 15), (cx + 16, cy - 7), (cx + 5, cy + 1)], c)
+            self.rrect(cx - 6, cy + 5, 22, 4, 2, c)
+            self.poly([(cx - 5, cy - 1), (cx - 16, cy + 7), (cx - 5, cy + 15)], c)
         elif kind == "bolt":                      # Laden (Blitz)
             self.poly([(cx + 3, cy - 18), (cx - 10, cy + 3), (cx - 1, cy + 3), (cx - 4, cy + 18),
                        (cx + 10, cy - 3), (cx + 1, cy - 3)], c)
@@ -1204,10 +1219,17 @@ _META = {}
 
 def game_meta(rom):
     """Name und Icon (PNG) aus der gamelist.xml des Systems; zwischengespeichert."""
-    if not rom or rom in _META:
-        return _META.get(rom, (None, None))
-    name = icon = None
+    if not rom:
+        return None, None
     folder = os.path.dirname(rom)
+    try:   # neu lesen, wenn sich die gamelist.xml geändert hat (z. B. nach dem Artwork Manager)
+        stamp = os.path.getmtime(os.path.join(folder, "gamelist.xml"))
+    except OSError:
+        stamp = None
+    cached = _META.get(rom)
+    if cached and cached[0] == stamp:
+        return cached[1], cached[2]
+    name = icon = None
     try:
         import xml.etree.ElementTree as ET
         rel = "./" + os.path.relpath(rom, folder)
@@ -1231,8 +1253,16 @@ def game_meta(rom):
             if os.path.exists(cand):
                 icon = cand
                 break
-    _META[rom] = (name, icon)
+    _META[rom] = (stamp, name, icon)
     return name, icon
+
+
+# Eigene Ports-Einträge von RDS (Werkzeuge, keine Spiele) – nie im Gameswitcher
+RDS_PORTS = {"RDS Dual-Screen.sh", "RDS Single-Screen.sh", "Install RDS.sh", "Uninstall RDS.sh", "Artwork Manager.sh"}
+
+
+def is_rds_port(rom):
+    return bool(rom) and "/ports/" in rom and os.path.basename(rom) in RDS_PORTS
 
 
 def running_port():
@@ -1270,6 +1300,8 @@ def _running_emu():
     for pid in os.listdir("/proc"):
         if not pid.isdigit():
             continue
+        if FROZEN["pids"] and int(pid) in FROZEN["pids"]:
+            continue                          # eingefrorenes Anker-Spiel (Schnellwechsel) zählt nicht als laufend
         comm = (rd(f"/proc/{pid}/comm") or "").lower()
         emu = next((v for k, v in EMULATORS.items() if comm.startswith(k)), None)
         if not emu or comm.endswith(".sh"):   # Startskripte nicht einfrieren
@@ -1385,8 +1417,8 @@ TOUR = [
      "img": ("geraet-tasten.png", "geraet-tasten-en.png"),
      "keys": [("Anbernic", ("Kontrollcenter öffnen / schließen", "open / close the Control Center")),
               (("Home kurz", "Home short"), ("im Spiel speichern, zurück zu ES", "in a game: save, back to ES")),
-              (("Home lang", "Home long"), ("Gameswitcher (1,5 s halten)", "Game switcher (hold 1.5 s)")),
-              (("Home 2×", "Home 2×"), ("im Spiel: direkt zum vorherigen Spiel", "in a game: jump to the previous game")),
+              (("Home 2×", "Home 2×"), ("Gameswitcher öffnen", "open the game switcher")),
+              (("Home lang", "Home long"), ("im Spiel: zum vorherigen Spiel wechseln", "in a game: switch to the previous game")),
               (("Power kurz", "Power short"), ("Power-Menü", "Power menu")),
               (("Power lang", "Power long"), ("sofort Ruhemodus", "sleep immediately"))]},
     {"title": ("Kontrollcenter", "Control Center"),
@@ -1398,7 +1430,9 @@ TOUR = [
                ("Im Spiel pausiert das Spiel, solange das Kontrollcenter offen ist.",
                 "In a game, the game pauses while the Control Center is open."),
                ("Oben: Dunkel, Hell oder Automatisch (Farben des ES-Themes) und 16 Akzentfarben wie beim DS.",
-                "Top: dark, light or automatic (ES theme colours) and 16 accent colours like on the DS.")],
+                "Top: dark, light or automatic (ES theme colours) and 16 accent colours like on the DS."),
+               ("Daneben Vibration und Schnellwechsel: das vorige Spiel wartet im Speicher, zurück in unter 1 s.",
+                "Next to it vibration and fast switch: the previous game waits in memory, back in under 1 s.")],
      "keys": [("Anbernic", ("öffnen", "open")), ("L1 / R1", ("Seite", "page")), ("B", ("schließen", "close"))]},
     {"title": ("Seite „Spiel“", "Game page"),
      "img": ("tour-spiel.png", "tour-spiel.png"),
@@ -1468,7 +1502,7 @@ def card_aspect(item):
     return size[0] / size[1] if size and size[1] else 4 / 3
 RA_PROXY = "/usr/share/lowerdeck/ra_proxy.py"
 CHAIN_FILE = "/tmp/rds-next-launch"   # Auftrag an das gepatchte ES (002-rds-gameswitcher-chain.patch)
-SLOT = 9   # fester RetroArch-Slot für den Gameswitcher
+SLOT = 0   # automatischer Stand (Gameswitcher, Home kurz, Auto-Laden) – bei allen Emulatoren Platz 0, im Menü unsichtbar
 
 
 # Stärke, Dauer (ms) – kleine Motoren brauchen Anlaufzeit, sonst hört man sie nur
@@ -1629,6 +1663,417 @@ def rom_of(pid):
     return next((a for a in reversed(args) if "/roms/" in a), None)
 
 
+# ------------------------------------------------- Schnellwechsel (Test) ----
+# Das von ES gestartete Spiel („Anker“) wird beim Wechsel eingefroren und auf einen unsichtbaren Arbeitsbereich
+# geschoben, das neue Spiel läuft als „Zusatzspiel“ über runemu.sh (gemerkter Startbefehl bzw. Aufruf vom Anker). Zurück zum Anker: Zusatzspiel beenden, Anker
+# aufwecken – unter einer Sekunde. Höchstens zwei Spiele im Speicher. Ein mit: touch FAST_FLAG
+
+FAST_FLAG = "/storage/.config/retrodualstation/fastswitch"
+FAST_STATE = "/tmp/rds-frozen.json"
+FAST_EMUS = {"DSperate": ("dsperate", "dsperate-sa"), "DraStic": ("drastic", "drastic-sa")}
+FAST_ALL = set(FAST_EMUS) | {"RetroArch"}     # RetroArch nur mit gemerktem Startbefehl (Gameswitcher-Eintrag)
+FAST_PARK = "rdspark"                         # unsichtbarer Arbeitsbereich für das geparkte Spiel
+FAST_MIN_MB = 180
+FROZEN = {"pids": [], "runemu": None, "rom": None, "name": None, "emu": None, "cons": [], "busy": False}
+
+
+def touch_map(emu):
+    """swaymsg-Befehl für die Touch-Zuordnung. ROCKNIX ordnet den Touchscreen beim Erscheinen eines DraStic-Fensters
+    per for_window-Regel einem Bildschirm zu und nimmt das nie zurück; ES setzt es nur durch sein reload zurück.
+    Ohne ES (Schnellwechsel): für DraStic die Regel aus der Sway-Konfiguration nachbilden, sonst Zuordnung aufheben."""
+    if emu == "DraStic":
+        m = re.search(r'for_window \[app_id="drastic"\][^\n]*?(input "[^"]+" map_to_output \S+)',
+                      rd("/storage/.config/sway/config") or "")
+        return m.group(1) if m else None
+    return "input type:touch map_to_output *"
+
+
+def fast_enabled():
+    return os.path.exists(FAST_FLAG)
+
+
+def mem_available_mb():
+    m = re.search(r"^MemAvailable:\s+(\d+)", rd("/proc/meminfo") or "", re.M)
+    return int(m.group(1)) // 1024 if m else 0
+
+
+def zram_setup():
+    """Komprimierten Speicher (zram) für eingefrorene Spiele einrichten – nur mit Schnellwechsel."""
+    if not fast_enabled() or "zram0" in (rd("/proc/swaps") or ""):
+        return
+    subprocess.run(["sh", "-c", "modprobe zram 2>/dev/null; cd /sys/block/zram0 || exit 1; "
+                    "grep -q lz4 comp_algorithm && echo lz4 > comp_algorithm; echo 512M > disksize && "
+                    "mkswap /dev/zram0 >/dev/null && swapon -p 100 /dev/zram0 && echo 20 > /proc/sys/vm/swappiness"],
+                   timeout=10, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log("Schnellwechsel: zram", "aktiv" if "zram0" in (rd("/proc/swaps") or "") else "nicht verfügbar")
+
+
+def _parent(pid):
+    try:
+        return int(rd(f"/proc/{pid}/stat").rsplit(")", 1)[1].split()[1])
+    except (AttributeError, IndexError, ValueError):
+        return 0
+
+
+def runemu_of(pid):
+    """runemu.sh-Prozess, der dieses Spiel gestartet hat."""
+    for _ in range(12):
+        pid = _parent(pid)
+        if pid <= 1:
+            return None
+        if any(a.endswith("runemu.sh") for a in _cmdline(pid)[:2]):
+            return pid
+    return None
+
+
+def sway_windows(pids, with_ws=False):
+    """[(con_id, Ausgang)] aller Fenster dieser Prozesse – mit with_ws zusätzlich der Arbeitsbereich."""
+    try:
+        tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True, timeout=2,
+                          env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout)
+    except Exception:
+        return []
+    out = []
+
+    def walk(n, output, ws):
+        if n.get("type") == "output":
+            output = n.get("name")
+        if n.get("type") == "workspace":
+            ws = n.get("name")
+        if n.get("pid") in pids and n.get("type") in ("con", "floating_con"):
+            out.append((n["id"], output, ws) if with_ws else (n["id"], output))
+        for c in n.get("nodes", []) + n.get("floating_nodes", []):
+            walk(c, output, ws)
+    walk(tree, None, None)
+    return out
+
+
+def fast_save():
+    try:
+        wr(FAST_STATE, json.dumps({k: FROZEN[k] for k in ("pids", "runemu", "rom", "name", "emu", "cons")}))
+    except OSError:
+        pass
+
+
+def evdev_flush(pids):
+    """Eingaben verwerfen, die sich für eingefrorene Prozesse angesammelt haben – sonst spielt das Spiel nach dem
+    Aufwecken alle Tasten aus dem Zusatzspiel nach. pidfd_getfd liefert eine Kopie genau seiner Geräte-Datei."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    total = 0
+    for pid in pids:
+        try:
+            fds = [int(n) for n in os.listdir(f"/proc/{pid}/fd")
+                   if os.readlink(f"/proc/{pid}/fd/{n}").startswith("/dev/input/event")]
+        except OSError:
+            continue
+        if not fds:
+            continue
+        pfd = libc.syscall(434, pid, 0)                  # pidfd_open
+        if pfd < 0:
+            continue
+        for n in fds:
+            fd = libc.syscall(438, pfd, n, 0)            # pidfd_getfd
+            if fd < 0:
+                continue
+            try:
+                os.set_blocking(fd, False)
+                while True:
+                    b = os.read(fd, 24 * 64)
+                    if not b:
+                        break
+                    total += len(b)
+            except (BlockingIOError, OSError):
+                pass
+            os.close(fd)
+        os.close(pfd)
+    return total // 24
+
+
+def _wait_parked(cons, limit=1.0):
+    """Warten, bis Sway die Fenster verschoben hat und das Spiel das bestätigen konnte (vor dem Einfrieren).
+    Eingefroren könnte es nicht mehr antworten und Sway zeichnete sein letztes Bild weiter."""
+    end = time.time() + limit
+    ids = {c for c, _o, _w in cons}
+    while time.time() < end:
+        if all(w == FAST_PARK for c, _o, w in sway_windows_by_id(ids)):
+            break
+        time.sleep(0.1)
+    time.sleep(0.3)                                      # Luft zum Bestätigen der neuen Größe
+
+
+def sway_windows_by_id(ids):
+    try:
+        tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True, timeout=2,
+                          env=dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")).stdout)
+    except Exception:
+        return []
+    out = []
+
+    def walk(n, output, ws):
+        if n.get("type") == "output":
+            output = n.get("name")
+        if n.get("type") == "workspace":
+            ws = n.get("name")
+        if n.get("id") in ids and n.get("type") in ("con", "floating_con"):
+            out.append((n["id"], output, ws))
+        for c in n.get("nodes", []) + n.get("floating_nodes", []):
+            walk(c, output, ws)
+    walk(tree, None, None)
+    return out
+
+
+def fast_freeze(game):
+    """Anker-Spiel parken (unsichtbarer Arbeitsbereich) und einfrieren. False, wenn es nicht geht."""
+    ru = runemu_of(game["pid"])
+    if not ru:
+        return False
+    pids = proc_tree(ru)
+    pids = [p for p in pids if p != ru]          # runemu.sh selbst wartet nur
+    cons = sway_windows(set(pids), with_ws=True)
+    if cons:
+        # Scratchpad taugt nicht: DSperate fordert dort sofort wieder Vollbild an und Sway zeichnet es über allem
+        sway_cmd("; ".join(f"[con_id={c}] move container to workspace {FAST_PARK}" for c, _o, _w in cons))
+        _wait_parked(cons)
+    for p in pids:
+        try:
+            os.kill(p, signal.SIGSTOP)
+        except OSError:
+            pass
+    FROZEN.update(pids=pids, runemu=ru, rom=game.get("rom"), name=game.get("name"), cons=cons, emu=game.get("emu"))
+    fast_save()
+    log("Schnellwechsel: eingefroren", game.get("name"), "(%d Prozesse, %d Fenster)" % (len(pids), len(cons)))
+    return True
+
+
+def launch_args(item):
+    """Startbefehl fürs Zusatzspiel: der beim letzten Spielen gemerkte (genau wie ES ihn gebaut hat), sonst bei
+    DS-Emulatoren der Aufruf des Ankers mit getauschtem ROM und Emulator. None = kein Schnellwechsel möglich."""
+    rec = item.get("launch")
+    if rec and item["rom"] in rec:
+        return list(rec)
+    if item["emu"] in FAST_EMUS and FROZEN.get("emu") in FAST_EMUS:
+        emu, core = FAST_EMUS[item["emu"]]
+        new = []
+        for a in _cmdline(FROZEN["runemu"]):
+            if a == FROZEN["rom"]:
+                a = item["rom"]
+            elif a.startswith("--emulator="):
+                a = "--emulator=" + emu
+            elif a.startswith("--core="):
+                a = "--core=" + core
+            new.append(a)
+        return new
+    return None
+
+
+def fast_start(item, args):
+    """Zusatzspiel starten – Umgebung und Ordner vom (von ES gestarteten) Anker."""
+    ru = FROZEN["runemu"]
+    try:
+        env = dict(x.split("=", 1) for x in open(f"/proc/{ru}/environ", "rb").read().decode("utf-8", "replace")
+                   .split("\0") if "=" in x)
+        cwd = os.readlink(f"/proc/{ru}/cwd")
+    except OSError:
+        env, cwd = dict(os.environ), "/"
+    if item["emu"] == "RetroArch":
+        sway_cmd("focus output " + TOP_OUTPUT)    # RetroArch öffnet dort, wo der Fokus liegt
+    subprocess.Popen(args, env=env, cwd=cwd, start_new_session=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), item["emu"])
+
+
+def fast_fullscreen():
+    """Zusatzspiel: Fenster ins Vollbild (ohne ES landete DraStic sonst als Fenster)."""
+    g = running_game()
+    if not g:
+        return
+    cons = sway_windows(set(proc_tree(g["pid"])))
+    if g.get("emu") == "DraStic":
+        mode = "fullscreen enable global"          # DraStic: beide Bildschirme
+    elif g.get("emu") == "RetroArch":
+        mode = "move to output %s, fullscreen enable" % TOP_OUTPUT
+    else:
+        mode = "fullscreen enable"
+    cmds = [f"[con_id={c}] {mode}, focus" for c, _o in cons]
+    tm = touch_map(g.get("emu"))
+    if tm:
+        cmds.append(tm)
+    if cmds:
+        sway_cmd("; ".join(cmds))
+
+
+def fast_resume():
+    """Anker zurückholen und aufwecken."""
+    full = "fullscreen enable global" if FROZEN.get("emu") == "DraStic" else "fullscreen enable"
+    cmds = []
+    for x in FROZEN["cons"]:
+        con, out, ws = (list(x) + [None, None])[:3]
+        if isinstance(ws, str) and ws != FAST_PARK:
+            cmds.append(f"[con_id={con}] move container to workspace {ws}, {full}")
+        else:
+            cmds.append(f"[con_id={con}] {full}")
+    tm = touch_map(FROZEN.get("emu"))             # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
+    if tm:
+        cmds.append(tm)
+    top = next((x[0] for x in FROZEN["cons"] if x[1] == TOP_OUTPUT), None)
+    if top:
+        cmds.append(f"[con_id={top}] focus")
+    if cmds:
+        sway_cmd("; ".join(cmds))                 # ein Aufruf: Reihenfolge bleibt erhalten
+    n = evdev_flush(FROZEN["pids"])
+    for p in reversed(FROZEN["pids"]):
+        try:
+            os.kill(p, signal.SIGCONT)
+        except OSError:
+            pass
+    log("Schnellwechsel: Anker aufgeweckt", FROZEN["name"], "(%d alte Eingaben verworfen)" % n)
+    FROZEN.update(pids=[], runemu=None, rom=None, name=None, emu=None, cons=[])
+    try:
+        os.remove(FAST_STATE)
+    except OSError:
+        pass
+
+
+def fast_recover():
+    """Nach einem Neustart des CC: eingefrorenes Spiel nie zurücklassen."""
+    try:
+        st = json.loads(rd(FAST_STATE) or "")
+    except ValueError:
+        return
+    FROZEN.update(st)
+    log("Schnellwechsel: eingefrorenes Spiel vom letzten Lauf gefunden – aufwecken")
+    fast_resume()
+
+
+def fast_quit_anchor():
+    """Zusatzspiel wurde außerhalb des Gameswitchers beendet (Home, Spielmenü, CC): auch den Anker beenden,
+    damit man wie gewohnt in ES landet. Fenster sofort weg (nicht nochmal zeigen), SIGTERM vormerken, dann aufwecken –
+    ein eingefrorener Prozess bekommt das Signal erst beim Aufwecken."""
+    name, pids = FROZEN["name"], list(FROZEN["pids"])   # Fenster liegen schon auf dem unsichtbaren Arbeitsbereich
+    for sig in (signal.SIGTERM, signal.SIGCONT):
+        for p in reversed(pids):
+            try:
+                os.kill(p, sig)
+            except OSError:
+                pass
+    FROZEN.update(pids=[], runemu=None, rom=None, name=None, emu=None, cons=[])
+    try:
+        os.remove(FAST_STATE)
+    except OSError:
+        pass
+    log("Schnellwechsel: Zusatzspiel beendet – Anker ebenfalls beendet, zurück zu ES:", name)
+
+
+def fast_watch():
+    """Wird das Zusatzspiel außerhalb des Gameswitchers beendet, wird auch der Anker beendet (zurück zu ES)."""
+    while True:
+        time.sleep(0.25)
+        if FROZEN["pids"] and not FROZEN["busy"]:
+            if not os.path.exists("/proc/%d" % FROZEN["pids"][-1]):
+                FROZEN.update(pids=[], cons=[])     # Anker gibt es nicht mehr
+                continue
+            if _running_emu() is None:
+                time.sleep(0.25)
+                if _running_emu() is None and not FROZEN["busy"]:
+                    fast_quit_anchor()
+
+
+def fast_end_extra(game):
+    """Zusatzspiel sicher beenden, bevor der Anker zurückkommt. Erst normal (Stand ist über den Gameswitcher schon
+    gesichert), nach 3 s hart samt Startskript und Helfern – sonst liefen zwei Spiele gleichzeitig (Ton, Eingaben)."""
+    ru = runemu_of(game["pid"])
+    tree = [p for p in proc_tree(ru or game["pid"]) if p not in FROZEN["pids"]]
+    for p in tree:                                   # angehalten (Pause) käme SIGTERM nie an
+        try:
+            os.kill(p, signal.SIGCONT)
+        except OSError:
+            pass
+    quit_game(game)
+    _wait_gone(game["pid"], 3.0)
+    if os.path.exists("/proc/%d" % game["pid"]):
+        log("Schnellwechsel: Zusatzspiel reagiert nicht – hart beenden", game.get("name"))
+        for p in tree:
+            try:
+                os.kill(p, signal.SIGKILL)
+            except OSError:
+                pass
+        _wait_gone(game["pid"], 2.0)
+    if os.path.exists("/proc/%d" % game["pid"]):
+        log("Schnellwechsel: Zusatzspiel läuft weiter – Abbruch")
+        return False
+    return True
+
+
+def _wait_gone(pid, limit=6.0):
+    end = time.time() + limit
+    while time.time() < end and os.path.exists("/proc/%d" % pid):
+        time.sleep(0.1)
+
+
+GS_LAUNCHED = {"rom": None, "t": 0.0}          # zuletzt vom Gameswitcher gestartetes Spiel
+
+
+def drastic_autoload(game):
+    """DraStic kennt kein Auto-Laden. Wird ein Spiel aus ES gestartet, für das es einen Savestate auf Platz 0 gibt
+    (den nutzt auch der Gameswitcher), diesen nachladen (L2) – nur mit „Auto-Laden“ in ES. Ton aus, bis geladen,
+    damit es nicht nach einem Neustart des Spiels aussieht."""
+    rom = game.get("rom")
+    if not rom or not autosave_on(rom):
+        return
+    if GS_LAUNCHED["rom"] == rom and time.time() - GS_LAUNCHED["t"] < 15:   # Start dauert ≈ 3 s
+        return                                       # vom Gameswitcher gestartet – der lädt selbst
+    if not os.path.exists(drastic_auto_slot(game)):
+        return
+    spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])
+    try:
+        env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+        end = time.time() + 15
+        while time.time() < end:
+            try:
+                if '"drastic"' in subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                                 capture_output=True, text=True).stdout.lower():
+                    break
+            except Exception:
+                pass
+            time.sleep(0.1)
+        time.sleep(gs_wait("drastic", 0.3))
+        if os.path.exists("/proc/%d" % game["pid"]):
+            drastic_io(game, SLOT, "load", gs_wait("drastic_after", 0.5))
+            log("DraStic: Auto-Laden aus ES –", game.get("name"))
+    finally:
+        spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"])
+
+
+def drastic_watch():
+    """Neu gestartetes DraStic sofort erkennen (die Hauptschleife prüft nur alle 2 s – zu spät fürs Nachladen)."""
+    seen = set()
+    while True:
+        time.sleep(0.4)
+        try:
+            pids = [int(p) for p in (run(["pidof", "drastic"]) or "").split()]
+        except Exception:
+            pids = []
+        for pid in pids:
+            if pid in seen:
+                continue
+            seen.add(pid)
+            if FROZEN["busy"] or pid in FROZEN["pids"]:
+                continue
+            g = _running_emu()
+            if g and g["pid"] == pid and (g.get("played") or 99) < 5:
+                drastic_autoload(g)
+        seen &= set(pids)
+
+
+def gs_wait(name, default):
+    """Wartezeit im Gameswitcher; zum Ausprobieren überschreibbar mit /tmp/rds-gs-timing.json
+    (z. B. {"dsperate": 0.4}) – ohne Neustart, gilt ab dem nächsten Wechsel."""
+    try:
+        return float(json.loads(rd("/tmp/rds-gs-timing.json") or "{}").get(name, default))
+    except (ValueError, TypeError, AttributeError):
+        return default
+
+
 class Switcher:
     """Zuletzt gespielte Spiele: speichern beim Öffnen, fortsetzen (A) oder neu starten (Y)."""
 
@@ -1642,17 +2087,23 @@ class Switcher:
     def load(self):
         try:
             with open(GS_HISTORY) as f:
-                self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))][:GS_MAX]
+                self.items = [i for i in json.load(f) if os.path.exists(i.get("rom", ""))
+                          and not is_rds_port(i.get("rom"))][:GS_MAX]
         except (OSError, ValueError):
             self.items = []
         changed = False
         for i in self.items:
+            icon = game_meta(i["rom"])[1]          # Bild aus der aktuellen gamelist.xml (Artwork Manager)
+            if icon and icon != i.get("icon"):
+                i["icon"] = icon
+                changed = True
             emu = es_emulator(i["rom"])
             if emu and emu != i.get("emu"):
                 # In ES auf einen anderen Emulator gewechselt: dessen eigenen Stand nutzen,
                 # Vorschau vom alten Emulator passt nicht mehr → Spielbild statt Screenshot
                 log("Gameswitcher: Emulator gewechselt", i["name"], i.get("emu"), "->", emu)
                 i["emu"], i["shot"] = emu, None
+                i.pop("launch", None)              # gemerkter Startbefehl gehört zum alten Emulator
                 changed = True
         if changed:
             try:
@@ -1670,12 +2121,18 @@ class Switcher:
     def remember(self, game, shot=None):
         """Laufendes Spiel oben in die Liste setzen."""
         rom = game.get("rom") or rom_of(game["pid"])
-        if not rom:
+        if not rom or is_rds_port(rom):              # RDS-Werkzeuge (Dual/Single, Installer …) sind keine Spiele
             return
         old = next((i for i in self.items if i["rom"] == rom), {})
         entry = {"rom": rom, "name": game["name"], "system": game.get("system", ""),
                  "emu": game["emu"], "icon": game.get("icon"), "time": time.time(),
                  "shot": shot or old.get("shot")}
+        ru = runemu_of(game["pid"]) if game.get("pid") else None
+        args = _cmdline(ru) if ru else []
+        if rom in args:                                   # Startbefehl merken (für den Schnellwechsel)
+            entry["launch"] = args
+        elif old.get("launch") and old.get("emu") == game["emu"]:
+            entry["launch"] = old["launch"]
         self.items = [entry] + [i for i in self.items if i["rom"] != rom]
         self.items = self.items[:GS_MAX]
         self.save()
@@ -1693,7 +2150,7 @@ class Switcher:
         if not game:
             return
         rom = game.get("rom") or rom_of(game["pid"])
-        if not rom:
+        if not rom or is_rds_port(rom):
             return
         os.makedirs(GS_DIR, exist_ok=True)
         shot = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
@@ -1701,7 +2158,7 @@ class Switcher:
         if emu == "RetroArch":
             ra_command(f"SAVE_STATE_SLOT {SLOT}")
             png = os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
-                               os.path.splitext(os.path.basename(rom))[0] + f".state{SLOT}.png")
+                               os.path.splitext(os.path.basename(rom))[0] + (f".state{SLOT}.png" if SLOT else ".state.png"))
             for _ in range(15):          # Vorschaubild abwarten
                 time.sleep(0.1)
                 if os.path.exists(png) and time.time() - os.path.getmtime(png) < 5:
@@ -1714,20 +2171,15 @@ class Switcher:
             grim = subprocess.Popen(["grim", "-l", "1", "-o", "DSI-2", shot],
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if emu == "DraStic":
-                dss = os.path.join("/storage/roms/savestates/nds",
-                                   os.path.splitext(os.path.basename(rom))[0] + "_0.dss")
-                before = os.path.getmtime(dss) if os.path.exists(dss) else 0
-                inject_keys([(313, 1), 0.1, (313, 0)])   # R2 = Speicherstand
-                for _ in range(30):                        # nur so lange warten, bis die Datei fertig ist
-                    time.sleep(0.1)
-                    if os.path.exists(dss) and os.path.getmtime(dss) > before:
-                        time.sleep(0.2)                    # Schreiben abschließen lassen
-                        break
+                drastic_auto_slot(game)
+                drastic_io(game, SLOT, "save")              # automatischer Stand: Platz 0, nie die Nutzer-Slots 1–9
+            t_g = time.monotonic()
             try:
                 grim.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 grim.kill()
-            log("Gameswitcher: Aufnahme + Speichern in %.1f s" % (time.monotonic() - t0))
+            log("Gameswitcher: Aufnahme + Speichern in %.1f s (Screenshot wartete noch %.2f s)" % (
+                time.monotonic() - t0, time.monotonic() - t_g))
         self.remember(game, shot if os.path.exists(shot) else None)
         log("Gameswitcher: gespeichert", emu, os.path.basename(rom))
 
@@ -1743,16 +2195,16 @@ class Switcher:
                     seen = True
                     log("Gameswitcher: RetroArch-Prozess nach %.1f s" % (time.monotonic() - t0))
                     # Sicherheitsnetz: falls Sway es unten geöffnet hat, nach oben holen
-                    sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT)
+                    sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT + ', focus')
                 st = ra_command("GET_STATUS", reply=True)
                 if st and "PLAYING" in st:
                     log("Gameswitcher: RetroArch laeuft nach %.1f s" % (time.monotonic() - t0))
-                    sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT)   # Fenster existiert jetzt sicher
+                    sway_cmd('[title="^RetroArch"] move to output ' + TOP_OUTPUT + ', focus')   # Fenster existiert jetzt sicher
                     if fresh:
                         time.sleep(0.5)
                         ra_command("RESET")      # Auto-Laden übergehen (Ladebildschirm verdeckt es)
                     elif not autosave_on(item["rom"]):
-                        time.sleep(1.5)          # ohne Auto-Laden: unseren Slot nachladen
+                        time.sleep(gs_wait("retroarch_slot", 1.5))   # ohne Auto-Laden: unseren Slot nachladen
                         ra_command(f"LOAD_STATE_SLOT {SLOT}")
                     # sonst hat RetroArch den Auto-Stand schon beim Start geladen (wie bei Onion)
                     log("Gameswitcher: Stand bereit nach %.1f s" % (time.monotonic() - t0))
@@ -1780,9 +2232,10 @@ class Switcher:
                 item["emu"] = other
                 return self.resume_steps(item, fresh)
             log("Gameswitcher: DraStic-Fenster nach %.1f s" % (time.monotonic() - t0))
-            time.sleep(0.7)
-            inject_keys([(312, 1), 0.1, (312, 0)])   # L2 = laden (einmal – doppelt ließ die Musik springen)
-            time.sleep(0.5)                          # Laden abschließen, bevor der Ton zurückkommt
+            time.sleep(gs_wait("drastic", 0.3))
+            g = {"rom": item["rom"]}
+            drastic_auto_slot(g)
+            drastic_io(g, SLOT, "load", gs_wait("drastic_after", 0.5))   # einmal laden (doppelt ließ die Musik springen)
             log("Gameswitcher: Stand geladen nach %.1f s" % (time.monotonic() - t0))
         else:
             # DSperate lädt selbst (autoload), Ports/andere: warten bis der Prozess läuft + kurz Luft
@@ -1817,18 +2270,63 @@ class Switcher:
             log("Gameswitcher: %s-Fenster %s nach %.1f s" % (emu, "da" if found else "nicht erkannt",
                                                                time.monotonic() - t0))
             if found:
-                time.sleep(0.8)   # Luft fürs Autoload, bevor der Ladebildschirm geht
+                time.sleep(gs_wait("dsperate", 0.8))   # Luft fürs Autoload, bevor der Ladebildschirm geht
             else:
                 time.sleep(max(0.0, wend - time.time()))
             log("Gameswitcher: %s bereit nach %.1f s" % (emu, time.monotonic() - t0))
+
+    def fast_switch(self, item, fresh, current, t0):
+        """Schnellwechsel zwischen DS-Emulatoren. True = erledigt, False = normaler Weg."""
+        FROZEN["busy"] = True
+        try:
+            if FROZEN["pids"]:                                    # current ist das Zusatzspiel
+                if not fast_end_extra(current):
+                    return True                                   # Zusatzspiel lässt sich nicht beenden → Wechsel abbrechen
+                if item["rom"] == FROZEN["rom"]:
+                    fast_resume()                                 # zurück zum Anker
+                    log("Gameswitcher: Schnellwechsel zurück nach %.1f s" % (time.monotonic() - t0))
+                    return True
+                args = launch_args(item) if item["emu"] != FROZEN.get("emu") else None
+                if args and mem_available_mb() >= FAST_MIN_MB:
+                    fast_start(item, args)                        # anderes Zusatzspiel, Anker bleibt eingefroren
+                    self.resume_steps(item, fresh)
+                    fast_fullscreen()
+                    log("Gameswitcher: Schnellwechsel (Zusatzspiel) fertig nach %.1f s" % (time.monotonic() - t0))
+                    return True
+                fast_resume()                                     # sonst: Anker zurück, dann normaler Weg
+                time.sleep(0.5)
+                return running_game() or False
+            emus_ok = current.get("emu") in FAST_ALL and item["emu"] in FAST_ALL and current.get("emu") != item["emu"]
+            mem = mem_available_mb()
+            if not emus_ok or mem < FAST_MIN_MB:
+                log("Gameswitcher: kein Schnellwechsel (%s, %d MB frei)" % (
+                    "Emulatoren" if not emus_ok else "Speicher", mem))
+                return False
+            FROZEN.update(runemu=runemu_of(current["pid"]), rom=current.get("rom"), emu=current.get("emu"))
+            args = launch_args(item)               # vor dem Einfrieren klären, sonst gar nicht erst parken
+            FROZEN.update(runemu=None, rom=None, emu=None)
+            if not args:
+                log("Gameswitcher: kein Schnellwechsel (kein Startbefehl gemerkt für %s)" % item.get("name"))
+                return False
+            if not fast_freeze(current):
+                return False
+            fast_start(item, args)
+            self.resume_steps(item, fresh)
+            fast_fullscreen()
+            log("Gameswitcher: Schnellwechsel fertig nach %.1f s (%d MB frei)" % (time.monotonic() - t0, mem_available_mb()))
+            return True
+        finally:
+            FROZEN["busy"] = False
 
     def launch(self, item, fresh, current=None):
         """Laufendes Spiel beenden (speichert vorher), dann item starten.
         Setzt self.done, wenn das Spiel läuft und der Stand geladen ist (Ladebildschirm weg)."""
         self.done = False
+        GS_LAUNCHED.update(rom=item["rom"], t=time.time())
         ini = "/storage/.config/dsperate/dsperate.ini"
 
         def work():
+            nonlocal current                    # kann beim Schnellwechsel auf den Anker wechseln
             spawn(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"])   # Startton/Musik nicht hören
             before = {p: rd(p) for p in CPU_GOV + GPU_GOV}
             restore = None
@@ -1844,21 +2342,35 @@ class Switcher:
                     if "autoload = true" in txt:
                         restore = txt
                         wr(ini, txt.replace("autoload = true", "autoload = false"))
+                if current and fast_enabled():
+                    res = self.fast_switch(item, fresh, current, t0)
+                    if res is True:
+                        return
+                    if isinstance(res, dict):
+                        current = res                             # Anker wieder da → normaler Wechsel von dort
                 chained = False
                 if current:
-                    # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau)
-                    try:
-                        wr(CHAIN_FILE, item["rom"] + "\n")
-                    except OSError:
-                        pass
+                    # Gepatchtes ES startet das nächste Spiel direkt nach dem Beenden (ohne Neuaufbau).
+                    # Nach DraStic stimmt dabei die Touch-Zuordnung nicht (ROCKNIX-Regel, ES setzt sie nur beim
+                    # Neuaufbau zurück) – das korrigiert touch_map unten, sobald DraStic weg ist.
+                    chain_req = gs_wait("chain_drastic", 1) >= 1 or current.get("emu") != "DraStic"
+                    if chain_req:
+                        try:
+                            wr(CHAIN_FILE, item["rom"] + "\n")
+                        except OSError:
+                            chain_req = False
                     quit_game(current)
                     for _ in range(60):
                         if not running_game():
                             break
                         time.sleep(0.15)
                     log("Gameswitcher: altes Spiel beendet nach %.1f s" % (time.monotonic() - t0))
+                    if current.get("emu") == "DraStic":
+                        tm = touch_map(item["emu"])         # Touch wieder richtig zuordnen (vor dem nächsten Start)
+                        if tm:
+                            sway_cmd(tm)
                     # Hat ES den Auftrag übernommen? (Datei weg = gelesen)
-                    for _ in range(20):
+                    for _ in range(20 if chain_req else 0):
                         if not os.path.exists(CHAIN_FILE):
                             chained = True
                             break
@@ -1891,6 +2403,9 @@ class Switcher:
                             break
                         time.sleep(0.1)
                     self.resume_steps(item, fresh)
+                    if item["emu"] == "DraStic":
+                        # Sicherheitsnetz: DraStic landete auf dem RG DS gelegentlich als Fenster
+                        sway_cmd('[app_id="drastic"] fullscreen enable global')
                 log("Gameswitcher: Wechsel fertig nach %.1f s" % (time.monotonic() - t0))
             except Exception:
                 log("Gameswitcher: Fehler beim Wechsel:\n" + traceback.format_exc().rstrip())
@@ -2176,7 +2691,8 @@ def drastic_shortcuts():
     return rows
 GAME_BIG = ("save", "load")      # große Kacheln, alles andere als Symbol
 GAME_HINT_DONE = "/storage/.config/retrodualstation/spiel-hinweis.done"
-SLOTS_USER = 9          # Slot 0–8 für den Nutzer, Slot 9 = Gameswitcher (SLOT)
+SLOT_ICON = -2          # Laden-Menü: Kachel mit dem Spiel-Icon (oben links, nicht wählbar)
+SLOTS_USER = 9          # Nutzer-Slots 1–9 (intern Index 0–8 → Platz Index+1), Platz 0 = automatisch (SLOT)
 SHOT_DIR = "/storage/roms/screenshots"
 
 
@@ -2192,6 +2708,60 @@ def drastic_base_slot():
 def drastic_slot_path(game, n):
     rom = game.get("rom") or (rom_of(game["pid"]) if game.get("pid") else "") or ""
     return os.path.join("/storage/roms/savestates/nds", "%s_%d.dss" % (os.path.splitext(os.path.basename(rom))[0], n))
+
+
+def drastic_io(game, n, key, after=0.5):
+    """DraStic speichert/lädt per Taste (R2/L2) nur in seinen eingestellten Platz b. Für Platz n: b sichern,
+    bei „load“ n nach b kopieren, Taste drücken, bei „save“ b nach n kopieren, b unverändert zurück.
+    So fasst der Gameswitcher (Platz 9) nie die Slots des Nutzers an. True = erledigt."""
+    b = drastic_base_slot()
+    fb, fn = drastic_slot_path(game, b), drastic_slot_path(game, n)
+    if key == "load" and not os.path.exists(fn):
+        return False
+    bak = fb + ".rdsbak"
+    had_b = os.path.exists(fb)
+    if n != b and had_b:
+        shutil.copy2(fb, bak)
+    ok = False
+    try:
+        if key == "load" and n != b:
+            shutil.copy2(fn, fb)
+        before = os.path.getmtime(fb) if os.path.exists(fb) else 0
+        code = 313 if key == "save" else 312            # R2 speichern, L2 laden
+        t_key = time.monotonic()
+        inject_keys([(code, 1), 0.1, (code, 0)])
+        if key == "load":
+            time.sleep(after)                            # DraStic liest die Datei
+            ok = True
+        else:
+            for _ in range(40):                          # warten, bis die Datei geschrieben ist
+                time.sleep(0.1)
+                if os.path.exists(fb) and os.path.getmtime(fb) > before:
+                    t_file, size = time.monotonic(), -1
+                    while time.monotonic() - t_file < 1.0:   # fertig = Größe ändert sich nicht mehr
+                        time.sleep(0.05)
+                        now = os.path.getsize(fb)
+                        if now == size:
+                            break
+                        size = now
+                    log("DraStic-Stand Platz %d – Datei nach %.2f s, fertig nach %.2f s" % (
+                        n, t_file - t_key, time.monotonic() - t_key))
+                    ok = True
+                    break
+            if ok and n != b:
+                shutil.copy2(fb, fn)
+    finally:
+        if n != b:
+            if had_b and os.path.exists(bak):
+                os.replace(bak, fb)                      # Platz b unverändert zurück
+            elif not had_b and os.path.exists(fb):
+                os.remove(fb)                            # war vorher leer
+    return ok
+
+
+def drastic_auto_slot(game):
+    """Pfad des automatischen Stands (Platz 0 – derselbe, den DraStic per Kürzel als Schnellspeicher nutzt)."""
+    return drastic_slot_path(game, SLOT)
 
 
 def nds_gamecode(rom):
@@ -3328,7 +3898,7 @@ class ControlCenter:
                 log("Helligkeit wiederhergestellt:", b.name, v, "%")
         self.page = 0
         self.focus = 1          # Zeile auf Seite 1 (0 = Darstellung oben)
-        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration
+        self.top_sel = 0        # 0 = Hell/Dunkel, 1 = Akzentfarbe, 2 = Vibration, 3 = Schnellwechsel
         self.tile = 0           # Spalte in der Kachelzeile
         self.values = {}
         self.perf = 1
@@ -3351,6 +3921,7 @@ class ControlCenter:
         self.slot_pick = None     # Auswahl im Slot-Menü (None = zu)
         self.slot_mode = "save"   # Slot-Menü für "save" oder "load"
         self.del_confirm = None   # Slot, der beim zweiten X gelöscht wird
+        self.save_confirm = None  # belegter Slot, der beim zweiten A überschrieben wird
         self.ghelp = False        # Tastenbelegung offen
         self.toasts = []          # wartende Meldungen oben: {"kind": "volume"|"cheevo", ...}
         self.toast_now = None     # angezeigte Meldung
@@ -3428,6 +3999,26 @@ class ControlCenter:
         save_config(self.cfg)
         haptic("open")                                       # beim Einschalten spürbar bestätigen
 
+    def toggle_fast(self):
+        """Schnellwechsel an/aus (Datei FAST_FLAG). Nie umschalten, solange ein Spiel geparkt ist – sonst bliebe
+        ein eingefrorenes Spiel ohne Aufsicht zurück. zram bleibt nach dem Ausschalten bis zum Neustart aktiv."""
+        if FROZEN["pids"] or FROZEN["busy"]:
+            info_toast(tr("Erst das geparkte Spiel beenden"), "switch")
+            return
+        try:
+            if fast_enabled():
+                os.remove(FAST_FLAG)
+            else:
+                os.makedirs(os.path.dirname(FAST_FLAG), exist_ok=True)
+                open(FAST_FLAG, "w").close()
+                threading.Thread(target=zram_setup, daemon=True).start()
+        except OSError as exc:
+            log("Schnellwechsel umschalten:", exc)
+        on = fast_enabled()
+        log("Schnellwechsel", "an" if on else "aus")
+        info_toast(tr("Schnellwechsel an" if on else "Schnellwechsel aus"), "switch")
+        haptic("open")
+
     def apply_auto_theme(self):
         """Farben nach dem Modus setzen (beim Öffnen und regelmäßig) – gemeinsame Regel: resolve_colors."""
         before = (getattr(self, "T", None), getattr(self, "accent", None))   # auch beim Start (accent noch nicht gesetzt)
@@ -3473,7 +4064,7 @@ class ControlCenter:
         """Beim Schließen des Overlays: Tastatur und Untermenü verlassen."""
         self.kbd = None
         self.slot_pick = None
-        self.del_confirm = None
+        self.del_confirm = self.save_confirm = None
         self.ghelp = False
         self.ra_detail = False
         self.back()
@@ -3508,7 +4099,7 @@ class ControlCenter:
     def details(self):
         if self.page == 1 and self.slot_pick is not None:
             n = self.slot_pick
-            if not self._slot_exists(n):
+            if n < 0 or not self._slot_exists(n):        # automatischer Stand: nicht löschbar
                 return
             if self.del_confirm != n:
                 self.del_confirm = n          # erst beim zweiten X wirklich löschen
@@ -3578,10 +4169,14 @@ class ControlCenter:
         if self.page == 1 and self.ghelp:
             return
         if self.page == 1 and self.slot_pick is not None:
-            n = self.slot_pick + dx + dy * 3
-            if 0 <= n < SLOTS_USER:
-                self.slot_pick = n
-                self.del_confirm = None
+            cells, cols = self._slot_cells()
+            pos = cells.index(self.slot_pick) if self.slot_pick in cells else 0
+            p2 = pos + dx + dy * cols
+            while dx and 0 <= p2 < len(cells) and cells[p2] in (None, SLOT_ICON):
+                p2 += dx                                 # freie Plätze (Beschriftung) überspringen
+            if 0 <= p2 < len(cells) and cells[p2] not in (None, SLOT_ICON) and (cells[p2] >= 0 or self._slot_exists(cells[p2])):
+                self.slot_pick = cells[p2]
+                self.del_confirm = self.save_confirm = None
             return
         if self.page == 1:
             acts = game_actions(self.game)
@@ -3612,7 +4207,7 @@ class ControlCenter:
         elif kind == "tiles":
             self.tile = max(0, min(len(TILES) - 1, self.tile + dx))
         elif kind == "top":
-            self.top_sel = max(0, min(2, self.top_sel + dx))
+            self.top_sel = max(0, min(3, self.top_sel + dx))
 
     def confirm(self):
         if self.kbd:
@@ -3631,6 +4226,8 @@ class ControlCenter:
             return
         if self.page == 1 and self.slot_pick is not None:
             if self.slot_mode == "load" and not self._slot_exists(self.slot_pick):
+                return
+            if self._needs_save_confirm(self.slot_pick):
                 return
             return ("game", "setslot")
         if self.page == 1:
@@ -3653,7 +4250,7 @@ class ControlCenter:
         elif kind == "top":
             if self.top_sel == -1:
                 return "power"
-            (self.toggle_theme, self.open_colors, self.toggle_haptics)[self.top_sel]()
+            (self.toggle_theme, self.open_colors, self.toggle_haptics, self.toggle_fast)[self.top_sel]()
 
     def turn_page(self, d):
         if self.sub:
@@ -3741,7 +4338,7 @@ class ControlCenter:
                 self.page = val
             elif kind == "top":
                 self.focus, self.top_sel = 0, val
-                (self.toggle_theme, self.open_colors, self.toggle_haptics)[val]()
+                (self.toggle_theme, self.open_colors, self.toggle_haptics, self.toggle_fast)[val]()
             elif kind == "power_btn":
                 return "power"
             elif kind == "quit":
@@ -3769,6 +4366,8 @@ class ControlCenter:
                 if self.slot_mode == "load" and not self._slot_exists(val):
                     return
                 self.slot_pick = val
+                if self._needs_save_confirm(val):
+                    return
                 return ("game", "setslot")
 
     def _hit(self, x, y):
@@ -3828,8 +4427,11 @@ class ControlCenter:
         elif self.page == 1 and self.ghint and self.game:
             left = [("A", "Verstanden")]
         elif self.page == 1 and self.slot_pick is not None:
-            left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
-            if self._slot_exists(self.slot_pick):
+            if self.slot_mode == "save" and self._slot_exists(self.slot_pick):
+                left = [("A", "nochmal: überschreiben" if self.save_confirm == self.slot_pick else "überschreiben")]
+            else:
+                left = [("A", "speichern" if self.slot_mode == "save" else "laden")]
+            if self.slot_pick >= 0 and self._slot_exists(self.slot_pick):
                 left.append(("X", "nochmal: löschen" if self.del_confirm == self.slot_pick else "löschen"))
             left.append(("B", "zurück"))
         elif self.page == 1 and game_actions(self.game):
@@ -3923,11 +4525,17 @@ class ControlCenter:
 
         # Darstellung: Hell/Dunkel und Akzentfarbe
         top_focus = self.rows()[self.focus][0] == "top"
-        for i in (2, 1, 0):
+        for i in (3, 2, 1, 0):
             x -= 54
             cx = x + 27
             P.circle(cx, 97, 27, T["pill"])
-            if i == 2:   # Vibration: Gerät mit Wellen, aus = durchgestrichen
+            if i == 3:   # Schnellwechsel: Pfeile hin und her, aus = durchgestrichen
+                on = fast_enabled()
+                col = T["text"] if on else T["muted"]
+                P.game_icon("switch", cx, 97, col)
+                if not on:
+                    P.poly([(cx - 15, 83), (cx - 12, 80), (cx + 15, 109), (cx + 12, 112)], col)
+            elif i == 2:   # Vibration: Gerät mit Wellen, aus = durchgestrichen
                 col = T["text"] if HAPTIC_ON[0] else T["muted"]
                 P.rrect(cx - 6, 85, 12, 24, 3, col)
                 for sgn in (-1, 1):
@@ -4502,11 +5110,11 @@ class ControlCenter:
         if g.get("emu") in SLOT_EMUS:
             used = [n for n in range(SLOTS_USER) if self._slot_exists(n)]
             if key == "save":
-                return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % self.slot if used else tr("Slot wählen")
+                return tr("Slot wählen") + "  ·  " + tr("Zuletzt") + " Slot %d" % (self.slot + 1) if used else tr("Slot wählen")
             if not used:
                 return tr("Kein Spielstand")
             n = max(used, key=lambda n: os.path.getmtime(self._slot_file(n)))
-            return "Slot %d  ·  %s" % (n, when(self._slot_file(n)))
+            return "Slot %d  ·  %s" % (n + 1, when(self._slot_file(n)))
         if g.get("emu") == "DSperate":
             st = nds_state_newest(g)
             if st:
@@ -4568,8 +5176,24 @@ class ControlCenter:
                 os.remove(path)
             except OSError:
                 pass
-        log("Seite Spiel: Slot", n, "gelöscht")
+        log("Seite Spiel: Slot", n + 1, "gelöscht")
         self.del_confirm = None
+
+    def _slot_cells(self):
+        """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9). Laden 4 Spalten: Spiel-Icon, Slot 1–9 (Slot 9 unter
+        Slot 5), dann die Fläche „Automatischer Speicherpunkt“ mit der Automatisch-Kachel (Spalten 3–4)."""
+        if self.slot_mode == "load":
+            return [SLOT_ICON] + list(range(SLOTS_USER)) + [None, -1], 4
+        return list(range(SLOTS_USER)), 3
+
+    def _needs_save_confirm(self, n):
+        """Speichern auf einen belegten Slot: erst beim zweiten A bzw. Tippen überschreiben."""
+        if self.slot_mode != "save" or not self._slot_exists(n) or self.save_confirm == n:
+            self.save_confirm = None
+            return False
+        self.save_confirm = n
+        self.changed = True
+        return True
 
     def _slot_exists(self, n):
         f = self._slot_file(n)
@@ -4581,38 +5205,82 @@ class ControlCenter:
         rom = g.get("rom") or (rom_of(g["pid"]) if g.get("pid") else None)
         if not rom:
             return None
+        n += 1                                  # Index 0–8 → Platz 1–9, Index -1 → Platz 0 (automatisch)
         if g.get("emu") == "DraStic":
             return drastic_slot_path(g, n)
         if g.get("emu") == "DSperate":
             if g.get("_code") is None:
                 g["_code"] = nds_gamecode(rom) or ""
-            return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n)) if g["_code"] else None
+            if not g["_code"]:
+                return None
+            if n == 0:                          # DSperate legt seinen automatischen Stand selbst an (.auto)
+                return os.path.join("/storage/roms/savestates/nds", "%s.auto.dss" % g["_code"])
+            return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n))
         return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
 
     def _draw_slots(self, P):
-        """Slot-Menü: Plätze 0–8 mit Vorschaubild (Slot 9 gehört dem Gameswitcher)."""
+        """Slot-Menü: Slots 1–9 mit Vorschaubild; beim Laden zusätzlich „Automatisch“ (Platz 0, geschützt),
+        gleich groß und bündig unter Slot 8."""
         T, A = self.T, self.accent
         # Kopfzeile ist im Slot-Menü leer: Titel nach oben, Kacheln nutzen die volle Höhe bis über die Fußzeile
         P.text("Speichern in …" if self.slot_mode == "save" else "Laden aus …", 26, 45, 62, T["text"], bold=True)
-        cols, gap = 3, 22
+        cells, cols = self._slot_cells()
+        gap = 22
         top, bottom = 88, 795
         tw, th = (1170 - gap * (cols - 1)) / cols, (bottom - top - gap * 2) / 3
-        for n in range(SLOTS_USER):
-            tx = 45 + (n % cols) * (tw + gap)
-            ty = top + (n // cols) * (th + gap)
-            cur = n == self.slot
-            usable = self.slot_mode == "save" or self._slot_exists(n)
+        if -1 in cells:
+            # Fläche in der Theme-Farbe über die letzten beiden Spalten: Beschriftung links, „Automatisch“ rechts
+            pos = cells.index(-1)
+            ax = 45 + (pos % cols) * (tw + gap)          # Spalte von Slot 7 (darüber)
+            py = top + (pos // cols) * (th + gap)
+            l1, l2 = tr("Automatischer"), tr("Speicherpunkt")
+            px = ax - tw - gap                           # links bündig mit der Spalte von Slot 6
+            cx = (px + ax) / 2                           # Text mittig im Bereich neben der Kachel
+            P.rrect(px, py, ax + tw - px, th, 20, mix(T["bg"], A, 0.35))   # rechts bündig mit der Kachel
+            fs = 32                                      # bei langen Wörtern (Deutsch) etwas kleiner
+            while fs > 22 and max(P.width(l1, fs, bold=True, raw=True), P.width(l2, fs, bold=True, raw=True)) > ax - px - 40:
+                fs -= 2
+            P.text(l1, fs, cx, py + th / 2 - fs / 4, T["text"], bold=True, align="c", raw=True)
+            P.text(l2, fs, cx, py + th / 2 + fs * 1.06, T["text"], bold=True, align="c", raw=True)
+        for pos, n in enumerate(cells):
+            if n is None:
+                continue
+            tx = 45 + (pos % cols) * (tw + gap)
+            ty = top + (pos // cols) * (th + gap)
+            if n == SLOT_ICON:                           # Spiel-Icon quadratisch in Kachelhöhe, mittig, ohne Rahmen
+                d = th
+                icon = self._game_icon()
+                if not (icon and P.image(icon, tx + (tw - d) / 2, ty, d, d, 20)):
+                    P.logo(tx + (tw - 110) / 2, ty + (th - 110) / 2, 110, T["muted"], T["bg"])
+                continue
+            w_, h_ = tw, th
+            usable = (self.slot_mode == "save" and n >= 0) or self._slot_exists(n)
             P.rrect(tx, ty, tw, th, 20, mix(T["tile"], A, 0.22) if usable else T["seg"])
             f = self._slot_file(n)
             when = None
             if f and os.path.exists(f):
                 when = time.strftime("%d.%m. %H:%M", time.localtime(os.path.getmtime(f)))
-                P.image(f + ".png", tx, ty, tw, th, 20)
+                png = f + ".png"
+                if n < 0 and (not os.path.exists(png) or os.path.getmtime(png) < os.path.getmtime(f) - 5):
+                    # automatischer Stand ohne aktuelles eigenes Bild: Bild aus dem Gameswitcher
+                    rom = (self.game or {}).get("rom") or ""
+                    png = os.path.join(GS_DIR, re.sub(r"[^\w.-]+", "_", os.path.basename(rom)) + ".png")
+                P.image(png, tx, ty, tw, th, 20)
             # Beschriftung unten auf dunklem Band
             P.rrect(tx, ty + th - 46, tw, 46, 20, A if n == self.slot_pick else "000000", 1.0 if n == self.slot_pick else 0.6)
-            label = "Slot %d" % n + ("  ·  " + when if when else "  ·  " + tr("leer"))
+            name = tr("Automatisch") if n < 0 else "Slot %d" % (n + 1)   # Anzeige 1–9, Platz 0 = automatisch
+            label = name + ("  ·  " + when if when else "  ·  " + tr("leer"))
             P.text(label, 19, tx + 18, ty + th - 16, "ffffff" if usable else T["muted"], bold=True, raw=True)
+            if n < 0:                                   # automatischer Stand: geschützt, nie löschen/überschreiben
+                P.circle(tx + tw - 32, ty + 32, 22, "000000")
+                P.game_icon("lock", tx + tw - 32, ty + 32, "ffffff")
+                if usable:
+                    if n == self.slot_pick:
+                        self._focus_ring(P, tx, ty, tw, th, 20)
+                    self.hits.append((tx, ty, tw, th, ("slotpick", n)))
+                tw, th = w_, h_
+                continue
             if when and n != self.del_confirm:          # Löschen-Knopf für Touch
                 P.circle(tx + tw - 32, ty + 32, 22, "000000")
                 P.game_icon("trash", tx + tw - 32, ty + 32, "ffffff")
@@ -4621,6 +5289,14 @@ class ControlCenter:
                 P.rrect(tx, ty, tw, th, 20, "000000", 0.6)
                 P.text(tr("Löschen?"), 24, tx + tw / 2, ty + th / 2 - 6, "ffffff", bold=True, align="c", raw=True)
                 P.text(tr("nochmal X oder tippen"), 19, tx + tw / 2, ty + th / 2 + 22, "dddddd", align="c", raw=True)
+            if n == self.save_confirm:
+                # Rückfrage in der Theme-Farbe, gedämpft: erst abdunkeln (lesbar), dann leicht einfärben
+                P.rrect(tx, ty, tw, th, 20, "000000", 0.45)
+                P.rrect(tx, ty, tw, th, 20, A, 0.35)
+                P.circle(tx + tw / 2, ty + th / 2 - 44, 26, "ffffff")
+                P.text("!", 34, tx + tw / 2, ty + th / 2 - 32, A, bold=True, align="c", raw=True)
+                P.text(tr("Überschreiben?"), 24, tx + tw / 2, ty + th / 2 + 6, "ffffff", bold=True, align="c", raw=True)
+                P.text(tr("nochmal A oder tippen"), 19, tx + tw / 2, ty + th / 2 + 34, "dddddd", align="c", raw=True)
             if n == self.slot_pick:
                 self._focus_ring(P, tx, ty, tw, th, 20)
             self.hits.append((tx, ty, tw, th, ("slotpick", n)))
@@ -5497,7 +6173,7 @@ def ra_slot_step(game, d):
         m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
         RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
     RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
-    info_toast("Slot %d" % RA_SLOT["slot"], "save")
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")   # RetroArch-Zählung = Anzeige im Kontrollcenter (0 = automatisch)
 
 
 def info_toast(text, icon="ff"):
@@ -5518,8 +6194,54 @@ def info_toast(text, icon="ff"):
             pass
 
 
+def bt_agents():
+    """Laufende rocknix-bluetooth-agent-Prozesse als [(Startzeit, pid)] – direkt aus /proc (ohne pgrep)."""
+    found = []
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            with open("/proc/%s/cmdline" % d, "rb") as f:
+                argv = [a.decode(errors="replace") for a in f.read().split(b"\0") if a]
+            if not argv or not any(os.path.basename(a) == "rocknix-bluetooth-agent" for a in argv[:2]):
+                continue
+            if not (os.path.basename(argv[0]).startswith("python") or os.path.basename(argv[0]) == "rocknix-bluetooth-agent"):
+                continue                                 # z. B. eine Shell mit dem Namen in der Befehlszeile
+            with open("/proc/%s/stat" % d) as f:
+                start = int(f.read().rsplit(")", 1)[1].split()[19])   # Feld 22: Startzeit
+            found.append((start, int(d)))
+        except (OSError, ValueError, IndexError):
+            continue
+    return sorted(found)
+
+
+def bt_agent_watch():
+    """Bluetooth-Helfer nie doppelt: runemu startet ihn nach jedem Spiel per `systemd-run` neu, `rocknix-bluetooth
+    enable` zusätzlich als Dienst. Laufen einmal zwei, beendet runemu beim nächsten Spielstart keinen mehr
+    (`kill "$NPID"` mit mehreren PIDs schlägt fehl) – so kamen nach vielen Spielen 15 Stück zusammen.
+    Alle 30 s prüfen und nur den neuesten behalten (SIGTERM gilt für systemd als sauberes Ende → kein Neustart)."""
+    while True:
+        try:
+            agents = bt_agents()
+            if len(agents) > 1:
+                for _, pid in agents[:-1]:
+                    os.kill(pid, signal.SIGTERM)
+                log("Bluetooth-Helfer:", len(agents), "laufen – ältere beendet:", [p for _, p in agents[:-1]])
+        except Exception as exc:
+            log("Bluetooth-Helfer:", exc)
+        time.sleep(30)
+
+
+DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rgds.conf"   # vorhanden = Dual-Modus (es-switch-helper.sh)
+
+
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
+    if not os.path.exists(DUAL_DROPIN):
+        # Single-Modus (Original-ES): CC, Gameswitcher und Power-Menü ruhen – keine Tasten, keine Vibration.
+        # Die Power-Taste übernimmt wieder ROCKNIX (es-switch-helper.sh entfernt dafür die logind-Einstellung).
+        log("Single-Modus – Kontrollcenter ruht")
+        return
     try:   # Diagnose bei Hängern: pkill -USR1 -f rds_cc.py → Stelle aller Threads ins Journal
         import faulthandler, signal
         faulthandler.register(signal.SIGUSR1, all_threads=True)
@@ -5529,6 +6251,12 @@ def main():
     vkey_open()
     cc = ControlCenter()
     INFO_TOAST[:] = [cc]
+    fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
+    threading.Thread(target=drastic_watch, daemon=True).start()   # DraStic: Auto-Laden beim Start aus ES
+    threading.Thread(target=bt_agent_watch, daemon=True).start()  # Bluetooth-Helfer nie mehrfach
+    threading.Thread(target=fast_watch, daemon=True).start()      # wirkt nur bei geparktem Spiel
+    if fast_enabled():
+        threading.Thread(target=zram_setup, daemon=True).start()
     state = {"dirty": False}
 
     gs_swipe = {"from": None, "last": (0, 0)}
@@ -5600,6 +6328,69 @@ def main():
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
+
+    # Wischgeste (Test): vom oberen Rand des unteren Bildschirms nach unten → Kontrollcenter, wie bei Android.
+    # Nur in ES und in Spielen ohne Touch (DS-Emulatoren nutzen den unteren Bildschirm selbst).
+    edge = {"y": None}
+
+    def edge_swipe(t):
+        if not cc.cfg.get("swipe_open", True):
+            return
+        kind = t[0]
+        sx, sy = touch.to_surface(t[1], t[2], 4.0, 3.0)     # Bruchteile des unteren Bildschirms (4:3)
+        fy = sy / 3.0
+        if kind == "down":
+            edge["y"] = None
+            if fy <= 0.10:
+                g = running_game()
+                if not g or g.get("emu") not in ("DSperate", "DraStic", "melonDS"):
+                    edge["y"] = fy
+        elif kind == "move" and edge["y"] is not None:
+            if fy - edge["y"] >= 0.20:
+                edge["y"] = None
+                edge["swallow"] = True
+                edge["opened"] = True
+                log("Wischgeste: Kontrollcenter")
+                if cc.screen_bottom_off:
+                    cc.screen_on()
+                toggle("cc")
+                state["dirty"] = True
+        elif kind == "up":
+            edge["y"] = None
+
+    def refocus_game():
+        """Nach einer Touch-Geste: Die Berührung auf dem unteren Bildschirm nimmt RetroArch den Fokus,
+        RetroArch pausiert dann von selbst (pause_nonactive). Fokus zurückgeben und sicher weiterlaufen lassen."""
+        g = cc.game
+        if not g or g.get("emu") != "RetroArch":
+            return
+        sway_cmd('[title="^RetroArch"] focus')
+        def unpause():
+            time.sleep(0.4)
+            st = ra_command("GET_STATUS", reply=True) or ""
+            if "PAUSED" in st:
+                ra_command("PAUSE_TOGGLE")
+                log("Wischgeste: RetroArch fortgesetzt")
+        threading.Thread(target=unpause, daemon=True).start()
+
+    def edge_close(t):
+        """Offenes Kontrollcenter: vom unteren Rand nach oben wischen schließt es (Gegenstück zur Wischgeste)."""
+        if not cc.cfg.get("swipe_open", True) or cc.kbd:
+            return False
+        kind = t[0]
+        fy = touch.to_surface(t[1], t[2], 4.0, 3.0)[1] / 3.0
+        if kind == "down":
+            edge["close"] = fy if fy >= 0.90 else None
+        elif kind == "move" and edge.get("close") is not None and edge["close"] - fy >= 0.20:
+            edge["close"] = None
+            edge["swallow"] = True
+            log("Wischgeste: Kontrollcenter schließen")
+            toggle("cc")
+            state["dirty"] = True
+            return True
+        elif kind == "up":
+            edge["close"] = None
+        return False
     joy = open_event(JOYPAD_NAME)
     pads = {}   # fd -> {"name", "path", "ext", "range"}: eingebautes Joypad + externe Controller
     if joy is not None:
@@ -5677,6 +6468,8 @@ def main():
             ui.hide()
             set_grab(False)
             pauser.resume()
+            if edge.pop("opened", False):
+                refocus_game()
         else:
             if view in ("cc", "power", "switcher"):
                 haptic("open")                       # kurzes Feedback beim Öffnen (überall gleich)
@@ -5873,14 +6666,17 @@ def main():
                     speed_event(key, g)
             threading.Thread(target=later, daemon=True).start()
             return
+        idx = cc.slot
         if key == "setslot":
             target = cc.slot_pick if cc.slot_pick is not None else cc.slot
             cc.slot_pick = None
-            cc.slot = target                 # zuletzt genutzter Slot = Vorauswahl beim nächsten Mal
+            if target >= 0:
+                cc.slot = target             # zuletzt genutzter Slot = Vorauswahl beim nächsten Mal
+            idx = target                     # -1 = automatischer Stand (nur Laden)
             key = cc.slot_mode
         if emu == "RetroArch":
             # ausdrücklicher Slot – unabhängig davon, welcher Slot in RetroArch gerade eingestellt ist
-            cmd = {"save": f"SAVE_STATE_SLOT {cc.slot}", "load": f"LOAD_STATE_SLOT {cc.slot}",
+            cmd = {"save": f"SAVE_STATE_SLOT {idx + 1}", "load": f"LOAD_STATE_SLOT {idx + 1}",
                    "shot": "SCREENSHOT"}[key]
             if key == "shot":
                 # Ordner fehlt bei frischem ROCKNIX → RetroArch speichert sonst nichts.
@@ -5892,7 +6688,7 @@ def main():
                 log("Seite Spiel:", cmd)
                 return
             ok = ra_command(cmd) is not None
-            log("Seite Spiel:", cmd, "Slot", cc.slot)
+            log("Seite Spiel:", cmd, "Slot", idx + 1)
             toggle("cc")                     # erledigt → zurück ins Spiel
             if ok:
                 info_toast("Gespeichert" if key == "save" else "Geladen", "save" if key == "save" else "load")
@@ -5913,14 +6709,20 @@ def main():
                         msg = "Screenshot gespeichert"
                 elif emu == "DSperate":
                     # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
-                    n = cc.slot
+                    n = idx + 1                         # Platz 1–9, 0 = automatisch
+                    if n == 0:
+                        # DSperate lädt .auto nicht per Slot-Kürzel: auf den (unbenutzten) Platz 0 kopieren
+                        auto = cc._slot_file(-1)
+                        if not auto or not os.path.exists(auto):
+                            raise RuntimeError("DSperate: kein automatischer Stand")
+                        shutil.copy2(auto, auto.replace(".auto.dss", ".0.dss"))
                     step = "slot_next" if n > cc.dsp_slot else "slot_prev"
                     for _ in range(abs(n - cc.dsp_slot)):
                         if not dsperate_press(step):
                             raise RuntimeError("DSperate: Slot-Kürzel nicht belegt")
                         time.sleep(0.12)
                     cc.dsp_slot = n
-                    f = cc._slot_file(n)
+                    f = cc._slot_file(idx)
                     before = os.path.getmtime(f) if f and os.path.exists(f) else 0
                     shot = None
                     if key == "save" and f:     # Vorschaubild vom oberen Bildschirm (DSperate legt keins an)
@@ -5944,7 +6746,7 @@ def main():
                 elif emu == "DraStic":
                     # DraStic speichert/lädt per Taste (R2/L2) immer in seinem eingestellten Slot b.
                     # Andere Slots: Datei von/nach <rom>_<n>.dss kopieren; Slot b wird vorher gesichert.
-                    n, b = cc.slot, drastic_base_slot()
+                    n, b = idx + 1, drastic_base_slot()       # Platz 1–9, 0 = automatisch
                     fb, fn = drastic_slot_path(g, b), drastic_slot_path(g, n)
                     bak = fb + ".rdsbak"
                     if n != b and os.path.exists(fb):
@@ -6205,6 +7007,12 @@ def main():
                     ini = "/storage/.config/dsperate/dsperate.ini"
                     txt = rd(ini) or ""
                     if re.search(r"(?m)^toasts\s*=\s*true", txt) and not run(["pidof", "dsperate"]):
+                        try:   # Originalwert für die Deinstallation merken (nur, falls noch nicht gesichert)
+                            subprocess.run(["python3", "/storage/rds-install/rds-settings.py", "save",
+                                            "/storage/rds-install/settings-before-rds.json", ini, "kv", "toasts"],
+                                           timeout=5, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except Exception:
+                            pass
                         wr(ini, re.sub(r"(?m)^toasts\s*=\s*true", "toasts = false", txt))
                         log("DSperate: eigene Erfolgsmeldung aus (zeigt das Kontrollcenter)")
             except Exception as exc:
@@ -6443,8 +7251,8 @@ def main():
                         if g and g["emu"] in AUTO_DIM_EMUS:
                             cc.screen_off()
                             cc.screen_auto = True
-                        elif not g and cc.screen_auto:
-                            cc.screen_on()
+                        elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
+                            cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
@@ -6465,6 +7273,15 @@ def main():
                     if fd == tfd:
                         for ev in read_events(fd, (EV_SYN, EV_KEY, EV_ABS)):
                             t = touch.feed(*ev)
+                            if t and edge.get("swallow"):     # Finger der Wischgeste: erst nach dem Loslassen bedienen
+                                if t[0] == "up":
+                                    edge["swallow"] = False
+                                continue
+                            if t and not ui.view and not cc.loading:
+                                edge_swipe(t)
+                                continue
+                            if t and ui.view == "cc" and edge_close(t):
+                                continue
                             if t and ui.view and ui.size:
                                 if cc.screen_bottom_off:
                                     continue   # Touch ignorieren wenn Screen aus
@@ -6483,10 +7300,9 @@ def main():
                                     toggle(ui.view)
                                     home_down["t"] = None
                                 elif home_down["pending"] is not None:
-                                    home_down["pending"] = None   # Doppelklick
+                                    home_down["pending"] = None   # Doppelklick → Gameswitcher (Übersicht)
                                     home_down["t"] = None
-                                    # im Spiel: direkt zum vorherigen Spiel (wie Alt-Tab), in ES: Gameswitcher
-                                    cc.quick_switch = bool(running_game())
+                                    cc.quick_switch = False
                                     toggle("switcher")
                                 else:
                                     home_down["t"] = time.monotonic()
@@ -6553,6 +7369,32 @@ def main():
                     # ein Fehler darf das Kontrollcenter nicht beenden
                     log("Fehler (Kontrollcenter läuft weiter):\n" + traceback.format_exc().rstrip())
                     state["dirty"] = True
+            if os.path.exists("/tmp/rds-gs-test"):
+                # Automatischer Test (tools/gs-autotest.sh): "quit" oder Teil des ROM-Namens → Wechsel wie per Gameswitcher
+                try:
+                    arg = (rd("/tmp/rds-gs-test") or "").strip()
+                    os.remove("/tmp/rds-gs-test")
+                    g = running_game()
+                    if arg == "quit":
+                        cc.game = g
+                        do_quit()
+                    elif g and not ui.view:
+                        cc.game = g
+                        sw = cc.switcher
+                        sw.capture(g)
+                        sw.load()
+                        item = next((i for i in sw.items if arg.lower() in os.path.basename(i["rom"]).lower()), None)
+                        log("Test: Wechsel zu", item["name"] if item else "– nicht im Gameswitcher: " + arg)
+                        if item:
+                            if cc.screen_bottom_off:
+                                cc.screen_on()
+                            cc.loading = (item, False)
+                            cc.loading_t0 = time.monotonic()
+                            ui.show("loading")
+                            ui.show_top(cc.paint_top_loading)
+                            sw.launch(item, False, current=g)
+                except Exception:
+                    log("Test: Fehler\n" + traceback.format_exc().rstrip())
             if os.path.exists("/tmp/rds-shot"):
                 # Bilderpflege (nur für Screenshots): echo "dark e5383b 0" > /tmp/rds-shot
                 # → Hell/Dunkel, Akzent und Seite setzen (nicht gespeichert), CC öffnen; "end" schließt und stellt zurück
@@ -6629,7 +7471,9 @@ def main():
             if home_down["t"] is not None and not home_down["fired"] \
                     and time.monotonic() - home_down["t"] >= HOME_LONG_S:
                 home_down["fired"] = True
-                toggle("switcher")                                # lang: Gameswitcher
+                # lang: im Spiel die letzten beiden Spiele tauschen (wie Alt-Tab), sonst Gameswitcher
+                cc.quick_switch = bool(running_game()) and len(cc.switcher.items) > 1
+                toggle("switcher")
             if cc.loading:
                 sw = cc.switcher
                 if getattr(sw, "done", False) or time.monotonic() - cc.loading_t0 > 40:
@@ -6650,8 +7494,8 @@ def main():
                 quick = getattr(cc, "quick_switch", False)
                 cc.quick_switch = False
                 if ui.view == "switcher" and quick and len(sw.items) > 1:
-                    sw.sel = 1                                    # Doppelklick: vorheriges Spiel
-                    log("Gameswitcher: Doppelklick → direkt zu", sw.items[1].get("name"))
+                    sw.sel = 1                                    # Home lang: vorheriges Spiel
+                    log("Gameswitcher: Home lang → direkt zu", sw.items[1].get("name"))
                     gs_act(False)
                 elif ui.view == "switcher":
                     pauser.pause(cc.game)
