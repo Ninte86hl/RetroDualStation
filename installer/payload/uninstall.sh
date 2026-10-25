@@ -118,8 +118,17 @@ rm -f /storage/dualstation-canvas-install.log
 rm -rf "$DEST" && log "entfernt: $DEST"
 rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
 
-# Restliche Dateien von RDS. Bleiben immer: Spiele, Artworks, Savestates (samt Vorschaubildern), Spielstände,
-# Screenshots, die Daten des Artwork Managers (Einstellungen, Bildsicherungen) und dieses Log.
+# Restliche Dateien von RDS. Bleiben immer: Spiele, Artworks, Savestates, Spielstände, Screenshots,
+# die Daten des Artwork Managers (Einstellungen, Bildsicherungen) und dieses Log.
+# Slot-Vorschaubilder von DraStic/DSperate (*.dss.png) legt nur RDS an – die Vorschaubilder von RetroArch
+# (*.state*.png) erzeugt RetroArch selbst und bleiben. Eine liegengebliebene DraStic-Zwischenkopie (*.rdsbak,
+# nur nach einem Absturz mitten im Speichern) ist der echte Stand des Platzes – zurück an ihren Platz.
+SSDIR=/storage/roms/savestates
+if [ -d "$SSDIR" ]; then
+    find "$SSDIR" -type f \( -name '*.dss.png' -o -name '*.dss.png.tmp' \) -delete
+    find "$SSDIR" -type f -name '*.rdsbak' | while read -r f; do mv -f "$f" "${f%.rdsbak}"; done
+    log "entfernt: Slot-Vorschaubilder von RDS"
+fi
 rm -rf "$PORTS/.dualstation"                                    # Reste eines abgebrochenen Installers
 rm -f /storage/logs/rds-report-*.tar.gz                         # Fehlerberichte des Kontrollcenters
 rm -rf /storage/thumbnails/cheevos/badges                       # Zwischenspeicher der Erfolgs-Symbole (lädt bei Bedarf neu)
