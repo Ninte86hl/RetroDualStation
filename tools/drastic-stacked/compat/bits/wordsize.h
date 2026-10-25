@@ -1,0 +1,3 @@
+#define __WORDSIZE 64
+#define __WORDSIZE_TIME64_COMPAT32 0
+#define __SYSCALL_WORDSIZE 64
