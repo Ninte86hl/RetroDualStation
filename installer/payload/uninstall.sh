@@ -98,6 +98,23 @@ rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlc
 for w in essway.service suspend.target hibernate.target hybrid-sleep.target multi-user.target; do
     rmdir "$SYSD/$w.wants" 2>/dev/null                     # nur wenn leer (eigene Dienste anderer bleiben)
 done
+# Kurz gesetzte Spiel-Einstellungen (DSperate-Neustart), die ES ggf. zurückgeschrieben hat, wieder entfernen
+[ -f /storage/.config/retrodualstation/temp-settings.json ] && python3 - <<'PY' >>"$LOG" 2>&1
+import json, os
+p, cfg = "/storage/.config/retrodualstation/temp-settings.json", "/storage/.config/system/configs/system.cfg"
+pending = json.load(open(p))
+out = []
+for l in open(cfg).read().splitlines():
+    k = l.split("=", 1)[0]
+    if k in pending:
+        if pending[k]:
+            out.append(pending[k])
+        print("zurueckgesetzt:", k)
+        continue
+    out.append(l)
+open(cfg + ".rds-tmp", "w").write("\n".join(out) + "\n")
+os.replace(cfg + ".rds-tmp", cfg)
+PY
 SS="$(cat /storage/.config/retrodualstation/savestates.done 2>/dev/null)"   # vor dem Löschen merken
 AH="$(cat /storage/.config/retrodualstation/autohotkeys.done 2>/dev/null)"
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter

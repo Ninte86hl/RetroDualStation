@@ -1650,12 +1650,57 @@ def es_emulator(rom):
 SYSTEM_CFG = "/storage/.config/system/configs/system.cfg"
 
 
+TEMP_SETTINGS = "/storage/.config/retrodualstation/temp-settings.json"   # kurz gesetzte Spiel-Einstellungen
+
+
+def _temp_settings(update=None):
+    """Merkliste {Schlüssel: alte Zeile oder None}. ES lädt system.cfg beim Spielwechsel neu und schreibt sie später
+    zurück – so kann eine nur kurz gesetzte Einstellung dauerhaft hängen bleiben. Die Liste erlaubt das Aufräumen."""
+    try:
+        data = json.loads(rd(TEMP_SETTINGS) or "{}")
+    except ValueError:
+        data = {}
+    if update:
+        data.update({k: v for k, v in update.items() if v != "__del__"})
+        for k in [k for k, v in update.items() if v == "__del__"]:
+            data.pop(k, None)
+        wr(TEMP_SETTINGS, json.dumps(data))
+    return data
+
+
+def temp_settings_cleanup(busy_rom=None):
+    """Hängengebliebene kurz gesetzte Einstellungen zurücksetzen (Start des CC, Spielwechsel). Nie für das Spiel,
+    das gerade neu startet (busy_rom)."""
+    pending = _temp_settings()
+    if not pending:
+        return
+    lines = (rd(SYSTEM_CFG) or "").splitlines()
+    out, done = [], []
+    for l in lines:
+        key = l.split("=", 1)[0]
+        if key in pending and not (busy_rom and '["%s"]' % os.path.basename(busy_rom) in key):
+            if pending[key]:
+                out.append(pending[key])
+            done.append(key)
+            continue
+        out.append(l)
+    if done:
+        tmp = SYSTEM_CFG + ".rds-tmp"
+        with open(tmp, "w") as f:
+            f.write("\n".join(out) + "\n")
+        os.replace(tmp, SYSTEM_CFG)
+        log("Kurz gesetzte Einstellungen zurückgesetzt:", ", ".join(done))
+    _temp_settings({k: "__del__" for k in pending if not (busy_rom and '["%s"]' % os.path.basename(busy_rom) in k)})
+
+
 def game_setting_set(rom, name, value):
     """ROCKNIX-Einstellung für ein einzelnes Spiel setzen (system.cfg: <system>["<datei>"].<name>=<wert>, hat Vorrang
     vor System und global). Liefert eine Funktion, die den vorherigen Zustand wiederherstellt."""
     key = '%s["%s"].%s' % (os.path.basename(os.path.dirname(rom or "")), os.path.basename(rom or ""), name)
     lines = (rd(SYSTEM_CFG) or "").splitlines()
     old = next((l for l in lines if l.startswith(key + "=")), None)
+    if key not in _temp_settings():                      # ursprünglichen Zustand nur beim ersten Mal merken
+        _temp_settings({key: old})
 
     def write(new_line):
         cur = [l for l in (rd(SYSTEM_CFG) or "").splitlines() if not l.startswith(key + "=")]
@@ -1677,6 +1722,7 @@ def game_setting_set(rom, name, value):
             write(old)
         except OSError as exc:
             log("Einstellung zurücksetzen fehlgeschlagen:", key, exc)
+        # in der Merkliste bleiben: schreibt ES die Zeile später zurück, räumt temp_settings_cleanup sie weg
     return restore
 
 
@@ -6356,6 +6402,10 @@ def main():
     cc = ControlCenter()
     INFO_TOAST[:] = [cc]
     fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
+    try:
+        temp_settings_cleanup()        # kurz gesetzte Spiel-Einstellungen, die ES zurückgeschrieben hat
+    except Exception as exc:
+        log("Einstellungen aufräumen:", exc)
     threading.Thread(target=drastic_watch, daemon=True).start()   # DraStic: Auto-Laden beim Start aus ES
     threading.Thread(target=bt_agent_watch, daemon=True).start()  # Bluetooth-Helfer nie mehrfach
     threading.Thread(target=fast_watch, daemon=True).start()      # wirkt nur bei geparktem Spiel
@@ -7400,6 +7450,11 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        if getattr(cc.switcher, "done", True) is not False:   # nicht mitten in einem Wechsel
+                            try:
+                                temp_settings_cleanup()
+                            except Exception as exc:
+                                log("Einstellungen aufräumen:", exc)
                         if g and g["emu"] == "RetroArch":
                             threading.Thread(target=ra_slot1, args=(g["pid"],), daemon=True).start()
                         if g and g["emu"] == "DSperate":
