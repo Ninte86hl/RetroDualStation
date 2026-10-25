@@ -15,9 +15,10 @@ DSperate and PortMaster. The game pauses and continues where you left off. Pages
 For RetroArch, DSperate and DraStic:
 - **Save / Load** – slots 1–9 with preview picture, plus the protected **Automatic** save point when loading; delete a slot with the bin icon
 - **Emulator menu**, **Restart**, **Fast forward**, **Slow motion**, **Screenshot**, **Button layout**, **Quit**
+- **Swap** *(DraStic, DSperate)* – swap top and bottom screen, touch follows (e.g. the shop in Zelda Phantom Hourglass); also with **L3**
 
 ## Same shortcuts everywhere
-**Anbernic + R1** – fast forward · **Anbernic + R2 / L2** – save / load · **Anbernic + X** – emulator menu · **Anbernic + Y** – FPS (RetroArch, DSperate) · **Anbernic + Start** – quit · **Anbernic + ◀ / ▶** – change slot
+**Anbernic + R1** – fast forward · **Anbernic + R2 / L2** – save / load · **Anbernic + X** – emulator menu · **Anbernic + Y** – FPS (RetroArch, DSperate) · **Anbernic + Start** – quit · **Anbernic + ◀ / ▶** – change slot · **L3** – swap screens (DraStic, DSperate)
 
 ## Look *(v15.1)*
 Top right in the Control Center:

@@ -269,6 +269,8 @@ EN = {
         "can change this behaviour. Slot 9 is used by the Game switcher.",
     "übernehmen": "take", "zurück": "back",
     "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
+    "Tauschen": "Swap", "Bildschirme getauscht": "Screens swapped", "Bildschirme normal": "Screens normal",
+    "Nicht belegt": "Not assigned",
     "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
     "Starte ein Spiel, um es hier zu steuern.": "Start a game to control it here.",
     "Gespeichert": "Saved", "Geladen": "Loaded", "Screenshot gespeichert": "Screenshot saved",
@@ -657,6 +659,12 @@ class Pen:
             self.poly([(cx + 5, cy - 15), (cx + 16, cy - 7), (cx + 5, cy + 1)], c)
             self.rrect(cx - 6, cy + 5, 22, 4, 2, c)
             self.poly([(cx - 5, cy - 1), (cx - 16, cy + 7), (cx - 5, cy + 15)], c)
+        elif kind == "swap":                      # Bildschirme tauschen: zwei Bildschirme, Doppelpfeil
+            self.rrect(cx - 22, cy - 19, 28, 17, 3, c)
+            self.rrect(cx - 22, cy + 2, 28, 17, 3, c)
+            self.rrect(cx + 13, cy - 9, 4, 18, 2, c)
+            self.poly([(cx + 7, cy - 8), (cx + 15, cy - 18), (cx + 23, cy - 8)], c)
+            self.poly([(cx + 7, cy + 8), (cx + 15, cy + 18), (cx + 23, cy + 8)], c)
         elif kind == "bolt":                      # Laden (Blitz)
             self.poly([(cx + 3, cy - 18), (cx - 10, cy + 3), (cx - 1, cy + 3), (cx - 4, cy + 18),
                        (cx + 10, cy - 3), (cx + 1, cy - 3)], c)
@@ -1589,7 +1597,7 @@ def inject_keys(seq):
 # DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {66: 67, 67: 68, 68: 87, 69: 88}   # SDL-Scancode F9–F12 → evdev KEY_F9–KEY_F12
+SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen)
 DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
@@ -1768,15 +1776,81 @@ FAST_MIN_MB = 180
 FROZEN = {"pids": [], "runemu": None, "rom": None, "name": None, "emu": None, "cons": [], "busy": False}
 
 
-def touch_map(emu):
+def touch_map(emu, swapped=False):
     """swaymsg-Befehl für die Touch-Zuordnung. ROCKNIX ordnet den Touchscreen beim Erscheinen eines DraStic-Fensters
     per for_window-Regel einem Bildschirm zu und nimmt das nie zurück; ES setzt es nur durch sein reload zurück.
-    Ohne ES (Schnellwechsel): für DraStic die Regel aus der Sway-Konfiguration nachbilden, sonst Zuordnung aufheben."""
+    Ohne ES (Schnellwechsel): für DraStic die Regel aus der Sway-Konfiguration nachbilden, sonst Zuordnung aufheben.
+    swapped: DraStic zeigt die Bildschirme getauscht – Touch dem anderen Bildschirm zuordnen."""
     if emu == "DraStic":
         m = re.search(r'for_window \[app_id="drastic"\][^\n]*?(input "[^"]+" map_to_output \S+)',
                       rd("/storage/.config/sway/config") or "")
-        return m.group(1) if m else None
+        if not m:
+            return None
+        if not swapped:
+            return m.group(1)
+        flip = {OUTPUT_NAME: TOP_OUTPUT, TOP_OUTPUT: OUTPUT_NAME}
+        return re.sub(r"map_to_output (\S+)$", lambda x: "map_to_output " + flip.get(x.group(1), x.group(1)), m.group(1))
     return "input type:touch map_to_output *"
+
+
+# Bildschirme tauschen (Kachel „Tauschen“ und L3): DraStic folgt dem Bildschirmtausch mancher Spiele nicht (z. B. Zelda
+# Phantom Hourglass, Laden). Getauschte Spiele: pid → Emulator. DraStic-Touch zieht automatisch mit.
+SWAP = {}
+DRASTIC_CFG = "/storage/.config/drastic/config/drastic.cfg"
+
+
+def swap_screens(g):
+    """Bildschirme des laufenden DraStic-/DSperate-Spiels tauschen bzw. zurücktauschen."""
+    emu, pid = g["emu"], g["pid"]
+    on = pid not in SWAP
+    if emu == "DraStic":
+        how = drastic_press("SWAP_SCREENS")
+    elif emu == "DSperate":
+        how = "Kürzel" if dsperate_press("screen_swap") else None
+    else:
+        return
+    if not how:
+        log("Bildschirme tauschen:", emu, "nicht belegt")
+        info_toast("Nicht belegt", "swap")
+        return
+    if on:
+        SWAP[pid] = emu
+    else:
+        SWAP.pop(pid, None)
+    if emu == "DraStic":
+        tm = touch_map("DraStic", on)
+        if tm:
+            time.sleep(0.15)
+            sway_cmd(tm)
+    log("Bildschirme tauschen:", emu, "an" if on else "aus", "über", how)
+    info_toast("Bildschirme getauscht" if on else "Bildschirme normal", "swap")
+
+
+def swap_swapped(pids):
+    return any(p in SWAP for p in pids or [])
+
+
+def swap_cleanup():
+    """Beendete Spiele vergessen. DraStic merkt sich den Tausch in drastic.cfg – endete ein Spiel getauscht,
+    den nächsten Start wieder normal beginnen (passend zur Touch-Zuordnung von ROCKNIX)."""
+    gone = [p for p in SWAP if not os.path.exists("/proc/%d" % p)]
+    if not gone:
+        return
+    was_drastic = any(SWAP.pop(p) == "DraStic" for p in gone)
+    if not was_drastic:
+        return
+    time.sleep(1)                                   # DraStic schreibt drastic.cfg beim Beenden
+    if subprocess.run(["pidof", "drastic"], stdout=subprocess.DEVNULL).returncode == 0:
+        return
+    cfg = rd(DRASTIC_CFG) or ""
+    new = re.sub(r"^(screen_swap\s*=\s*)1\s*$", r"\g<1>0", cfg, flags=re.M)
+    if new != cfg:
+        try:
+            with open(DRASTIC_CFG, "w") as f:
+                f.write(new)
+            log("Bildschirme tauschen: drastic.cfg wieder normal (screen_swap = 0)")
+        except OSError as exc:
+            log("Bildschirme tauschen: drastic.cfg nicht geschrieben:", exc)
 
 
 def fast_enabled():
@@ -2003,7 +2077,7 @@ def fast_resume():
             cmds.append(f"[con_id={con}] move container to workspace {ws}, {full}")
         else:
             cmds.append(f"[con_id={con}] {full}")
-    tm = touch_map(FROZEN.get("emu"))             # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
+    tm = touch_map(FROZEN.get("emu"), swap_swapped(FROZEN["pids"]))   # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
     if tm:
         cmds.append(tm)
     top = next((x[0] for x in FROZEN["cons"] if x[1] == TOP_OUTPUT), None)
@@ -2029,7 +2103,7 @@ def fast_wake_hidden():
     """Anker aufwecken, aber unsichtbar lassen – er wird gleich über ES beendet (Wechsel zu einem Spiel, das nicht
     als Zusatzspiel starten kann, z. B. ein anderes RetroArch-Spiel). Spart das Zurückholen der Fenster und das
     kurze Aufblitzen des alten Spiels; Touch-Zuordnung wie beim Aufwecken korrigieren."""
-    tm = touch_map(FROZEN.get("emu"))
+    tm = touch_map(FROZEN.get("emu"), swap_swapped(FROZEN["pids"]))
     if tm:
         sway_cmd(tm)
     n = evdev_flush(FROZEN["pids"])
@@ -2599,9 +2673,9 @@ GAME_ACTIONS = {
     "RetroArch": [("save", "Speichern"), ("load", "Laden"),
                   ("menu", "Emulator-Menü"), ("reset", "Neu starten"), ("ff", "Vorspulen"),
                   ("slow", "Zeitlupe"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
+    "DraStic": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("swap", "Tauschen"), ("reset", "Neu starten"),
                 ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
-    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("reset", "Neu starten"),
+    "DSperate": [("save", "Speichern"), ("load", "Laden"), ("menu", "Emulator-Menü"), ("swap", "Tauschen"), ("reset", "Neu starten"),
                  ("ff", "Vorspulen"), ("shot", "Screenshot"), ("help", "Tasten"), ("quit", "Beenden")],
 }
 GAME_ACTIONS_OTHER = [("shot", "Screenshot"), ("quit", "Beenden")]
@@ -2782,7 +2856,8 @@ def dsperate_shortcuts():
         parts = [p for p in v.split("+") if p]
         base, alt = (k[:-4], True) if k.endswith(".alt") else (k, False)
         label = DSP_LABELS.get(base, base) + (" (2)" if alt else "")
-        rows.append((label, " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)))
+        combo = " + ".join(mod if p == "mod" else DSP_NAMES.get(p, p) for p in parts)
+        rows.append((label, "L3  ·  " + combo if base == "screen_swap" and not alt else combo))   # L3 übernimmt das CC
     return rows
 
 
@@ -2801,7 +2876,7 @@ def drastic_shortcuts():
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
         elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
             rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1", "SAVE_STATE": "Anbernic + R2",
-                                 "LOAD_STATE": "Anbernic + L2"}.get(k, tr("nur über das CC"))))
+                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": "L3"}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
             rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
@@ -6101,6 +6176,7 @@ BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
 BTN_NORTH, BTN_WEST = 307, 308
+BTN_THUMBL = 317                       # L3: Bildschirme tauschen (DraStic, DSperate)
 KNOWN_UNUSED = {312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
 EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
@@ -6818,6 +6894,13 @@ def main():
         if key == "quit":
             do_quit()
             return
+        if emu in ("DraStic", "DSperate") and key == "swap":
+            toggle("cc")
+            def later():
+                time.sleep(0.5)                      # Spiel läuft wieder und hat den Fokus zurück
+                swap_screens(g)
+            threading.Thread(target=later, daemon=True).start()
+            return
         if emu in ("DraStic", "DSperate") and key == "reset":
             restart_game(g)                  # Emulator neu starten, ohne Stand (wie Y im Gameswitcher)
             return
@@ -7294,6 +7377,12 @@ def main():
                         log("Kürzel DraStic:", what, "über", how or "nichts")
                     threading.Thread(target=run, daemon=True).start()
             return
+        if typ == EV_KEY and code == BTN_THUMBL and not ui.view:
+            # L3 allein: Bildschirme tauschen (DraStic samt Touch, DSperate über sein Kürzel)
+            g = running_game()
+            if g and g["emu"] in ("DraStic", "DSperate"):
+                threading.Thread(target=swap_screens, args=(g,), daemon=True).start()
+            return
         if not ui.view:
             return
         if ui.view == "loading":
@@ -7451,6 +7540,8 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        if SWAP:
+                            threading.Thread(target=swap_cleanup, daemon=True).start()
                         if getattr(cc.switcher, "done", True) is not False:   # nicht mitten in einem Wechsel
                             try:
                                 temp_settings_cleanup()
