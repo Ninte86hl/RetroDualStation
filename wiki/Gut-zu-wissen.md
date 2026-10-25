@@ -7,4 +7,6 @@
 - **Touch in DraStic reagiert nicht?** **Follow 3D Renderer** auf *Auto* stellen (auch im Original-ROCKNIX).
 - **Zurück zum Original:** *Ports → RDS Single-Screen*; *Uninstall* stellt Original-ES, Theme und deine ursprünglichen Einstellungen wieder her und entfernt alles von RDS – Spiele, Artworks, Spielelisten, Savestates und Spielstände bleiben unberührt. Eine Sicherung deiner ursprünglichen Einstellungen liegt bis zum Ende der Deinstallation in `roms/backup`.
 
+Welche Dateien RDS anlegt: [Dateien von RDS](Dateien)
+
 Technik und manuelle Installation: [TECHNIK.md](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TECHNIK.md)

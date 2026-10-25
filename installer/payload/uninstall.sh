@@ -8,7 +8,7 @@ DEST=/storage/rds-install
 [ -d "$DEST" ] || DEST=/storage/rgds-test       # Name bis v15.1
 PORTS=/storage/roms/ports
 THEMEDIR=/storage/.config/emulationstation/themes
-LOG=/storage/dualstation-uninstall.log
+LOG=/storage/rds-uninstall.log
 
 log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
@@ -17,8 +17,8 @@ log "=== Deinstallation RDS $(cat $DEST/VERSION 2>/dev/null) ==="
 # Absicherung: Merker bis die Einstellungen zurückgesetzt sind. Bricht die Deinstallation vorher ab (Akku leer,
 # Absturz), stellt rds-uninstall-guard.service beim nächsten Start die Notfall-Sicherung wieder her.
 MARK=/storage/.config/rds-uninstall.running
-RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
-RDSZIPI=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip      # interne Kopie (immer erreichbar)
+RDSZIP=/storage/roms/backup/rds-original-backup.zip
+RDSZIPI=/storage/.config/rds-backup/rds-original-backup.zip      # interne Kopie (immer erreichbar)
 touch "$MARK"
 zip_restore() {   # wie ROCKNIX' „backuptool restore“, aber mit unserer ZIP (ROCKNIX_BACKUP.zip bleibt unberührt)
     local z="$RDSZIPI"
@@ -28,7 +28,7 @@ zip_restore() {   # wie ROCKNIX' „backuptool restore“, aber mit unserer ZIP 
 }
 
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
-for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install RDS.sh" "Artwork Manager.sh" \
+for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install RDS.sh" "RDS Artwork Manager.sh" "Artwork Manager.sh" \
          "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do   # alte Namen bis v13.1
     rm -f "$PORTS/$f" && log "entfernt: $PORTS/$f"
 done
@@ -64,7 +64,7 @@ if [ -x "$DEST/es-switch-helper.sh" ]; then
     /bin/bash "$DEST/es-switch-helper.sh" single
     log "auf Single umgeschaltet"
 else
-    rm -f /storage/.config/system.d/essway.service.d/rgds.conf
+    rm -f /storage/.config/system.d/essway.service.d/rds-dual.conf /storage/.config/system.d/essway.service.d/rgds.conf
     rmdir /storage/.config/system.d/essway.service.d 2>/dev/null
     systemctl daemon-reload
     systemctl restart essway
@@ -74,14 +74,17 @@ fi
 # Icons und gamelist-Einträge entfernen
 rm -f "$PORTS"/images/rds-dual.png "$PORTS"/images/rds-single.png "$PORTS"/images/rds-uninstall.png "$PORTS"/images/rds-install.png "$PORTS"/images/rds-artwork.png
 # Artwork Manager: Programm entfernen, Daten (settings.cfg, Sicherungen) bleiben im Ordner
-AMDIR="$PORTS/artworkmanager"
-rm -rf "$AMDIR/rocknixds_artwork_manager" "$AMDIR/__pycache__" "$AMDIR/rds_artwork.py" "$AMDIR/multidisc.py" "$AMDIR/manager.log"
-rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Daten bleiben: $AMDIR"
+for AMDIR in "$PORTS/rds-artworkmanager" "$PORTS/artworkmanager"; do   # Name bis v15.3: artworkmanager
+    [ -d "$AMDIR" ] || continue
+    rm -rf "$AMDIR/rocknixds_artwork_manager" "$AMDIR/__pycache__" "$AMDIR/rds_artwork.py" "$AMDIR/multidisc.py" "$AMDIR/manager.log"
+    rmdir "$AMDIR" 2>/dev/null && log "entfernt: $AMDIR" || log "Artwork-Manager-Daten bleiben: $AMDIR"
+done
 [ -f "$PORTS/gamelist.xml" ] && python3 - "$PORTS/gamelist.xml" <<'PY' 2>>"$LOG"
 import sys, xml.etree.ElementTree as ET
 f = sys.argv[1]
 tree = ET.parse(f); root = tree.getroot()
 drop = {"./RDS Dual-Screen.sh", "./RDS Single-Screen.sh", "./Uninstall RDS.sh", "./Install RDS.sh", "./Artwork Manager.sh",
+        "./RDS Artwork Manager.sh",
         "./RGDS Dual-Screen ES.sh", "./RGDS Single-Screen ES.sh", "./Uninstall ROCKNIX DualStation.sh", "./Install ROCKNIX DualStation.sh"}
 for g in [g for g in root.findall("game") if g.findtext("path") in drop]:
     root.remove(g)
@@ -98,6 +101,23 @@ rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlc
 for w in essway.service suspend.target hibernate.target hybrid-sleep.target multi-user.target; do
     rmdir "$SYSD/$w.wants" 2>/dev/null                     # nur wenn leer (eigene Dienste anderer bleiben)
 done
+# Kurz gesetzte Spiel-Einstellungen (DSperate-Neustart), die ES ggf. zurückgeschrieben hat, wieder entfernen
+[ -f /storage/.config/retrodualstation/temp-settings.json ] && python3 - <<'PY' >>"$LOG" 2>&1
+import json, os
+p, cfg = "/storage/.config/retrodualstation/temp-settings.json", "/storage/.config/system/configs/system.cfg"
+pending = json.load(open(p))
+out = []
+for l in open(cfg).read().splitlines():
+    k = l.split("=", 1)[0]
+    if k in pending:
+        if pending[k]:
+            out.append(pending[k])
+        print("zurueckgesetzt:", k)
+        continue
+    out.append(l)
+open(cfg + ".rds-tmp", "w").write("\n".join(out) + "\n")
+os.replace(cfg + ".rds-tmp", cfg)
+PY
 SS="$(cat /storage/.config/retrodualstation/savestates.done 2>/dev/null)"   # vor dem Löschen merken
 AH="$(cat /storage/.config/retrodualstation/autohotkeys.done 2>/dev/null)"
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
@@ -121,9 +141,9 @@ if [ -d "$THEMEDIR/canvas-rds" ]; then
     rm -rf "$THEMEDIR/canvas-rds" /storage/.config/emulationstation/themesettings/canvas-rds.cfg
     log "entfernt: Theme canvas-rds"
 fi
-rm -f /storage/dualstation-canvas-install.log
+rm -f /storage/dualstation-canvas-install.log /storage/rds-canvas-install.log
 rm -rf "$DEST" /storage/rds-install /storage/rgds-test && log "entfernt: $DEST"
-rm -f /storage/dualstation-install.log && log "entfernt: /storage/dualstation-install.log"
+rm -f /storage/dualstation-install.log /storage/rds-install.log && log "entfernt: Installations-Log"
 
 # Restliche Dateien von RDS. Bleiben immer: Spiele, Artworks, Savestates, Spielstände, Screenshots,
 # die Daten des Artwork Managers (Einstellungen, Bildsicherungen) und dieses Log.
@@ -137,6 +157,10 @@ if [ -d "$SSDIR" ]; then
     log "entfernt: Slot-Vorschaubilder von RDS"
 fi
 rm -rf "$PORTS/.dualstation"                                    # Reste eines abgebrochenen Installers
+( cd /storage && rm -f drastic-touch-test.sh drastic-touch-test.log dtt-*.txt dsperate-wayland-test.sh \
+    dsperate-wayland-test.log dsp-wl.log .dsp-real .dsp-wrap evdev-flush.py gs-autotest.sh gs-autotest.log \
+    gs-autotest-ohne-ende.sh ra-fast-test.sh ra-fast-test.log ramtest-ds.sh ramtest-ds.log \
+    dualstation-canvas-install.log )                            # Testskripte und -logs (tools/)
 rm -f /storage/logs/rds-report-*.tar.gz                         # Fehlerberichte des Kontrollcenters
 rm -rf /storage/thumbnails/cheevos/badges                       # Zwischenspeicher der Erfolgs-Symbole (lädt bei Bedarf neu)
 rmdir /storage/thumbnails/cheevos /storage/thumbnails 2>/dev/null

@@ -16,5 +16,5 @@ python3 tools/make-installer.py emulationstation-rgds v9
 | `payload/ports/Uninstall RDS.sh` | Ports-Eintrag für die Deinstallation |
 
 Fehler (falsches Gerät, unpassende ROCKNIX-Version) erscheinen als Meldung in
-ES; dabei wird nichts verändert. Logs: `/storage/dualstation-install.log`,
-`/storage/dualstation-uninstall.log`.
+ES; dabei wird nichts verändert. Logs: `/storage/rds-install.log`,
+`/storage/rds-uninstall.log`.

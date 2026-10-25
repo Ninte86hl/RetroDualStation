@@ -236,6 +236,7 @@ EN = {
     "Speichern": "Save", "Laden": "Load", "Speicherplatz wählen": "Choose slot", "Speichern in …": "Save to …", "Laden aus …": "Load from …",
     "speichern": "save", "laden": "load", "löschen": "delete", "nochmal: löschen": "again: delete", "Löschen?": "Delete?",
     "nochmal X oder tippen": "X again or tap",
+    "Gelöscht": "Deleted", "Löschen fehlgeschlagen": "Delete failed",
     "Automatischer": "Automatic", "Speicherpunkt": "save point",
     "Schnellwechsel an": "Fast switch on", "Schnellwechsel aus": "Fast switch off",
     "Erst das geparkte Spiel beenden": "Quit the parked game first",
@@ -1258,7 +1259,8 @@ def game_meta(rom):
 
 
 # Eigene Ports-Einträge von RDS (Werkzeuge, keine Spiele) – nie im Gameswitcher
-RDS_PORTS = {"RDS Dual-Screen.sh", "RDS Single-Screen.sh", "Install RDS.sh", "Uninstall RDS.sh", "Artwork Manager.sh"}
+RDS_PORTS = {"RDS Dual-Screen.sh", "RDS Single-Screen.sh", "Install RDS.sh", "Uninstall RDS.sh", "Artwork Manager.sh",
+             "RDS Artwork Manager.sh"}
 
 
 def is_rds_port(rom):
@@ -1650,12 +1652,57 @@ def es_emulator(rom):
 SYSTEM_CFG = "/storage/.config/system/configs/system.cfg"
 
 
+TEMP_SETTINGS = "/storage/.config/retrodualstation/temp-settings.json"   # kurz gesetzte Spiel-Einstellungen
+
+
+def _temp_settings(update=None):
+    """Merkliste {Schlüssel: alte Zeile oder None}. ES lädt system.cfg beim Spielwechsel neu und schreibt sie später
+    zurück – so kann eine nur kurz gesetzte Einstellung dauerhaft hängen bleiben. Die Liste erlaubt das Aufräumen."""
+    try:
+        data = json.loads(rd(TEMP_SETTINGS) or "{}")
+    except ValueError:
+        data = {}
+    if update:
+        data.update({k: v for k, v in update.items() if v != "__del__"})
+        for k in [k for k, v in update.items() if v == "__del__"]:
+            data.pop(k, None)
+        wr(TEMP_SETTINGS, json.dumps(data))
+    return data
+
+
+def temp_settings_cleanup(busy_rom=None):
+    """Hängengebliebene kurz gesetzte Einstellungen zurücksetzen (Start des CC, Spielwechsel). Nie für das Spiel,
+    das gerade neu startet (busy_rom)."""
+    pending = _temp_settings()
+    if not pending:
+        return
+    lines = (rd(SYSTEM_CFG) or "").splitlines()
+    out, done = [], []
+    for l in lines:
+        key = l.split("=", 1)[0]
+        if key in pending and not (busy_rom and '["%s"]' % os.path.basename(busy_rom) in key):
+            if pending[key]:
+                out.append(pending[key])
+            done.append(key)
+            continue
+        out.append(l)
+    if done:
+        tmp = SYSTEM_CFG + ".rds-tmp"
+        with open(tmp, "w") as f:
+            f.write("\n".join(out) + "\n")
+        os.replace(tmp, SYSTEM_CFG)
+        log("Kurz gesetzte Einstellungen zurückgesetzt:", ", ".join(done))
+    _temp_settings({k: "__del__" for k in pending if not (busy_rom and '["%s"]' % os.path.basename(busy_rom) in k)})
+
+
 def game_setting_set(rom, name, value):
     """ROCKNIX-Einstellung für ein einzelnes Spiel setzen (system.cfg: <system>["<datei>"].<name>=<wert>, hat Vorrang
     vor System und global). Liefert eine Funktion, die den vorherigen Zustand wiederherstellt."""
     key = '%s["%s"].%s' % (os.path.basename(os.path.dirname(rom or "")), os.path.basename(rom or ""), name)
     lines = (rd(SYSTEM_CFG) or "").splitlines()
     old = next((l for l in lines if l.startswith(key + "=")), None)
+    if key not in _temp_settings():                      # ursprünglichen Zustand nur beim ersten Mal merken
+        _temp_settings({key: old})
 
     def write(new_line):
         cur = [l for l in (rd(SYSTEM_CFG) or "").splitlines() if not l.startswith(key + "=")]
@@ -1677,6 +1724,7 @@ def game_setting_set(rom, name, value):
             write(old)
         except OSError as exc:
             log("Einstellung zurücksetzen fehlgeschlagen:", key, exc)
+        # in der Merkliste bleiben: schreibt ES die Zeile später zurück, räumt temp_settings_cleanup sie weg
     return restore
 
 
@@ -2615,6 +2663,11 @@ def ra_shortcuts():
     hk = btn("enable_hotkey")
     rows = []
     for key, label in RA_HOTKEYS:
+        if key in ("save_state", "load_state"):      # übernimmt das CC (eigener Slot, RetroArch-Tasten sind aus)
+            rows.append((label, "Anbernic + " + ("R2" if key == "save_state" else "L2")))
+            if key == "load_state":
+                rows.append(("Slot − / +", "Anbernic + ◀ / ▶"))
+            continue
         b = btn(key)
         if b:
             rows.append((label, (hk + " + " if hk else "") + b))
@@ -5232,14 +5285,28 @@ class ControlCenter:
         return True
 
     def delete_slot(self, n):
-        f = self._slot_file(n)
-        for path in (f, f + ".png"):
+        """Slot n (1–9) löschen: Spielstand und Vorschaubild. Der automatische Stand ist nie löschbar."""
+        self.del_confirm = None
+        f = self._slot_file(n) if n >= 0 else None
+        if not f:
+            log("Seite Spiel: Slot", n + 1, "– keine Datei bekannt, nichts gelöscht")
+            return
+        left = []
+        for path in (f, f + ".png", f + ".png.tmp"):
             try:
                 os.remove(path)
-            except OSError:
+            except FileNotFoundError:
                 pass
-        log("Seite Spiel: Slot", n + 1, "gelöscht")
-        self.del_confirm = None
+            except OSError as exc:
+                log("Seite Spiel: Löschen fehlgeschlagen:", path, exc)
+            if os.path.exists(path):
+                left.append(os.path.basename(path))
+        if left:
+            info_toast(tr("Löschen fehlgeschlagen"), "trash")
+            log("Seite Spiel: Slot", n + 1, "NICHT vollständig gelöscht:", ", ".join(left))
+        else:
+            info_toast(tr("Gelöscht") + " · Slot %d" % (n + 1), "trash")
+            log("Seite Spiel: Slot", n + 1, "gelöscht:", os.path.basename(f))
 
     def _slot_cells(self):
         """Kacheln im Slot-Menü: Speichern 3×3 (Slot 1–9). Laden 4 Spalten: Spiel-Icon, Slot 1–9 (Slot 9 unter
@@ -5275,8 +5342,13 @@ class ControlCenter:
                 g["_code"] = nds_gamecode(rom) or ""
             if not g["_code"]:
                 return None
-            if n == 0:                          # DSperate legt seinen automatischen Stand selbst an (.auto)
-                return os.path.join("/storage/roms/savestates/nds", "%s.auto.dss" % g["_code"])
+            if n == 0:
+                # „Automatisch“ = der neuere von .auto.dss (DSperate beim Beenden / Gameswitcher) und .0.dss
+                # (Anbernic + R2 im Spiel speichert in DSperates aktuellen Slot, Start 0) – wie bei RetroArch/DraStic
+                d = "/storage/roms/savestates/nds"
+                auto, zero = (os.path.join(d, "%s.%s.dss" % (g["_code"], x)) for x in ("auto", "0"))
+                have = [f for f in (auto, zero) if os.path.exists(f)]
+                return max(have, key=os.path.getmtime) if have else auto
             return os.path.join("/storage/roms/savestates/nds", "%s.%d.dss" % (g["_code"], n))
         return os.path.join("/storage/roms/savestates", os.path.basename(os.path.dirname(rom)),
                             os.path.splitext(os.path.basename(rom))[0] + ".state" + (str(n) if n else ""))
@@ -6226,16 +6298,31 @@ def speed_event(kind, game):
     info_toast(text, icon)
 
 
-RA_SLOT = {"pid": None, "slot": 0}
+RA_SLOT = {"pid": None, "slot": 1}
+
+
+def ra_slot(game):
+    """Slot für manuelles Speichern in RetroArch – führt das CC selbst (RetroArchs eigene Slot-Tasten sind aus,
+    sein Start-Slot hängt von ES ab und ließ sich nicht verlässlich setzen). Jedes neue Spiel beginnt bei Slot 1."""
+    if RA_SLOT["pid"] != game.get("pid"):
+        RA_SLOT.update(pid=game.get("pid"), slot=1)
+    return RA_SLOT["slot"]
 
 
 def ra_slot_step(game, d):
-    """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: state_slot aus retroarch.cfg."""
-    if RA_SLOT["pid"] != game.get("pid"):
-        m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd("/storage/.config/retroarch/retroarch.cfg") or "", re.M)
-        RA_SLOT.update(pid=game.get("pid"), slot=max(0, int(m.group(1))) if m else 0)
-    RA_SLOT["slot"] = max(0, RA_SLOT["slot"] + d)
-    info_toast("Slot %d" % RA_SLOT["slot"], "save")   # RetroArch-Zählung = Anzeige im Kontrollcenter (0 = automatisch)
+    """Anbernic + ◀/▶: Slot 1–9 (Platz 0 gehört dem automatischen Stand) und anzeigen."""
+    RA_SLOT["slot"] = min(9, max(1, ra_slot(game) + d))
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")
+
+
+def ra_quick(game, key):
+    """Anbernic + R2 / L2 in RetroArch: in den Slot des CC speichern bzw. daraus laden (ausdrückliche Slot-Nummer)."""
+    n = ra_slot(game)
+    ok = ra_command(("SAVE_STATE_SLOT %d" if key == "save" else "LOAD_STATE_SLOT %d") % n) is not None
+    log("Kürzel RetroArch:", key, "Slot", n, "ok" if ok else "keine Antwort")
+    if ok:
+        info_toast(("Gespeichert · Slot %d" if key == "save" else "Geladen · Slot %d") % n,
+                   "save" if key == "save" else "load")
 
 
 def info_toast(text, icon="ff"):
@@ -6294,12 +6381,12 @@ def bt_agent_watch():
         time.sleep(30)
 
 
-DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rgds.conf"   # vorhanden = Dual-Modus (es-switch-helper.sh)
+DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rds-dual.conf"   # vorhanden = Dual-Modus (es-switch-helper.sh)
 
 
 def main():
     log("RetroDualStation Kontrollcenter", VERSION)
-    if not os.path.exists(DUAL_DROPIN):
+    if not (os.path.exists(DUAL_DROPIN) or os.path.exists(DUAL_DROPIN.replace("rds-dual.conf", "rgds.conf"))):
         # Single-Modus (Original-ES): CC, Gameswitcher und Power-Menü ruhen – keine Tasten, keine Vibration.
         # Die Power-Taste übernimmt wieder ROCKNIX (es-switch-helper.sh entfernt dafür die logind-Einstellung).
         log("Single-Modus – Kontrollcenter ruht")
@@ -6314,6 +6401,10 @@ def main():
     cc = ControlCenter()
     INFO_TOAST[:] = [cc]
     fast_recover()                     # Schnellwechsel: nie ein eingefrorenes Spiel zurücklassen
+    try:
+        temp_settings_cleanup()        # kurz gesetzte Spiel-Einstellungen, die ES zurückgeschrieben hat
+    except Exception as exc:
+        log("Einstellungen aufräumen:", exc)
     threading.Thread(target=drastic_watch, daemon=True).start()   # DraStic: Auto-Laden beim Start aus ES
     threading.Thread(target=bt_agent_watch, daemon=True).start()  # Bluetooth-Helfer nie mehrfach
     threading.Thread(target=fast_watch, daemon=True).start()      # wirkt nur bei geparktem Spiel
@@ -6812,11 +6903,13 @@ def main():
                     # Slot per Kürzel (Slot ±) ansteuern, dann Speichern/Laden-Kürzel drücken
                     n = idx + 1                         # Platz 1–9, 0 = automatisch
                     if n == 0:
-                        # DSperate lädt .auto nicht per Slot-Kürzel: auf den (unbenutzten) Platz 0 kopieren
+                        # „Automatisch“: der neuere Stand (siehe _slot_file). DSperate lädt .auto nicht per
+                        # Slot-Kürzel – ist .auto der neuere, nach Platz 0 kopieren (.0 ist dann älter)
                         auto = cc._slot_file(-1)
                         if not auto or not os.path.exists(auto):
                             raise RuntimeError("DSperate: kein automatischer Stand")
-                        shutil.copy2(auto, auto.replace(".auto.dss", ".0.dss"))
+                        if auto.endswith(".auto.dss"):
+                            shutil.copy2(auto, auto.replace(".auto.dss", ".0.dss"))
                     step = "slot_next" if n > cc.dsp_slot else "slot_prev"
                     for _ in range(abs(n - cc.dsp_slot)):
                         if not dsperate_press(step):
@@ -7150,6 +7243,8 @@ def main():
         if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
             if code == BTN_TR:
                 speed_event("ff", g0)
+            elif g0["emu"] == "RetroArch":
+                threading.Thread(target=ra_quick, args=(g0, "save" if code == 313 else "load"), daemon=True).start()
             elif g0["emu"] not in OWN_OSD_EMUS:
                 info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
 
@@ -7356,6 +7451,21 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        if getattr(cc.switcher, "done", True) is not False:   # nicht mitten in einem Wechsel
+                            try:
+                                temp_settings_cleanup()
+                            except Exception as exc:
+                                log("Einstellungen aufräumen:", exc)
+                        if g and g["emu"] == "DSperate":
+                            # DSperate beginnt mit Slot 0 – manuell speichern (Anbernic + R2) soll wie bei RetroArch
+                            # (state_slot 1) und DraStic (savestate_number 1) auf Slot 1 gehen; Platz 0 bleibt frei
+                            def dsp_slot1(pid=g["pid"]):
+                                time.sleep(4)            # DSperate fertig gestartet (Stand geladen)
+                                if os.path.exists("/proc/%d" % pid) and cc.dsp_slot == 0 and not ui.view:
+                                    if dsperate_press("slot_next"):
+                                        cc.dsp_slot = 1
+                                        log("DSperate: Slot 1 für manuelles Speichern")
+                            threading.Thread(target=dsp_slot1, daemon=True).start()
                         last_game["pid"] = pid
             fds = [fd for fd in [home, pwr, tfd, vol, WAKE_R] + list(pads) if fd is not None]
             scrolling = ui.view == "cc" and cc.page == 0 and not cc.sub and cc.marquee

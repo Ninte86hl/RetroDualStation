@@ -150,10 +150,10 @@ single-screen mode (original ROCKNIX interface); RetroDualStation uses the same 
 | | **X** | Icon editor: turn the chosen icon into a 1:1 image with iiSU border (◀ ▶ ▲ ▼ move · L / R zoom · Y border). Not needed – and greyed out – for icons that already have the iiSU border |
 
 Before the first save per system a backup is created (can be turned off in the settings).
-**Own images:** put PNG/JPG/WebP files into `ports/artworkmanager/eigene/` (or `eigene/<system>/`), named like the game – they appear first in every tab marked *Own image*. Everything in `eigene/alle/` appears for every game.
+**Own images:** put PNG/JPG/WebP files into `ports/rds-artworkmanager/eigene/` (or `eigene/<system>/`), named like the game – they appear first in every tab marked *Own image*. Everything in `eigene/alle/` appears for every game.
 
 The SteamGridDB API key can also be entered on a PC in
-`/storage/roms/ports/artworkmanager/settings.cfg`.
+`/storage/roms/ports/rds-artworkmanager/settings.cfg`.
 
 ---
 

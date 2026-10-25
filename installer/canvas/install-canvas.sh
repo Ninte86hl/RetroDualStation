@@ -7,7 +7,7 @@ PORTS="${1:-/storage/roms/ports}"
 SRC="$PORTS/.canvas-ds"
 THEMEDIR=/storage/.config/emulationstation/themes
 NAME=canvas-rds
-LOG=/storage/dualstation-canvas-install.log
+LOG=/storage/rds-canvas-install.log
 
 log()    { echo "$(date '+%F %T') $*" >> "$LOG"; }
 notify() { curl -s -m 3 -X POST -H 'Content-Type: text/plain' --data "$1" http://127.0.0.1:1234/notify >/dev/null 2>&1; }

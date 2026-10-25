@@ -55,10 +55,17 @@ from rocknixds_artwork_manager.nointro import normalize_name  # noqa: E402
 from rocknixds_artwork_manager.icon_generator import IconEditSettings, render_iisu_icon  # noqa: E402
 from rocknixds_artwork_manager.iisu_borders import prepare_iisu_borders, border_candidates  # noqa: E402
 from rocknixds_artwork_manager.device_profiles import target_for  # noqa: E402
+import rocknixds_artwork_manager.device as _rdsdev                          # noqa: E402
+
+# RDS-Erkennung des Pakets: Merker-Datei im Programmordner. Der heißt seit v15.2 rds-install (bis v15.1 rgds-test).
+for _marker in ("/storage/rds-install/es-switch-helper.sh", "/storage/rgds-test/es-switch-helper.sh"):
+    if os.path.exists(_marker):
+        _rdsdev.DUALSTATION_MARKER = _marker
+        break
 
 VERSION = "0.1.0"
 # Programm und alle Daten liegen im Ports-Ordner (am PC leicht erreichbar, z. B. per Netzwerkfreigabe)
-WORK = Path(os.environ.get("RDS_ARTWORK_DIR", "/storage/roms/ports/artworkmanager"))
+WORK = Path(os.environ.get("RDS_ARTWORK_DIR", "/storage/roms/ports/rds-artworkmanager"))
 SETTINGS = WORK / "settings.json"          # interne Einstellungen (Sicherungsfrage)
 CFG = WORK / "settings.cfg"                 # vom Nutzer bearbeitbar, z. B. am PC
 CFG_TEMPLATE = """# RetroDualStation Artwork Manager – Einstellungen
@@ -2131,7 +2138,7 @@ class App:
                  "Sicherung anlegen (gamelist.xml und vorhandene Artworks)?",
                  "",
                  "Empfohlen. Die Sicherung liegt danach unter",
-                 "/storage/roms/ports/artworkmanager/data/backups"]
+                 str(WORK / "data" / "backups")]
         for n, line in enumerate(lines):
             P.text(line, 30, 90, 240 + n * 52, T["text"] if n < 2 else T["muted"], raw=True)
         P.rrect(50, 600, 560, 110, 30, self.accent)

@@ -7,6 +7,7 @@
 - [Themes](Themes)
 - [Artwork Manager](Artwork-Manager)
 - [Good to know](Good-to-know)
+- [RDS files](Files)
 - [Roadmap](Roadmap)
 
 **🇩🇪 Deutsch**
@@ -18,6 +19,7 @@
 - [Themes](Themes-DE)
 - [Artwork Manager](Artwork-Manager-DE)
 - [Gut zu wissen](Gut-zu-wissen)
+- [Dateien von RDS](Dateien)
 - [Roadmap](Roadmap-DE)
 
 [GitHub-Repo](https://github.com/Ninte86hl/RetroDualStation) · [Releases](https://github.com/Ninte86hl/RetroDualStation/releases/latest)
