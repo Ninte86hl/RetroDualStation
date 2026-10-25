@@ -55,6 +55,13 @@ from rocknixds_artwork_manager.nointro import normalize_name  # noqa: E402
 from rocknixds_artwork_manager.icon_generator import IconEditSettings, render_iisu_icon  # noqa: E402
 from rocknixds_artwork_manager.iisu_borders import prepare_iisu_borders, border_candidates  # noqa: E402
 from rocknixds_artwork_manager.device_profiles import target_for  # noqa: E402
+import rocknixds_artwork_manager.device as _rdsdev                          # noqa: E402
+
+# RDS-Erkennung des Pakets: Merker-Datei im Programmordner. Der heißt seit v15.2 rds-install (bis v15.1 rgds-test).
+for _marker in ("/storage/rds-install/es-switch-helper.sh", "/storage/rgds-test/es-switch-helper.sh"):
+    if os.path.exists(_marker):
+        _rdsdev.DUALSTATION_MARKER = _marker
+        break
 
 VERSION = "0.1.0"
 # Programm und alle Daten liegen im Ports-Ordner (am PC leicht erreichbar, z. B. per Netzwerkfreigabe)
