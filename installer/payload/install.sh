@@ -359,8 +359,9 @@ UNIT
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
         # Bildschirmtext an (sonst gibt es keine FPS-Anzeige mit Anbernic + Y), Einblendungen aber einzeln aus –
         # Speichern, Laden, Vorspulen, Screenshot und Erfolge meldet das Kontrollcenter selbst. Erfolge-Zusammenfassung
-        # beim Start aus (summary 2 = aus), Schrift weiß statt RetroArch-Gelb.
-        for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=false' \
+        # beim Start aus (summary 2 = aus). Widgets an: FPS wie gewohnt weiß auf dunkler Kachel oben rechts
+        # (ohne Widgets gelber Text – dafür bleibt video_message_color weiß).
+        for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=true' \
                   'network_cmd_enable=true' 'quit_press_twice=false' \
                   'notification_show_save_state=false' 'notification_show_fast_forward=false' \
                   'notification_show_screenshot=false' 'notification_show_cheats_applied=false' \
