@@ -6293,8 +6293,8 @@ def ra_start_slot():
 
 
 def ra_slot1(pid):
-    """Nach dem Start: steht RetroArch auf Platz 0 (automatischer Stand), einen Slot weiter auf Slot 1 – manuell
-    speichern (Anbernic + R2) soll nie den automatischen Stand überschreiben. Je RetroArch-Prozess nur einmal."""
+    """Nach dem Start auf Slot 1 schalten – manuell speichern (Anbernic + R2) beginnt immer bei Slot 1 und überschreibt
+    nie den automatischen Stand (Platz 0). Den Start-Slot gibt ES vor (/tmp/.retroarch.cfg). Je Prozess nur einmal."""
     with RA_SLOT_LOCK:
         if RA_SLOT.get("bumped") == pid:
             return
@@ -6306,12 +6306,14 @@ def ra_slot1(pid):
         time.sleep(0.5)
     else:
         return
-    slot = ra_start_slot()
-    if slot <= 0:
-        ra_command("STATE_SLOT_PLUS")
-        slot = 1
-        log("RetroArch: Slot 1 für manuelles Speichern")
-    RA_SLOT.update(pid=pid, slot=slot)
+    slot = ra_start_slot()                 # ES „Savestates: auto“ startet mit dem nächsten freien Slot (ohne Stand: 0)
+    if slot != 1:
+        cmd = "STATE_SLOT_PLUS" if slot < 1 else "STATE_SLOT_MINUS"
+        for _ in range(abs(slot - 1)):
+            ra_command(cmd)
+            time.sleep(0.05)
+        log("RetroArch: Slot 1 für manuelles Speichern (Start war Slot %d)" % slot)
+    RA_SLOT.update(pid=pid, slot=1)
 
 
 def ra_slot_step(game, d):
