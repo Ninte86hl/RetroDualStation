@@ -74,3 +74,11 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
 - RA: Bildschirmtext + Widgets an (FPS), Einblendungen einzeln aus, `pause_nonactive` aus, Pauser friert RA ein
 - Savestates-Umzug `rds-migrate-savestates.py` (Merker `savestates-v15.2.done`) · Anker unsichtbar aufwecken
 - Scraper-Hinweis: Scraper in ES (Dual geht seit v15)
+
+## v15.3.1 (25.10.2026 abends, getestet RG DS + Plus nach Deinstallation/Neuinstallation)
+- Manuell speichern Slot 1: RA über das CC (`ra_quick`, RA-Tasten `nul`; ES „Savestates: auto“ gibt den nächsten
+  freien Slot vor), DraStic `savestate_number = 1`, DSperate CC schaltet auf Slot 1 · DSperate-Kachel Automatisch
+- `temp-settings.json`: hängende Spiel-Einstellungen aufräumen · Slot löschen mit Prüfung
+- Präfix rds-: Logs, Notfall-ZIP, `rds-dual.conf`, `ports/rds-artworkmanager` · Artwork Manager startete seit v15.2
+  nicht (Merker `/storage/rgds-test`) → Wrapper setzt Marker, `tools/patch-rocknixds-marker.py` für RocknixDS-v5
+- Wiki „Dateien von RDS“ · offen: Config-Ordner `rds-config` mit nächstem ES-Build; `global.savestates`-Wert prüfen

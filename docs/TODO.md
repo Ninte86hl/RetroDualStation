@@ -24,6 +24,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **ES `global.savestates`**: RDS setzt seit v13 „auto“ (Savestate-Manager aus) – ES gibt damit beim Start den
+      nächsten freien Slot an RetroArch. Prüfen, ob ein anderer Wert den Manager ausblendet, ohne den Slot vorzugeben
+      (für manuelles Speichern egal, das macht seit v15.3.1 das CC).
 - [ ] **Präfix rds- für den Config-Ordner** – `/storage/.config/retrodualstation` → `/storage/.config/rds-config`
       beim nächsten ES-Build (Patch 004 liest `screens.cfg` dort, Pfad ist ins ES einkompiliert). Dann CC, Artwork
       Manager (`BASE`), Dienste, Installer (Umzug + Merker), Deinstallation und Doku mit umstellen.
