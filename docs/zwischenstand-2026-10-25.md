@@ -32,11 +32,12 @@ Funktionsumfang“ · erst testen, dann TODO/Notizen · keine Zugangsdaten zeige
 - **Laden-Menü** fertig (`4dc8b7b`): 4 Spalten – oben links Spiel-Icon (quadratisch, Kachelhöhe, mittig, ohne
   Rahmen, nicht wählbar), dahinter Slot 1–9 (Slot 9 unter Slot 5), letzte Reihe ab Spalte Slot 6 Fläche in
   Theme-Farbe mit „Automatischer Speicherpunkt“ mittig und Kachel „Automatisch“ unter Slot 7. Speichern bleibt 3×3.
+- **Bluetooth-Agent** (`034d7f7`): Ursache runemu.sh – `kill "$NPID"` scheitert bei 2 PIDs, danach je Spiel einer mehr.
+  CC prüft alle 30 s in /proc und behält nur den neuesten. Getestet auf dem Plus.
 - **Installer**: DraStic `compress_savestates = 0` (`0038ade`) – offen: laden alte komprimierte Stände noch?
 
 ## Offen (docs/TODO.md)
 - Schnellwechsel: Schalter im CC + Standard an/aus.
-- Bluetooth-Agent vervielfacht sich bei jedem ES-Neustart (15× ≈ 380 MB).
 - Savestates-Übergang für bestehende Nutzer (eigene Stände auf Platz 0, v. a. DSperate → freien Slot; RA `.state9`).
 - Installer DraStic `compress_savestates = 0`: prüfen, ob alte komprimierte Stände noch laden.
 - DSperate „Neu starten“ (Y) prüfen – Autoload kommt per `--autoload`, nicht aus dsperate.ini.
