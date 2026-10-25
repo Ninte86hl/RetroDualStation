@@ -344,7 +344,8 @@ UNIT
     RACFG=/storage/.config/retroarch/retroarch.cfg
     if [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
         # Ersetzen oder hinzufügen: fehlt eine Zeile (frisches ROCKNIX oder nach einer Deinstallation, die sie wieder
-        # entfernt hat), gilt sonst der RetroArch-Standard – mit Rückfrage hängt „Neu starten“ aus CC/Gameswitcher.
+        # entfernt hat), gilt sonst der RetroArch-Standard. (RetroArch 1.22 kennt confirm_reset nicht mehr und fragt
+        # beim Neustart trotzdem nach – das CC sendet RESET deshalb zweimal, siehe ra_reset.)
         # Netzbefehle (Port 55355, nur lokal genutzt): Kontrollcenter/Gameswitcher speichern, laden, neu starten
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
         for kv in 'confirm_reset=false' 'confirm_close=false' 'notification_show_save_state=false' \
