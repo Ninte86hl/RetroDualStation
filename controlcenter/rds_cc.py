@@ -5204,13 +5204,11 @@ class ControlCenter:
                 continue
             tx = 45 + (pos % cols) * (tw + gap)
             ty = top + (pos // cols) * (th + gap)
-            if n == SLOT_ICON:                           # Spiel-Icon frei mit schmalem Rahmen in Schemafarbe, sonst RDS-Logo
+            if n == SLOT_ICON:                           # Spiel-Icon mittig, Rahmen in Schemafarbe so groß wie eine Slot-Kachel
+                P.rrect(tx, ty, tw, th, 20, mix(T["bg"], A, 0.6), stroke=3)
                 d = th - 30
-                ix, iy = tx + (tw - d) / 2, ty + 15
                 icon = self._game_icon()
-                if icon and P.image(icon, ix, iy, d, d, 18):
-                    P.rrect(ix - 4, iy - 4, d + 8, d + 8, 22, mix(T["bg"], A, 0.6), stroke=3)
-                else:
+                if not (icon and P.image(icon, tx + (tw - d) / 2, ty + 15, d, d, 18)):
                     P.logo(tx + (tw - 110) / 2, ty + (th - 110) / 2, 110, T["muted"], T["bg"])
                 continue
             w_, h_ = tw, th
