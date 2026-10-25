@@ -154,6 +154,10 @@ if [ -d "$SSDIR" ]; then
     log "entfernt: Slot-Vorschaubilder von RDS"
 fi
 rm -rf "$PORTS/.dualstation"                                    # Reste eines abgebrochenen Installers
+( cd /storage && rm -f drastic-touch-test.sh drastic-touch-test.log dtt-*.txt dsperate-wayland-test.sh \
+    dsperate-wayland-test.log dsp-wl.log .dsp-real .dsp-wrap evdev-flush.py gs-autotest.sh gs-autotest.log \
+    gs-autotest-ohne-ende.sh ra-fast-test.sh ra-fast-test.log ramtest-ds.sh ramtest-ds.log \
+    dualstation-canvas-install.log )                            # Testskripte und -logs (tools/)
 rm -f /storage/logs/rds-report-*.tar.gz                         # Fehlerberichte des Kontrollcenters
 rm -rf /storage/thumbnails/cheevos/badges                       # Zwischenspeicher der Erfolgs-Symbole (lädt bei Bedarf neu)
 rmdir /storage/thumbnails/cheevos /storage/thumbnails 2>/dev/null
