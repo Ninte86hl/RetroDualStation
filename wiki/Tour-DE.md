@@ -132,7 +132,7 @@ Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge**
 **Image** (Hero) – der obere Bildschirm zeigt, wie die drei zusammen wirken.
 
 **Voraussetzung:** Jedes System braucht eine `gamelist.xml`. Sie entsteht einmalig mit dem Scraper
-im Single-Screen-Modus (originale ROCKNIX-Oberfläche); RetroDualStation nutzt dieselbe Liste.
+im ES-Menü (geht auch im Dual-Modus); RetroDualStation und das Original-ES nutzen dieselbe Liste.
 
 | Wo | Taste | Funktion |
 |---|---|---|

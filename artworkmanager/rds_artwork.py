@@ -235,8 +235,8 @@ EN_AM = {
         "Every system therefore needs a gamelist.xml in its ROM folder.",
     "Systeme ohne Liste sind in der Systemliste markiert.": "Systems without a list are marked in the system list.",
     "So entsteht die Spieleliste": "How to create the game list",
-    "Im Single-Screen-Modus (originale ROCKNIX-Oberfläche) mit dem Scraper":
-        "In single-screen mode (original ROCKNIX interface), use the scraper",
+    "Im ES-Menü mit dem Scraper (geht auch im Dual-Modus)":
+        "In the ES menu, use the scraper (works in dual mode, too)",
     "die Spiele einmal scrapen. Die Liste gilt auch für RetroDualStation.":
         "to scrape your games once. The list is also used by RetroDualStation.",
     "Gespeichert wird in der gamelist.xml und im Ordner images des Systems.":
@@ -289,8 +289,8 @@ EN_AM = {
     "alle Artworks": "all artwork", "teilweise": "partial", "keine": "none",
     "Kein Spiel gefunden": "No game found", "Keine Treffer – anderen Namen probieren": "No results – try another name",
     "Keine Artworks gefunden – mit Y anderes Spiel suchen": "No artwork found – press Y to search another game",
-    "Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen":
-        "No game list – create one with the scraper in single-screen mode",
+    "Keine Spieleliste – mit dem Scraper in ES anlegen":
+        "No game list – create one with the scraper in ES",
     "Erst mit A ein Bild übernehmen, dann mit Start speichern": "Take an image with A first, then save with Start",
     "Alle Stile übernommen – mit Start speichern": "All styles taken – save with Start",
     "Alle Spiele haben bereits alle Artworks": "All games already have all artwork",
@@ -1463,7 +1463,7 @@ class App:
             return
         if self.view == "systems":
             if self.systems and not has_gamelist(self.systems[i]["key"]):
-                self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
+                self.say("Keine Spieleliste – mit dem Scraper in ES anlegen")
             elif self.systems:
                 self.open_system(i)
         elif self.view == "settings":
@@ -1881,7 +1881,7 @@ class App:
             if has_gamelist(self.systems[self.sel]["key"]):
                 self.open_system(self.sel, batch=True)       # Mehrfachsuche
             else:
-                self.say("Keine Spieleliste – im Single-Screen-Modus mit dem Scraper anlegen")
+                self.say("Keine Spieleliste – mit dem Scraper in ES anlegen")
         elif code == BTN_SELECT and self.view == "game" and self.batch:
             if self.chosen:
                 self.bq_add()                                # mit der bisherigen Auswahl einreihen
@@ -2087,7 +2087,7 @@ class App:
             ("Systeme ohne Liste sind in der Systemliste markiert.", False),
             ("", False),
             ("So entsteht die Spieleliste", True),
-            ("Im Single-Screen-Modus (originale ROCKNIX-Oberfläche) mit dem Scraper", False),
+            ("Im ES-Menü mit dem Scraper (geht auch im Dual-Modus)", False),
             ("die Spiele einmal scrapen. Die Liste gilt auch für RetroDualStation.", False),
             ("", False),
             ("Gespeichert wird in der gamelist.xml und im Ordner images des Systems.", False),

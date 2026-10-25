@@ -131,7 +131,7 @@ Start it from **Ports → Artwork Manager**. It adds **Boxart**, **Cartridge** (
 **Image** (hero) to your games – the top screen shows how the three look together.
 
 **Requirement:** every system needs a `gamelist.xml`. Create it once with the scraper in
-single-screen mode (original ROCKNIX interface); RetroDualStation uses the same list.
+the ES menu (works in dual mode, too); RetroDualStation and stock ES use the same list.
 
 | Where | Button | Action |
 |---|---|---|

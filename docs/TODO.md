@@ -36,8 +36,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       FPS im Spiel (DraStic/DSperate-Anzeige, gleiche Stelle), Start-/Ladezeiten, dazu Touch, Bildschirmzuordnung und
       Overlays prüfen. Umschalten über die ROCKNIX-Einstellung (autostart `003-gpudriver`; genauen Schlüssel/Menüpunkt
       am Gerät nachsehen). Ergebnis als Tabelle; ggf. Empfehlung in der Doku, kein automatisches Umschalten durch RDS.
-- [ ] **Tour: veralteten Hinweis anpassen** – „einmal im Single-Screen-Modus scrapen“ beim Artwork Manager
-      (Rest aus dem erledigten Punkt „Single-Modus: Kontrollcenter ruhen lassen“).
 - [ ] **Spiel neu starten in DraStic und DSperate** (Wunsch 25.10.2026, nächste Runde) – wie bei RetroArch direkt im
       laufenden Emulator, aus dem CC (Seite „Spiel“) und mit Y im Gameswitcher. Prüfen: Reset-Kürzel/Menüpunkt in
       DraStic und DSperate, ob er sich per virtueller Taste auslösen lässt; sonst Neustart des Emulators ohne

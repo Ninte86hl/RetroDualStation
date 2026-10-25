@@ -9,7 +9,7 @@ Start it from **Ports → Artwork Manager**. It fills in **boxart**, **cartridge
 - **Multi-disc games** merged into one `.m3u` entry, arcade names from the FBNeo list
 - Backup of each `gamelist.xml` before the first save, restore in the settings
 
-**Requirement:** each system needs a `gamelist.xml` – create it once with the scraper in single-screen mode.
+**Requirement:** each system needs a `gamelist.xml` – create it once with the scraper in ES (works in dual mode, too).
 
 | | | |
 |:-:|:-:|:-:|
