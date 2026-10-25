@@ -373,8 +373,7 @@ UNIT
         # und beenden darüber – bei frischem ROCKNIX sind sie aus
         # Bildschirmtext an (sonst gibt es keine FPS-Anzeige mit Anbernic + Y), Einblendungen aber einzeln aus –
         # Speichern, Laden, Vorspulen, Screenshot und Erfolge meldet das Kontrollcenter selbst. Erfolge-Zusammenfassung
-        # beim Start aus (summary 2 = aus). state_slot 1: manuell speichern (Anbernic + R2) geht auf Slot 1,
-        # Platz 0 bleibt dem automatischen Stand (Home, Beenden, Gameswitcher). pause_nonactive aus: eine Berührung unten nahm RetroArch den Fokus und
+        # beim Start aus (summary 2 = aus). pause_nonactive aus: eine Berührung unten nahm RetroArch den Fokus und
         # pausierte es (mit „Pausiert“-Kachel) – das Anhalten übernimmt das CC. Widgets an: FPS wie gewohnt weiß auf dunkler Kachel oben rechts
         # (ohne Widgets gelber Text – dafür bleibt video_message_color weiß).
         for kv in 'confirm_reset=false' 'confirm_close=false' 'video_font_enable=true' 'menu_enable_widgets=true' \
@@ -389,8 +388,7 @@ UNIT
                   'cheevos_visibility_lboard_start=false' 'cheevos_visibility_lboard_submit=false' \
                   'cheevos_visibility_lboard_cancel=false' 'cheevos_visibility_lboard_trackers=false' \
                   'cheevos_visibility_progress_tracker=false' 'cheevos_visibility_summary=2' \
-                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff' 'pause_nonactive=false' \
-                  'state_slot=1'; do
+                  'cheevos_challenge_indicators=false' 'video_message_color=ffffff' 'pause_nonactive=false'; do
             k="${kv%%=*}"; v="${kv#*=}"
             if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"$v\"/" "$RACFG"; else echo "$k = \"$v\"" >> "$RACFG"; fi
         done
@@ -417,6 +415,14 @@ UNIT
         fi
         mkdir -p /storage/.config/retrodualstation && date > "$KMARK"
         log "Kuerzel: einheitliches Schema gesetzt (Originalwerte in rds-install/settings-before-rds.json)"
+    fi
+    # RetroArch: Speichern/Laden und Slot ± übernimmt das CC (Anbernic + R2/L2/◀/▶ → SAVE_STATE_SLOT n mit eigenem
+    # Slot, Start immer Slot 1). RetroArchs eigene Tasten aus – sein Start-Slot hängt von ES ab („nächster freier“).
+    if [ -f "$RACFG" ] && ! pidof retroarch >/dev/null; then
+        for k in input_save_state_btn input_load_state_btn input_state_slot_decrease_btn input_state_slot_increase_btn; do
+            if grep -q "^$k = " "$RACFG"; then sed -i "s/^$k = .*/$k = \"nul\"/" "$RACFG"; else echo "$k = \"nul\"" >> "$RACFG"; fi
+        done
+        log "RetroArch: Speichern/Laden/Slot ueber das CC (manuell ab Slot 1)"
     fi
     # DraStic: Menü und Vorspulen auf Tasten, die es am Gerät nicht gibt – F11 (324) und F12 (325)
     # der virtuellen Tastatur des Kontrollcenters. Stick, L3 und R3 bleiben frei; die Anbernic-Taste

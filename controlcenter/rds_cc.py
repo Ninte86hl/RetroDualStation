@@ -2662,6 +2662,11 @@ def ra_shortcuts():
     hk = btn("enable_hotkey")
     rows = []
     for key, label in RA_HOTKEYS:
+        if key in ("save_state", "load_state"):      # übernimmt das CC (eigener Slot, RetroArch-Tasten sind aus)
+            rows.append((label, "Anbernic + " + ("R2" if key == "save_state" else "L2")))
+            if key == "load_state":
+                rows.append(("Slot − / +", "Anbernic + ◀ / ▶"))
+            continue
         b = btn(key)
         if b:
             rows.append((label, (hk + " + " if hk else "") + b))
@@ -6278,55 +6283,31 @@ def speed_event(kind, game):
     info_toast(text, icon)
 
 
-RA_SLOT = {"pid": None, "slot": 0, "bumped": None}
-RA_SLOT_LOCK = threading.Lock()
+RA_SLOT = {"pid": None, "slot": 1}
 
 
-def ra_start_slot():
-    """Slot, mit dem RetroArch gestartet wurde. ROCKNIX gibt ihn per --appendconfig mit (/tmp/.retroarch.cfg):
-    ES wählt bei „Savestates: auto“ den Slot des neuesten Stands, ohne Stand 0."""
-    for path in ("/tmp/.retroarch.cfg", "/storage/.config/retroarch/retroarch.cfg"):
-        m = re.search(r'^state_slot\s*=\s*"?(-?\d+)', rd(path) or "", re.M)
-        if m:
-            return int(m.group(1))
-    return 0
-
-
-def ra_slot1(pid):
-    """Nach dem Start auf Slot 1 schalten – manuell speichern (Anbernic + R2) beginnt immer bei Slot 1 und überschreibt
-    nie den automatischen Stand (Platz 0). Den Start-Slot gibt ES vor (/tmp/.retroarch.cfg). Je Prozess nur einmal."""
-    with RA_SLOT_LOCK:
-        if RA_SLOT.get("bumped") == pid:
-            return
-        RA_SLOT["bumped"] = pid
-    end = time.time() + 20
-    while time.time() < end and os.path.exists("/proc/%d" % pid):
-        if "PLAYING" in (ra_command("GET_STATUS", reply=True) or ""):
-            break
-        time.sleep(0.5)
-    else:
-        return
-    slot = ra_start_slot()                 # ES „Savestates: auto“ startet mit dem nächsten freien Slot (ohne Stand: 0)
-    if slot != 1:
-        cmd = "STATE_SLOT_PLUS" if slot < 1 else "STATE_SLOT_MINUS"
-        for _ in range(abs(slot - 1)):
-            ra_command(cmd)
-            time.sleep(0.05)
-        log("RetroArch: Slot 1 für manuelles Speichern (Start war Slot %d)" % slot)
-    RA_SLOT.update(pid=pid, slot=1)
+def ra_slot(game):
+    """Slot für manuelles Speichern in RetroArch – führt das CC selbst (RetroArchs eigene Slot-Tasten sind aus,
+    sein Start-Slot hängt von ES ab und ließ sich nicht verlässlich setzen). Jedes neue Spiel beginnt bei Slot 1."""
+    if RA_SLOT["pid"] != game.get("pid"):
+        RA_SLOT.update(pid=game.get("pid"), slot=1)
+    return RA_SLOT["slot"]
 
 
 def ra_slot_step(game, d):
-    """RetroArch-Slot mitzählen (Anbernic + ◀/▶) und anzeigen. Start: wie ra_slot1 (mindestens Slot 1)."""
-    if RA_SLOT["pid"] != game.get("pid"):
-        RA_SLOT.update(pid=game.get("pid"), slot=max(1, ra_start_slot()))
-    new = min(9, max(1, RA_SLOT["slot"] + d))           # manuelle Slots 1–9; Platz 0 gehört dem automatischen Stand
-    if RA_SLOT["slot"] + d < 1:                         # RetroArch ist schon auf 0 gesprungen → zurück auf 1
-        ra_command("STATE_SLOT_PLUS")
-    elif RA_SLOT["slot"] + d > 9:
-        ra_command("STATE_SLOT_MINUS")
-    RA_SLOT["slot"] = new
-    info_toast("Slot %d" % RA_SLOT["slot"], "save")   # RetroArch-Zählung = Anzeige im Kontrollcenter
+    """Anbernic + ◀/▶: Slot 1–9 (Platz 0 gehört dem automatischen Stand) und anzeigen."""
+    RA_SLOT["slot"] = min(9, max(1, ra_slot(game) + d))
+    info_toast("Slot %d" % RA_SLOT["slot"], "save")
+
+
+def ra_quick(game, key):
+    """Anbernic + R2 / L2 in RetroArch: in den Slot des CC speichern bzw. daraus laden (ausdrückliche Slot-Nummer)."""
+    n = ra_slot(game)
+    ok = ra_command(("SAVE_STATE_SLOT %d" if key == "save" else "LOAD_STATE_SLOT %d") % n) is not None
+    log("Kürzel RetroArch:", key, "Slot", n, "ok" if ok else "keine Antwort")
+    if ok:
+        info_toast(("Gespeichert · Slot %d" if key == "save" else "Geladen · Slot %d") % n,
+                   "save" if key == "save" else "load")
 
 
 def info_toast(text, icon="ff"):
@@ -7247,6 +7228,8 @@ def main():
         if g0 and g0["emu"] in ("RetroArch", "DSperate", "DraStic"):
             if code == BTN_TR:
                 speed_event("ff", g0)
+            elif g0["emu"] == "RetroArch":
+                threading.Thread(target=ra_quick, args=(g0, "save" if code == 313 else "load"), daemon=True).start()
             elif g0["emu"] not in OWN_OSD_EMUS:
                 info_toast("Gespeichert" if code == 313 else "Geladen", "save" if code == 313 else "load")
 
@@ -7458,8 +7441,6 @@ def main():
                                 temp_settings_cleanup()
                             except Exception as exc:
                                 log("Einstellungen aufräumen:", exc)
-                        if g and g["emu"] == "RetroArch":
-                            threading.Thread(target=ra_slot1, args=(g["pid"],), daemon=True).start()
                         if g and g["emu"] == "DSperate":
                             # DSperate beginnt mit Slot 0 – manuell speichern (Anbernic + R2) soll wie bei RetroArch
                             # (state_slot 1) und DraStic (savestate_number 1) auf Slot 1 gehen; Platz 0 bleibt frei
