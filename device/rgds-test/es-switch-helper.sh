@@ -131,6 +131,18 @@ else
     fi
 fi
 
+# --- Power-Taste: im Dual-Modus übernimmt sie das Kontrollcenter, im Single-Modus wieder ROCKNIX ---
+LOGIND=/storage/.config/logind.conf.d/rds-logind-powerkey.conf
+if [ "$MODE" = "dual" ] && [ -f /storage/.config/retrodualstation/controlcenter/rds_cc.py ]; then
+    mkdir -p "${LOGIND%/*}"
+    printf '# RetroDualStation: Power-Taste wird vom Kontrollcenter behandelt\n[Login]\nHandlePowerKey=ignore\n' > "$LOGIND"
+    log "Power-Taste: Kontrollcenter"
+else
+    rm -f "$LOGIND"
+    log "Power-Taste: ROCKNIX"
+fi
+systemctl kill -s HUP systemd-logind 2>/dev/null
+
 systemctl daemon-reload
 log "Starte essway"
 systemctl start essway
