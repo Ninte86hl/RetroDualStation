@@ -24,6 +24,13 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Prüfen: DSperate v3.0.5** (github.com/beebono/DSperate, 21.10.2026) – neu: `--saves`/`--states`, Fehlerbild beim
+      Start, Vulkan-Ausgabe zuerst bei `video.gpu_present = true` (Render-Pass), RGA ganzzahlig, Fix: PipeWire-Taktung
+      (RLIMIT_RTTIME-Abbruch), GPU-Ausgabe bleibt nach Menü, JIT/2D-Ruckler, 3D-Kanten. Einbindung: abwarten bis
+      ROCKNIX liefert ODER optional über den Updater laden und über /usr/bin/dsperate einhängen (Lizenz klären,
+      ROCKNIX-Startoptionen + CC-Annahmen .auto.dss/.N.dss/dsperate.ini prüfen, dynamisch vs. statisch).
+      Vulkan + panfrost: betrifft nur die Ausgabe/Skalierung; PanVK nennt Vulkan 1.3 für G52 (Konformität unklar).
+      Nur messen hilft: gleiche Stelle, FPS, gpu_present an/aus × panfrost/libmali (zusammen mit dem Treiber-Vergleich).
 - [ ] **Beobachten: advanced_drastic** (https://github.com/trngaje/advanced_drastic, vorerst nur im Blick behalten – Stand 24.10.2026: 370f053) – Update 23./24.10.2026: **RG DS mit
       zwei eigenen Fenstern** (vorher ein schwebendes Fenster + Sway-Zeilen; Skript kannte auch „RG DS Plus“).
       LD_PRELOAD-Hook für DraStic v2522, eigenes Menü (Auto-Speichern/Laden mit Slot, FPS, Save/Load-Taste, Cheats,
