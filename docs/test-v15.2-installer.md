@@ -4,10 +4,11 @@ Reihenfolge auf dem **RG DS** (`192.168.178.21`), danach **RG DS Plus** (`192.16
 `IP` jeweils ersetzen. Ausgaben der Prüfbefehle an Claude schicken.
 
 ## 0. Installer bauen (PC)
-Wie bei v15.1 (ES-Binary, canvas-ZIP, Artwork-Manager-Repo, Pillow-Wheel):
+ES-Patches und Theme sind seit v15.1 unverändert – ES-Binary und canvas-ZIP von v15.1 weiter nutzen:
 ```
-cd ~/RetroDualStation/retrodualstation && git pull && python3 tools/make-installer.py <ES-Binary> v15.2 <canvas-ZIP> --artwork <AM-Repo> --pillow <Pillow-Wheel>
+cd ~/RetroDualStation/retrodualstation && git pull && python3 tools/make-installer.py emulationstation-rgds v15.2 canvas-rds-v15.1.zip --artwork ~/Desktop/RocknixDS-v5
 ```
+Ohne `--pillow` lädt der Installer Pillow auf dem Gerät aus dem Internet – bei der Neuinstallation (Schritt 4) WLAN an.
 Paket aufs Gerät (danach in ES: Ports → „Install RDS“ bzw. „Update RDS“ starten):
 ```
 IP=192.168.178.21; scp retrodualstation-v15.2.zip root@$IP:/storage/roms/ports/ && ssh root@$IP 'cd /storage/roms/ports && unzip -o -q retrodualstation-v15.2.zip && rm retrodualstation-v15.2.zip && systemctl restart essway'
