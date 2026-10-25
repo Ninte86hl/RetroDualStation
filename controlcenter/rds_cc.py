@@ -1817,16 +1817,9 @@ def swap_screens(g):
         SWAP[pid] = emu
     else:
         SWAP.pop(pid, None)
-    tm = touch_map("DraStic", on) if emu == "DraStic" else None
-    log("Bildschirme tauschen:", emu, "an" if on else "aus", "über", how, "· Touch:", tm or "–")
-    if tm:
-        # DraStic baut sein Fenster beim Tauschen neu auf; dabei greift die for_window-Regel von ROCKNIX erneut und
-        # setzt den Touch auf DSI-2 zurück – deshalb mehrmals nachsetzen, solange der Zustand gilt
-        for wait in (0.15, 0.5, 1.0, 2.0):
-            time.sleep(wait)
-            if (pid in SWAP) != on:
-                break
-            sway_cmd(tm)
+    # Touch-Zuordnung bleibt wie von ROCKNIX gesetzt (Umstellen auf DSI-1 half nicht, Test 25.10.) – nächster Ansatz:
+    # DraStic-Einstellung „Mirror touchscreen“ mitschalten
+    log("Bildschirme tauschen:", emu, "an" if on else "aus", "über", how)
     info_toast("Bildschirme getauscht" if on else "Bildschirme normal", "swap")
 
 
@@ -2081,7 +2074,7 @@ def fast_resume():
             cmds.append(f"[con_id={con}] move container to workspace {ws}, {full}")
         else:
             cmds.append(f"[con_id={con}] {full}")
-    tm = touch_map(FROZEN.get("emu"), swap_swapped(FROZEN["pids"]))   # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
+    tm = touch_map(FROZEN.get("emu"))             # Touch wieder dem Anker zuordnen (DraStic verbiegt sie)
     if tm:
         cmds.append(tm)
     top = next((x[0] for x in FROZEN["cons"] if x[1] == TOP_OUTPUT), None)
@@ -2107,7 +2100,7 @@ def fast_wake_hidden():
     """Anker aufwecken, aber unsichtbar lassen – er wird gleich über ES beendet (Wechsel zu einem Spiel, das nicht
     als Zusatzspiel starten kann, z. B. ein anderes RetroArch-Spiel). Spart das Zurückholen der Fenster und das
     kurze Aufblitzen des alten Spiels; Touch-Zuordnung wie beim Aufwecken korrigieren."""
-    tm = touch_map(FROZEN.get("emu"), swap_swapped(FROZEN["pids"]))
+    tm = touch_map(FROZEN.get("emu"))
     if tm:
         sway_cmd(tm)
     n = evdev_flush(FROZEN["pids"])
