@@ -5,6 +5,6 @@
 - **PS1:** the installer sets **pcsx_rearmed** if no working core is selected.
 - **DS:** DraStic and DSperate work; RetroArch DS cores are untested.
 - **DraStic touch not responding?** Set **Follow 3D Renderer** to *Auto* (also happens on stock ROCKNIX).
-- **Back to stock:** *Ports → RDS Single-Screen*; *Uninstall* restores stock ES and theme – games, media, game lists and saves stay untouched.
+- **Back to stock:** *Ports → RDS Single-Screen*; *Uninstall* restores stock ES, theme and your original settings and removes everything from RDS – games, artwork, game lists, save states and saves stay untouched. A safety copy of your original settings is kept in `roms/backup` until the uninstall has finished.
 
 Technical details and manual installation: [TECHNICAL.md](https://github.com/Ninte86hl/RetroDualStation/blob/main/docs/TECHNICAL.md)

@@ -13,7 +13,7 @@ DSperate and PortMaster. The game pauses and continues where you left off. Pages
 
 ## Game page *(v13)*
 For RetroArch, DSperate and DraStic:
-- **Save / Load** – 9 slots with preview picture; delete a slot with the bin icon
+- **Save / Load** – slots 1–9 with preview picture, plus the protected **Automatic** save point when loading; delete a slot with the bin icon
 - **Emulator menu**, **Restart**, **Fast forward**, **Slow motion**, **Screenshot**, **Button layout**, **Quit**
 
 ## Same shortcuts everywhere
