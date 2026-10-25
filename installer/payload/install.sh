@@ -267,6 +267,24 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         ln -sf "$SYSD/rds-resume.service" "$SYSD/$t.target.wants/rds-resume.service"
     done
     cp "$SRC/controlcenter/rds-logind-powerkey.conf" /storage/.config/logind.conf.d/
+    # Absicherung der Deinstallation: bricht sie ab, bevor die Einstellungen zurückgesetzt sind, stellt dieser
+    # Dienst beim nächsten Start die Notfall-Sicherung wieder her (nur mit Merker, sonst tut er nichts)
+    cat > "$SYSD/rds-uninstall-guard.service" <<'UNIT'
+# RetroDualStation: unterbrochene Deinstallation – Einstellungen von vor RDS wiederherstellen
+[Unit]
+Description=RetroDualStation – Einstellungen nach unterbrochener Deinstallation wiederherstellen
+ConditionPathExists=/storage/.config/rds-uninstall.running
+Before=essway.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'Z=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip; L=/storage/dualstation-uninstall.log; if [ -f "$$Z" ] && unzip -o "$$Z" -d / >>"$$L" 2>&1; then rm -f /storage/.config/rds-uninstall.running; echo "$$(date) Start: Notfall-Sicherung wiederhergestellt" >>"$$L"; else echo "$$(date) Start: Wiederherstellung fehlgeschlagen" >>"$$L"; fi'
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+    mkdir -p "$SYSD/multi-user.target.wants"
+    ln -sf "$SYSD/rds-uninstall-guard.service" "$SYSD/multi-user.target.wants/rds-uninstall-guard.service"
     systemctl daemon-reload
     systemctl kill -s HUP systemd-logind 2>/dev/null   # Power-Taste übernimmt das CC
     log "Kontrollcenter installiert: $CCDIR"

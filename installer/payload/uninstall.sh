@@ -13,6 +13,16 @@ log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
 log "=== Deinstallation RDS $(cat $DEST/VERSION 2>/dev/null) ==="
 
+# Absicherung: Merker bis die Einstellungen zurückgesetzt sind. Bricht die Deinstallation vorher ab (Akku leer,
+# Absturz), stellt rds-uninstall-guard.service beim nächsten Start die Notfall-Sicherung wieder her.
+MARK=/storage/.config/rds-uninstall.running
+RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
+touch "$MARK"
+zip_restore() {   # wie ROCKNIX' „backuptool restore“, aber mit unserer ZIP (ROCKNIX_BACKUP.zip bleibt unberührt)
+    [ -f "$RDSZIP" ] || { log "FEHLER: keine Notfall-Sicherung $RDSZIP"; return 1; }
+    unzip -o "$RDSZIP" -d / >>"$LOG" 2>&1 && log "Notfall-Sicherung wiederhergestellt: $RDSZIP"
+}
+
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
 for f in "RDS Dual-Screen.sh" "RDS Single-Screen.sh" "Uninstall RDS.sh" "Install RDS.sh" "Artwork Manager.sh" \
          "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh"; do   # alte Namen bis v13.1
@@ -30,12 +40,19 @@ if [ -f "$DEST/settings-before-rds.json" ] && [ -f "$DEST/rds-settings.py" ]; th
     if python3 "$DEST/rds-settings.py" restore "$DEST/settings-before-rds.json" >>"$LOG" 2>&1; then
         rm -f "$RACFG.vor-rds-kuerzel" "$DSPINI.vor-rds-kuerzel" "$DCFG.vor-rds-kuerzel" "$ESINPUT.before-rds"
         log "Originalwerte zurueckgesetzt, alte Sicherungen entfernt"
+        rm -f "$MARK"
     else
-        log "WARNUNG: Zuruecksetzen unvollstaendig – Sicherungen *.vor-rds-kuerzel / *.before-rds bleiben"
+        log "WARNUNG: Zuruecksetzen unvollstaendig – Notfall-Sicherung wird wiederhergestellt"
+        zip_restore && rm -f "$MARK"
     fi
+elif [ -f "$RDSZIP" ]; then
+    log "Sicherung der Originalwerte fehlt – Notfall-Sicherung wird wiederhergestellt"
+    zip_restore && rm -f "$MARK"
 else
     log "Keine Sicherung der Originalwerte gefunden (Installation vor v15.2) – Einstellungen bleiben"
+    rm -f "$MARK"
 fi
+[ -f "$MARK" ] && log "WARNUNG: Einstellungen nicht zurueckgesetzt – Merker bleibt, Wiederherstellung beim naechsten Start"
 sed -i '/for_window \[app_id="^emulationstation-rgds"\] fullscreen enable global/d' /storage/.config/sway/config 2>/dev/null
 
 # Zurueck auf Single (Original-ES, Original-Theme, Drop-in weg, Sway zurueck)
@@ -73,6 +90,7 @@ systemctl stop rds-controlcenter 2>/dev/null
 rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlcenter.service" \
       "$SYSD"/*.target.wants/rds-resume.service "$SYSD/rds-resume.service" \
       /storage/.config/logind.conf.d/rds-logind-powerkey.conf
+[ -f "$MARK" ] || rm -f "$SYSD/multi-user.target.wants/rds-uninstall-guard.service" "$SYSD/rds-uninstall-guard.service"
 SS="$(cat /storage/.config/retrodualstation/savestates.done 2>/dev/null)"   # vor dem Löschen merken
 AH="$(cat /storage/.config/retrodualstation/autohotkeys.done 2>/dev/null)"
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
