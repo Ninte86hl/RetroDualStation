@@ -6231,7 +6231,8 @@ def speed_event(kind, game):
     info_toast(text, icon)
 
 
-RA_SLOT = {"pid": None, "slot": 0}
+RA_SLOT = {"pid": None, "slot": 0, "bumped": None}
+RA_SLOT_LOCK = threading.Lock()
 
 
 def ra_start_slot():
@@ -6246,7 +6247,11 @@ def ra_start_slot():
 
 def ra_slot1(pid):
     """Nach dem Start: steht RetroArch auf Platz 0 (automatischer Stand), einen Slot weiter auf Slot 1 – manuell
-    speichern (Anbernic + R2) soll nie den automatischen Stand überschreiben."""
+    speichern (Anbernic + R2) soll nie den automatischen Stand überschreiben. Je RetroArch-Prozess nur einmal."""
+    with RA_SLOT_LOCK:
+        if RA_SLOT.get("bumped") == pid:
+            return
+        RA_SLOT["bumped"] = pid
     end = time.time() + 20
     while time.time() < end and os.path.exists("/proc/%d" % pid):
         if "PLAYING" in (ra_command("GET_STATUS", reply=True) or ""):
