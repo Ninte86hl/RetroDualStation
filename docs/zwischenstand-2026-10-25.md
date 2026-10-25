@@ -29,6 +29,10 @@ Funktionsumfang“ · erst testen, dann TODO/Notizen · keine Zugangsdaten zeige
   Überschreiben eines belegten Slots fragt nach (Kachel gedämpft in Theme-Farbe, „Überschreiben?“, 2× A/Tippen).
   Savestates auf dem Plus für den Test komplett gelöscht (Spielstände .srm/.sav unberührt). Test bestanden.
 
+## Release v15.2 (25.10.2026, ~03:15) – auf RG DS und RG DS Plus getestet
+Prüfliste `docs/test-v15.2-installer.md` vollständig bestanden (Update, Abbruch, Deinstallation, Neuinstallation,
+Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher ohne RDS-Ports, Theme-Optionen je Modus.
+
 ## Nachtrag 25.10. nachts (abgenommen)
 - **Laden-Menü** fertig (`4dc8b7b`): 4 Spalten – oben links Spiel-Icon (quadratisch, Kachelhöhe, mittig, ohne
   Rahmen, nicht wählbar), dahinter Slot 1–9 (Slot 9 unter Slot 5), letzte Reihe ab Spalte Slot 6 Fläche in
