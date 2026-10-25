@@ -24,7 +24,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
-- [ ] **Prüfen: advanced_drastic** (https://github.com/trngaje/advanced_drastic) – Update 23./24.10.2026: **RG DS mit
+- [ ] **Beobachten: advanced_drastic** (https://github.com/trngaje/advanced_drastic, vorerst nur im Blick behalten – Stand 24.10.2026: 370f053) – Update 23./24.10.2026: **RG DS mit
       zwei eigenen Fenstern** (vorher ein schwebendes Fenster + Sway-Zeilen; Skript kannte auch „RG DS Plus“).
       LD_PRELOAD-Hook für DraStic v2522, eigenes Menü (Auto-Speichern/Laden mit Slot, FPS, Save/Load-Taste, Cheats,
       falsches Mikrofon). Installer ersetzt den DraStic-Starter (eigenes drastic_v2522, eigenes LD_PRELOAD statt
