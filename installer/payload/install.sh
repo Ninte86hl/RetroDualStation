@@ -152,14 +152,25 @@ rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_IN
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
-# Notfall-Sicherung der ganzen Dateien (nur beim ersten Mal, bleibt auch nach der Deinstallation liegen).
+# Notfall-Sicherung der ganzen Dateien (nur beim ersten Mal; nach erfolgreicher Deinstallation entfernt).
 # Format wie ROCKNIX' backuptool: umbenannt in ROCKNIX_BACKUP.zip stellt „backuptool restore“ sie zurück.
+# Zwei Kopien: intern (immer sofort da – roms hängt ROCKNIX beim Start erst nach unseren Diensten ein) für die
+# automatische Wiederherstellung, und in roms/backup sichtbar für den Nutzer.
 RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
-if [ ! -f "$RDSZIP" ]; then
+RDSZIPI=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip
+if [ ! -f "$RDSZIPI" ] && [ -f "$RDSZIP" ]; then
+    mkdir -p "${RDSZIPI%/*}" && cp "$RDSZIP" "$RDSZIPI" && log "Notfall-Sicherung intern abgelegt: $RDSZIPI"
+fi
+if [ ! -f "$RDSZIPI" ]; then
     [ "$MODE" = update ] && log "Hinweis: Notfall-Sicherung wird beim Update angelegt – Stand von vor RDS nur, soweit aeltere Sicherungen ihn enthalten"
-    rs snapshot "$RDSZIP" "$RACFG=$RACFG.vor-rds-kuerzel" "$DCFG=$DCFG.vor-rds-kuerzel" "$DSPINI=$DSPINI.vor-rds-kuerzel" \
+    rs snapshot "$RDSZIPI" "$RACFG=$RACFG.vor-rds-kuerzel" "$DCFG=$DCFG.vor-rds-kuerzel" "$DSPINI=$DSPINI.vor-rds-kuerzel" \
         "$ESCFG=$DEST/es_settings.before-install.cfg" "$ESINPUT=$ESINPUT.before-rds" \
         /storage/.config/system/configs/system.cfg /storage/.config/sway/config /storage/.config/mako/config
+fi
+if [ -f "$RDSZIPI" ] && [ ! -f "$RDSZIP" ]; then
+    mkdir -p "${RDSZIP%/*}" && cp "$RDSZIPI" "$RDSZIP"
+fi
+if [ -f "$RDSZIP" ] && [ ! -f "${RDSZIP%.zip}.txt" ]; then
     cat > "${RDSZIP%.zip}.txt" <<'TXT'
 RetroDualStation (RDS) – Sicherung der Einstellungen von vor der ersten Installation
 =====================================================================================
@@ -300,7 +311,7 @@ Before=essway.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'Z=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip; L=/storage/dualstation-uninstall.log; if [ -f "$$Z" ] && unzip -o "$$Z" -d / >>"$$L" 2>&1; then rm -f /storage/.config/rds-uninstall.running; echo "$$(date) Start: Notfall-Sicherung wiederhergestellt" >>"$$L"; else echo "$$(date) Start: Wiederherstellung fehlgeschlagen" >>"$$L"; fi'
+ExecStart=/bin/sh -c 'Z=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip; [ -f "$$Z" ] || Z=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip; L=/storage/dualstation-uninstall.log; if [ -f "$$Z" ] && unzip -o "$$Z" -d / >>"$$L" 2>&1; then rm -f /storage/.config/rds-uninstall.running; echo "$$(date) Start: Notfall-Sicherung wiederhergestellt" >>"$$L"; else echo "$$(date) Start: Wiederherstellung fehlgeschlagen" >>"$$L"; fi'
 
 [Install]
 WantedBy=multi-user.target

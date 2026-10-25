@@ -18,10 +18,13 @@ log "=== Deinstallation RDS $(cat $DEST/VERSION 2>/dev/null) ==="
 # Absturz), stellt rds-uninstall-guard.service beim nächsten Start die Notfall-Sicherung wieder her.
 MARK=/storage/.config/rds-uninstall.running
 RDSZIP=/storage/roms/backup/RDS_ORIGINAL_BACKUP.zip
+RDSZIPI=/storage/.config/rds-backup/RDS_ORIGINAL_BACKUP.zip      # interne Kopie (immer erreichbar)
 touch "$MARK"
 zip_restore() {   # wie ROCKNIX' „backuptool restore“, aber mit unserer ZIP (ROCKNIX_BACKUP.zip bleibt unberührt)
-    [ -f "$RDSZIP" ] || { log "FEHLER: keine Notfall-Sicherung $RDSZIP"; return 1; }
-    unzip -o "$RDSZIP" -d / >>"$LOG" 2>&1 && log "Notfall-Sicherung wiederhergestellt: $RDSZIP"
+    local z="$RDSZIPI"
+    [ -f "$z" ] || z="$RDSZIP"
+    [ -f "$z" ] || { log "FEHLER: keine Notfall-Sicherung ($RDSZIPI, $RDSZIP)"; return 1; }
+    unzip -o "$z" -d / >>"$LOG" 2>&1 && log "Notfall-Sicherung wiederhergestellt: $z"
 }
 
 # Ports-Eintraege vor dem ES-Neustart entfernen, damit ES sie nicht mehr anzeigt
@@ -46,7 +49,7 @@ if [ -f "$DEST/settings-before-rds.json" ] && [ -f "$DEST/rds-settings.py" ]; th
         log "WARNUNG: Zuruecksetzen unvollstaendig – Notfall-Sicherung wird wiederhergestellt"
         zip_restore && rm -f "$MARK"
     fi
-elif [ -f "$RDSZIP" ]; then
+elif [ -f "$RDSZIPI" ] || [ -f "$RDSZIP" ]; then
     log "Sicherung der Originalwerte fehlt – Notfall-Sicherung wird wiederhergestellt"
     zip_restore && rm -f "$MARK"
 else
@@ -137,7 +140,8 @@ rmdir /storage/thumbnails/cheevos /storage/thumbnails 2>/dev/null
 if [ -f "$MARK" ]; then
     log "Notfall-Sicherung bleibt (Einstellungen nicht zurueckgesetzt): $RDSZIP"
 else
-    rm -f "$RDSZIP" "${RDSZIP%.zip}.txt" && log "entfernt: Notfall-Sicherung (nicht mehr noetig)"
+    rm -f "$RDSZIP" "${RDSZIP%.zip}.txt" "$RDSZIPI" && log "entfernt: Notfall-Sicherung (nicht mehr noetig)"
+    rmdir "${RDSZIPI%/*}" 2>/dev/null
 fi
 log "=== Deinstallation fertig ==="
 exit 0
