@@ -27,7 +27,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] **Savestates: Übergang für bestehende Nutzer** (25.10.2026) – Platz 0 ist jetzt der automatische Stand.
       Eigene Stände auf Platz 0 (v. a. DSperate, z. B. `AMCE.0.dss`) einmalig in den nächsten freien Slot verschieben;
       alte RetroArch-Gameswitcher-Stände auf Platz 9 (`.state9`) erscheinen sonst als Slot 9.
-- [ ] **Installer: DraStic `compress_savestates = 0`** setzen (schnelleres Speichern, getestet 25.10.2026).
+- [ ] **Installer: DraStic `compress_savestates = 0`** – eingebaut (25.10.2026); noch prüfen, ob alte komprimierte
+      Savestates danach weiter laden.
 - [ ] **DSperate „Neu starten“ (Y im Gameswitcher)** prüfen – Autoload kommt per `--autoload` aus ROCKNIX, nicht aus
       dsperate.ini; das Abschalten im CC greift vermutlich nicht.
 - [ ] **Schnellwechsel: Schalter im Kontrollcenter** (24.10.2026) – bisher nur über die Testdatei

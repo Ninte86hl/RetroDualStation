@@ -28,19 +28,18 @@ Funktionsumfang“ · erst testen, dann TODO/Notizen · keine Zugangsdaten zeige
   Überschreiben eines belegten Slots fragt nach (Kachel gedämpft in Theme-Farbe, „Überschreiben?“, 2× A/Tippen).
   Savestates auf dem Plus für den Test komplett gelöscht (Spielstände .srm/.sav unberührt). Test bestanden.
 
-## Gerade in Arbeit (noch nicht abgenommen)
-- **Laden-Menü**: 4 Spalten, Slot 1–9 + Kachel **„Automatisch“** (Platz 0, Schloss, nicht lösch-/speicherbar,
-  Bild notfalls aus dem Gameswitcher). Letzte Reihe: Slot 9 · Lücke · Fläche in Theme-Farbe (bündig mit Spalte
-  Slot 8) mit „Automatischer / Speicherpunkt“ rechtsbündig neben der eingerückten Automatisch-Kachel.
-  Speichern bleibt 3×3. Letzter Commit `f6add12` – Michel prüft die Optik (Screenshot:
-  `grim -o DSI-1 /storage/laden.png`). Laden aus „Automatisch“ funktioniert bei allen drei Emulatoren.
+## Nachtrag 25.10. nachts (abgenommen)
+- **Laden-Menü** fertig (`4dc8b7b`): 4 Spalten – oben links Spiel-Icon (quadratisch, Kachelhöhe, mittig, ohne
+  Rahmen, nicht wählbar), dahinter Slot 1–9 (Slot 9 unter Slot 5), letzte Reihe ab Spalte Slot 6 Fläche in
+  Theme-Farbe mit „Automatischer Speicherpunkt“ mittig und Kachel „Automatisch“ unter Slot 7. Speichern bleibt 3×3.
+- **Installer**: DraStic `compress_savestates = 0` (`0038ade`) – offen: laden alte komprimierte Stände noch?
 
 ## Offen (docs/TODO.md)
 - Schnellwechsel: Schalter im CC + Standard an/aus.
 - Bluetooth-Agent vervielfacht sich bei jedem ES-Neustart (15× ≈ 380 MB).
 - Savestates-Übergang für bestehende Nutzer (eigene Stände auf Platz 0, v. a. DSperate → freien Slot; RA `.state9`).
-- Installer: DraStic `compress_savestates = 0`.
+- Installer DraStic `compress_savestates = 0`: prüfen, ob alte komprimierte Stände noch laden.
 - DSperate „Neu starten“ (Y) prüfen – Autoload kommt per `--autoload`, nicht aus dsperate.ini.
-- RG DS: Slot-/Laden-Ansicht und Auto-Laden noch nicht getestet; `drastic` 0,3 s dort gegenprüfen.
+- RG DS: neue Laden-Ansicht und Auto-Laden noch nicht getestet; `drastic` 0,3 s dort gegenprüfen.
 - Optimierungsliste: 2) mehrere Spiele parken auf dem RG DS (über 2 GB frei) · 5) Testskripte in `tools/` aufräumen.
 - Wiki/Anleitung (Home-Belegung, Slots 1–9) erst nach Abnahme anpassen.
