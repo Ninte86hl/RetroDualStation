@@ -14,7 +14,7 @@ frage() {   # $1 = Text, setzt A
 neue_zeilen() {   # Touch-Zeilen seit Zeile $1
     grep "rds-touch" "$LOG" 2>/dev/null | tail -n +"$(( $1 + 1 ))"
 }
-zahl() { grep -c "rds-touch" "$LOG" 2>/dev/null || echo 0; }
+zahl() { local n; n=$(grep -c "rds-touch" "$LOG" 2>/dev/null); echo "${n:-0}"; }
 
 echo "=== Touch-Test DraStic vertikal ($(date '+%d.%m. %H:%M')) ===" | tee "$OUT"
 if ! grep -q " /usr/bin/start_drastic.sh " /proc/mounts; then
@@ -37,7 +37,7 @@ if ! pidof drastic >/dev/null; then
 fi
 frage "Läuft das Spiel bzw. die Test-ROM und reagiert sie auf Touch (nicht im Intro)? Enter = weiter"
 
-for P in "UNTEN links oben" "UNTEN rechts oben" "UNTEN links unten" "UNTEN rechts unten" "OBEN links oben" "OBEN rechts unten"; do
+for P in "UNTEN links oben" "UNTEN rechts oben" "UNTEN links unten" "UNTEN rechts unten" "OBEN links oben" "OBEN rechts oben" "OBEN links unten" "OBEN rechts unten"; do
     N=$(zahl)
     frage ">>> Tippe einmal: $P – danach Enter"
     sleep 0.3
