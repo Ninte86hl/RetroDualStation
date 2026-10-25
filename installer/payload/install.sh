@@ -168,6 +168,7 @@ rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_IN
     "controls_a[CONTROL_INDEX_FAST_FORWARD]" "controls_b[CONTROL_INDEX_FAST_FORWARD]" compress_savestates \
     "controls_a[CONTROL_INDEX_SAVE_STATE]" "controls_b[CONTROL_INDEX_SAVE_STATE]" \
     "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" savestate_number \
+    "controls_a[CONTROL_INDEX_SWAP_SCREENS]" "controls_b[CONTROL_INDEX_SWAP_SCREENS]" screen_swap \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -445,6 +446,21 @@ UNIT
                   -e 's/^(controls_[ab]\[CONTROL_INDEX_LOAD_STATE\]) = .*/\1 = 323/' "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK3"
         log "DraStic: Speichern auf F9, Laden auf F10 (Anbernic + R2/L2 ueber das CC)"
+    fi
+    # DraStic: Bildschirme tauschen auf F8 (321) der virtuellen Tastatur – L3 und die Kachel „Tauschen“ übersetzt
+    # das CC und ordnet dabei den Touch dem anderen Bildschirm zu (DraStic allein nimmt den Touch nicht mit). Einmal je Gerät.
+    DMARK4=/storage/.config/retrodualstation/drastic-kuerzel-v4.done
+    if [ ! -f "$DMARK4" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        for side in a b; do
+            if grep -q "^controls_$side\[CONTROL_INDEX_SWAP_SCREENS\]" "$DCFG"; then
+                sed -i -E "s/^(controls_$side\[CONTROL_INDEX_SWAP_SCREENS\]) = .*/\1 = 321/" "$DCFG"
+            else
+                echo "controls_$side[CONTROL_INDEX_SWAP_SCREENS] = 321" >> "$DCFG"
+            fi
+        done
+        sed -i -E 's/^(screen_swap *= *)1 *$/\10/' "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK4"
+        log "DraStic: Bildschirme tauschen auf F8 (L3 / Kachel ueber das CC, Touch zieht mit)"
     fi
     # DraStic: manuell speichern (Anbernic + R2 → F9) auf Platz 1, Platz 0 bleibt automatisch (das CC kopiert dafür)
     if [ -f "$DCFG" ] && ! pidof drastic >/dev/null && ! grep -q '^savestate_number *= *1$' "$DCFG"; then

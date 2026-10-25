@@ -24,6 +24,96 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Test: „Bildschirme tauschen“ (Kachel „Tauschen“ + L3, umgesetzt 25.10.)** – DraStic: SWAP_SCREENS auf F8 (321,
+      Installer-Merker drastic-kuerzel-v4), Touch nimmt DraStic selbst mit (ROCKNIX-Zuordnung DSI-2 lassen – DSI-1 macht es kaputt, mirror_touch unnötig, Plus 25.10. ok);
+      „Follow 3D Renderer“ (ES-Option follow_3d_renderer → fix_main_2d_screen über start_drastic.sh) auch vor dem Start
+      gesetzt und frisch aus ES gestartet (ohne Stand): Intro flackert, beide Bildschirme zeigen dasselbe Bild, Touch geht
+      nicht (RG DS 25.10.) → in der ROCKNIX-DraStic mit zwei Bildschirmen unbrauchbar, L3 bleibt. Spielende getauscht →
+      screen_swap = 0. DSperate: screen_swap tauscht im Zwei-Fenster-Betrieb nicht (auch von Hand) → nur DraStic. Zelda-Laden, Neustart
+      getauscht (DraStic merkt sich den Tausch nicht) auf RG DS + Plus ok.
+- [ ] **DraStic: Touchbild landet oben (Zelda Phantom Hourglass, Laden)** (gemeldet 25.10.2026) – Gegenstand wird oben
+      angezeigt, lässt sich nicht antippen. Vermutung: Spiel tauscht intern die DS-Bildschirme, DraStic folgt
+      („Follow 3D renderer“/automatischer Tausch) und legt das Touchbild auf den oberen echten Bildschirm ohne Touch.
+      Tipp „vertikal statt horizontal“ gilt für Ein-Bildschirm-Geräte. Klären: Bildschirm-Optionen in drastic.cfg,
+      Screenshot oben im Laden. Lösung: Tausch-Option aus (Installer, gesichert) und/oder SWAP_SCREENS als Kachel/Kürzel.
+      Stand Plus: screen_orientation = 1 (ROCKNIX, nicht ändern), screen_swap = 0, **fix_main_2d_screen = 0** (Verdacht:
+      DraStic folgt dem Hauptbild-Wechsel des Spiels), SWAP_SCREENS unbelegt. Test im Laden: DraStic-Menü „Swap screens“,
+      sonst „Fix main 2D screen“ = an. Je nach Ergebnis: fix_main_2d_screen = 1 als Standard ODER SWAP_SCREENS auf
+      virtuelle Taste + CC-Kachel „Bildschirme tauschen“.
+      **Test 25.10.: bestätigt** – „Fix main 2D screen“ flackert (raus). „Swap screens“ + Touch auf DSI-1
+      (`swaymsg input "1046:911:Goodix_Capacitive_TouchScreen" map_to_output DSI-1`) → Gegenstand antippbar. Die
+      ROCKNIX-DraStic folgt dem Bildschirmwechsel des Spiels nicht; automatisch nicht erkennbar. **Plan:** CC-Kachel
+      „Bildschirme tauschen“ (Seite Spiel) + Anbernic-Kürzel: SWAP_SCREENS auf freie virtuelle Taste (F8?) drücken UND
+      Touch-Zuordnung DSI-2 ↔ DSI-1 umschalten; Zustand merken, beim Spielwechsel/-ende zurücksetzen (touch_map).
+      Außerdem: Szene in DSperate testen; advanced_drastic passt Touch auf dem RG DS dynamisch an (siehe dort).
+- [ ] **Versuch: DraStic vertikal statt horizontal** (Idee 25.10.) – Flackern/gleiches Bild mit „Follow 3D Renderer“
+      evtl. Folge der horizontalen Anordnung (screen_orientation = 1, Fenster global über beide Ausgänge nebeneinander).
+      Vertikal hieße: Sway-Ausgänge übereinander + screen_orientation vertikal – betrifft ES (screens.cfg), CC, Touch-
+      Regel. Erst nur vorübergehend testen (Sway-Positionen per swaymsg, drastic.cfg gesichert); L3 bleibt bis dahin.
+      **Test 25.10. (RG DS, tools/drastic-vertical-test.sh):** screen_orientation = 0 + Ausgänge übereinander → Menü und
+      Spiel richtig, Tasten gehen, **Touch nie** (map_to_output DSI-1, *, map_to_region rechte/linke Hälfte). ROCKNIX lädt
+      /usr/lib/libdrastouch.so (LD_PRELOAD, ersetzt SDL Touch→Maus) – rechnet offenbar fest waagerecht. → verworfen.
+      Bekannt seit v8 (Wiki Gut zu wissen): Follow 3D Renderer = An → Touch geht nicht, „Auto“ nötig.
+      **Neuer Anlauf 25.10. abends (tools/drastic-stacked):** RG DS hat ZWEI Touchscreens mit gleicher Kennung
+      (event1 oben, event2 unten, je 640×480 roh). ROCKNIX legt per udev-Kalibrierung oben → linke, unten → rechte
+      Hälfte der zugeordneten Ausgabe; libdrastouch (waagerecht) verdoppelt x. Neuere libdrastouch (ROCKNIX ab 6.10.,
+      DSHOOK_WINDOW_SIZE) kann übereinander; eigener Build mit DSHOOK_RDS_SPLIT (linke Hälfte verwerfen, rechte strecken).
+      Sway-calibration_matrix NICHT setzen – überschreibt die udev-Matrizen beider Panels (Neustart stellt sie wieder her).
+      **Ergebnis 25.10. (Diagnose-ROM, RG DS):** Bildschirme übereinander + screen_orientation 0 →
+      eigene libdrastouch (DSHOOK_WINDOW_SIZE + DSHOOK_RDS_SPLIT, map_to_output DSI-1): Touch unten genau, oben ignoriert,
+      Menü richtig, auch nach DraStic-Menü. ROCKNIX-libdrastouch (1.10.) + map_to_region -320 480 640 480: Touch ebenso
+      richtig, aber Menü nur linke Hälfte oben (rechnet waagerecht). Mit neuerer ROCKNIX-Bibliothek wäre es
+      map_to_region -640 480 1280 480 + DSHOOK_WINDOW_SIZE – die Variable setzt ROCKNIX aber nur für den Duo Lite.
+      Einhängen: ES führt /storage/.emulationstation/scripts/game-start|game-end/*.sh aus (Argumente: ROM, Name),
+      aber OHNE zu warten (game-start +0,4 s, DraStic-Prozess +2,0 s). Offen: Weg ohne Bind-Mount für die eigene
+      Bibliothek, Umgebungsvariable ohne Startskript (Bibliothek erkennt übereinander selbst?), Schnellwechsel/
+      Gameswitcher-Kette, RG DS Plus (1024×768), ES während DraStic übereinander. Idee: Verbesserung an ROCKNIX
+      vorschlagen (libdrastouch erkennt übereinander liegende Ausgänge und zwei Panels selbst).
+- [ ] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
+      Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
+      `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
+      Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
+- [ ] **Threaded 3D global aus?** (Frage 25.10.) – erst messen: RG DS + Plus, 2–3 anspruchsvolle Spiele (Mario Kart DS,
+      Zelda auf See, Kampf), Bildzähler (DraStic-Menü → Show frame counter) mit/ohne. Kein Verlust → Installer stellt
+      nds.threaded_3d=0 global (gesichert, Deinstallation rückgängig); sonst Tipp pro Spiel lassen.
+- [ ] **drastic.cfg war leer (RG DS 25.10. 20:10)** – nach Vertikal-Test/Beenden 0 Bytes; aus dem Plus wiederhergestellt.
+      Ursache unklar (DraStic beim Schreiben beendet? Test-Skript hatte keinen Schutz – nachgerüstet). Überlegen: CC/Installer
+      prüft nach DraStic-Ende auf leere drastic.cfg und stellt eine gute Kopie wieder her.
+- [ ] **Prüfen: DSperate v3.0.5** (github.com/beebono/DSperate, 21.10.2026) – neu: `--saves`/`--states`, Fehlerbild beim
+      Start, Vulkan-Ausgabe zuerst bei `video.gpu_present = true` (Render-Pass), RGA ganzzahlig, Fix: PipeWire-Taktung
+      (RLIMIT_RTTIME-Abbruch), GPU-Ausgabe bleibt nach Menü, JIT/2D-Ruckler, 3D-Kanten. Einbindung: abwarten bis
+      ROCKNIX liefert ODER optional über den Updater laden und über /usr/bin/dsperate einhängen (Lizenz klären,
+      ROCKNIX-Startoptionen + CC-Annahmen .auto.dss/.N.dss/dsperate.ini prüfen, dynamisch vs. statisch).
+      Vulkan + panfrost: betrifft nur die Ausgabe/Skalierung; PanVK nennt Vulkan 1.3 für G52 (Konformität unklar).
+      Nur messen hilft: gleiche Stelle, FPS, gpu_present an/aus × panfrost/libmali (zusammen mit dem Treiber-Vergleich).
+- [ ] **Beobachten: advanced_drastic** (https://github.com/trngaje/advanced_drastic, vorerst nur im Blick behalten – Stand 24.10.2026: 370f053) – Update 23./24.10.2026: **RG DS mit
+      zwei eigenen Fenstern** (vorher ein schwebendes Fenster + Sway-Zeilen; Skript kannte auch „RG DS Plus“).
+      LD_PRELOAD-Hook für DraStic v2522, eigenes Menü (Auto-Speichern/Laden mit Slot, FPS, Save/Load-Taste, Cheats,
+      falsches Mikrofon). Installer ersetzt den DraStic-Starter (eigenes drastic_v2522, eigenes LD_PRELOAD statt
+      libdrastouch.so, beendet gptokeyb), Sicherung drastic.tar.gz + Deinstallation. **Keine Lizenz** → nicht mitliefern.
+      Konflikte mit RDS: `fullscreen enable global` (Gameswitcher/Schnellwechsel/Sicherheitsnetz) und `touch_map`
+      gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
+      Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
+- [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version
+      selbst finden und laden, statt die ZIP am PC zu holen und per SD/scp in ports zu kopieren. Ideen: Abfrage
+      `api.github.com/repos/Ninte86hl/RetroDualStation/releases/latest` (Tag mit `rds-install/VERSION` vergleichen);
+      Hinweis im CC („Update verfügbar: v…“) und Eintrag/Kachel „Update laden“; ZIP nach `/storage/roms/ports`
+      laden (Fortschritt, genug Speicher prüfen, SHA256/Größe gegen die Release-Angaben), entpacken, dann wie
+      bisher **Update RDS** (gleiche Sicherheitsnetze). Nur auf Wunsch laden, nie automatisch installieren; kein Netz →
+      still nichts tun. Später: Release-Notes kurz im CC anzeigen. (Entscheidung 21.10.: Updates erst bei größerer
+      Nutzerbasis – damit jetzt eingeplant.)
+      Voraussetzung: RDS ist schon installiert – die Erstinstallation bleibt wie bisher (ZIP in ports). Ziel: Updates
+      ohne PC, direkt am Gerät; möglichst einfach halten (eine Kachel, eine Rückfrage).
+      Paket: eigenes Asset je Release **`rds-<version>-updater.zip`** (z. B. `rds-v15.4-updater.zip`), von
+      `make-installer.py` mitgebaut. Nur was ein Update braucht (ohne canvas-ds, wenn unverändert → deutlich kleiner).
+      Immer das neueste: `releases/latest` (kein Entwurf/keine Vorabversion), Asset per Namensmuster wählen, Version
+      im Namen mit dem Tag vergleichen, Größe/Prüfsumme prüfen; ältere Versionen nie „aktualisieren“.
+- [ ] **Idee, noch nicht entschieden (25.10.2026): Start aus ES ohne Auto-Laden, Fortsetzen nur über den Gameswitcher** – automatischer Stand
+      wird weiter über Home kurz, Gameswitcher und CC-Beenden angelegt. Umsetzung: Installer setzt ES-Autoload aus
+      (gesichert, Deinstallation stellt zurück); Gameswitcher lädt den Auto-Stand immer selbst (neu: DSperate, wie die
+      Kachel „Automatisch“); Sonderwege fürs ES-Autoload (DSperate autosave=0 beim Neustart, RA-Reset verdecken) nur
+      noch, wenn jemand ES-Autoload selbst einschaltet; Tour/Wiki: „Start aus ES = von vorn, Fortsetzen = Home 2×“.
+      Offen: alle Systeme oder nur RetroArch/DraStic/DSperate? Zusätzlicher Schalter im CC?
 - [ ] **ES `global.savestates`**: RDS setzt seit v13 „auto“ (Savestate-Manager aus) – ES gibt damit beim Start den
       nächsten freien Slot an RetroArch. Prüfen, ob ein anderer Wert den Manager ausblendet, ohne den Slot vorzugeben
       (für manuelles Speichern egal, das macht seit v15.3.1 das CC).
