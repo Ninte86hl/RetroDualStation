@@ -93,6 +93,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Touchscreen → dort „Touch geht nicht“ (deshalb nie aufgefallen; erklärt auch den v8-Tipp „Follow 3D auf Auto“).
       Flackern nur bei 3D auf beiden Bildschirmen (Titelbild: 3D-Einheit wechselt jedes Bild) – Spiel ruhig. Wiki,
       Release-Notes richtiggestellt. Offen: Leistung (Zelda hatte noch Threaded 3D aus – Follow 3D + Threaded an testen).
+- [ ] **Neue ROCKNIX-Nightly (Plus, eigene SD-Karte, ab 26.10.)** – seit 20261001: rk3566 auf **InputPlumber** umgestellt
+      (10.–19.10.), **Anbernic-„F“-Taste sendet KEY_F1** (21.10.), RG-DS-Dual-Screen-Fixes (Pad in ES nach Touch),
+      ES-Update + Cursor-Ausblenden, höhere CPU-OPP, PanVK, CMA 32 MB, libdrastouch DSHOOK_WINDOW_SIZE, DSperate 3.0.5.
+      Prüfen mit tools/rds-nightly-check.sh (vor und nach RDS-Installation): Gerätenamen (JOYPAD_NAME, inject_keys),
+      Anbernic/Home-Erkennung im CC, Sway-Regeln, unser ES-Binary, Touch, Mikrofon.
 - [ ] **Threaded 3D global aus?** (Frage 25.10.) – erst messen: RG DS + Plus, 2–3 anspruchsvolle Spiele (Mario Kart DS,
       Zelda auf See, Kampf), Bildzähler (DraStic-Menü → Show frame counter) mit/ohne. Kein Verlust → Installer stellt
       nds.threaded_3d=0 global (gesichert, Deinstallation rückgängig); sonst Tipp pro Spiel lassen.
