@@ -46,13 +46,8 @@ VERSION = "0.12.0"
 OUTPUT_NAME = os.environ.get("RDS_CC_OUTPUT", "DSI-1")
 TOP_OUTPUT = os.environ.get("RDS_CC_TOP_OUTPUT", "DSI-2")
 JOYPAD_NAME = os.environ.get("RDS_CC_JOYPAD", "retrogame_joypad")
-# RG DS Plus: adc-keys-back · RG DS: adc-keys-home (erstes vorhandenes wird genommen).
-# ROCKNIX mit InputPlumber (ab 10/2026): die Quellgeräte sind versteckt, Home kommt als F1 über „InputPlumber Keyboard“
-# (mit rds_inputfix.py – die ROCKNIX-Zuordnung verwirft die Taste sonst).
-HOME_NAMES = ([os.environ["RDS_CC_HOMEKEY"]] if os.environ.get("RDS_CC_HOMEKEY")
-              else ["adc-keys-back", "adc-keys-home", "InputPlumber Keyboard"])
-KEY_F1 = 59
-HOME_CODES = (309, KEY_F1)   # BTN_Z (adc-keys), KEY_F1 (InputPlumber)
+# RG DS Plus: adc-keys-back · RG DS: adc-keys-home (erstes vorhandenes wird genommen)
+HOME_NAMES = [os.environ["RDS_CC_HOMEKEY"]] if os.environ.get("RDS_CC_HOMEKEY") else ["adc-keys-back", "adc-keys-home"]
 TOUCH_NAME = os.environ.get("RDS_CC_TOUCH", "Goodix Capacitive TouchScreen")
 POWER_NAME = "rk805 pwrkey"
 POWER_LONG_MS = 800   # ab hier gilt es als langer Druck → suspend
@@ -1638,7 +1633,8 @@ def haptic(kind="open"):
     strong, ms = HAPTIC.get(kind, HAPTIC["open"])
     try:
         if _haptic_fd[0] is None:
-            dev = joypad_path()
+            dev = next(("/dev/input/" + p.split("/")[4] for p in glob.glob("/sys/class/input/event*/device/name")
+                        if (rd(p) or "").strip() == JOYPAD_NAME), None)
             if not dev:
                 return
             _haptic_fd[0] = os.open(dev, os.O_RDWR)
@@ -1666,20 +1662,11 @@ INJECTING = [0.0]
 TIMING = {}   # Zeitmessungen fürs Log (Öffnen, Beenden)
 
 
-def has_key(fd, code):
-    """Meldet das Gerät diese Taste? (EVIOCGBIT EV_KEY)"""
-    buf = bytearray(96)
-    try:
-        fcntl.ioctl(fd, 0x80004521 + (len(buf) << 16), buf)
-    except OSError:
-        return True
-    return bool(buf[code // 8] >> (code % 8) & 1)
-
-
 def inject_keys(seq):
     """Tastendrücke ins eingebaute Joypad einspeisen (sehen alle Programme wie echte Drücke).
     seq: Liste aus (code, wert) oder Pausen in Sekunden (float)."""
-    dev = joypad_path()
+    dev = next(("/dev/input/" + p.split("/")[4] for p in glob.glob("/sys/class/input/event*/device/name")
+                if (rd(p) or "").strip() == JOYPAD_NAME), None)
     if not dev:
         return False
     fd = os.open(dev, os.O_WRONLY)
@@ -1689,19 +1676,13 @@ def inject_keys(seq):
             if isinstance(item, float):
                 time.sleep(item)
                 continue
-            if len(item) == 3:                     # ("abs", Achse, Wert): >0 = Anschlag plus, <0 = minus, 0 = Mitte
+            if len(item) == 3:                     # ("abs", Achse, Wert)
                 _, code, val = item
-                lo, hi = abs_range(fd, code)       # InputPlumber-DualSense: 0..255, Mitte 128 (nicht 0)
-                val = hi if val > 0 else lo if val < 0 else (lo + hi + 1) // 2
                 os.write(fd, EVENT.pack(0, 0, 3, code, val))
                 os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
                 continue
             code, val = item
-            if code in DPAD and not has_key(fd, code):   # InputPlumber-DualSense: Steuerkreuz = Hat-Achsen
-                dx, dy = DPAD[code]
-                os.write(fd, EVENT.pack(0, 0, EV_ABS, ABS_HAT0X if dx else ABS_HAT0Y, (dx or dy) if val else 0))
-            else:
-                os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
+            os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
             os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
     finally:
         INJECTING[0] = time.monotonic() + 0.4
@@ -6429,8 +6410,7 @@ def find_event(name):
 
 
 def list_gamepads():
-    """Pfad -> Name aller Gamepads (Geräte mit js-Handler) laut /proc/bus/input/devices.
-    Ohne Bewegungssensoren (DualSense) und ohne von InputPlumber versteckte Quellgeräte (Gerätedatei fehlt)."""
+    """Pfad -> Name aller Gamepads (Geräte mit js-Handler) laut /proc/bus/input/devices."""
     res, name = {}, None
     try:
         with open("/proc/bus/input/devices") as f:
@@ -6440,49 +6420,11 @@ def list_gamepads():
                 elif line.startswith("H: Handlers="):
                     parts = line.split("=", 1)[1].split()
                     ev = next((p for p in parts if p.startswith("event")), None)
-                    if ev and any(p.startswith("js") for p in parts) and "Motion Sensors" not in (name or "") \
-                            and os.path.exists("/dev/input/" + ev):
+                    if ev and any(p.startswith("js") for p in parts):
                         res["/dev/input/" + ev] = name
     except OSError:
         pass
     return res
-
-
-def builtin_joypad():
-    """(Name, Pfad) des eingebauten Gamepads: retrogame_joypad (ROCKNIX bis 10/2026) oder der virtuelle Controller von
-    InputPlumber (ein DualSense unter /devices/virtual/misc/uhid/ – echte Bluetooth-/USB-Controller liegen woanders).
-    (None, None), wenn keins da ist (z. B. während InputPlumber neu startet)."""
-    blocks, cur = [], {}
-    try:
-        with open("/proc/bus/input/devices") as f:
-            for line in f:
-                if line.startswith("I:"):
-                    cur = {}
-                    blocks.append(cur)
-                elif line.startswith("N: Name="):
-                    cur["name"] = line.split("=", 1)[1].strip().strip('"')
-                elif line.startswith("S: Sysfs="):
-                    cur["sysfs"] = line.split("=", 1)[1].strip()
-                elif line.startswith("H: Handlers="):
-                    cur["h"] = line.split("=", 1)[1].split()
-    except OSError:
-        return None, None
-
-    def ev(b):
-        e = next((p for p in b.get("h", []) if p.startswith("event")), None)
-        return "/dev/input/" + e if e and os.path.exists("/dev/input/" + e) else None
-    for b in blocks:
-        if b.get("name") == JOYPAD_NAME and ev(b):
-            return b["name"], ev(b)
-    for b in blocks:
-        if "/virtual/misc/uhid/" in b.get("sysfs", "") and any(p.startswith("js") for p in b.get("h", [])) \
-                and "Motion Sensors" not in b.get("name", "") and ev(b):
-            return b["name"], ev(b)
-    return None, None
-
-
-def joypad_path():
-    return builtin_joypad()[1]
 
 
 def open_event(name):
@@ -6490,13 +6432,8 @@ def open_event(name):
     if not path:
         log("Eingabegerät nicht gefunden:", name)
         return None
-    try:
-        fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
-    except OSError:              # InputPlumber versteckt Quellgeräte (Gerätedatei verschoben)
-        log("Eingabegerät", name, "nicht lesbar (InputPlumber?):", path)
-        return None
     log("Eingabegerät", name, "->", path)
-    return fd
+    return os.open(path, os.O_RDONLY | os.O_NONBLOCK)
 
 
 def read_events(fd, types=(EV_KEY, EV_ABS)):
@@ -6870,19 +6807,11 @@ def main():
         elif kind == "up":
             edge["close"] = None
         return False
+    joy = open_event(JOYPAD_NAME)
     pads = {}   # fd -> {"name", "path", "ext", "range"}: eingebautes Joypad + externe Controller
-    jname, jpath = builtin_joypad()
-    joy = None
-    if jpath:
-        try:
-            joy = os.open(jpath, os.O_RDONLY | os.O_NONBLOCK)
-        except OSError:
-            joy = None
     if joy is not None:
-        log("Eingebautes Gamepad:", jname, "->", jpath)
-        pads[joy] = {"name": jname, "path": jpath, "ext": False, "range": abs_range(joy, ABS_X)}
-    else:
-        log("Eingebautes Gamepad nicht gefunden")
+        pads[joy] = {"name": JOYPAD_NAME, "path": find_event(JOYPAD_NAME), "ext": False,
+                     "range": abs_range(joy, ABS_X)}
     home = next((fd for fd in (open_event(n) for n in HOME_NAMES if find_event(n)) if fd is not None), None)
     vol = open_event(VOLUME_NAME)      # nur mitlesen (kein Grab): ROCKNIX regelt, wir zeigen an
     pwr = open_event(POWER_NAME)
@@ -6907,7 +6836,6 @@ def main():
         """Externe Controller erkennen (auch später verbundene) bzw. entfernen."""
         known = {v["path"]: fd for fd, v in pads.items()}
         found = list_gamepads()
-        builtin = joypad_path()        # InputPlumber legt es nach einem Neustart neu an (anderer Pfad)
         for path, name in found.items():
             if path in known:
                 continue
@@ -6915,20 +6843,15 @@ def main():
                 fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
             except OSError:
                 continue
-            ext = path != builtin
-            pads[fd] = {"name": name, "path": path, "ext": ext, "range": abs_range(fd, ABS_X)}
-            if ext:
-                log("Controller verbunden:", name, "->", path)
-                if pad_scan["done"]:
-                    info_toast("%s: %s" % (tr("Verbunden"), name), "pad")
-            else:
-                log("Eingebautes Gamepad (wieder) da:", name, "->", path)
+            pads[fd] = {"name": name, "path": path, "ext": True, "range": abs_range(fd, ABS_X)}
+            log("Controller verbunden:", name, "->", path)
+            if pad_scan["done"]:
+                info_toast("%s: %s" % (tr("Verbunden"), name), "pad")
             if grabbed:
                 grab(fd, True)
         for path, fd in known.items():
-            if path not in found:
-                if pads[fd]["ext"]:
-                    info_toast("%s: %s" % (tr("Getrennt"), pads[fd]["name"]), "pad")
+            if path not in found and pads[fd]["ext"]:
+                info_toast("%s: %s" % (tr("Getrennt"), pads[fd]["name"]), "pad")
                 drop_pad(fd)
         pad_scan["done"] = True
 
@@ -7871,7 +7794,7 @@ def main():
                         drop_pad(fd)
                         continue
                     for typ, code, value in events:
-                        if fd == home and typ == EV_KEY and code in HOME_CODES:
+                        if fd == home and typ == EV_KEY and code == BTN_Z:
                             if value == 1:
                                 if ui.view:                       # offen → schließen
                                     toggle(ui.view)

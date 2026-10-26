@@ -94,16 +94,11 @@ PY
 # Kontrollcenter und Geräteeinstellungen
 SYSD=/storage/.config/system.d
 systemctl stop rds-controlcenter 2>/dev/null
-# InputPlumber-Korrekturen zurücknehmen (Bind-Mounts lösen, Stick-Originalwerte, InputPlumber neu starten)
-CCPY=/storage/.config/retrodualstation/controlcenter/rds_inputfix.py
-[ -x /usr/bin/inputplumber ] && [ -f "$CCPY" ] && python3 "$CCPY" aus >>"$LOG" 2>&1
-rm -f "$SYSD/inputplumber.service.wants/rds-inputfix.service" "$SYSD/rds-inputfix.service"
-rm -rf /storage/.config/retrodualstation/inputplumber
 rm -f "$SYSD/essway.service.wants/rds-controlcenter.service" "$SYSD/rds-controlcenter.service" \
       "$SYSD"/*.target.wants/rds-resume.service "$SYSD/rds-resume.service" \
       /storage/.config/logind.conf.d/rds-logind-powerkey.conf
 [ -f "$MARK" ] || rm -f "$SYSD/multi-user.target.wants/rds-uninstall-guard.service" "$SYSD/rds-uninstall-guard.service"
-for w in essway.service suspend.target hibernate.target hybrid-sleep.target multi-user.target inputplumber.service; do
+for w in essway.service suspend.target hibernate.target hybrid-sleep.target multi-user.target; do
     rmdir "$SYSD/$w.wants" 2>/dev/null                     # nur wenn leer (eigene Dienste anderer bleiben)
 done
 # Kurz gesetzte Spiel-Einstellungen (DSperate-Neustart), die ES ggf. zurückgeschrieben hat, wieder entfernen

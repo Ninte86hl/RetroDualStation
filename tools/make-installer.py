@@ -72,8 +72,7 @@ with zipfile.ZipFile(out, "w") as z:
             src = os.path.join(root, f)
             add(z, src, p + "theme/" + os.path.relpath(src, os.path.dirname(theme)), FILE)
     for f, mode in (("rds_cc.py", EXEC), ("rds-controlcenter.service", FILE),
-                    ("rds-resume.service", FILE), ("rds-logind-powerkey.conf", FILE),
-                    ("rds_inputfix.py", EXEC), ("rds-inputfix.service", FILE)):
+                    ("rds-resume.service", FILE), ("rds-logind-powerkey.conf", FILE)):
         add(z, os.path.join(repo, "controlcenter", f), p + "controlcenter/" + f, mode)
     tour = os.path.join(repo, "controlcenter", "tour")      # Bilder der Tour
     for f in sorted(os.listdir(tour)):

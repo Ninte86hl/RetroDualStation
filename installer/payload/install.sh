@@ -325,13 +325,6 @@ if [ -f "$SRC/controlcenter/rds_cc.py" ]; then
         ln -sf "$SYSD/rds-resume.service" "$SYSD/$t.target.wants/rds-resume.service"
     done
     cp "$SRC/controlcenter/rds-logind-powerkey.conf" /storage/.config/logind.conf.d/
-    # InputPlumber (ROCKNIX ab 10/2026): Home-Taste, Phantom-Stick (Plus) und Stick-Kalibrierung beim Start korrigieren
-    if [ -f "$SRC/controlcenter/rds_inputfix.py" ]; then
-        cp "$SRC/controlcenter/rds_inputfix.py" "$CCDIR/rds_inputfix.py"
-        cp "$SRC/controlcenter/rds-inputfix.service" "$SYSD/"
-        mkdir -p "$SYSD/inputplumber.service.wants"
-        ln -sf "$SYSD/rds-inputfix.service" "$SYSD/inputplumber.service.wants/rds-inputfix.service"
-    fi
     # Absicherung der Deinstallation: bricht sie ab, bevor die Einstellungen zurückgesetzt sind, stellt dieser
     # Dienst beim nächsten Start die Notfall-Sicherung wieder her (nur mit Merker, sonst tut er nichts)
     cat > "$SYSD/rds-uninstall-guard.service" <<'UNIT'
@@ -352,9 +345,6 @@ UNIT
     ln -sf "$SYSD/rds-uninstall-guard.service" "$SYSD/multi-user.target.wants/rds-uninstall-guard.service"
     systemctl daemon-reload
     systemctl kill -s HUP systemd-logind 2>/dev/null   # Power-Taste übernimmt das CC
-    if [ -x /usr/bin/inputplumber ] && [ -f "$CCDIR/rds_inputfix.py" ]; then
-        python3 "$CCDIR/rds_inputfix.py" an 2>&1 | sed 's/^/  /' | while read -r l; do log "InputPlumber:$l"; done
-    fi
     log "Kontrollcenter installiert: $CCDIR"
 
     # Geräteeinstellungen (Rückgängig in uninstall.sh)
