@@ -6375,6 +6375,7 @@ class Overlay:
 
 EV_SYN, EV_KEY, EV_ABS = 0, 1, 3
 ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_HAT0X, ABS_HAT0Y = 0, 1, 3, 4, 16, 17
+ABS_Z, ABS_RZ = 2, 5   # L2/R2 als Achse (InputPlumber-DualSense)
 BTN_SELECT, BTN_START = 314, 315
 BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
@@ -6880,7 +6881,8 @@ def main():
             joy = None
     if joy is not None:
         log("Eingebautes Gamepad:", jname, "->", jpath)
-        pads[joy] = {"name": jname, "path": jpath, "ext": False, "range": abs_range(joy, ABS_X)}
+        pads[joy] = {"name": jname, "path": jpath, "ext": False, "range": abs_range(joy, ABS_X),
+                     "trig_axes": jname != JOYPAD_NAME, "trange": abs_range(joy, ABS_Z)}
     else:
         log("Eingebautes Gamepad nicht gefunden")
     home = next((fd for fd in (open_event(n) for n in HOME_NAMES if find_event(n)) if fd is not None), None)
@@ -6916,7 +6918,8 @@ def main():
             except OSError:
                 continue
             ext = path != builtin
-            pads[fd] = {"name": name, "path": path, "ext": ext, "range": abs_range(fd, ABS_X)}
+            pads[fd] = {"name": name, "path": path, "ext": ext, "range": abs_range(fd, ABS_X),
+                        "trig_axes": not ext and name != JOYPAD_NAME, "trange": abs_range(fd, ABS_Z)}
             if ext:
                 log("Controller verbunden:", name, "->", path)
                 if pad_scan["done"]:
@@ -7600,6 +7603,15 @@ def main():
         if pad["ext"] and typ == EV_KEY and code in (BTN_SOUTH, BTN_EAST):
             # externe Controller nach Xbox-Art: A (unten) bestätigt, B (rechts) zurück
             code = BTN_EAST if code == BTN_SOUTH else BTN_SOUTH
+        if typ == EV_ABS and code in (ABS_Z, ABS_RZ) and pad.get("trig_axes"):
+            # InputPlumber-DualSense: L2/R2 kommen nur als Achse (0..255), nie als Taste → bei 50 % wie Taste 312/313 werten
+            lo, hi = pad.get("trange", (0, 255))
+            down = value > (lo + hi) / 2
+            key = 312 if code == ABS_Z else 313
+            if down != pad.setdefault("trig", {}).get(key, False):
+                pad["trig"][key] = down
+                handle_joy(EV_KEY, key, 1 if down else 0, pad)
+            return
         if typ == EV_ABS and code not in (ABS_HAT0X, ABS_HAT0Y):
             if code == ABS_X:
                 handle_stick(value, pad["range"])
