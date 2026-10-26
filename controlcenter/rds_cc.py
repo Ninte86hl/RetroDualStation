@@ -1795,6 +1795,9 @@ def stick_dpad(code, value, rng):
         vkey_hold(neg if cur < 0 else pos, 0)
     if d:
         vkey_hold(neg if d < 0 else pos, 1)
+        if STICK_DPAD.get("logged", 0) < 12:            # die ersten Richtungen ins Log (Test)
+            STICK_DPAD["logged"] = STICK_DPAD.get("logged", 0) + 1
+            log("DraStic-Stick:", STICK_KEYS[neg if d < 0 else pos], "(%.0f %%)" % (abs(n) * 100))
     STICK_DPAD["dir"][code] = d
 
 
