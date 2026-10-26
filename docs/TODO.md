@@ -314,5 +314,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       erreicht X 136..926 / Y 105..911 → nach InputPlumber Mitte ~118 statt 128, Ausschlag 74–80 %, ES-Schwelle ~70 %.
       (Früher kalibrierte der ROCKNIX-Joypad-Treiber die Mitte.) Versuch: tools/rds-stickcal.sh (EVIOCSABS Min/Max um die
       Ruhelage, InputPlumber neu starten). InputPlumber kennt nur deadzone/quadratic_scaling, keine Mitte.
+      **Getestet 26.10. 20:25: voller Ausschlag 0..255, ES fühlt sich besser an ✓.** Ruhelage schwankt (flacher Stick wie
+      PS Vita, X 409..460) → Mitte = Mittel aus 4 Richtungen. Offen: beim Start anwenden (Werte aus rds-stickcal.txt, vor
+      InputPlumber), ggf. im CC neu kalibrieren.
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
