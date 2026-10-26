@@ -118,6 +118,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       **Konflikt v15.3.3:** NDS-Mikrofonerkennung an (DSHOOK_MIC_THRESH>0) → start_drastic.sh lädt libdrastouch auch in
       den Shell-Starter von advanced_drastic → Mikrofon-Init ohne SDL → Segfault vor dem Start. Mit advanced_drastic
       Mikrofon aus; Installer müsste advanced_drastic erkennen (drastic = Skript, drastic_v2522 vorhanden) und auslassen.
+      **Läuft auf dem Plus (26.10. 13:20)** mit eigenem Layout resources/bg/2048x768/layout.json (basic 1024×768 je
+      Bildschirm, pixel 3× mit Rand) und Mikrofonerkennung aus: Bild richtig, Touch richtig, Tauschen (Kachel/F8),
+      Anbernic+X/Kachel Menü, Anbernic+R2/L2, Savestate laden, L3-Mikrofon (Rollen-Taste), Beenden + ES-Navigation ok.
+      Pusten fehlt (ROCKNIX-Erkennung aus) → Idee: CC hört das Mikrofon selbst ab (arecord, Pegel über Grundrauschen →
+      Rollen-Taste halten) – geht mit beiden DraStic-Varianten, ROCKNIX-Erkennung bleibt aus. Offen: Menü-Optik, Leistung.
       gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
       Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version
