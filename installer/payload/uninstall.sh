@@ -136,8 +136,10 @@ if [ "$MS" = "leer" ]; then
 elif [ -n "$MS" ]; then
     ( . /etc/profile >/dev/null 2>&1; set_setting nds.microphone_sensitivity "$MS" ) >/dev/null 2>&1
 fi
-[ -f "$DEST/rds-microphone-original.wav" ] && cp "$DEST/rds-microphone-original.wav" /storage/.config/drastic/microphone/microphone.wav \
-    && log "DraStic: Original-Pust-Geraeusch zurueck"
+MICORIG="$DEST/rds-microphone-original.wav"
+[ -f "$MICORIG" ] || MICORIG=/usr/config/drastic/microphone/microphone.wav   # ROCKNIX-Auslieferung, falls nicht gesichert
+[ -f "$MICORIG" ] && [ -d /storage/.config/drastic/microphone ] \
+    && cp "$MICORIG" /storage/.config/drastic/microphone/microphone.wav && log "DraStic: Original-Pust-Geraeusch zurueck"
 sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d; /RetroDualStation: virtuelle Tasten/d; /21060:21297:RDS_Keys/d' /storage/.config/sway/config 2>/dev/null
 sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>/dev/null
 log "Kontrollcenter und Geraeteeinstellungen entfernt"
