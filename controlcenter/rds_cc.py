@@ -1295,7 +1295,7 @@ def running_port():
     return tool
 
 
-def gptokeyb_cleanup():
+def gptokeyb_cleanup(min_age=0):
     """Verwaiste gptokeyb beenden: ROCKNIX startet es mit dem Emulator (z. B. „-sudokill drastic“) und beendet es erst
     am Ende des Startskripts. Wird der Emulator hart beendet oder neu gestartet, läuft es weiter – ES bekommt dann jede
     Taste doppelt (Navigation springt, Start-Menü öffnet sich). Nur Kopien, deren Emulator nicht mehr läuft."""
@@ -1325,7 +1325,17 @@ def gptokeyb_cleanup():
         target = args[i + 1] if i + 1 < len(args) else ""
         if target:
             by_target.setdefault(target, []).append(pid)
+    if min_age:                             # nur länger laufende (Startphase von Ports nicht stören)
+        try:
+            with open("/proc/uptime") as f:
+                now = float(f.read().split()[0]) * os.sysconf("SC_CLK_TCK")
+        except (OSError, ValueError):
+            return
+        by_target = {t: [p for p in ps if now - started(p) >= min_age * os.sysconf("SC_CLK_TCK")]
+                     for t, ps in by_target.items()}
     for target, pids in by_target.items():
+        if not pids:
+            continue
         # Emulator läuft nicht mehr → alle weg; sonst je laufendem Emulator eines behalten (die neuesten) – so bleiben
         # beim Schnellwechsel mit zwei DraStic beide, nach „Neu starten“ fällt das alte weg
         keep = count.get(target, 0)
@@ -1346,7 +1356,7 @@ def gptokeyb_watch():
         time.sleep(5)
         try:
             if not running_game():
-                gptokeyb_cleanup()
+                gptokeyb_cleanup(min_age=20)
         except Exception as exc:
             log("gptokeyb-Prüfung:", exc)
 
