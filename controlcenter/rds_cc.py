@@ -1782,6 +1782,7 @@ def mic_watch():
                                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             log("Mikrofon: Abhören an (Schwelle %.2f)" % thr)
             base, n, held, pid = 0.0, 0, False, g["pid"]
+            peak, t_log = 0.0, time.monotonic()
             try:
                 while os.path.exists("/proc/%d" % pid):
                     data = rec.stdout.read(chunk * 2)
@@ -1795,9 +1796,15 @@ def mic_watch():
                         continue
                     base = base * 0.999 + rms * 0.001
                     want = rms > base + thr and not ui_state_open()
+                    peak = max(peak, rms)
                     if want != held:
                         held = want
                         mic_set("mic", held)
+                        if held:
+                            log("Mikrofon: Pusten erkannt (Pegel %.3f, Grundrauschen %.3f)" % (rms, base))
+                    if time.monotonic() - t_log > 10:  # Messwerte für die Einstellung der Schwelle
+                        log("Mikrofon: Grundrauschen %.3f, lautester Wert der letzten 10 s %.3f" % (base, peak))
+                        peak, t_log = 0.0, time.monotonic()
             finally:
                 mic_set("mic", False)
                 rec.kill()
