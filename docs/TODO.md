@@ -79,7 +79,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] **Beschädigter automatischer Stand (Plus 26.10.)** – Zelda _0.dss ließ DraStic beim Start hängen (nach Laden des
       Spielstands, Ursache vermutlich unterbrochenes Speichern/Neustart). Idee: CC/Start erkennt Hänger (kein Fenster
       nach x s) bzw. prüft die Datei und startet ohne Stand; Stand beiseitelegen statt löschen.
-- [ ] **Mikrofon DraStic (26.10.)** – ROCKNIX microphone.wav = 48 kHz weißes Rauschen (rms 14k); Zelda PH-Kerzen
+- [x] **Mikrofon DraStic (26.10.)** – gelöst in v15.3.3 (eigenes Geräusch + medium) – ROCKNIX microphone.wav = 48 kHz weißes Rauschen (rms 14k); Zelda PH-Kerzen
       reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
       Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
       Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.

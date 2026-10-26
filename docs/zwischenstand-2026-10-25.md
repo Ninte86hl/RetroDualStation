@@ -92,3 +92,10 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
   (ES `follow_3d_renderer` → `fix_main_2d_screen` über start_drastic.sh): flackert, dasselbe Bild oben und unten.
 - Threaded 3D = Aus je Spiel lässt DraStic richtig tauschen (Zelda PH, RG DS + Plus) → Wiki DraStic-Spiele, CREDITS.
 - Nächstes Projekt: DraStic vertikal (TODO, tools/drastic-stacked) · Threaded 3D global erst nach Leistungsmessung.
+
+## v15.3.3 (26.10.2026 mittags, veröffentlicht, getestet RG DS + Plus)
+- Mikrofon DraStic: eigenes Pust-Geräusch `rds-microphone.wav` (11 025 Hz, übersteuert; ROCKNIX-Geräusch erkennt Zelda
+  nicht), Original nach `rds-install/rds-microphone-original.wav`; NDS-Erkennung medium (0.15), wenn vorher leer/aus
+  (Merker `mikrofon.done`); L3 = Rollen-Taste über die virtuelle Tastatur (Joypad-Belegung erkennt Zelda nicht).
+- gptokeyb aufräumen: verwaist (ES bekam Tasten doppelt) bzw. doppelt nach „Neu starten“ – je laufendem Emulator eines.
+- Tauschen nur noch als Kachel. Offen: beschädigter Auto-Stand, Threaded 3D global, DraStic vertikal, Spirit Tracks.
