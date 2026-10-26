@@ -73,6 +73,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
       Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
+- [ ] **v15.3.3: L3 = Mikrofon in DraStic** (Wunsch 26.10.) – controls_b[CONTROL_INDEX_FAKE_MICROPHONE] = 1035
+      (Merker drastic-kuerzel-v5, gesichert; controls_a bleibt 327 für das echte Mikrofon über libdrastouch).
+      Tauschen nur noch als Kachel. Test: Spiel mit Mikrofon (z. B. Zelda PH Kerzen/Rufen), Tastenübersicht.
 - [ ] **Neu 25.10. 21:40: Follow 3D Renderer funktioniert auf dem RG DS** – Touch-Bild folgt der 3D-Einheit und liegt
       dann OBEN; der RG DS hat oben einen zweiten Touchscreen (event1), also oben tippen. Der RG DS Plus hat nur EINEN
       Touchscreen → dort „Touch geht nicht“ (deshalb nie aufgefallen; erklärt auch den v8-Tipp „Follow 3D auf Auto“).

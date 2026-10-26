@@ -269,7 +269,7 @@ EN = {
         "can change this behaviour. Slot 9 is used by the Game switcher.",
     "übernehmen": "take", "zurück": "back",
     "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
-    "Tauschen": "Swap", "Bildschirme getauscht": "Screens swapped", "Bildschirme normal": "Screens normal",
+    "Tauschen": "Swap", "Kachel „Tauschen“": "“Swap” tile", "Bildschirme getauscht": "Screens swapped", "Bildschirme normal": "Screens normal",
     "Nicht belegt": "Not assigned",
     "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
     "Starte ein Spiel, um es hier zu steuern.": "Start a game to control it here.",
@@ -2848,7 +2848,7 @@ def dsperate_shortcuts():
 def drastic_shortcuts():
     cfg = rd("/storage/.config/drastic/config/drastic.cfg") or ""
     names = {"SAVE_STATE": "Speichern", "LOAD_STATE": "Laden", "MENU": "Menü", "FAST_FORWARD": "Vorspulen",
-             "SWAP_SCREENS": "Bildschirme tauschen", "QUIT": "Beenden"}
+             "SWAP_SCREENS": "Bildschirme tauschen", "FAKE_MICROPHONE": "Mikrofon", "QUIT": "Beenden"}
     rows = []
     for k, label in names.items():
         m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % k, cfg)
@@ -2860,7 +2860,7 @@ def drastic_shortcuts():
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
         elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
             rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1", "SAVE_STATE": "Anbernic + R2",
-                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": "L3"}.get(k, tr("nur über das CC"))))
+                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": tr("Kachel „Tauschen“")}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
             rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
@@ -6160,7 +6160,6 @@ BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
 BTN_NORTH, BTN_WEST = 307, 308
-BTN_THUMBL = 317                       # L3: Bildschirme tauschen (DraStic)
 KNOWN_UNUSED = {312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
 EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
@@ -7360,12 +7359,6 @@ def main():
                         how = drastic_press(what, {"SAVE_STATE": DRASTIC_SAVE, "LOAD_STATE": DRASTIC_LOAD}.get(what))
                         log("Kürzel DraStic:", what, "über", how or "nichts")
                     threading.Thread(target=run, daemon=True).start()
-            return
-        if typ == EV_KEY and code == BTN_THUMBL and not ui.view:
-            # L3 allein: Bildschirme tauschen (DraStic; den Touch nimmt DraStic selbst mit)
-            g = running_game()
-            if g and g["emu"] == "DraStic":
-                threading.Thread(target=swap_screens, args=(g,), daemon=True).start()
             return
         if not ui.view:
             return

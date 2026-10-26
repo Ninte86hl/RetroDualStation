@@ -9,12 +9,12 @@ touch stays where it was.
 **Fix per game:** select the game in ES → **advanced game settings** → **Threaded 3D = Off**. DraStic then follows the swap
 by itself, touch included. Only this game is affected; all others keep Threaded 3D.
 
-**Fallback:** **L3** or the **Swap** tile in the [Control Center](Control-Center) swaps the screens by hand.
+**Fallback:** the **Swap** tile in the [Control Center](Control-Center) swaps the screens by hand.
 
 **RG DS only – Follow 3D Renderer:** the RG DS has touch on **both** screens. With *Follow 3D Renderer = On* the touch
 picture follows the 3D image, sometimes to the top – then just tap on top. Title screens with 3D on both screens flicker
 (e.g. Zelda). The **RG DS Plus** has touch only at the bottom: with Follow 3D nothing responds while the touch picture is
-on top – so there use *Follow 3D = Auto/Off* and *Threaded 3D = Off* or **L3**.
+on top – so there use *Follow 3D = Auto/Off* and *Threaded 3D = Off* or the **Swap** tile.
 
 ## List
 
@@ -30,7 +30,7 @@ on top – so there use *Follow 3D = Auto/Off* and *Threaded 3D = Off* or **L3**
 ¹ from [GammaOSNext issue #225](https://github.com/TheGammaSqueeze/GammaOSNext/issues/225) (reports by
 [WGB-works](https://github.com/WGB-works) and others) – also DraStic on the RG DS.
 
-If a game stutters without Threaded 3D, keep it on and use **L3** when needed.
+If a game stutters without Threaded 3D, keep it on and use the **Swap** tile when needed.
 
 **Found more games?** Please report them as an [issue](https://github.com/Ninte86hl/RetroDualStation/issues) – game name
 and whether Threaded 3D off helps. Every report is credited in the [credits](https://github.com/Ninte86hl/RetroDualStation/blob/main/CREDITS.md).
