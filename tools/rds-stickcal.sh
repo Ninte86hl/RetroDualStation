@@ -37,14 +37,21 @@ if mode == "aus":
         v = get(c); v[1], v[2] = 15, 940; put(c, v)
     print("Zurück auf 15..940")
 elif mode == "an":
-    input("\n>>> Stick NICHT berühren – Enter, 2 s messen ")
+    # Ruhelage schwankt je nach Richtung, aus der der Stick zurückfedert (26.10.: X 409..460) → Mittel aus 4 Richtungen
     rest = {c: [] for c in AX}
-    end = time.time() + 2
-    while time.time() < end:
+    for d in ("OBEN", "UNTEN", "LINKS", "RECHTS"):
+        input(">>> Stick nach %s drücken, LOSLASSEN, dann Enter (misst 1 s) " % d)
+        vals = {c: [] for c in AX}
+        end = time.time() + 1
+        while time.time() < end:
+            for c in AX:
+                vals[c].append(get(c)[0])
+            time.sleep(0.02)
         for c in AX:
-            rest[c].append(get(c)[0])
-        time.sleep(0.02)
-    mid = {c: sorted(rest[c])[len(rest[c]) // 2] for c in AX}
+            rest[c].append(sorted(vals[c])[len(vals[c]) // 2])
+        print("    Ruhe nach %s: X %d  Y %d" % (d, rest[0][-1], rest[1][-1]))
+    mid = {c: sum(rest[c]) // len(rest[c]) for c in AX}
+    print("  Mitte: X %d (%d..%d)  Y %d (%d..%d)" % (mid[0], min(rest[0]), max(rest[0]), mid[1], min(rest[1]), max(rest[1])))
     input(">>> Stick 5 s lang mehrmals im KREIS ganz am Rand drehen – Enter, dann los ")
     lo = dict(mid); hi = dict(mid); end = time.time() + 5
     while time.time() < end:
