@@ -296,6 +296,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Aufräumen: Branch `geraeteprofile` (v4.11.0) wird nicht genutzt
 
 ## ROCKNIX-Nightly 20261026 (next) – Prüfung RG DS Plus (26.10. abends, neue SD-Karte)
+**Entscheidung 26.10. 21:30: auf den nächsten stabilen ROCKNIX-Release warten.** Zusammenfassung:
+docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kein Release).
 - [ ] **InputPlumber** ersetzt `retrogame_joypad`: virtueller **DualSense** (uhid, Sysfs `/sys/devices/virtual/misc/uhid/…`,
       Name „Sony Interactive Entertainment DualSense Wireless Controller“), Quellgeräte versteckt (HIDE_DEVICES_FROM_ROOT=1).
       Tasten gleich (304,305,307,308,310–318; Anbernic = 316, L3 = 317), aber **Steuerkreuz = ABS_HAT0X/Y (16/17)**,
