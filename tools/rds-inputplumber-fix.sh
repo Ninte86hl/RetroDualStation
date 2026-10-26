@@ -1,9 +1,13 @@
 #!/bin/bash
-# Versuch: Home-Taste RG DS / RG DS Plus unter InputPlumber (ROCKNIX-Nightly ab 10/2026).
+# Versuch: Korrekturen der InputPlumber-Zuordnung RG DS / RG DS Plus (ROCKNIX-Nightly ab 10/2026).
+# 1) Home-Taste:
 # Fehler in ROCKNIX: anbernic_rgds.yaml ordnet BTN_BACK (Home) „gamepad: button: KeyF1“ zu → InputPlumber meldet
 # „Invalid or unimplemented button: KeyF1“ und die Taste kommt nirgends an. Richtig wäre „keyboard: KeyF1“
 # (so steht es in anbernic_gen1.yaml / anbernic_arc.yaml).
-# Aufruf vom PC:  ssh -t root@IP 'bash /storage/rds-homekey-fix.sh [an|aus|status]'
+# 2) Nur RG DS Plus: Der Plus hat einen Stick, adc-joystick liefert aber zusätzlich RX/RY (Phantom: RX = -Y, RY = X,
+#    gemessen 26.10.). InputPlumber gibt das als rechten Stick weiter → ES bekommt zwei Bewegungen je Stickdruck.
+#    Abhilfe: „Right Stick“-Eintrag in der Zuordnung entfernen (die Datei wird nur auf diesem Gerät eingeblendet).
+# Aufruf vom PC:  ssh -t root@IP 'bash /storage/rds-inputplumber-fix.sh [an|aus|status]'
 SRC=/usr/share/inputplumber/capability_maps/anbernic_rgds.yaml
 # /etc ist schreibgeschützt (squashfs) → korrigierte Kopie in /storage, per Bind-Mount über die ROCKNIX-Datei gelegt
 # (nur bis zum Neustart; das Original bleibt unverändert).
@@ -48,12 +52,19 @@ old = "      gamepad:\n        button: KeyF1"
 if old not in s:
     sys.exit("Zuordnung 'gamepad: button: KeyF1' nicht gefunden – evtl. schon behoben")
 s = s.replace(old, "      keyboard: KeyF1")
+print("Home: gamepad KeyF1 → keyboard KeyF1")
+if "Plus" in open("/proc/device-tree/model").read():
+    i = s.find("  - name: Right Stick\n")
+    if i >= 0:
+        j = s.find("\n  - name:", i + 1)
+        s = s[:i] + (s[j + 1:] if j >= 0 else "")
+        print("RG DS Plus: Phantom-Stick (Right Stick) entfernt")
 open(sys.argv[2], "w").write(s)
 print("Geschrieben:", sys.argv[2])
 PY
     [ -f "$DST" ] || exit 1
     mount --bind "$DST" "$SRC" || { echo "Bind-Mount fehlgeschlagen"; exit 1; }
-    grep -n "KeyF1" "$SRC"
+    grep -n -E "KeyF1|name: (Left|Right) Stick$" "$SRC"
     systemctl restart inputplumber; sleep 3
     echo "InputPlumber: $(systemctl is-active inputplumber)"
     journalctl -u inputplumber --no-pager --since "-10s" | grep -i -E "error|warn|rds-anbernic|capability" | tail -5

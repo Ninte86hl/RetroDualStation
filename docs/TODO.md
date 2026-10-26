@@ -302,8 +302,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       **L2/R2 = ABS 2/5 (0–255)**, Sticks 0–255 (Mitte ~127). → CC: eingebautes Gamepad am uhid-Pfad erkennen (nicht als
       externen Controller), Hat-Steuerkreuz + Achsen 0–255, Tasten einspeisen prüfen, RetroArch-/DSperate-Tabellen.
 - [ ] **Home-Taste tot (ROCKNIX-Fehler):** anbernic_rgds.yaml `BTN_BACK → gamepad: button: KeyF1` → „Invalid or
-      unimplemented button: KeyF1“. Richtig `keyboard: KeyF1` (wie anbernic_gen1/arc). Versuch: tools/rds-homekey-fix.sh
+      unimplemented button: KeyF1“. Richtig `keyboard: KeyF1` (wie anbernic_gen1/arc). Versuch: tools/rds-inputplumber-fix.sh
       (Override in /etc/inputplumber/capability_maps.d). Danach CC: Home = KEY_F1 (59) auf „InputPlumber Keyboard“.
-      Fehlerbericht an ROCKNIX.
+      Fehlerbericht an ROCKNIX. **Getestet 26.10.: Home → KEY 59 auf „InputPlumber Keyboard“ ✓** (Bind-Mount, /etc ist ro).
+- [ ] **Phantom-Stick RG DS Plus unter InputPlumber:** RX = -Y, RY = X → als rechter Stick weitergegeben (ES-Stick falsch).
+      Bisherige Abhilfe (rightanalog aus es_input für retrogame_joypad) greift nicht mehr. Versuch: „Right Stick“ aus der
+      Zuordnung (nur Plus) in tools/rds-inputplumber-fix.sh.
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
