@@ -14,11 +14,18 @@ cat /proc/device-tree/model 2>/dev/null; echo
 [ -f /storage/rds-install/VERSION ] && echo "RDS: $(cat /storage/rds-install/VERSION)" || echo "RDS: nicht installiert"
 
 h "Eingabegeräte (/proc/bus/input/devices)"
-grep -E "^N:|^H:" /proc/bus/input/devices | paste - - | sed 's/N: Name=//; s/H: Handlers=/ → /'
+awk '/^N:/{sub(/^N: Name=/,""); n=$0} /^P:/{sub(/^P: Phys=/,""); ph=$0} /^H:/{sub(/^H: Handlers=/,""); print n " | " ph " | " $0}' /proc/bus/input/devices
+echo "--- sysfs:"
+for p in /sys/class/input/event*/device/name; do echo "$(echo $p | cut -d/ -f5): $(cat $p)"; done
+echo "--- retrogame_joypad: $(grep -l -x retrogame_joypad /sys/class/input/event*/device/name 2>/dev/null | cut -d/ -f5 | tr '\n' ' ')"
 
 h "InputPlumber"
 systemctl is-active inputplumber 2>/dev/null; pidof inputplumber >/dev/null && echo "läuft (pid $(pidof inputplumber))"
 ls /storage/.config/inputplumber 2>/dev/null; ls /usr/share/inputplumber/devices 2>/dev/null | grep -i -E "anbernic|rg" | head
+echo "--- 02-rg-ds-plus.yaml:"; cat /usr/share/inputplumber/devices/02-rg-ds-plus.yaml 2>/dev/null | grep -v -E "^ *#|^ *$" | head -60
+echo "--- Profile:"; ls /usr/share/inputplumber/profiles 2>/dev/null | head -20
+command -v inputplumber >/dev/null && inputplumber device list 2>/dev/null | head -10
+busctl tree org.shadowblip.InputPlumber 2>/dev/null | head -25
 
 h "Sway: Eingaben"
 swaymsg -t get_inputs --raw | python3 -c 'import json,sys
@@ -30,7 +37,7 @@ for o in json.load(sys.stdin): print(o["name"], o["rect"], "transform", o.get("t
 grep -n -i -E "drastic|dsperate|touch|map_to|RetroDualStation|input " /storage/.config/sway/config | head -30
 
 h "Tasten (bitte nach Aufforderung drücken)"
-python3 - <<'PY'
+cat > /tmp/rds-keytest.py <<'PY'
 import glob, os, select, struct, time
 EV = struct.Struct("llHHi")
 devs = {}
@@ -40,7 +47,7 @@ for p in sorted(glob.glob("/sys/class/input/event*/device/name")):
         devs[os.open(node, os.O_RDONLY | os.O_NONBLOCK)] = "%s (%s)" % (node, open(p).read().strip())
     except OSError:
         pass
-for what in ("ANBERNIC-Taste", "HOME-Taste", "L3", "POWER kurz"):
+for what in ("ANBERNIC-Taste", "HOME-Taste", "L3", "A", "SELECT", "POWER kurz"):
     input(">>> %s: Enter, dann innerhalb von 4 s einmal drücken " % what)
     for fd in devs:
         try:
@@ -59,8 +66,11 @@ for what in ("ANBERNIC-Taste", "HOME-Taste", "L3", "POWER kurz"):
                 _s, _u, t, c, v = EV.unpack_from(data, i)
                 if t == 1 and v == 1:
                     seen.append("%s: KEY %d" % (devs[fd], c))
+                elif t == 3 and abs(v) > 0 and c in (2, 5, 16, 17):
+                    seen.append("%s: ABS %d=%d" % (devs[fd], c, v))
     print("   %s → %s" % (what, "; ".join(dict.fromkeys(seen)) or "nichts erkannt"))
 PY
+python3 -u /tmp/rds-keytest.py < /dev/tty
 
 h "Touch-Geräte"
 for p in /sys/class/input/event*/device/name; do n=$(cat $p); case "$n" in *[Tt]ouch*|*oodix*) echo "$(echo $p | cut -d/ -f5): $n";; esac; done
