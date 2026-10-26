@@ -1295,6 +1295,30 @@ def running_port():
     return tool
 
 
+def gptokeyb_cleanup():
+    """Verwaiste gptokeyb beenden: ROCKNIX startet es mit dem Emulator (z. B. „-sudokill drastic“) und beendet es erst
+    am Ende des Startskripts. Wird der Emulator hart beendet oder neu gestartet, läuft es weiter – ES bekommt dann jede
+    Taste doppelt (Navigation springt, Start-Menü öffnet sich). Nur Kopien, deren Emulator nicht mehr läuft."""
+    procs = {}
+    for d in os.listdir("/proc"):
+        if d.isdigit():
+            args = _cmdline(int(d))
+            if args:
+                procs[int(d)] = args
+    names = {os.path.basename(a[0]) for a in procs.values()}
+    for pid, args in procs.items():
+        if not args or os.path.basename(args[0]) != "gptokeyb" or "-sudokill" not in args:
+            continue
+        i = args.index("-sudokill")
+        target = args[i + 1] if i + 1 < len(args) else ""
+        if target and target not in names:
+            try:
+                os.kill(pid, signal.SIGKILL)
+                log("gptokeyb ohne laufendes %s beendet (pid %d)" % (target, pid))
+            except OSError:
+                pass
+
+
 def running_game():
     """Sucht einen laufenden Emulator und leitet Spiel/System aus der Befehlszeile ab."""
     g = _running_emu()
@@ -7544,6 +7568,10 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        if not g:
+                            # zurück in ES: verwaistes gptokeyb (doppelte Tasten) beenden – kurz warten, bis das
+                            # Startskript es selbst beendet hätte
+                            threading.Timer(2.0, gptokeyb_cleanup).start()
                         if SWAP:
                             threading.Thread(target=swap_cleanup, daemon=True).start()
                         if getattr(cc.switcher, "done", True) is not False:   # nicht mitten in einem Wechsel

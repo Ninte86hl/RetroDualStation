@@ -73,6 +73,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
       Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
+- [x] **Verwaistes gptokeyb (Plus 26.10.)** – nach hartem Ende/Neustart von DraStic lief gptokeyb weiter → ES bekam jede
+      Taste doppelt (Navigation springt, Doppelklick öffnet Menü). CC beendet jetzt 2 s nach Rückkehr in ES jedes
+      gptokeyb, dessen „-sudokill“-Ziel nicht mehr läuft (v15.3.3).
 - [ ] **Beschädigter automatischer Stand (Plus 26.10.)** – Zelda _0.dss ließ DraStic beim Start hängen (nach Laden des
       Spielstands, Ursache vermutlich unterbrochenes Speichern/Neustart). Idee: CC/Start erkennt Hänger (kein Fenster
       nach x s) bzw. prüft die Datei und startet ohne Stand; Stand beiseitelegen statt löschen.
