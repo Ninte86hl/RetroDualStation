@@ -112,6 +112,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       falsches Mikrofon). Installer ersetzt den DraStic-Starter (eigenes drastic_v2522, eigenes LD_PRELOAD statt
       libdrastouch.so, beendet gptokeyb), Sicherung drastic.tar.gz + Deinstallation. **Keine Lizenz** → nicht mitliefern.
       Konflikte mit RDS: `fullscreen enable global` (Gameswitcher/Schnellwechsel/Sicherheitsnetz) und `touch_map`
+      **Test Plus 26.10.:** nicht unterstützt – Bibliothek kennt nur QUIRK „Anbernic RG DS“, kein Layout für 2048x768
+      (resources/bg/…/layout.json fehlt) → pRenderer=(nil), kein Bild, Watchdog/Segfault. Zurückgestellt (eigene Sicherung
+      rds-drastic-vor-advanced.tar.gz). Prozess heißt drastic_v2522 → CC erkennt DraStic am Namen (anpassen, falls genutzt).
       gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
       Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version
