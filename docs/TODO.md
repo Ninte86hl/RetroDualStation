@@ -309,5 +309,6 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Bisherige Abhilfe (rightanalog aus es_input für retrogame_joypad) greift nicht mehr. „Right Stick“ aus der Zuordnung
       entfernen reicht NICHT (RX/RY dann Standard-Übersetzung, RY = -X). Versuch 2: InputPlumber-Filter
       `events: exclude: [Gamepad:Axis:RightStick]` am adc-joystick in 02-rg-ds-plus.yaml (tools/rds-inputplumber-fix.sh).
+      **Getestet 26.10. 20:10: RX/RY bleiben in Ruhe, linker Stick sauber ✓.** Offen: dauerhaft beim Start (vor InputPlumber).
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
