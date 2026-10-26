@@ -123,6 +123,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Anbernic+X/Kachel Menü, Anbernic+R2/L2, Savestate laden, L3-Mikrofon (Rollen-Taste), Beenden + ES-Navigation ok.
       Pusten fehlt (ROCKNIX-Erkennung aus) → Idee: CC hört das Mikrofon selbst ab (arecord, Pegel über Grundrauschen →
       Rollen-Taste halten) – geht mit beiden DraStic-Varianten, ROCKNIX-Erkennung bleibt aus. Offen: Menü-Optik, Leistung.
+      **Beenden 26.10.:** advanced_drastic ignoriert SIGTERM; CC erkannte mal Starter („drastic“, Skript), mal Programm
+      (drastic_v2522) → Starter beendet, Programm lief weiter (zweites Fenster, Mikrofon belegt, Bild verzerrt, Speichern
+      ewig). Jetzt: Prozessbaum durchsuchen, Quit-Taste F7 (CONTROL_INDEX_QUIT=320), Rückfall SIGTERM/SIGKILL, dann
+      Starter. Offen: Neu starten, Schnellwechsel (SIGSTOP) und Gameswitcher mit advanced_drastic prüfen; „Enable Device
+      Microphone“ (eigenes echtes Mikrofon) – Kerzen reagierten nicht (evtl. wegen der hängenden zweiten Instanz) → neu testen.
       gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
       Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version

@@ -1445,31 +1445,38 @@ def quit_game(game):
                 _terminate(pid)
         threading.Thread(target=fallback, daemon=True).start()
         return
-    if game["emu"] == "DraStic" and is_adv_drastic(game["pid"]):
+    adv = adv_drastic_pid(game["pid"]) if game["emu"] == "DraStic" else None
+    if adv:
         # advanced_drastic ignoriert SIGTERM (Test 26.10.) → eigene Quit-Taste (F7, controls CONTROL_INDEX_QUIT),
         # Rückfall: Signal, dann hart
         how = drastic_press("QUIT")
         log("advanced_drastic beenden über", how or "Signal (Quit nicht belegt)")
 
-        def fallback(pid=game["pid"], first=not how):
+        def fallback(pid=adv, first=not how, starter=game["pid"]):
             for wait, sig in ((0 if first else 6, signal.SIGTERM), (6, signal.SIGKILL)):
                 time.sleep(wait)
                 if not os.path.exists("/proc/%d" % pid):
-                    return
+                    break
                 log("advanced_drastic noch offen –", "SIGTERM" if sig == signal.SIGTERM else "SIGKILL")
                 for p in proc_tree(pid):
                     try:
                         os.kill(p, sig)
                     except OSError:
                         pass
+            if starter != pid and os.path.exists("/proc/%d" % starter):
+                _terminate(starter)              # Starter-Skript erst nach dem Programm beenden
         threading.Thread(target=fallback, daemon=True).start()
         return
     _terminate(game["pid"])
 
 
-def is_adv_drastic(pid):
-    """advanced_drastic (trngaje) statt ROCKNIX-DraStic: Programm heißt drastic_v25…"""
-    return (rd("/proc/%d/comm" % pid) or "").strip().startswith("drastic_v")
+def adv_drastic_pid(pid):
+    """advanced_drastic (trngaje) statt ROCKNIX-DraStic: Programm heißt drastic_v25…, gestartet von einem Skript
+    namens „drastic“. Erkannt kann der Starter oder das Programm sein → im Baum suchen. PID des Programms oder None."""
+    for p in [pid] + proc_tree(pid):
+        if (rd("/proc/%d/comm" % p) or "").strip().startswith("drastic_v"):
+            return p
+    return None
 
 
 def _terminate(pid):
