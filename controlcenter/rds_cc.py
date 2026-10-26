@@ -1445,7 +1445,31 @@ def quit_game(game):
                 _terminate(pid)
         threading.Thread(target=fallback, daemon=True).start()
         return
+    if game["emu"] == "DraStic" and is_adv_drastic(game["pid"]):
+        # advanced_drastic ignoriert SIGTERM (Test 26.10.) → eigene Quit-Taste (F7, controls CONTROL_INDEX_QUIT),
+        # Rückfall: Signal, dann hart
+        how = drastic_press("QUIT")
+        log("advanced_drastic beenden über", how or "Signal (Quit nicht belegt)")
+
+        def fallback(pid=game["pid"], first=not how):
+            for wait, sig in ((0 if first else 6, signal.SIGTERM), (6, signal.SIGKILL)):
+                time.sleep(wait)
+                if not os.path.exists("/proc/%d" % pid):
+                    return
+                log("advanced_drastic noch offen –", "SIGTERM" if sig == signal.SIGTERM else "SIGKILL")
+                for p in proc_tree(pid):
+                    try:
+                        os.kill(p, sig)
+                    except OSError:
+                        pass
+        threading.Thread(target=fallback, daemon=True).start()
+        return
     _terminate(game["pid"])
+
+
+def is_adv_drastic(pid):
+    """advanced_drastic (trngaje) statt ROCKNIX-DraStic: Programm heißt drastic_v25…"""
+    return (rd("/proc/%d/comm" % pid) or "").strip().startswith("drastic_v")
 
 
 def _terminate(pid):
@@ -1663,7 +1687,7 @@ def inject_keys(seq):
 # DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88, 71: 70}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen), 71 = Rollen (Fake-Mikrofon)
+SDL_TO_EVDEV = {64: 65, 65: 66, 66: 67, 67: 68, 68: 87, 69: 88, 71: 70}   # SDL-Scancode F7–F12 → evdev KEY_F7–KEY_F12 (F7 = Beenden, F8 = Bildschirme tauschen), 71 = Rollen (Fake-Mikrofon)
 DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
