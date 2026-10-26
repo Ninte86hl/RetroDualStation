@@ -1597,7 +1597,7 @@ def inject_keys(seq):
 # DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen)
+SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88, 71: 70}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen), 71 = Rollen (Fake-Mikrofon)
 DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
@@ -1631,6 +1631,20 @@ def vkey_press(code):
         os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
         time.sleep(0.12)
     return True
+
+
+def vkey_hold(code, val):
+    """Virtuelle Taste drücken (val 1) bzw. loslassen (val 0) – für gehaltene Tasten (Mikrofon)."""
+    fd = vkey_open()
+    if fd is None:
+        return False
+    os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
+    os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
+    return True
+
+
+MIC_KEY = 70          # KEY_SCROLLLOCK – DraStic: controls_a[CONTROL_INDEX_FAKE_MICROPHONE] = 327 (ROCKNIX)
+MIC_HOLD = {"on": False}
 
 
 def es_launch(rom):
@@ -7332,6 +7346,18 @@ def main():
                 if mode_down and not combo:
                     toggle("cc")
                 mode_down = False
+            return
+        if typ == EV_KEY and code == 317 and value in (0, 1) and not ui.view and (value == 0 or not mode_down):
+            # L3 = Mikrofon in DraStic: gehalten wie die Rollen-Taste, die auch die ROCKNIX-Mikrofonerkennung drückt
+            # (die Joypad-Belegung allein erkennt z. B. Zelda nicht als Pusten – Test 26.10.)
+            if value == 1:
+                g = running_game()
+                if g and g["emu"] == "DraStic" and vkey_hold(MIC_KEY, 1):
+                    MIC_HOLD["on"] = True
+                    log("Mikrofon: L3 gedrückt")
+            elif MIC_HOLD["on"]:
+                vkey_hold(MIC_KEY, 0)
+                MIC_HOLD["on"] = False
             return
         if typ == EV_KEY and code == BTN_EAST and cc.kbd and ui.view and not mode_down:
             if value == 1:
