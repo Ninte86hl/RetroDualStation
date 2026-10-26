@@ -80,9 +80,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
       Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
       Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.
-- [ ] **v15.3.3: L3 = Mikrofon in DraStic** (Wunsch 26.10.) – controls_b[CONTROL_INDEX_FAKE_MICROPHONE] = 1035
-      (Merker drastic-kuerzel-v5, gesichert; controls_a bleibt 327 für das echte Mikrofon über libdrastouch).
-      Tauschen nur noch als Kachel. Test: Spiel mit Mikrofon (z. B. Zelda PH Kerzen/Rufen), Tastenübersicht.
+- [ ] **v15.3.3: Mikrofon DraStic** (26.10.) – Lösung: eigenes Pust-Geräusch (installer/payload/drastic/rds-microphone.wav,
+      11 025 Hz übersteuert) + ROCKNIX-Erkennung nds.microphone_sensitivity (RDS-Standard 0.15, nur wenn aus/leer; Merker
+      mikrofon.done) + L3 über das CC als Rollen-Taste (virtuelle Tastatur; Joypad-Belegung controls_b allein erkannte
+      Zelda NICHT). Zelda-Kerzen (Plus): Pusten ✓ (high), L3 ✓. Offen: medium/low gegen Fehlauslösen, RG DS, Release.
+      Testgeräte: controls_b[FAKE_MICROPHONE] von Hand auf 327 zurück.
 - [ ] **Neu 25.10. 21:40: Follow 3D Renderer funktioniert auf dem RG DS** – Touch-Bild folgt der 3D-Einheit und liegt
       dann OBEN; der RG DS hat oben einen zweiten Touchscreen (event1), also oben tippen. Der RG DS Plus hat nur EINEN
       Touchscreen → dort „Touch geht nicht“ (deshalb nie aufgefallen; erklärt auch den v8-Tipp „Follow 3D auf Auto“).

@@ -2874,7 +2874,8 @@ def drastic_shortcuts():
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
         elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
             rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1", "SAVE_STATE": "Anbernic + R2",
-                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": tr("Kachel „Tauschen“")}.get(k, tr("nur über das CC"))))
+                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": tr("Kachel „Tauschen“"),
+                                 "FAKE_MICROPHONE": "L3"}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
             rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows

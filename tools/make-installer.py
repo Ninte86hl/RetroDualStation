@@ -77,6 +77,7 @@ with zipfile.ZipFile(out, "w") as z:
     tour = os.path.join(repo, "controlcenter", "tour")      # Bilder der Tour
     for f in sorted(os.listdir(tour)):
         add(z, os.path.join(tour, f), p + "controlcenter/tour/" + f, FILE)
+    add(z, os.path.join(repo, "installer", "payload", "drastic", "rds-microphone.wav"), p + "drastic/rds-microphone.wav", FILE)
     for f in sorted(os.listdir(os.path.join(repo, "installer", "payload", "images"))):
         add(z, os.path.join(repo, "installer", "payload", "images", f), p + "images/" + f, FILE)
     if canvas:   # canvas-ds aus dessen Installer-ZIP übernehmen

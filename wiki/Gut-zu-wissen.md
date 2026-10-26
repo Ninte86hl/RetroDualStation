@@ -5,6 +5,7 @@
 - **PS1:** Der Installer stellt **pcsx_rearmed** ein, wenn kein funktionierender Core gewählt ist.
 - **DS:** DraStic und DSperate funktionieren; RetroArch-DS-Cores sind ungetestet.
 - **Touch in DraStic reagiert nicht?** Mit **Follow 3D Renderer = An** kann das Touchbild oben liegen – auf dem RG DS einfach oben tippen (dort hat auch der obere Bildschirm Touch), auf dem RG DS Plus *Follow 3D* auf *Auto* stellen (auch im Original-ROCKNIX).
+- **DraStic: Mikrofon** – pusten oder rufen wie am DS (RDS schaltet die Erkennung auf *medium*), oder **L3** halten. Löst ein Spiel von selbst aus: in den erweiterten Spieleinstellungen *Microphone sensitivity* auf *low* bzw. *off* (dann L3).
 - **DraStic: Bild bzw. Touch auf dem falschen Bildschirm?** Manche Spiele tauschen oben und unten (z. B. der Laden in *Zelda: Phantom Hourglass*). Mit **Threaded 3D = Aus** für dieses Spiel (Spiel auswählen → erweiterte Spieleinstellungen) macht DraStic den Wechsel samt Touch von selbst richtig. Sonst hilft die Kachel **Tauschen** im [Kontrollcenter](Kontrollcenter). Bekannte Spiele: [DraStic-Spiele](DraStic-Spiele).
 - **Zurück zum Original:** *Ports → RDS Single-Screen*; *Uninstall* stellt Original-ES, Theme und deine ursprünglichen Einstellungen wieder her und entfernt alles von RDS – Spiele, Artworks, Spielelisten, Savestates und Spielstände bleiben unberührt. Eine Sicherung deiner ursprünglichen Einstellungen liegt bis zum Ende der Deinstallation in `roms/backup`.
 
