@@ -1724,7 +1724,7 @@ def vkey_open():
     try:
         fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
         fcntl.ioctl(fd, 0x40045564, EV_KEY)                     # UI_SET_EVBIT
-        for code in SDL_TO_EVDEV.values():
+        for code in list(SDL_TO_EVDEV.values()) + list(STICK_KEYS):
             fcntl.ioctl(fd, 0x40045565, code)                   # UI_SET_KEYBIT
         os.write(fd, struct.pack("80sHHHHi", b"RDS Keys", 0x06, 0x5244, 0x5331, 1, 0) + b"\0" * (64 * 4 * 4))
         fcntl.ioctl(fd, 0x5501)                                 # UI_DEV_CREATE
@@ -1757,6 +1757,45 @@ def vkey_hold(code, val):
     os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
     os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
     return True
+
+
+# Stick als Steuerkreuz in DraStic (InputPlumber, ROCKNIX ab 10/2026): DraStic wertet den Stick ohne Totzone aus, der
+# flache Stick des RG DS Plus federt aber bis ~35 % neben die Mitte zurück (Messung 26.10.) → „links“ blieb gedrückt.
+# Der Installer belegt DraStics Stick-Richtungen (controls_a) auf die Pfeiltasten um; das CC gibt den Stick mit
+# Totzone (an ab 60 %, aus unter 45 %) als Pfeiltasten über „RDS Keys“ weiter – nur solange DraStic läuft.
+STICK_KEYS = {103: "UP", 108: "DOWN", 105: "LEFT", 106: "RIGHT"}
+STICK_SDL = {"UP": 338, "DOWN": 337, "LEFT": 336, "RIGHT": 335}   # 256 + SDL-Scancode der Pfeiltasten
+STICK_DPAD = {"on": False, "dir": {0: 0, 1: 0}}
+
+
+def drastic_stick_keys():
+    """True, wenn DraStics Stick-Richtungen auf die Pfeiltasten umgelegt sind (Installer, nur mit InputPlumber)."""
+    m = re.search(r"controls_a\[CONTROL_INDEX_UP\]\s*=\s*(\d+)", rd("/storage/.config/drastic/config/drastic.cfg") or "")
+    return bool(m and int(m.group(1)) == STICK_SDL["UP"])
+
+
+def stick_dpad_release():
+    for ax, d in list(STICK_DPAD["dir"].items()):
+        if d:
+            neg, pos = (105, 106) if ax == 0 else (103, 108)
+            vkey_hold(neg if d < 0 else pos, 0)
+            STICK_DPAD["dir"][ax] = 0
+
+
+def stick_dpad(code, value, rng):
+    """Stick → Pfeiltaste mit Totzone und Hysterese (code 0 = X, 1 = Y; Y negativ = oben)."""
+    lo, hi = rng
+    n = (value - (lo + hi) / 2) / ((hi - lo) / 2 or 1)
+    cur = STICK_DPAD["dir"][code]
+    d = cur if cur and n * cur > 0.45 else (1 if n > 0.6 else -1 if n < -0.6 else 0)
+    if d == cur:
+        return
+    neg, pos = (105, 106) if code == 0 else (103, 108)
+    if cur:
+        vkey_hold(neg if cur < 0 else pos, 0)
+    if d:
+        vkey_hold(neg if d < 0 else pos, 1)
+    STICK_DPAD["dir"][code] = d
 
 
 MIC_KEY = 70          # KEY_SCROLLLOCK – DraStic: controls_a[CONTROL_INDEX_FAKE_MICROPHONE] = 327 (ROCKNIX)
@@ -7612,6 +7651,11 @@ def main():
                 pad["trig"][key] = down
                 handle_joy(EV_KEY, key, 1 if down else 0, pad)
             return
+        if typ == EV_ABS and code in (ABS_X, ABS_Y) and pad.get("trig_axes"):
+            if STICK_DPAD["on"] and not ui.view:
+                stick_dpad(code, value, pad["range"])
+            elif any(STICK_DPAD["dir"].values()):
+                stick_dpad_release()
         if typ == EV_ABS and code not in (ABS_HAT0X, ABS_HAT0Y):
             if code == ABS_X:
                 handle_stick(value, pad["range"])
@@ -7811,6 +7855,12 @@ def main():
                 if not ui.view:
                     g = running_game()
                     pid = g["pid"] if g else None
+                    on = bool(g and g["emu"] == "DraStic" and not adv_drastic_pid(g["pid"]) and drastic_stick_keys())
+                    if on != STICK_DPAD["on"]:
+                        STICK_DPAD["on"] = on
+                        if not on:
+                            stick_dpad_release()
+                        log("DraStic: Stick als Pfeiltasten (Totzone)", "an" if on else "aus")
                     if pid != last_game["pid"]:
                         if g:
                             try:

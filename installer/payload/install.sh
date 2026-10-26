@@ -170,6 +170,8 @@ rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_IN
     "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" savestate_number \
     "controls_a[CONTROL_INDEX_SWAP_SCREENS]" "controls_b[CONTROL_INDEX_SWAP_SCREENS]" screen_swap \
     "controls_a[CONTROL_INDEX_QUIT]" "controls_b[CONTROL_INDEX_QUIT]" \
+    "controls_a[CONTROL_INDEX_UP]" "controls_a[CONTROL_INDEX_DOWN]" \
+    "controls_a[CONTROL_INDEX_LEFT]" "controls_a[CONTROL_INDEX_RIGHT]" \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -495,6 +497,18 @@ UNIT
         sed -i -E "s/^(controls_[ab]\[CONTROL_INDEX_QUIT\]) = 65535$/\1 = 320/" "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK6"
         log "DraStic: Beenden auf F7 (fuer advanced_drastic ueber das CC)"
+    fi
+    # InputPlumber (ROCKNIX ab 10/2026): DraStic liest den Stick ohne Totzone; der flache Stick des RG DS Plus federt
+    # bis ~35 % neben die Mitte zurück → Richtung blieb gedrückt. Stick-Richtungen (controls_a, Achsen 1152+/1216+)
+    # auf die Pfeiltasten (256 + SDL-Scancode) – das CC gibt den Stick mit Totzone als Pfeiltasten weiter.
+    DMARK7=/storage/.config/retrodualstation/drastic-stick-v7.done
+    if [ -x /usr/bin/inputplumber ] && [ ! -f "$DMARK7" ] && [ -f "$DCFG" ] && ! pidof drastic >/dev/null; then
+        sed -i -E -e "s/^(controls_a\[CONTROL_INDEX_UP\]) = 1217$/\1 = 338/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_DOWN\]) = 1153$/\1 = 337/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_LEFT\]) = 1216$/\1 = 336/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_RIGHT\]) = 1152$/\1 = 335/" "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK7"
+        log "DraStic: Stick-Richtungen auf Pfeiltasten (Totzone über das CC, InputPlumber)"
     fi
     # Mikrofon: das CC hört selbst ab (mic_watch) und drückt das Fake-Mikrofon – die ROCKNIX-Erkennung (libdrastouch,
     # ES „Microphone sensitivity“) bleibt aus, weil sie advanced_drastic beim Start abstürzen lässt. v15.3.3 hatte sie
