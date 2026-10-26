@@ -331,3 +331,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       zusätzlich das RA-Menü? (input_menu_toggle = f1) · DraStic F1-Belegung · DraStic MENU a=1035 = L3 ↔ Mikrofon ·
       Vibration · unser ES-Binary auf neuem ES/Bibliotheken · Phantom-Stick-Abhilfe in install.sh (retrogame_joypad) dort
       überflüssig · RA_AUTOCONFIG-Beschriftungen (retrogame_joypad.cfg) für DualSense.
+- [ ] **Nightly-Test 26.10. 21:25 (Plus, InputPlumber):** CC-Kacheln ✓, Vorspulen ✓, Anbernic+R2/L2 Speichern/Laden ✓ (L2/R2
+      nur als Achse → CC wertet ab 50 % als Taste), Gameswitcher inkl. Neustart/Entfernen/Beenden ✓, Pusten ✓, L3 ✓ (L3
+      kam beim Halten mehrfach als Drücken/Loslassen → Loslassen 0,4 s verzögert). Stick in DraStic: X-Mitte wanderte
+      auf 301–341 (Kalibrierung 415) → DraStic ohne Totzone hielt „links“ → Stick-Richtungen (Spiel + DraStic-Menü,
+      controls_a) auf Pfeiltasten, CC gibt den Stick mit Totzone (60/45 %) weiter ✓ links/rechts/runter; „hoch“ tut in
+      Zelda PH auch mit dem Steuerkreuz nichts. Offen: Stick-Kalibrierung ggf. überflüssig (Totzone reicht?), RA/F1-Test,
+      Grab bei offenem CC, Vibration, RG DS auf Nightly.

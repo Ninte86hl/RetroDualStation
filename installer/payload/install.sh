@@ -172,6 +172,8 @@ rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_IN
     "controls_a[CONTROL_INDEX_QUIT]" "controls_b[CONTROL_INDEX_QUIT]" \
     "controls_a[CONTROL_INDEX_UP]" "controls_a[CONTROL_INDEX_DOWN]" \
     "controls_a[CONTROL_INDEX_LEFT]" "controls_a[CONTROL_INDEX_RIGHT]" \
+    "controls_a[CONTROL_INDEX_UI_UP]" "controls_a[CONTROL_INDEX_UI_DOWN]" \
+    "controls_a[CONTROL_INDEX_UI_LEFT]" "controls_a[CONTROL_INDEX_UI_RIGHT]" \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -506,9 +508,13 @@ UNIT
         sed -i -E -e "s/^(controls_a\[CONTROL_INDEX_UP\]) = 1217$/\1 = 338/" \
                   -e "s/^(controls_a\[CONTROL_INDEX_DOWN\]) = 1153$/\1 = 337/" \
                   -e "s/^(controls_a\[CONTROL_INDEX_LEFT\]) = 1216$/\1 = 336/" \
-                  -e "s/^(controls_a\[CONTROL_INDEX_RIGHT\]) = 1152$/\1 = 335/" "$DCFG"
+                  -e "s/^(controls_a\[CONTROL_INDEX_RIGHT\]) = 1152$/\1 = 335/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_UI_UP\]) = 1217$/\1 = 338/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_UI_DOWN\]) = 1153$/\1 = 337/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_UI_LEFT\]) = 1216$/\1 = 336/" \
+                  -e "s/^(controls_a\[CONTROL_INDEX_UI_RIGHT\]) = 1152$/\1 = 335/" "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK7"
-        log "DraStic: Stick-Richtungen auf Pfeiltasten (Totzone über das CC, InputPlumber)"
+        log "DraStic: Stick-Richtungen (Spiel und Menü) auf Pfeiltasten (Totzone über das CC, InputPlumber)"
     fi
     # Mikrofon: das CC hört selbst ab (mic_watch) und drückt das Fake-Mikrofon – die ROCKNIX-Erkennung (libdrastouch,
     # ES „Microphone sensitivity“) bleibt aus, weil sie advanced_drastic beim Start abstürzen lässt. v15.3.3 hatte sie
