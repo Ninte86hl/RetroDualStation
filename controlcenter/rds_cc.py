@@ -1783,6 +1783,7 @@ def mic_watch():
             log("Mikrofon: Abhören an (Schwelle %.2f)" % thr)
             base, n, held, pid = 0.0, 0, False, g["pid"]
             peak, t_log = 0.0, time.monotonic()
+            seg = []
             try:
                 while os.path.exists("/proc/%d" % pid):
                     data = rec.stdout.read(chunk * 2)
@@ -1790,6 +1791,17 @@ def mic_watch():
                         break
                     a = array.array("h", data)
                     rms = math.sqrt(sum(x * x for x in a) / len(a)) / 32768.0
+                    # Merkmale für Pusten vs. Sprechen: Nulldurchgänge (Rauschen hoch, Stimme niedrig), Übersteuerung
+                    zcr = sum(1 for i in range(1, len(a)) if (a[i - 1] < 0) != (a[i] < 0)) / len(a)
+                    clip = sum(1 for x in a if x > 30000 or x < -30000) / len(a)
+                    if n >= 60 and rms > base + 0.08:          # lautes Stück: sammeln
+                        seg.append((rms, zcr, clip))
+                    elif seg:
+                        if len(seg) >= 2:
+                            log("Mikrofon-Stück: %.2f s, Pegel max %.3f, Nulldurchgänge %.3f, Übersteuerung %.1f %%"
+                                % (len(seg) * 0.05, max(x[0] for x in seg), sum(x[1] for x in seg) / len(seg),
+                                   100 * sum(x[2] for x in seg) / len(seg)))
+                        seg = []
                     if n < 60:                    # ~3 s Grundrauschen messen
                         base = (base * n + rms) / (n + 1)
                         n += 1
