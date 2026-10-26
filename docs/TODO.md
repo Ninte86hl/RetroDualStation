@@ -73,6 +73,13 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
       Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
+- [ ] **Beschädigter automatischer Stand (Plus 26.10.)** – Zelda _0.dss ließ DraStic beim Start hängen (nach Laden des
+      Spielstands, Ursache vermutlich unterbrochenes Speichern/Neustart). Idee: CC/Start erkennt Hänger (kein Fenster
+      nach x s) bzw. prüft die Datei und startet ohne Stand; Stand beiseitelegen statt löschen.
+- [ ] **Mikrofon DraStic (26.10.)** – ROCKNIX microphone.wav = 48 kHz weißes Rauschen (rms 14k); Zelda PH-Kerzen
+      reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
+      Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
+      Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.
 - [ ] **v15.3.3: L3 = Mikrofon in DraStic** (Wunsch 26.10.) – controls_b[CONTROL_INDEX_FAKE_MICROPHONE] = 1035
       (Merker drastic-kuerzel-v5, gesichert; controls_a bleibt 327 für das echte Mikrofon über libdrastouch).
       Tauschen nur noch als Kachel. Test: Spiel mit Mikrofon (z. B. Zelda PH Kerzen/Rufen), Tastenübersicht.
