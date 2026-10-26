@@ -319,3 +319,15 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       InputPlumber), ggf. im CC neu kalibrieren.
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
+- [x] **Umsetzung InputPlumber (26.10. abends, Test offen):** controlcenter/rds_inputfix.py + rds-inputfix.service
+      (vor InputPlumber, `inputplumber.service.wants`): Home-Zuordnung, Phantom-Stick-Filter (Plus), Stick-Kalibrierung
+      aus /storage/.config/rds-stickcal.txt (Originalwerte → retrodualstation/inputplumber/abs-original.txt). Installer
+      startet es einmal, Deinstallation nimmt es zurück (`aus`). CC: `builtin_joypad()` (retrogame_joypad oder uhid-
+      DualSense), wird nach InputPlumber-Neustart neu gefunden; Home = KEY_F1 auf „InputPlumber Keyboard“; eingespeiste
+      Achsen in Gerätebereich (Mitte 128), Steuerkreuz-Einspeisung als Hat, wenn das Gerät keine BTN_DPAD hat;
+      Bewegungssensoren und versteckte Quellgeräte nicht als Controller.
+- [ ] **Auf der Nightly prüfen:** Grab bei offenem CC (liest ES den DualSense über hidraw/HIDAPI statt evdev? dann
+      navigiert ES mit) · eingespeiste Tasten (DraStic-/DSperate-Kürzel) kommen an? · F1 (Home) öffnet in RetroArch
+      zusätzlich das RA-Menü? (input_menu_toggle = f1) · DraStic F1-Belegung · DraStic MENU a=1035 = L3 ↔ Mikrofon ·
+      Vibration · unser ES-Binary auf neuem ES/Bibliotheken · Phantom-Stick-Abhilfe in install.sh (retrogame_joypad) dort
+      überflüssig · RA_AUTOCONFIG-Beschriftungen (retrogame_joypad.cfg) für DualSense.
