@@ -1306,15 +1306,30 @@ def gptokeyb_cleanup():
             if args:
                 procs[int(d)] = args
     names = {os.path.basename(a[0]) for a in procs.values()}
+
+    def started(pid):                       # Startzeit (Ticks seit Boot) aus /proc/<pid>/stat
+        try:
+            with open("/proc/%d/stat" % pid) as f:
+                return int(f.read().rsplit(")", 1)[1].split()[19])
+        except (OSError, ValueError, IndexError):
+            return 0
+
+    by_target = {}
     for pid, args in procs.items():
         if not args or os.path.basename(args[0]) != "gptokeyb" or "-sudokill" not in args:
             continue
         i = args.index("-sudokill")
         target = args[i + 1] if i + 1 < len(args) else ""
-        if target and target not in names:
+        if target:
+            by_target.setdefault(target, []).append(pid)
+    for target, pids in by_target.items():
+        # Emulator läuft nicht mehr → alle weg; läuft er (z. B. nach „Neu starten“) → nur das neueste behalten
+        doomed = pids if target not in names else sorted(pids, key=started)[:-1]
+        for pid in doomed:
             try:
                 os.kill(pid, signal.SIGKILL)
-                log("gptokeyb ohne laufendes %s beendet (pid %d)" % (target, pid))
+                log("gptokeyb %s beendet (pid %d)" % ("ohne laufendes " + target if target not in names
+                                                      else "doppelt für " + target, pid))
             except OSError:
                 pass
 
@@ -7568,10 +7583,9 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
-                        if not g:
-                            # zurück in ES: verwaistes gptokeyb (doppelte Tasten) beenden – kurz warten, bis das
-                            # Startskript es selbst beendet hätte
-                            threading.Timer(2.0, gptokeyb_cleanup).start()
+                        # Spielwechsel/zurück in ES: verwaistes bzw. doppeltes gptokeyb beenden (doppelte Tasten) –
+                        # kurz warten, bis das Startskript es selbst beendet bzw. das neue gestartet hätte
+                        threading.Timer(2.0 if not g else 5.0, gptokeyb_cleanup).start()
                         if SWAP:
                             threading.Thread(target=swap_cleanup, daemon=True).start()
                         if getattr(cc.switcher, "done", True) is not False:   # nicht mitten in einem Wechsel
