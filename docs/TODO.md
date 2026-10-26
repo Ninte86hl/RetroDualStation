@@ -294,3 +294,16 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Desktop-Starter: Update kam einmal nicht automatisch an – prüfen
 - [ ] Umbenennung in **DualStation Sync** (Favorit; Alternative: DualStation Dock), Hinweis „funktioniert auch mit ROCKNIXDS“; Texte/Fenstertitel/Starter anpassen
 - [ ] Aufräumen: Branch `geraeteprofile` (v4.11.0) wird nicht genutzt
+
+## ROCKNIX-Nightly 20261026 (next) – Prüfung RG DS Plus (26.10. abends, neue SD-Karte)
+- [ ] **InputPlumber** ersetzt `retrogame_joypad`: virtueller **DualSense** (uhid, Sysfs `/sys/devices/virtual/misc/uhid/…`,
+      Name „Sony Interactive Entertainment DualSense Wireless Controller“), Quellgeräte versteckt (HIDE_DEVICES_FROM_ROOT=1).
+      Tasten gleich (304,305,307,308,310–318; Anbernic = 316, L3 = 317), aber **Steuerkreuz = ABS_HAT0X/Y (16/17)**,
+      **L2/R2 = ABS 2/5 (0–255)**, Sticks 0–255 (Mitte ~127). → CC: eingebautes Gamepad am uhid-Pfad erkennen (nicht als
+      externen Controller), Hat-Steuerkreuz + Achsen 0–255, Tasten einspeisen prüfen, RetroArch-/DSperate-Tabellen.
+- [ ] **Home-Taste tot (ROCKNIX-Fehler):** anbernic_rgds.yaml `BTN_BACK → gamepad: button: KeyF1` → „Invalid or
+      unimplemented button: KeyF1“. Richtig `keyboard: KeyF1` (wie anbernic_gen1/arc). Versuch: tools/rds-homekey-fix.sh
+      (Override in /etc/inputplumber/capability_maps.d). Danach CC: Home = KEY_F1 (59) auf „InputPlumber Keyboard“.
+      Fehlerbericht an ROCKNIX.
+- [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
+      CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
