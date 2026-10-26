@@ -2291,7 +2291,9 @@ def _wait_gone(pid, limit=6.0):
         time.sleep(0.1)
 
 
-GS_LAUNCHED = {"rom": None, "t": 0.0}          # zuletzt vom Gameswitcher gestartetes Spiel
+GS_LAUNCHED = {"rom": None, "t": 0.0}
+# DraStic-Fenster: ROCKNIX „drastic“, advanced_drastic „drastic_v2522“ (zwei Fenster)
+DRASTIC_WIN = re.compile(r'"app_id":\s*"drastic')          # zuletzt vom Gameswitcher gestartetes Spiel
 
 
 def drastic_autoload(game):
@@ -2311,8 +2313,8 @@ def drastic_autoload(game):
         end = time.time() + 15
         while time.time() < end:
             try:
-                if '"drastic"' in subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
-                                                 capture_output=True, text=True).stdout.lower():
+                if DRASTIC_WIN.search(subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                                     capture_output=True, text=True).stdout.lower()):
                     break
             except Exception:
                 pass
@@ -2500,7 +2502,7 @@ class Switcher:
                 try:
                     tree = subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
                                           capture_output=True, text=True).stdout
-                    return '"drastic"' in tree.lower()
+                    return bool(DRASTIC_WIN.search(tree.lower()))
                 except Exception:
                     return False
             other = None
