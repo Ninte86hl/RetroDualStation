@@ -10,7 +10,12 @@ def find(pred):
     for p in sorted(glob.glob("/sys/class/input/event*/device/name")):
         n = open(p).read().strip()
         if pred(n):
-            return "/dev/input/" + p.split("/")[4], n
+            ev = p.split("/")[4]
+            # InputPlumber versteckt Quellgeräte: /dev/input/eventN → /dev/inputplumber/sources/eventN
+            for d in ("/dev/input/", "/dev/inputplumber/sources/"):
+                if os.path.exists(d + ev):
+                    return d + ev, n
+            return None, n
     return None, None
 def info(fd, c):
     b = bytearray(24)
@@ -22,6 +27,8 @@ def info(fd, c):
 raw, _ = find(lambda n: n == "adc-joystick")
 vir, _ = find(lambda n: "DualSense" in n and "Motion" not in n and "Touchpad" not in n and "Jack" not in n)
 rfd = os.open(raw, os.O_RDONLY | os.O_NONBLOCK) if raw else None
+if not rfd:
+    print("adc-joystick-Gerätedatei nicht gefunden:", os.listdir("/dev/inputplumber/sources") if os.path.isdir("/dev/inputplumber/sources") else "-")
 vfd = os.open(vir, os.O_RDONLY | os.O_NONBLOCK) if vir else None
 print("Roh:", raw, "· Virtuell:", vir)
 for c, n in ((0, "X"), (1, "Y"), (3, "RX"), (4, "RY")):
