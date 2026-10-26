@@ -131,6 +131,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       **26.10. 13:53:** CC hört selbst ab (mic_watch, Schwelle 0,15) → mit advanced_drastic (Device Microphone = no)
       gehen Kerzen per Pusten UND L3 aus. Beenden über F7, Auto-Laden, Speichern ok. Offen: normales DraStic mit
       mic_watch, RG DS, Fehlauslösungen (Spielton/Reden), Neu starten/Schnellwechsel/Gameswitcher mit advanced_drastic.
+      Messung: Pusten 1,9 s / Pegel 0,49–0,50 / ZCR 0,03–0,04; Reden 0,18–0,27 (laut 0,46, ZCR 0,057); Klatschen 0,1–0,25 s.
+      Klang trennt nicht → Schwelle 0,30, Grundrauschen nur in Ruhe nachführen, ab 3 lauten Stücken (0,15 s).
       gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
       Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version

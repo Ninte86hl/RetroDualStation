@@ -1755,7 +1755,8 @@ def mic_set(src, on):
             vkey_hold(MIC_KEY, 1 if MIC_SRC else 0)
 
 
-MIC_DEFAULT = 0.15    # wie ES „medium“: Pegel (0–1) über dem Grundrauschen
+MIC_DEFAULT = 0.30    # Pegel (0–1) über dem Grundrauschen – Messung Plus 26.10.: Pusten 0,45–0,50, normales Reden
+                      # 0,18–0,27 (lautes Rufen löst wie am DS aus), Grundrauschen ~0,03
 
 
 def mic_watch():
@@ -1783,7 +1784,7 @@ def mic_watch():
             log("Mikrofon: Abhören an (Schwelle %.2f)" % thr)
             base, n, held, pid = 0.0, 0, False, g["pid"]
             peak, t_log = 0.0, time.monotonic()
-            seg = []
+            seg, run = [], 0
             try:
                 while os.path.exists("/proc/%d" % pid):
                     data = rec.stdout.read(chunk * 2)
@@ -1806,8 +1807,11 @@ def mic_watch():
                         base = (base * n + rms) / (n + 1)
                         n += 1
                         continue
-                    base = base * 0.999 + rms * 0.001
-                    want = rms > base + thr and not ui_state_open()
+                    if rms < base + 0.05:          # Grundrauschen nur in ruhigen Momenten nachführen
+                        base = base * 0.99 + rms * 0.01
+                    loud = rms > base + thr and not ui_state_open()
+                    run = run + 1 if loud else 0
+                    want = run >= 3 if not held else loud     # erst ab 0,15 s (kein Tippen/Klappern), sofort los
                     peak = max(peak, rms)
                     if want != held:
                         held = want
