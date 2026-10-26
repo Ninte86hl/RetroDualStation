@@ -1775,6 +1775,9 @@ def drastic_stick_keys():
 
 
 def stick_dpad_release():
+    for t in list(STICK_DPAD.get("timers", {}).values()):
+        t.cancel()
+    STICK_DPAD.get("timers", {}).clear()
     for ax, d in list(STICK_DPAD["dir"].items()):
         if d:
             neg, pos = (105, 106) if ax == 0 else (103, 108)
@@ -1783,28 +1786,42 @@ def stick_dpad_release():
 
 
 def stick_dpad(code, value, rng):
-    """Stick → Pfeiltaste mit Totzone und Hysterese (code 0 = X, 1 = Y; Y negativ = oben)."""
+    """Stick → Pfeiltaste mit Totzone und Hysterese (code 0 = X, 1 = Y; Y negativ = oben). Loslassen erst, wenn der
+    Stick 0,12 s unter der Schwelle bleibt – der flache Stick zittert beim leichten Tippen über die Schwelle
+    (DraStic-Menü sprang mehrere Einträge, Test 26.10.)."""
     lo, hi = rng
     n = (value - (lo + hi) / 2) / ((hi - lo) / 2 or 1)
     cur = STICK_DPAD["dir"][code]
     d = cur if cur and n * cur > 0.45 else (1 if n > 0.6 else -1 if n < -0.6 else 0)
+    timers = STICK_DPAD.setdefault("timers", {})
     if d == cur:
+        t = timers.pop(code, None)                 # wieder über der Schwelle → geplantes Loslassen verwerfen
+        if t:
+            t.cancel()
         return
-    now = time.monotonic()
-    rel = STICK_DPAD.setdefault("released", {})
-    if d and not cur and now - rel.get((code, d), 0) < 0.18:
-        return        # Prellen: der flache Stick zittert beim leichten Tippen über die Schwelle (DraStic-Menü sprang)
-    if cur and not d:
-        rel[(code, cur)] = now
     neg, pos = (105, 106) if code == 0 else (103, 108)
-    if cur:
-        vkey_hold(neg if cur < 0 else pos, 0)
-    if d:
+    if cur and not d:
+        if code not in timers:
+            def off(code=code, cur=cur):
+                with MIC_LOCK:
+                    timers.pop(code, None)
+                    if STICK_DPAD["dir"][code] == cur:
+                        vkey_hold(neg if cur < 0 else pos, 0)
+                        STICK_DPAD["dir"][code] = 0
+            timers[code] = threading.Timer(0.12, off)
+            timers[code].start()
+        return
+    t = timers.pop(code, None)
+    if t:
+        t.cancel()
+    with MIC_LOCK:
+        if cur:
+            vkey_hold(neg if cur < 0 else pos, 0)
         vkey_hold(neg if d < 0 else pos, 1)
-        if STICK_DPAD.get("logged", 0) < 12:            # die ersten Richtungen ins Log (Test)
-            STICK_DPAD["logged"] = STICK_DPAD.get("logged", 0) + 1
-            log("DraStic-Stick:", STICK_KEYS[neg if d < 0 else pos], "(%.0f %%)" % (abs(n) * 100))
-    STICK_DPAD["dir"][code] = d
+        STICK_DPAD["dir"][code] = d
+    if STICK_DPAD.get("logged", 0) < 12:                # die ersten Richtungen ins Log (Test)
+        STICK_DPAD["logged"] = STICK_DPAD.get("logged", 0) + 1
+        log("DraStic-Stick:", STICK_KEYS[neg if d < 0 else pos], "(%.0f %%)" % (abs(n) * 100))
 
 
 MIC_KEY = 70          # KEY_SCROLLLOCK – DraStic: controls_a[CONTROL_INDEX_FAKE_MICROPHONE] = 327 (ROCKNIX)
