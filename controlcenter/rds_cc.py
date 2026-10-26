@@ -1339,6 +1339,18 @@ def gptokeyb_cleanup():
                 pass
 
 
+def gptokeyb_watch():
+    """Hintergrund: ohne laufendes Spiel alle 5 s verwaiste gptokeyb beenden – fängt auch Emulatoren ab, die sofort
+    abstürzen (kein Spielwechsel, das Startskript findet gptokeyb noch nicht)."""
+    while True:
+        time.sleep(5)
+        try:
+            if not running_game():
+                gptokeyb_cleanup()
+        except Exception as exc:
+            log("gptokeyb-Prüfung:", exc)
+
+
 def running_game():
     """Sucht einen laufenden Emulator und leitet Spiel/System aus der Befehlszeile ab."""
     g = _running_emu()
@@ -6503,6 +6515,7 @@ DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rds-dual.conf"   # vor
 
 
 def main():
+    threading.Thread(target=gptokeyb_watch, daemon=True).start()
     log("RetroDualStation Kontrollcenter", VERSION)
     if not (os.path.exists(DUAL_DROPIN) or os.path.exists(DUAL_DROPIN.replace("rds-dual.conf", "rgds.conf"))):
         # Single-Modus (Original-ES): CC, Gameswitcher und Power-Menü ruhen – keine Tasten, keine Vibration.
