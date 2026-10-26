@@ -1306,6 +1306,9 @@ def gptokeyb_cleanup():
             if args:
                 procs[int(d)] = args
     names = {os.path.basename(a[0]) for a in procs.values()}
+    count = {}
+    for a in procs.values():
+        count[os.path.basename(a[0])] = count.get(os.path.basename(a[0]), 0) + 1
 
     def started(pid):                       # Startzeit (Ticks seit Boot) aus /proc/<pid>/stat
         try:
@@ -1323,12 +1326,14 @@ def gptokeyb_cleanup():
         if target:
             by_target.setdefault(target, []).append(pid)
     for target, pids in by_target.items():
-        # Emulator läuft nicht mehr → alle weg; läuft er (z. B. nach „Neu starten“) → nur das neueste behalten
-        doomed = pids if target not in names else sorted(pids, key=started)[:-1]
+        # Emulator läuft nicht mehr → alle weg; sonst je laufendem Emulator eines behalten (die neuesten) – so bleiben
+        # beim Schnellwechsel mit zwei DraStic beide, nach „Neu starten“ fällt das alte weg
+        keep = count.get(target, 0)
+        doomed = sorted(pids, key=started)[:max(0, len(pids) - keep)]
         for pid in doomed:
             try:
                 os.kill(pid, signal.SIGKILL)
-                log("gptokeyb %s beendet (pid %d)" % ("ohne laufendes " + target if target not in names
+                log("gptokeyb %s beendet (pid %d)" % ("ohne laufendes " + target if not keep
                                                       else "doppelt für " + target, pid))
             except OSError:
                 pass
