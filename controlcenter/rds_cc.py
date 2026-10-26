@@ -7673,15 +7673,27 @@ def main():
         if typ == EV_KEY and code == 317 and value in (0, 1) and not ui.view and (value == 0 or not mode_down):
             # L3 = Mikrofon in DraStic: gehalten wie die Rollen-Taste, die auch die ROCKNIX-Mikrofonerkennung drückt
             # (die Joypad-Belegung allein erkennt z. B. Zelda nicht als Pusten – Test 26.10.)
+            # Loslassen verzögert (0,4 s): unter InputPlumber kam L3 beim Halten mehrmals pro Sekunde als
+            # Drücken/Loslassen (Log 26.10.) – sonst hielt das Fake-Mikrofon nur Millisekunden.
             if value == 1:
+                t = MIC_HOLD.pop("timer", None)
+                if t:
+                    t.cancel()
+                if MIC_HOLD["on"]:
+                    return
                 g = running_game()
                 if g and g["emu"] == "DraStic":
                     mic_set("l3", True)
                     MIC_HOLD["on"] = True
                     log("Mikrofon: L3 gedrückt")
-            elif MIC_HOLD["on"]:
-                mic_set("l3", False)
-                MIC_HOLD["on"] = False
+            elif MIC_HOLD["on"] and not MIC_HOLD.get("timer"):
+                def off():
+                    MIC_HOLD.pop("timer", None)
+                    mic_set("l3", False)
+                    MIC_HOLD["on"] = False
+                    log("Mikrofon: L3 losgelassen")
+                MIC_HOLD["timer"] = threading.Timer(0.4, off)
+                MIC_HOLD["timer"].start()
             return
         if typ == EV_KEY and code == BTN_EAST and cc.kbd and ui.view and not mode_down:
             if value == 1:
