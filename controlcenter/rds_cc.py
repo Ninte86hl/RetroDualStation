@@ -1783,26 +1783,20 @@ def mic_watch():
                                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             log("Mikrofon: Abhören an (Schwelle %.2f)" % thr)
             base, n, held, pid = 0.0, 0, False, g["pid"]
-            peak, t_log = 0.0, time.monotonic()
-            seg, run = [], 0
+            run = 0
             try:
+                k = 0
                 while os.path.exists("/proc/%d" % pid):
+                    k += 1
+                    if k % 20 == 0:               # ~1 s: anderes Spiel aktiv (Schnellwechsel, DraStic geparkt)? → aus
+                        cur = running_game()
+                        if not cur or cur["pid"] != pid:
+                            break
                     data = rec.stdout.read(chunk * 2)
                     if not data or len(data) < chunk * 2:
                         break
                     a = array.array("h", data)
                     rms = math.sqrt(sum(x * x for x in a) / len(a)) / 32768.0
-                    # Merkmale für Pusten vs. Sprechen: Nulldurchgänge (Rauschen hoch, Stimme niedrig), Übersteuerung
-                    zcr = sum(1 for i in range(1, len(a)) if (a[i - 1] < 0) != (a[i] < 0)) / len(a)
-                    clip = sum(1 for x in a if x > 30000 or x < -30000) / len(a)
-                    if n >= 60 and rms > base + 0.08:          # lautes Stück: sammeln
-                        seg.append((rms, zcr, clip))
-                    elif seg:
-                        if len(seg) >= 2:
-                            log("Mikrofon-Stück: %.2f s, Pegel max %.3f, Nulldurchgänge %.3f, Übersteuerung %.1f %%"
-                                % (len(seg) * 0.05, max(x[0] for x in seg), sum(x[1] for x in seg) / len(seg),
-                                   100 * sum(x[2] for x in seg) / len(seg)))
-                        seg = []
                     if n < 60:                    # ~3 s Grundrauschen messen
                         base = (base * n + rms) / (n + 1)
                         n += 1
@@ -1812,15 +1806,11 @@ def mic_watch():
                     loud = rms > base + thr and not ui_state_open()
                     run = run + 1 if loud else 0
                     want = run >= 3 if not held else loud     # erst ab 0,15 s (kein Tippen/Klappern), sofort los
-                    peak = max(peak, rms)
                     if want != held:
                         held = want
                         mic_set("mic", held)
                         if held:
                             log("Mikrofon: Pusten erkannt (Pegel %.3f, Grundrauschen %.3f)" % (rms, base))
-                    if time.monotonic() - t_log > 10:  # Messwerte für die Einstellung der Schwelle
-                        log("Mikrofon: Grundrauschen %.3f, lautester Wert der letzten 10 s %.3f" % (base, peak))
-                        peak, t_log = 0.0, time.monotonic()
             finally:
                 mic_set("mic", False)
                 rec.kill()
