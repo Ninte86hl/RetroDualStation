@@ -115,6 +115,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       **Test Plus 26.10.:** nicht unterstützt – Bibliothek kennt nur QUIRK „Anbernic RG DS“, kein Layout für 2048x768
       (resources/bg/…/layout.json fehlt) → pRenderer=(nil), kein Bild, Watchdog/Segfault. Zurückgestellt (eigene Sicherung
       rds-drastic-vor-advanced.tar.gz). Prozess heißt drastic_v2522 → CC erkennt DraStic am Namen (anpassen, falls genutzt).
+      **Konflikt v15.3.3:** NDS-Mikrofonerkennung an (DSHOOK_MIC_THRESH>0) → start_drastic.sh lädt libdrastouch auch in
+      den Shell-Starter von advanced_drastic → Mikrofon-Init ohne SDL → Segfault vor dem Start. Mit advanced_drastic
+      Mikrofon aus; Installer müsste advanced_drastic erkennen (drastic = Skript, drastic_v2522 vorhanden) und auslassen.
       gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
       Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version
