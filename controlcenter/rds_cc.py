@@ -1790,6 +1790,12 @@ def stick_dpad(code, value, rng):
     d = cur if cur and n * cur > 0.45 else (1 if n > 0.6 else -1 if n < -0.6 else 0)
     if d == cur:
         return
+    now = time.monotonic()
+    rel = STICK_DPAD.setdefault("released", {})
+    if d and not cur and now - rel.get((code, d), 0) < 0.18:
+        return        # Prellen: der flache Stick zittert beim leichten Tippen über die Schwelle (DraStic-Menü sprang)
+    if cur and not d:
+        rel[(code, cur)] = now
     neg, pos = (105, 106) if code == 0 else (103, 108)
     if cur:
         vkey_hold(neg if cur < 0 else pos, 0)
