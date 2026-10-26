@@ -310,5 +310,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       entfernen reicht NICHT (RX/RY dann Standard-Übersetzung, RY = -X). Versuch 2: InputPlumber-Filter
       `events: exclude: [Gamepad:Axis:RightStick]` am adc-joystick in 02-rg-ds-plus.yaml (tools/rds-inputplumber-fix.sh).
       **Getestet 26.10. 20:10: RX/RY bleiben in Ruhe, linker Stick sauber ✓.** Offen: dauerhaft beim Start (vor InputPlumber).
+- [ ] **Stick RG DS Plus „träge“ unter InputPlumber (26.10.):** adc-joystick meldet 15..940 (Mitte 477), Ruhe X ~445 / Y ~511,
+      erreicht X 136..926 / Y 105..911 → nach InputPlumber Mitte ~118 statt 128, Ausschlag 74–80 %, ES-Schwelle ~70 %.
+      (Früher kalibrierte der ROCKNIX-Joypad-Treiber die Mitte.) Versuch: tools/rds-stickcal.sh (EVIOCSABS Min/Max um die
+      Ruhelage, InputPlumber neu starten). InputPlumber kennt nur deadzone/quadratic_scaling, keine Mitte.
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
