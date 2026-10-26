@@ -83,7 +83,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
       Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
       Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.
-- [ ] **v15.3.3: Mikrofon DraStic** (26.10.) – Lösung: eigenes Pust-Geräusch (installer/payload/drastic/rds-microphone.wav,
+- [x] **v15.3.3/v15.3.4: Mikrofon DraStic** (26.10.) – ERLEDIGT in v15.3.4 (veröffentlicht 26.10. abends): CC hört
+      selbst ab (mic_watch, Schwelle 0,30), ROCKNIX-Erkennung aus. Plus: Pusten + L3 ✓, Reden löst nicht aus. RG DS: nur L3
+      (Mikrofon liefert Rauschen, Gerätebaum – Fehlerbericht an ROCKNIX offen). Alter Stand: – Lösung: eigenes Pust-Geräusch (installer/payload/drastic/rds-microphone.wav,
       11 025 Hz übersteuert) + ROCKNIX-Erkennung nds.microphone_sensitivity (RDS-Standard 0.15, nur wenn aus/leer; Merker
       mikrofon.done) + L3 über das CC als Rollen-Taste (virtuelle Tastatur; Joypad-Belegung controls_b allein erkannte
       Zelda NICHT). Zelda-Kerzen (Plus): Pusten ✓ (high), L3 ✓. Offen: medium/low gegen Fehlauslösen, RG DS, Release.
