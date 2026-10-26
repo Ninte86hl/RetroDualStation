@@ -9,7 +9,6 @@
 
 PORTS="${1:-/storage/roms/ports}"
 SRC="$PORTS/.dualstation"
-MICSENS=0.15   # NDS-Mikrofonerkennung (ES: high 0.03 / medium 0.15 / low 0.3)
 DEST=/storage/rds-install
 OLDDEST=/storage/rgds-test        # Name bis v15.1 – wird beim Update umbenannt
 THEMEDIR=/storage/.config/emulationstation/themes
@@ -170,6 +169,7 @@ rs save "$BK" "$DCFG" kv "controls_a[CONTROL_INDEX_MENU]" "controls_b[CONTROL_IN
     "controls_a[CONTROL_INDEX_SAVE_STATE]" "controls_b[CONTROL_INDEX_SAVE_STATE]" \
     "controls_a[CONTROL_INDEX_LOAD_STATE]" "controls_b[CONTROL_INDEX_LOAD_STATE]" savestate_number \
     "controls_a[CONTROL_INDEX_SWAP_SCREENS]" "controls_b[CONTROL_INDEX_SWAP_SCREENS]" screen_swap \
+    "controls_a[CONTROL_INDEX_QUIT]" "controls_b[CONTROL_INDEX_QUIT]" \
     --legacy "$DCFG.vor-rds-kuerzel"
 rs save "$BK" "$ESCFG" esxml GameTransitionStyle --legacy "$DEST/es_settings.before-install.cfg"
 [ "$DEVICE" = "RG DS Plus" ] && rs save-esinput "$BK" "$ESINPUT" --legacy "$ESINPUT.before-rds"
@@ -478,15 +478,33 @@ UNIT
             log "DraStic: Pust-Geraeusch fuer das Mikrofon ersetzt (Original gesichert)"
         fi
     fi
-    # Mikrofonerkennung für NDS einschalten (ES: Microphone sensitivity), nur wenn bisher aus/leer – alter Wert gemerkt
+    # DraStic: Beenden auf F7 (320) der virtuellen Tastatur – nur wenn unbelegt. Das CC drückt sie bei advanced_drastic
+    # (ignoriert SIGTERM); das ROCKNIX-DraStic beendet das CC weiter per Signal. Einmal je Gerät.
+    DMARK6=/storage/.config/retrodualstation/drastic-kuerzel-v6.done
+    if [ ! -f "$DMARK6" ] && [ -f "$DCFG" ] && ! pidof drastic drastic_v2522 >/dev/null; then
+        sed -i -E "s/^(controls_[ab]\[CONTROL_INDEX_QUIT\]) = 65535$/\1 = 320/" "$DCFG"
+        mkdir -p /storage/.config/retrodualstation && date > "$DMARK6"
+        log "DraStic: Beenden auf F7 (fuer advanced_drastic ueber das CC)"
+    fi
+    # Mikrofon: das CC hört selbst ab (mic_watch) und drückt das Fake-Mikrofon – die ROCKNIX-Erkennung (libdrastouch,
+    # ES „Microphone sensitivity“) bleibt aus, weil sie advanced_drastic beim Start abstürzen lässt. v15.3.3 hatte sie
+    # auf 0.15 gesetzt → auf den Wert von vorher zurück (Merker mikrofon.done enthält ihn). Einmal je Gerät.
     MSMARK=/storage/.config/retrodualstation/mikrofon.done
-    if [ ! -f "$MSMARK" ]; then
-        MSOLD="$( . /etc/profile >/dev/null 2>&1; get_setting nds.microphone_sensitivity )"
-        if [ -z "$MSOLD" ] || [ "$MSOLD" = "0" ]; then
-            ( . /etc/profile >/dev/null 2>&1; set_setting nds.microphone_sensitivity "$MICSENS" ) >/dev/null 2>&1
-            log "DraStic: Mikrofon an (Empfindlichkeit $MICSENS, vorher: ${MSOLD:-leer})"
+    MSMARK2=/storage/.config/retrodualstation/mikrofon-v2.done
+    if [ ! -f "$MSMARK2" ]; then
+        if [ -f "$MSMARK" ]; then
+            MSNOW="$( . /etc/profile >/dev/null 2>&1; get_setting nds.microphone_sensitivity )"
+            MSOLD="$(cat "$MSMARK")"
+            if [ "$MSNOW" = "0.15" ]; then
+                if [ "$MSOLD" = "leer" ]; then
+                    sed -i '/^nds\.microphone_sensitivity=/d' /storage/.config/system/configs/system.cfg
+                else
+                    ( . /etc/profile >/dev/null 2>&1; set_setting nds.microphone_sensitivity "$MSOLD" ) >/dev/null 2>&1
+                fi
+                log "Mikrofon: ROCKNIX-Erkennung wieder aus (${MSOLD}) – das Kontrollcenter hoert selbst ab"
+            fi
         fi
-        mkdir -p /storage/.config/retrodualstation && echo "${MSOLD:-leer}" > "$MSMARK"
+        mkdir -p /storage/.config/retrodualstation && date > "$MSMARK2"
     fi
     # DraStic: manuell speichern (Anbernic + R2 → F9) auf Platz 1, Platz 0 bleibt automatisch (das CC kopiert dafür)
     if [ -f "$DCFG" ] && ! pidof drastic >/dev/null && ! grep -q '^savestate_number *= *1$' "$DCFG"; then

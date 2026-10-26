@@ -1742,6 +1742,80 @@ def vkey_hold(code, val):
 
 MIC_KEY = 70          # KEY_SCROLLLOCK – DraStic: controls_a[CONTROL_INDEX_FAKE_MICROPHONE] = 327 (ROCKNIX)
 MIC_HOLD = {"on": False}
+MIC_SRC = set()       # wer das Fake-Mikrofon gerade hält: "l3", "mic"
+MIC_LOCK = threading.Lock()
+
+
+def mic_set(src, on):
+    """Fake-Mikrofon (Rollen-Taste) halten, solange L3 oder das echte Mikrofon es wollen."""
+    with MIC_LOCK:
+        was = bool(MIC_SRC)
+        (MIC_SRC.add if on else MIC_SRC.discard)(src)
+        if bool(MIC_SRC) != was:
+            vkey_hold(MIC_KEY, 1 if MIC_SRC else 0)
+
+
+MIC_DEFAULT = 0.15    # wie ES „medium“: Pegel (0–1) über dem Grundrauschen
+
+
+def mic_watch():
+    """Echtes Mikrofon selbst abhören (statt der ROCKNIX-Erkennung in libdrastouch, die advanced_drastic abstürzen
+    lässt): solange DraStic läuft, Pegel messen; deutlich über dem Grundrauschen → Fake-Mikrofon halten – mit dem
+    RDS-Pust-Geräusch erkennen Spiele wie Zelda das als Pusten. Aus, wenn die ROCKNIX-Erkennung im Spiel aktiv ist
+    (DSHOOK_MIC_THRESH > 0) oder controlcenter.json "mic_sensitivity": 0."""
+    import array
+    rate, chunk = 16000, 800                      # 50 ms je Messung
+    while True:
+        time.sleep(1)
+        try:
+            g = running_game()
+            if not g or g["emu"] != "DraStic":
+                continue
+            thr = float(load_config().get("mic_sensitivity", MIC_DEFAULT) or 0)
+            env = ""
+            for p in [g["pid"]] + proc_tree(g["pid"]):
+                env += (rd("/proc/%d/environ" % p) or "")
+            m = re.search(r"DSHOOK_MIC_THRESH=([0-9.]+)", env)
+            if thr <= 0 or (m and float(m.group(1)) > 0):
+                continue
+            rec = subprocess.Popen(["arecord", "-q", "-f", "S16_LE", "-r", str(rate), "-c", "1", "-t", "raw"],
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            log("Mikrofon: Abhören an (Schwelle %.2f)" % thr)
+            base, n, held, pid = 0.0, 0, False, g["pid"]
+            try:
+                while os.path.exists("/proc/%d" % pid):
+                    data = rec.stdout.read(chunk * 2)
+                    if not data or len(data) < chunk * 2:
+                        break
+                    a = array.array("h", data)
+                    rms = math.sqrt(sum(x * x for x in a) / len(a)) / 32768.0
+                    if n < 60:                    # ~3 s Grundrauschen messen
+                        base = (base * n + rms) / (n + 1)
+                        n += 1
+                        continue
+                    base = base * 0.999 + rms * 0.001
+                    want = rms > base + thr and not ui_state_open()
+                    if want != held:
+                        held = want
+                        mic_set("mic", held)
+            finally:
+                mic_set("mic", False)
+                rec.kill()
+                log("Mikrofon: Abhören aus")
+        except Exception as exc:
+            log("Mikrofon-Abhören:", exc)
+            time.sleep(5)
+
+
+UI_OPEN = {"fn": None}
+
+
+def ui_state_open():
+    """CC/Gameswitcher offen → Spiel pausiert, nichts auslösen."""
+    try:
+        return bool(UI_OPEN["fn"] and UI_OPEN["fn"]())
+    except Exception:
+        return False
 
 
 def es_launch(rom):
@@ -6559,6 +6633,7 @@ DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rds-dual.conf"   # vor
 
 def main():
     threading.Thread(target=gptokeyb_watch, daemon=True).start()
+    threading.Thread(target=mic_watch, daemon=True).start()
     log("RetroDualStation Kontrollcenter", VERSION)
     if not (os.path.exists(DUAL_DROPIN) or os.path.exists(DUAL_DROPIN.replace("rds-dual.conf", "rgds.conf"))):
         # Single-Modus (Original-ES): CC, Gameswitcher und Power-Menü ruhen – keine Tasten, keine Vibration.
@@ -6655,6 +6730,7 @@ def main():
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
+    UI_OPEN["fn"] = lambda: bool(ui.view)          # Mikrofon-Abhören: bei offenem CC nichts auslösen
 
     # Wischgeste (Test): vom oberen Rand des unteren Bildschirms nach unten → Kontrollcenter, wie bei Android.
     # Nur in ES und in Spielen ohne Touch (DS-Emulatoren nutzen den unteren Bildschirm selbst).
@@ -7453,11 +7529,12 @@ def main():
             # (die Joypad-Belegung allein erkennt z. B. Zelda nicht als Pusten – Test 26.10.)
             if value == 1:
                 g = running_game()
-                if g and g["emu"] == "DraStic" and vkey_hold(MIC_KEY, 1):
+                if g and g["emu"] == "DraStic":
+                    mic_set("l3", True)
                     MIC_HOLD["on"] = True
                     log("Mikrofon: L3 gedrückt")
             elif MIC_HOLD["on"]:
-                vkey_hold(MIC_KEY, 0)
+                mic_set("l3", False)
                 MIC_HOLD["on"] = False
             return
         if typ == EV_KEY and code == BTN_EAST and cc.kbd and ui.view and not mode_down:
