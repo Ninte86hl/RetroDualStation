@@ -79,7 +79,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] **Beschädigter automatischer Stand (Plus 26.10.)** – Zelda _0.dss ließ DraStic beim Start hängen (nach Laden des
       Spielstands, Ursache vermutlich unterbrochenes Speichern/Neustart). Idee: CC/Start erkennt Hänger (kein Fenster
       nach x s) bzw. prüft die Datei und startet ohne Stand; Stand beiseitelegen statt löschen.
-- [ ] **Mikrofon DraStic (26.10.)** – ROCKNIX microphone.wav = 48 kHz weißes Rauschen (rms 14k); Zelda PH-Kerzen
+- [x] **Mikrofon DraStic (26.10.)** – gelöst in v15.3.3 (eigenes Geräusch + medium) – ROCKNIX microphone.wav = 48 kHz weißes Rauschen (rms 14k); Zelda PH-Kerzen
       reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
       Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
       Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.
@@ -93,6 +93,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Touchscreen → dort „Touch geht nicht“ (deshalb nie aufgefallen; erklärt auch den v8-Tipp „Follow 3D auf Auto“).
       Flackern nur bei 3D auf beiden Bildschirmen (Titelbild: 3D-Einheit wechselt jedes Bild) – Spiel ruhig. Wiki,
       Release-Notes richtiggestellt. Offen: Leistung (Zelda hatte noch Threaded 3D aus – Follow 3D + Threaded an testen).
+- [ ] **Neue ROCKNIX-Nightly (Plus, eigene SD-Karte, ab 26.10.)** – seit 20261001: rk3566 auf **InputPlumber** umgestellt
+      (10.–19.10.), **Anbernic-„F“-Taste sendet KEY_F1** (21.10.), RG-DS-Dual-Screen-Fixes (Pad in ES nach Touch),
+      ES-Update + Cursor-Ausblenden, höhere CPU-OPP, PanVK, CMA 32 MB, libdrastouch DSHOOK_WINDOW_SIZE, DSperate 3.0.5.
+      Prüfen mit tools/rds-nightly-check.sh (vor und nach RDS-Installation): Gerätenamen (JOYPAD_NAME, inject_keys),
+      Anbernic/Home-Erkennung im CC, Sway-Regeln, unser ES-Binary, Touch, Mikrofon.
 - [ ] **Threaded 3D global aus?** (Frage 25.10.) – erst messen: RG DS + Plus, 2–3 anspruchsvolle Spiele (Mario Kart DS,
       Zelda auf See, Kampf), Bildzähler (DraStic-Menü → Show frame counter) mit/ohne. Kein Verlust → Installer stellt
       nds.threaded_3d=0 global (gesichert, Deinstallation rückgängig); sonst Tipp pro Spiel lassen.
@@ -112,6 +117,31 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       falsches Mikrofon). Installer ersetzt den DraStic-Starter (eigenes drastic_v2522, eigenes LD_PRELOAD statt
       libdrastouch.so, beendet gptokeyb), Sicherung drastic.tar.gz + Deinstallation. **Keine Lizenz** → nicht mitliefern.
       Konflikte mit RDS: `fullscreen enable global` (Gameswitcher/Schnellwechsel/Sicherheitsnetz) und `touch_map`
+      **Test Plus 26.10.:** nicht unterstützt – Bibliothek kennt nur QUIRK „Anbernic RG DS“, kein Layout für 2048x768
+      (resources/bg/…/layout.json fehlt) → pRenderer=(nil), kein Bild, Watchdog/Segfault. Zurückgestellt (eigene Sicherung
+      rds-drastic-vor-advanced.tar.gz). Prozess heißt drastic_v2522 → CC erkennt DraStic am Namen (anpassen, falls genutzt).
+      **Konflikt v15.3.3:** NDS-Mikrofonerkennung an (DSHOOK_MIC_THRESH>0) → start_drastic.sh lädt libdrastouch auch in
+      den Shell-Starter von advanced_drastic → Mikrofon-Init ohne SDL → Segfault vor dem Start. Mit advanced_drastic
+      Mikrofon aus; Installer müsste advanced_drastic erkennen (drastic = Skript, drastic_v2522 vorhanden) und auslassen.
+      **Läuft auf dem Plus (26.10. 13:20)** mit eigenem Layout resources/bg/2048x768/layout.json (basic 1024×768 je
+      Bildschirm, pixel 3× mit Rand) und Mikrofonerkennung aus: Bild richtig, Touch richtig, Tauschen (Kachel/F8),
+      Anbernic+X/Kachel Menü, Anbernic+R2/L2, Savestate laden, L3-Mikrofon (Rollen-Taste), Beenden + ES-Navigation ok.
+      Pusten fehlt (ROCKNIX-Erkennung aus) → Idee: CC hört das Mikrofon selbst ab (arecord, Pegel über Grundrauschen →
+      Rollen-Taste halten) – geht mit beiden DraStic-Varianten, ROCKNIX-Erkennung bleibt aus. Offen: Menü-Optik, Leistung.
+      **Beenden 26.10.:** advanced_drastic ignoriert SIGTERM; CC erkannte mal Starter („drastic“, Skript), mal Programm
+      (drastic_v2522) → Starter beendet, Programm lief weiter (zweites Fenster, Mikrofon belegt, Bild verzerrt, Speichern
+      ewig). Jetzt: Prozessbaum durchsuchen, Quit-Taste F7 (CONTROL_INDEX_QUIT=320), Rückfall SIGTERM/SIGKILL, dann
+      Starter. Offen: Neu starten, Schnellwechsel (SIGSTOP) und Gameswitcher mit advanced_drastic prüfen; „Enable Device
+      Microphone“ (eigenes echtes Mikrofon) – Kerzen reagierten nicht (evtl. wegen der hängenden zweiten Instanz) → neu testen.
+      **26.10. 13:53:** CC hört selbst ab (mic_watch, Schwelle 0,15) → mit advanced_drastic (Device Microphone = no)
+      gehen Kerzen per Pusten UND L3 aus. Beenden über F7, Auto-Laden, Speichern ok. Offen: normales DraStic mit
+      mic_watch, RG DS, Fehlauslösungen (Spielton/Reden), Neu starten/Schnellwechsel/Gameswitcher mit advanced_drastic.
+      Messung: Pusten 1,9 s / Pegel 0,49–0,50 / ZCR 0,03–0,04; Reden 0,18–0,27 (laut 0,46, ZCR 0,057); Klatschen 0,1–0,25 s.
+      Klang trennt nicht → Schwelle 0,30, Grundrauschen nur in Ruhe nachführen, ab 3 lauten Stücken (0,15 s).
+      **RG DS 26.10.:** eingebautes Mikrofon liefert nur Rauschen (still/pusten/reden gleich, ~0,025/max 0,12; arecord vom
+      „Built-in Audio Microphone“, Gain voll). Ursache vermutlich ROCKNIX-Gerätebaum: rk3568-anbernic-rg-ds.dts hat
+      KEINEN rk817-codec-Knoten mit `rockchip,mic-in-differential` – der RG DS Plus hat ihn (dort geht das Mikrofon).
+      → Hinweis/Fehlerbericht an ROCKNIX (Device Tree RG DS). Bis dahin auf dem RG DS nur L3.
       gehen von EINEM Fenster aus; F9–F12-Belegung. Plan: erst im Single-Modus auf dem RG DS testen (Fenster, Touch,
       Leistung); passt es, RDS erkennen lassen, ob advanced_drastic aktiv ist, und dann Fenster-/Touch-Eingriffe weglassen.
 - [ ] **Automatischer Updater/Downloader** (Wunsch 25.10.2026) – bei bestehender Internetverbindung neue RDS-Version

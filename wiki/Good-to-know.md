@@ -5,7 +5,7 @@
 - **PS1:** the installer sets **pcsx_rearmed** if no working core is selected.
 - **DS:** DraStic and DSperate work; RetroArch DS cores are untested.
 - **DraStic touch not responding?** With **Follow 3D Renderer = On** the touch picture may be on top – on the RG DS just tap on top (its top screen has touch too), on the RG DS Plus set *Follow 3D* to *Auto* (also happens on stock ROCKNIX).
-- **DraStic: microphone** – blow or shout like on a DS (RDS sets detection to *medium*), or hold **L3**. If a game triggers by itself: set *Microphone sensitivity* to *low* or *off* (then L3) in the game's advanced settings.
+- **DraStic: microphone** – blow like on a DS (the Control Center listens; normal talking does not trigger, shouting does – like on a real DS), or hold **L3**. *RG DS:* its built-in microphone is not picked up by ROCKNIX yet – use L3 there. Please leave ES's *Microphone sensitivity* (ROCKNIX detection) *off* – RDS does not need it, and with advanced_drastic it prevents the start.
 - **DraStic: picture or touch on the wrong screen?** Some games swap top and bottom (e.g. the shop in *Zelda: Phantom Hourglass*). With **Threaded 3D = Off** for that game (select the game → advanced game settings) DraStic follows the swap correctly, touch included. Otherwise use the **Swap** tile in the [Control Center](Control-Center). Known games: [DraStic games](DraStic-Games).
 - **Back to stock:** *Ports → RDS Single-Screen*; *Uninstall* restores stock ES, theme and your original settings and removes everything from RDS – games, artwork, game lists, save states and saves stay untouched. A safety copy of your original settings is kept in `roms/backup` until the uninstall has finished.
 

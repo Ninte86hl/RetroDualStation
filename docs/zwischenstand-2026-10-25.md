@@ -92,3 +92,17 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
   (ES `follow_3d_renderer` → `fix_main_2d_screen` über start_drastic.sh): flackert, dasselbe Bild oben und unten.
 - Threaded 3D = Aus je Spiel lässt DraStic richtig tauschen (Zelda PH, RG DS + Plus) → Wiki DraStic-Spiele, CREDITS.
 - Nächstes Projekt: DraStic vertikal (TODO, tools/drastic-stacked) · Threaded 3D global erst nach Leistungsmessung.
+
+## v15.3.3 (26.10.2026 mittags, veröffentlicht, getestet RG DS + Plus)
+- Mikrofon DraStic: eigenes Pust-Geräusch `rds-microphone.wav` (11 025 Hz, übersteuert; ROCKNIX-Geräusch erkennt Zelda
+  nicht), Original nach `rds-install/rds-microphone-original.wav`; NDS-Erkennung medium (0.15), wenn vorher leer/aus
+  (Merker `mikrofon.done`); L3 = Rollen-Taste über die virtuelle Tastatur (Joypad-Belegung erkennt Zelda nicht).
+- gptokeyb aufräumen: verwaist (ES bekam Tasten doppelt) bzw. doppelt nach „Neu starten“ – je laufendem Emulator eines.
+- Tauschen nur noch als Kachel. Offen: beschädigter Auto-Stand, Threaded 3D global, DraStic vertikal, Spirit Tracks.
+
+## v15.3.4 (26.10.2026 abends)
+- Mikrofon: CC hört selbst ab (`mic_watch`, arecord 16 kHz, Schwelle 0,30 über Grundrauschen, ab 0,15 s, Grundrauschen nur
+  in Ruhe) → Rollen-Taste wie L3; ROCKNIX-Erkennung (libdrastouch) wieder aus. RG DS: eingebautes Mikrofon liefert nur
+  Rauschen (Gerätebaum ohne `mic-in-differential`) → nur L3.
+- gptokeyb-Wächter (ohne Spiel alle 5 s, > 20 s verwaist) · advanced_drastic: Beenden über Quit-Taste F7, Fenster
+  `drastic_v2522` erkannt (Auto-Laden), Programm im Prozessbaum · tools/advanced-drastic (Layout Plus), tools/rds-nightly-check.sh.

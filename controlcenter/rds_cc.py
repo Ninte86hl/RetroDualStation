@@ -1295,7 +1295,7 @@ def running_port():
     return tool
 
 
-def gptokeyb_cleanup():
+def gptokeyb_cleanup(min_age=0):
     """Verwaiste gptokeyb beenden: ROCKNIX startet es mit dem Emulator (z. B. „-sudokill drastic“) und beendet es erst
     am Ende des Startskripts. Wird der Emulator hart beendet oder neu gestartet, läuft es weiter – ES bekommt dann jede
     Taste doppelt (Navigation springt, Start-Menü öffnet sich). Nur Kopien, deren Emulator nicht mehr läuft."""
@@ -1325,7 +1325,17 @@ def gptokeyb_cleanup():
         target = args[i + 1] if i + 1 < len(args) else ""
         if target:
             by_target.setdefault(target, []).append(pid)
+    if min_age:                             # nur länger laufende (Startphase von Ports nicht stören)
+        try:
+            with open("/proc/uptime") as f:
+                now = float(f.read().split()[0]) * os.sysconf("SC_CLK_TCK")
+        except (OSError, ValueError):
+            return
+        by_target = {t: [p for p in ps if now - started(p) >= min_age * os.sysconf("SC_CLK_TCK")]
+                     for t, ps in by_target.items()}
     for target, pids in by_target.items():
+        if not pids:
+            continue
         # Emulator läuft nicht mehr → alle weg; sonst je laufendem Emulator eines behalten (die neuesten) – so bleiben
         # beim Schnellwechsel mit zwei DraStic beide, nach „Neu starten“ fällt das alte weg
         keep = count.get(target, 0)
@@ -1337,6 +1347,18 @@ def gptokeyb_cleanup():
                                                       else "doppelt für " + target, pid))
             except OSError:
                 pass
+
+
+def gptokeyb_watch():
+    """Hintergrund: ohne laufendes Spiel alle 5 s verwaiste gptokeyb beenden – fängt auch Emulatoren ab, die sofort
+    abstürzen (kein Spielwechsel, das Startskript findet gptokeyb noch nicht)."""
+    while True:
+        time.sleep(5)
+        try:
+            if not running_game():
+                gptokeyb_cleanup(min_age=20)
+        except Exception as exc:
+            log("gptokeyb-Prüfung:", exc)
 
 
 def running_game():
@@ -1423,7 +1445,38 @@ def quit_game(game):
                 _terminate(pid)
         threading.Thread(target=fallback, daemon=True).start()
         return
+    adv = adv_drastic_pid(game["pid"]) if game["emu"] == "DraStic" else None
+    if adv:
+        # advanced_drastic ignoriert SIGTERM (Test 26.10.) → eigene Quit-Taste (F7, controls CONTROL_INDEX_QUIT),
+        # Rückfall: Signal, dann hart
+        how = drastic_press("QUIT")
+        log("advanced_drastic beenden über", how or "Signal (Quit nicht belegt)")
+
+        def fallback(pid=adv, first=not how, starter=game["pid"]):
+            for wait, sig in ((0 if first else 6, signal.SIGTERM), (6, signal.SIGKILL)):
+                time.sleep(wait)
+                if not os.path.exists("/proc/%d" % pid):
+                    break
+                log("advanced_drastic noch offen –", "SIGTERM" if sig == signal.SIGTERM else "SIGKILL")
+                for p in proc_tree(pid):
+                    try:
+                        os.kill(p, sig)
+                    except OSError:
+                        pass
+            if starter != pid and os.path.exists("/proc/%d" % starter):
+                _terminate(starter)              # Starter-Skript erst nach dem Programm beenden
+        threading.Thread(target=fallback, daemon=True).start()
+        return
     _terminate(game["pid"])
+
+
+def adv_drastic_pid(pid):
+    """advanced_drastic (trngaje) statt ROCKNIX-DraStic: Programm heißt drastic_v25…, gestartet von einem Skript
+    namens „drastic“. Erkannt kann der Starter oder das Programm sein → im Baum suchen. PID des Programms oder None."""
+    for p in [pid] + proc_tree(pid):
+        if (rd("/proc/%d/comm" % p) or "").strip().startswith("drastic_v"):
+            return p
+    return None
 
 
 def _terminate(pid):
@@ -1641,7 +1694,7 @@ def inject_keys(seq):
 # DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88, 71: 70}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen), 71 = Rollen (Fake-Mikrofon)
+SDL_TO_EVDEV = {64: 65, 65: 66, 66: 67, 67: 68, 68: 87, 69: 88, 71: 70}   # SDL-Scancode F7–F12 → evdev KEY_F7–KEY_F12 (F7 = Beenden, F8 = Bildschirme tauschen), 71 = Rollen (Fake-Mikrofon)
 DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
@@ -1689,6 +1742,93 @@ def vkey_hold(code, val):
 
 MIC_KEY = 70          # KEY_SCROLLLOCK – DraStic: controls_a[CONTROL_INDEX_FAKE_MICROPHONE] = 327 (ROCKNIX)
 MIC_HOLD = {"on": False}
+MIC_SRC = set()       # wer das Fake-Mikrofon gerade hält: "l3", "mic"
+MIC_LOCK = threading.Lock()
+
+
+def mic_set(src, on):
+    """Fake-Mikrofon (Rollen-Taste) halten, solange L3 oder das echte Mikrofon es wollen."""
+    with MIC_LOCK:
+        was = bool(MIC_SRC)
+        (MIC_SRC.add if on else MIC_SRC.discard)(src)
+        if bool(MIC_SRC) != was:
+            vkey_hold(MIC_KEY, 1 if MIC_SRC else 0)
+
+
+MIC_DEFAULT = 0.30    # Pegel (0–1) über dem Grundrauschen – Messung Plus 26.10.: Pusten 0,45–0,50, normales Reden
+                      # 0,18–0,27 (lautes Rufen löst wie am DS aus), Grundrauschen ~0,03
+
+
+def mic_watch():
+    """Echtes Mikrofon selbst abhören (statt der ROCKNIX-Erkennung in libdrastouch, die advanced_drastic abstürzen
+    lässt): solange DraStic läuft, Pegel messen; deutlich über dem Grundrauschen → Fake-Mikrofon halten – mit dem
+    RDS-Pust-Geräusch erkennen Spiele wie Zelda das als Pusten. Aus, wenn die ROCKNIX-Erkennung im Spiel aktiv ist
+    (DSHOOK_MIC_THRESH > 0) oder controlcenter.json "mic_sensitivity": 0."""
+    import array
+    rate, chunk = 16000, 800                      # 50 ms je Messung
+    while True:
+        time.sleep(1)
+        try:
+            g = running_game()
+            if not g or g["emu"] != "DraStic":
+                continue
+            thr = float(load_config().get("mic_sensitivity", MIC_DEFAULT) or 0)
+            env = ""
+            for p in [g["pid"]] + proc_tree(g["pid"]):
+                env += (rd("/proc/%d/environ" % p) or "")
+            m = re.search(r"DSHOOK_MIC_THRESH=([0-9.]+)", env)
+            if thr <= 0 or (m and float(m.group(1)) > 0):
+                continue
+            rec = subprocess.Popen(["arecord", "-q", "-f", "S16_LE", "-r", str(rate), "-c", "1", "-t", "raw"],
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            log("Mikrofon: Abhören an (Schwelle %.2f)" % thr)
+            base, n, held, pid = 0.0, 0, False, g["pid"]
+            run = 0
+            try:
+                k = 0
+                while os.path.exists("/proc/%d" % pid):
+                    k += 1
+                    if k % 20 == 0:               # ~1 s: anderes Spiel aktiv (Schnellwechsel, DraStic geparkt)? → aus
+                        cur = running_game()
+                        if not cur or cur["pid"] != pid:
+                            break
+                    data = rec.stdout.read(chunk * 2)
+                    if not data or len(data) < chunk * 2:
+                        break
+                    a = array.array("h", data)
+                    rms = math.sqrt(sum(x * x for x in a) / len(a)) / 32768.0
+                    if n < 60:                    # ~3 s Grundrauschen messen
+                        base = (base * n + rms) / (n + 1)
+                        n += 1
+                        continue
+                    if rms < base + 0.05:          # Grundrauschen nur in ruhigen Momenten nachführen
+                        base = base * 0.99 + rms * 0.01
+                    loud = rms > base + thr and not ui_state_open()
+                    run = run + 1 if loud else 0
+                    want = run >= 3 if not held else loud     # erst ab 0,15 s (kein Tippen/Klappern), sofort los
+                    if want != held:
+                        held = want
+                        mic_set("mic", held)
+                        if held:
+                            log("Mikrofon: Pusten erkannt (Pegel %.3f, Grundrauschen %.3f)" % (rms, base))
+            finally:
+                mic_set("mic", False)
+                rec.kill()
+                log("Mikrofon: Abhören aus")
+        except Exception as exc:
+            log("Mikrofon-Abhören:", exc)
+            time.sleep(5)
+
+
+UI_OPEN = {"fn": None}
+
+
+def ui_state_open():
+    """CC/Gameswitcher offen → Spiel pausiert, nichts auslösen."""
+    try:
+        return bool(UI_OPEN["fn"] and UI_OPEN["fn"]())
+    except Exception:
+        return False
 
 
 def es_launch(rom):
@@ -2238,7 +2378,9 @@ def _wait_gone(pid, limit=6.0):
         time.sleep(0.1)
 
 
-GS_LAUNCHED = {"rom": None, "t": 0.0}          # zuletzt vom Gameswitcher gestartetes Spiel
+GS_LAUNCHED = {"rom": None, "t": 0.0}
+# DraStic-Fenster: ROCKNIX „drastic“, advanced_drastic „drastic_v2522“ (zwei Fenster)
+DRASTIC_WIN = re.compile(r'"app_id":\s*"drastic')          # zuletzt vom Gameswitcher gestartetes Spiel
 
 
 def drastic_autoload(game):
@@ -2258,8 +2400,8 @@ def drastic_autoload(game):
         end = time.time() + 15
         while time.time() < end:
             try:
-                if '"drastic"' in subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
-                                                 capture_output=True, text=True).stdout.lower():
+                if DRASTIC_WIN.search(subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
+                                                     capture_output=True, text=True).stdout.lower()):
                     break
             except Exception:
                 pass
@@ -2447,7 +2589,7 @@ class Switcher:
                 try:
                     tree = subprocess.run(["swaymsg", "-t", "get_tree"], env=env, timeout=2,
                                           capture_output=True, text=True).stdout
-                    return '"drastic"' in tree.lower()
+                    return bool(DRASTIC_WIN.search(tree.lower()))
                 except Exception:
                     return False
             other = None
@@ -6503,6 +6645,8 @@ DUAL_DROPIN = "/storage/.config/system.d/essway.service.d/rds-dual.conf"   # vor
 
 
 def main():
+    threading.Thread(target=gptokeyb_watch, daemon=True).start()
+    threading.Thread(target=mic_watch, daemon=True).start()
     log("RetroDualStation Kontrollcenter", VERSION)
     if not (os.path.exists(DUAL_DROPIN) or os.path.exists(DUAL_DROPIN.replace("rds-dual.conf", "rgds.conf"))):
         # Single-Modus (Original-ES): CC, Gameswitcher und Power-Menü ruhen – keine Tasten, keine Vibration.
@@ -6599,6 +6743,7 @@ def main():
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
+    UI_OPEN["fn"] = lambda: bool(ui.view)          # Mikrofon-Abhören: bei offenem CC nichts auslösen
 
     # Wischgeste (Test): vom oberen Rand des unteren Bildschirms nach unten → Kontrollcenter, wie bei Android.
     # Nur in ES und in Spielen ohne Touch (DS-Emulatoren nutzen den unteren Bildschirm selbst).
@@ -7397,11 +7542,12 @@ def main():
             # (die Joypad-Belegung allein erkennt z. B. Zelda nicht als Pusten – Test 26.10.)
             if value == 1:
                 g = running_game()
-                if g and g["emu"] == "DraStic" and vkey_hold(MIC_KEY, 1):
+                if g and g["emu"] == "DraStic":
+                    mic_set("l3", True)
                     MIC_HOLD["on"] = True
                     log("Mikrofon: L3 gedrückt")
             elif MIC_HOLD["on"]:
-                vkey_hold(MIC_KEY, 0)
+                mic_set("l3", False)
                 MIC_HOLD["on"] = False
             return
         if typ == EV_KEY and code == BTN_EAST and cc.kbd and ui.view and not mode_down:
