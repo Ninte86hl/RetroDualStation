@@ -5,8 +5,9 @@
 # (so steht es in anbernic_gen1.yaml / anbernic_arc.yaml).
 # Aufruf vom PC:  ssh -t root@IP 'bash /storage/rds-homekey-fix.sh [an|aus|status]'
 SRC=/usr/share/inputplumber/capability_maps/anbernic_rgds.yaml
-DIR=/etc/inputplumber/capability_maps.d
-DST=$DIR/rds-anbernic_rgds.yaml
+# /etc ist schreibgeschützt (squashfs) → korrigierte Kopie in /storage, per Bind-Mount über die ROCKNIX-Datei gelegt
+# (nur bis zum Neustart; das Original bleibt unverändert).
+DST=/storage/.config/rds-anbernic_rgds.yaml
 
 test_home() {
     cat > /tmp/rds-hometest.py <<'PY'
@@ -39,10 +40,7 @@ PY
 case "${1:-an}" in
 an)
     [ -f "$SRC" ] || { echo "$SRC fehlt – andere ROCKNIX-Version?"; exit 1; }
-    if ! mkdir -p "$DIR" 2>/dev/null || ! touch "$DIR/.rds-test" 2>/dev/null; then
-        echo "$DIR ist nicht beschreibbar:"; mount | grep -E " /etc | / " ; exit 1
-    fi
-    rm -f "$DIR/.rds-test"
+    if grep -q " $SRC " /proc/mounts; then umount "$SRC"; fi
     python3 - "$SRC" "$DST" <<'PY'
 import sys
 s = open(sys.argv[1]).read()
@@ -54,17 +52,20 @@ open(sys.argv[2], "w").write(s)
 print("Geschrieben:", sys.argv[2])
 PY
     [ -f "$DST" ] || exit 1
+    mount --bind "$DST" "$SRC" || { echo "Bind-Mount fehlgeschlagen"; exit 1; }
+    grep -n "KeyF1" "$SRC"
     systemctl restart inputplumber; sleep 3
     echo "InputPlumber: $(systemctl is-active inputplumber)"
     journalctl -u inputplumber --no-pager --since "-10s" | grep -i -E "error|warn|rds-anbernic|capability" | tail -5
     test_home
     ;;
 aus)
+    grep -q " $SRC " /proc/mounts && umount "$SRC"
     rm -f "$DST"; systemctl restart inputplumber; sleep 3
     echo "Zurück auf ROCKNIX-Zuordnung · InputPlumber: $(systemctl is-active inputplumber)"
     ;;
 status|*)
-    ls -l "$DST" 2>/dev/null || echo "Keine RDS-Zuordnung aktiv"
+    grep -q " $SRC " /proc/mounts && echo "RDS-Zuordnung aktiv: $(grep KeyF1 "$SRC")" || echo "Keine RDS-Zuordnung aktiv"
     test_home
     ;;
 esac
