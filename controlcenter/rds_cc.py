@@ -269,7 +269,7 @@ EN = {
         "can change this behaviour. Slot 9 is used by the Game switcher.",
     "übernehmen": "take", "zurück": "back",
     "Vorspulen": "Fast forward", "Screenshot": "Screenshot", "Neu starten": "Restart",
-    "Tauschen": "Swap", "Bildschirme getauscht": "Screens swapped", "Bildschirme normal": "Screens normal",
+    "Tauschen": "Swap", "Kachel „Tauschen“": "“Swap” tile", "Bildschirme getauscht": "Screens swapped", "Bildschirme normal": "Screens normal",
     "Nicht belegt": "Not assigned",
     "Emulator-Menü": "Emulator menu", "Kein Spiel läuft": "No game running",
     "Starte ein Spiel, um es hier zu steuern.": "Start a game to control it here.",
@@ -1295,6 +1295,50 @@ def running_port():
     return tool
 
 
+def gptokeyb_cleanup():
+    """Verwaiste gptokeyb beenden: ROCKNIX startet es mit dem Emulator (z. B. „-sudokill drastic“) und beendet es erst
+    am Ende des Startskripts. Wird der Emulator hart beendet oder neu gestartet, läuft es weiter – ES bekommt dann jede
+    Taste doppelt (Navigation springt, Start-Menü öffnet sich). Nur Kopien, deren Emulator nicht mehr läuft."""
+    procs = {}
+    for d in os.listdir("/proc"):
+        if d.isdigit():
+            args = _cmdline(int(d))
+            if args:
+                procs[int(d)] = args
+    names = {os.path.basename(a[0]) for a in procs.values()}
+    count = {}
+    for a in procs.values():
+        count[os.path.basename(a[0])] = count.get(os.path.basename(a[0]), 0) + 1
+
+    def started(pid):                       # Startzeit (Ticks seit Boot) aus /proc/<pid>/stat
+        try:
+            with open("/proc/%d/stat" % pid) as f:
+                return int(f.read().rsplit(")", 1)[1].split()[19])
+        except (OSError, ValueError, IndexError):
+            return 0
+
+    by_target = {}
+    for pid, args in procs.items():
+        if not args or os.path.basename(args[0]) != "gptokeyb" or "-sudokill" not in args:
+            continue
+        i = args.index("-sudokill")
+        target = args[i + 1] if i + 1 < len(args) else ""
+        if target:
+            by_target.setdefault(target, []).append(pid)
+    for target, pids in by_target.items():
+        # Emulator läuft nicht mehr → alle weg; sonst je laufendem Emulator eines behalten (die neuesten) – so bleiben
+        # beim Schnellwechsel mit zwei DraStic beide, nach „Neu starten“ fällt das alte weg
+        keep = count.get(target, 0)
+        doomed = sorted(pids, key=started)[:max(0, len(pids) - keep)]
+        for pid in doomed:
+            try:
+                os.kill(pid, signal.SIGKILL)
+                log("gptokeyb %s beendet (pid %d)" % ("ohne laufendes " + target if not keep
+                                                      else "doppelt für " + target, pid))
+            except OSError:
+                pass
+
+
 def running_game():
     """Sucht einen laufenden Emulator und leitet Spiel/System aus der Befehlszeile ab."""
     g = _running_emu()
@@ -1597,7 +1641,7 @@ def inject_keys(seq):
 # DraStic liest Tastatur-Belegungen als 256 + SDL-Scancode (F9 = 322, F10 = 323, F11 = 324, F12 = 325, getestet 22.10.2026)
 # und bekommt sie über seat0 (ROCKNIX: Spiele-Tastatur). So bleiben Stick, L3 und R3 frei.
 VKEY_ID = "21060:21297:RDS_Keys"
-SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen)
+SDL_TO_EVDEV = {65: 66, 66: 67, 67: 68, 68: 87, 69: 88, 71: 70}   # SDL-Scancode F8–F12 → evdev KEY_F8–KEY_F12 (F8 = Bildschirme tauschen), 71 = Rollen (Fake-Mikrofon)
 DRASTIC_SAVE, DRASTIC_LOAD = 1031, 1030  # Rückfall (ROCKNIX: R2/L2), falls drastic.cfg nichts sagt
 _vkey = {"fd": None}
 
@@ -1631,6 +1675,20 @@ def vkey_press(code):
         os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
         time.sleep(0.12)
     return True
+
+
+def vkey_hold(code, val):
+    """Virtuelle Taste drücken (val 1) bzw. loslassen (val 0) – für gehaltene Tasten (Mikrofon)."""
+    fd = vkey_open()
+    if fd is None:
+        return False
+    os.write(fd, EVENT.pack(0, 0, EV_KEY, code, val))
+    os.write(fd, EVENT.pack(0, 0, EV_SYN, 0, 0))
+    return True
+
+
+MIC_KEY = 70          # KEY_SCROLLLOCK – DraStic: controls_a[CONTROL_INDEX_FAKE_MICROPHONE] = 327 (ROCKNIX)
+MIC_HOLD = {"on": False}
 
 
 def es_launch(rom):
@@ -2848,7 +2906,7 @@ def dsperate_shortcuts():
 def drastic_shortcuts():
     cfg = rd("/storage/.config/drastic/config/drastic.cfg") or ""
     names = {"SAVE_STATE": "Speichern", "LOAD_STATE": "Laden", "MENU": "Menü", "FAST_FORWARD": "Vorspulen",
-             "SWAP_SCREENS": "Bildschirme tauschen", "QUIT": "Beenden"}
+             "SWAP_SCREENS": "Bildschirme tauschen", "FAKE_MICROPHONE": "Mikrofon", "QUIT": "Beenden"}
     rows = []
     for k, label in names.items():
         m = re.search(r"controls_b\[CONTROL_INDEX_%s\]\s*=\s*(\d+)" % k, cfg)
@@ -2860,7 +2918,8 @@ def drastic_shortcuts():
             rows.append((label, tr("nur über das CC") if name == "R3" else name))   # R3 gibt es am Gerät nicht
         elif 256 <= v < 512 and (v - 256) in SDL_TO_EVDEV:  # virtuelle Taste: Kürzel übernimmt das CC
             rows.append((label, {"MENU": "Anbernic + X", "FAST_FORWARD": "Anbernic + R1", "SAVE_STATE": "Anbernic + R2",
-                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": "L3"}.get(k, tr("nur über das CC"))))
+                                 "LOAD_STATE": "Anbernic + L2", "SWAP_SCREENS": tr("Kachel „Tauschen“"),
+                                 "FAKE_MICROPHONE": "L3"}.get(k, tr("nur über das CC"))))
         elif 1152 <= v < 1280:
             rows.append((label, tr("nur über das CC")))       # Phantom-Achse
     return rows
@@ -6160,7 +6219,6 @@ BTN_TOUCH = 330
 BTN_SOUTH, BTN_EAST, BTN_TL, BTN_TR, BTN_MODE, BTN_Z = 304, 305, 310, 311, 316, 309
 DPAD = {544: (0, -1), 545: (0, 1), 546: (-1, 0), 547: (1, 0)}   # BTN_DPAD_*
 BTN_NORTH, BTN_WEST = 307, 308
-BTN_THUMBL = 317                       # L3: Bildschirme tauschen (DraStic)
 KNOWN_UNUSED = {312, 313, 314, 315}   # X, Y, L2, R2, Select, Start
 EVIOCGRAB = 0x40044590
 EVENT = struct.Struct("llHHi")
@@ -7334,6 +7392,18 @@ def main():
                     toggle("cc")
                 mode_down = False
             return
+        if typ == EV_KEY and code == 317 and value in (0, 1) and not ui.view and (value == 0 or not mode_down):
+            # L3 = Mikrofon in DraStic: gehalten wie die Rollen-Taste, die auch die ROCKNIX-Mikrofonerkennung drückt
+            # (die Joypad-Belegung allein erkennt z. B. Zelda nicht als Pusten – Test 26.10.)
+            if value == 1:
+                g = running_game()
+                if g and g["emu"] == "DraStic" and vkey_hold(MIC_KEY, 1):
+                    MIC_HOLD["on"] = True
+                    log("Mikrofon: L3 gedrückt")
+            elif MIC_HOLD["on"]:
+                vkey_hold(MIC_KEY, 0)
+                MIC_HOLD["on"] = False
+            return
         if typ == EV_KEY and code == BTN_EAST and cc.kbd and ui.view and not mode_down:
             if value == 1:
                 cc.kbd.a_down()
@@ -7360,12 +7430,6 @@ def main():
                         how = drastic_press(what, {"SAVE_STATE": DRASTIC_SAVE, "LOAD_STATE": DRASTIC_LOAD}.get(what))
                         log("Kürzel DraStic:", what, "über", how or "nichts")
                     threading.Thread(target=run, daemon=True).start()
-            return
-        if typ == EV_KEY and code == BTN_THUMBL and not ui.view:
-            # L3 allein: Bildschirme tauschen (DraStic; den Touch nimmt DraStic selbst mit)
-            g = running_game()
-            if g and g["emu"] == "DraStic":
-                threading.Thread(target=swap_screens, args=(g,), daemon=True).start()
             return
         if not ui.view:
             return
@@ -7524,6 +7588,9 @@ def main():
                         elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
                             cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
+                        # Spielwechsel/zurück in ES: verwaistes bzw. doppeltes gptokeyb beenden (doppelte Tasten) –
+                        # kurz warten, bis das Startskript es selbst beendet bzw. das neue gestartet hätte
+                        threading.Timer(2.0 if not g else 5.0, gptokeyb_cleanup).start()
                         if SWAP:
                             threading.Thread(target=swap_cleanup, daemon=True).start()
                         if getattr(cc.switcher, "done", True) is not False:   # nicht mitten in einem Wechsel

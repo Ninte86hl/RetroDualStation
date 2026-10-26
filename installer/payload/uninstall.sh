@@ -120,6 +120,7 @@ os.replace(cfg + ".rds-tmp", cfg)
 PY
 SS="$(cat /storage/.config/retrodualstation/savestates.done 2>/dev/null)"   # vor dem Löschen merken
 AH="$(cat /storage/.config/retrodualstation/autohotkeys.done 2>/dev/null)"
+MS="$(cat /storage/.config/retrodualstation/mikrofon.done 2>/dev/null)"
 rm -rf /storage/.config/retrodualstation /storage/.config/rds-controlcenter
 systemctl daemon-reload
 systemctl kill -s HUP systemd-logind 2>/dev/null
@@ -129,6 +130,16 @@ BS="$(cat "$DEST/bottomscreen.before" 2>/dev/null)"
 ( . /etc/profile >/dev/null 2>&1; [ "$BS" = none ] && BS=vc; set_setting rocknix.bottomscreen.type "${BS:-vc}" ) >/dev/null 2>&1
 [ -n "$SS" ] && ( . /etc/profile >/dev/null 2>&1; set_setting global.savestates "$SS" ) >/dev/null 2>&1
 [ -n "$AH" ] && ( . /etc/profile >/dev/null 2>&1; set_setting system.autohotkeys "$AH" ) >/dev/null 2>&1
+# NDS-Mikrofonerkennung: vorher leer → Eintrag entfernen, sonst alten Wert setzen; Pust-Geräusch zurück
+if [ "$MS" = "leer" ]; then
+    sed -i '/^nds\.microphone_sensitivity=/d' /storage/.config/system/configs/system.cfg 2>/dev/null
+elif [ -n "$MS" ]; then
+    ( . /etc/profile >/dev/null 2>&1; set_setting nds.microphone_sensitivity "$MS" ) >/dev/null 2>&1
+fi
+MICORIG="$DEST/rds-microphone-original.wav"
+[ -f "$MICORIG" ] || MICORIG=/usr/config/drastic/microphone/microphone.wav   # ROCKNIX-Auslieferung, falls nicht gesichert
+[ -f "$MICORIG" ] && [ -d /storage/.config/drastic/microphone ] \
+    && cp "$MICORIG" /storage/.config/drastic/microphone/microphone.wav && log "DraStic: Original-Pust-Geraeusch zurueck"
 sed -i '/RetroDualStation: gptokeyb/d; /4660:22136:Fake_Keyboard/d; /RetroDualStation: virtuelle Tasten/d; /21060:21297:RDS_Keys/d' /storage/.config/sway/config 2>/dev/null
 sed -i '/^# RetroDualStation$/,/^invisible=1$/d' /storage/.config/mako/config 2>/dev/null
 log "Kontrollcenter und Geraeteeinstellungen entfernt"

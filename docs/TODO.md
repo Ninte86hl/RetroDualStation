@@ -24,7 +24,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
-- [ ] **Test: „Bildschirme tauschen“ (Kachel „Tauschen“ + L3, umgesetzt 25.10.)** – DraStic: SWAP_SCREENS auf F8 (321,
+- [x] **„Bildschirme tauschen“ (Kachel „Tauschen“ + L3) – v15.3.2 veröffentlicht 25.10.** – DraStic: SWAP_SCREENS auf F8 (321,
       Installer-Merker drastic-kuerzel-v4), Touch nimmt DraStic selbst mit (ROCKNIX-Zuordnung DSI-2 lassen – DSI-1 macht es kaputt, mirror_touch unnötig, Plus 25.10. ok);
       „Follow 3D Renderer“ (ES-Option follow_3d_renderer → fix_main_2d_screen über start_drastic.sh) auch vor dem Start
       gesetzt und frisch aus ES gestartet (ohne Stand): Intro flackert, beide Bildschirme zeigen dasselbe Bild, Touch geht
@@ -69,10 +69,30 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       Bibliothek, Umgebungsvariable ohne Startskript (Bibliothek erkennt übereinander selbst?), Schnellwechsel/
       Gameswitcher-Kette, RG DS Plus (1024×768), ES während DraStic übereinander. Idee: Verbesserung an ROCKNIX
       vorschlagen (libdrastouch erkennt übereinander liegende Ausgänge und zwei Panels selbst).
-- [ ] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
+- [x] **Durchbruch Zelda PH: Threaded 3D = Aus → DraStic tauscht die Bildschirme von selbst richtig** (RG DS 25.10.,
       Hinweis GammaOSNext#225: der Thread-Renderer vertauscht oben/unten, die Touch-Ebene bleibt). ES-Spieleinstellung
       `nds["<rom>"].threaded_3d=0`. Touch im Laden ok, Plus ok (25.10.). Offen: Leistung (Ruckeln?). Dann: Wiki „Gut zu wissen“, evtl.
       Liste bekannter Spiele (Spiel-Einstellung vorschlagen/setzen, gesichert), L3 bleibt als Notlösung.
+- [x] **Verwaistes gptokeyb (Plus 26.10.)** – nach hartem Ende/Neustart von DraStic lief gptokeyb weiter → ES bekam jede
+      Taste doppelt (Navigation springt, Doppelklick öffnet Menü). CC beendet jetzt 2 s nach Rückkehr in ES jedes
+      gptokeyb, dessen „-sudokill“-Ziel nicht mehr läuft (v15.3.3).
+- [ ] **Beschädigter automatischer Stand (Plus 26.10.)** – Zelda _0.dss ließ DraStic beim Start hängen (nach Laden des
+      Spielstands, Ursache vermutlich unterbrochenes Speichern/Neustart). Idee: CC/Start erkennt Hänger (kein Fenster
+      nach x s) bzw. prüft die Datei und startet ohne Stand; Stand beiseitelegen statt löschen.
+- [ ] **Mikrofon DraStic (26.10.)** – ROCKNIX microphone.wav = 48 kHz weißes Rauschen (rms 14k); Zelda PH-Kerzen
+      reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
+      Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
+      Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.
+- [ ] **v15.3.3: Mikrofon DraStic** (26.10.) – Lösung: eigenes Pust-Geräusch (installer/payload/drastic/rds-microphone.wav,
+      11 025 Hz übersteuert) + ROCKNIX-Erkennung nds.microphone_sensitivity (RDS-Standard 0.15, nur wenn aus/leer; Merker
+      mikrofon.done) + L3 über das CC als Rollen-Taste (virtuelle Tastatur; Joypad-Belegung controls_b allein erkannte
+      Zelda NICHT). Zelda-Kerzen (Plus): Pusten ✓ (high), L3 ✓. Offen: medium/low gegen Fehlauslösen, RG DS, Release.
+      Testgeräte: controls_b[FAKE_MICROPHONE] von Hand auf 327 zurück.
+- [ ] **Neu 25.10. 21:40: Follow 3D Renderer funktioniert auf dem RG DS** – Touch-Bild folgt der 3D-Einheit und liegt
+      dann OBEN; der RG DS hat oben einen zweiten Touchscreen (event1), also oben tippen. Der RG DS Plus hat nur EINEN
+      Touchscreen → dort „Touch geht nicht“ (deshalb nie aufgefallen; erklärt auch den v8-Tipp „Follow 3D auf Auto“).
+      Flackern nur bei 3D auf beiden Bildschirmen (Titelbild: 3D-Einheit wechselt jedes Bild) – Spiel ruhig. Wiki,
+      Release-Notes richtiggestellt. Offen: Leistung (Zelda hatte noch Threaded 3D aus – Follow 3D + Threaded an testen).
 - [ ] **Threaded 3D global aus?** (Frage 25.10.) – erst messen: RG DS + Plus, 2–3 anspruchsvolle Spiele (Mario Kart DS,
       Zelda auf See, Kampf), Bildzähler (DraStic-Menü → Show frame counter) mit/ohne. Kein Verlust → Installer stellt
       nds.threaded_3d=0 global (gesichert, Deinstallation rückgängig); sonst Tipp pro Spiel lassen.

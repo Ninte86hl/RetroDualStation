@@ -83,10 +83,12 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
   nicht (Merker `/storage/rgds-test`) → Wrapper setzt Marker, `tools/patch-rocknixds-marker.py` für RocknixDS-v5
 - Wiki „Dateien von RDS“ · offen: Config-Ordner `rds-config` mit nächstem ES-Build; `global.savestates`-Wert prüfen
 
-## v15.3.2 (25.10.2026 abends, in Arbeit)
+## v15.3.2 (25.10.2026 abends, veröffentlicht, getestet RG DS + Plus)
 - Bildschirme tauschen (DraStic): Kachel „Tauschen“ + L3 allein → F8 (321, Installer-Merker `drastic-kuerzel-v4`,
   gesichert inkl. `screen_swap`). Touch: ROCKNIX-Zuordnung (DSI-2) lassen – DraStic nimmt den Touch selbst mit;
   Umstellen auf DSI-1 macht es kaputt, `mirror_touch` unnötig. DraStic merkt sich den Tausch nicht (Neustart normal);
   CC setzt `screen_swap` nach getauschtem Spielende vorsichtshalber auf 0.
 - Verworfen: DSperate `screen_swap` (tauscht im Zwei-Fenster-Betrieb nicht, auch von Hand) · „Follow 3D Renderer“
   (ES `follow_3d_renderer` → `fix_main_2d_screen` über start_drastic.sh): flackert, dasselbe Bild oben und unten.
+- Threaded 3D = Aus je Spiel lässt DraStic richtig tauschen (Zelda PH, RG DS + Plus) → Wiki DraStic-Spiele, CREDITS.
+- Nächstes Projekt: DraStic vertikal (TODO, tools/drastic-stacked) · Threaded 3D global erst nach Leistungsmessung.

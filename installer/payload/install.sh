@@ -9,6 +9,7 @@
 
 PORTS="${1:-/storage/roms/ports}"
 SRC="$PORTS/.dualstation"
+MICSENS=0.15   # NDS-Mikrofonerkennung (ES: high 0.03 / medium 0.15 / low 0.3)
 DEST=/storage/rds-install
 OLDDEST=/storage/rgds-test        # Name bis v15.1 – wird beim Update umbenannt
 THEMEDIR=/storage/.config/emulationstation/themes
@@ -460,7 +461,32 @@ UNIT
         done
         sed -i -E 's/^(screen_swap *= *)1 *$/\10/' "$DCFG"
         mkdir -p /storage/.config/retrodualstation && date > "$DMARK4"
-        log "DraStic: Bildschirme tauschen auf F8 (L3 / Kachel ueber das CC, Touch zieht mit)"
+        log "DraStic: Bildschirme tauschen auf F8 (Kachel ueber das CC, Touch zieht mit)"
+    fi
+    # DraStic: Mikrofon wie am DS. Pust-Geräusch des Fake-Mikrofons durch eigenes ersetzen (11 025 Hz, übersteuert) –
+    # das ROCKNIX-Geräusch erkennt z. B. Zelda Phantom Hourglass nicht als Pusten. Original nach rds-install (Deinstallation
+    # legt es zurück). Die ROCKNIX-Mikrofonerkennung (libdrastouch) drückt das Fake-Mikrofon beim Pusten, L3 über das CC.
+    MICDIR=/storage/.config/drastic/microphone
+    if [ -f "$SRC/drastic/rds-microphone.wav" ] && [ -d /storage/.config/drastic ] && ! pidof drastic >/dev/null; then
+        mkdir -p "$MICDIR"
+        if [ ! -f "$DEST/rds-microphone-original.wav" ] && [ -f "$MICDIR/microphone.wav" ] \
+           && ! cmp -s "$MICDIR/microphone.wav" "$SRC/drastic/rds-microphone.wav"; then
+            cp "$MICDIR/microphone.wav" "$DEST/rds-microphone-original.wav"
+        fi
+        if ! cmp -s "$MICDIR/microphone.wav" "$SRC/drastic/rds-microphone.wav"; then
+            cp "$SRC/drastic/rds-microphone.wav" "$MICDIR/microphone.wav"
+            log "DraStic: Pust-Geraeusch fuer das Mikrofon ersetzt (Original gesichert)"
+        fi
+    fi
+    # Mikrofonerkennung für NDS einschalten (ES: Microphone sensitivity), nur wenn bisher aus/leer – alter Wert gemerkt
+    MSMARK=/storage/.config/retrodualstation/mikrofon.done
+    if [ ! -f "$MSMARK" ]; then
+        MSOLD="$( . /etc/profile >/dev/null 2>&1; get_setting nds.microphone_sensitivity )"
+        if [ -z "$MSOLD" ] || [ "$MSOLD" = "0" ]; then
+            ( . /etc/profile >/dev/null 2>&1; set_setting nds.microphone_sensitivity "$MICSENS" ) >/dev/null 2>&1
+            log "DraStic: Mikrofon an (Empfindlichkeit $MICSENS, vorher: ${MSOLD:-leer})"
+        fi
+        mkdir -p /storage/.config/retrodualstation && echo "${MSOLD:-leer}" > "$MSMARK"
     fi
     # DraStic: manuell speichern (Anbernic + R2 → F9) auf Platz 1, Platz 0 bleibt automatisch (das CC kopiert dafür)
     if [ -f "$DCFG" ] && ! pidof drastic >/dev/null && ! grep -q '^savestate_number *= *1$' "$DCFG"; then
