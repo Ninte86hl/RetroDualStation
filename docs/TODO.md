@@ -306,7 +306,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       (Override in /etc/inputplumber/capability_maps.d). Danach CC: Home = KEY_F1 (59) auf „InputPlumber Keyboard“.
       Fehlerbericht an ROCKNIX. **Getestet 26.10.: Home → KEY 59 auf „InputPlumber Keyboard“ ✓** (Bind-Mount, /etc ist ro).
 - [ ] **Phantom-Stick RG DS Plus unter InputPlumber:** RX = -Y, RY = X → als rechter Stick weitergegeben (ES-Stick falsch).
-      Bisherige Abhilfe (rightanalog aus es_input für retrogame_joypad) greift nicht mehr. Versuch: „Right Stick“ aus der
-      Zuordnung (nur Plus) in tools/rds-inputplumber-fix.sh.
+      Bisherige Abhilfe (rightanalog aus es_input für retrogame_joypad) greift nicht mehr. „Right Stick“ aus der Zuordnung
+      entfernen reicht NICHT (RX/RY dann Standard-Übersetzung, RY = -X). Versuch 2: InputPlumber-Filter
+      `events: exclude: [Gamepad:Axis:RightStick]` am adc-joystick in 02-rg-ds-plus.yaml (tools/rds-inputplumber-fix.sh).
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
