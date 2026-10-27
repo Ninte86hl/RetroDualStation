@@ -2230,10 +2230,12 @@ def fast_start(item, args):
 
 
 def drastic_fullscreen_guard(pid):
-    """DraStic öffnet selten (Plus nach advanced_drastic-Rückbau 27.10.: jedes Mal) als Fenster statt im Vollbild über
-    beide Bildschirme → die ersten 20 s nach dem Start prüfen und ggf. „fullscreen enable global“ setzen."""
+    """DraStic öffnet selten (Plus nach advanced_drastic-Rückbau 27.10.: jedes Mal) als kleines Fenster statt über
+    beide Bildschirme. Normal ist auch ohne Sway-Vollbild (RG DS: fullscreen_mode 0) ein Fenster über die volle Breite.
+    → die ersten 20 s nach dem Start prüfen: deckt das Fenster nicht alle Bildschirme ab, Vollbild global setzen."""
     env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
     end = time.monotonic() + 20
+    seen_ok = 0
     while time.monotonic() < end:
         time.sleep(1)
         if FROZEN.get("pids") or not os.path.exists("/proc/%d" % pid):
@@ -2241,22 +2243,31 @@ def drastic_fullscreen_guard(pid):
         try:
             tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True,
                                              timeout=2, env=env).stdout)
+            outs = json.loads(subprocess.run(["swaymsg", "-t", "get_outputs"], capture_output=True, text=True,
+                                             timeout=2, env=env).stdout)
         except Exception:
             continue
+        total_w = max((o["rect"]["x"] + o["rect"]["width"] for o in outs if o.get("active")), default=0)
         found = []
 
         def walk(n):
             if n.get("app_id") == "drastic" and n.get("type") in ("con", "floating_con"):
-                found.append(n.get("fullscreen_mode", 0))
+                found.append(n)
             for c in n.get("nodes", []) + n.get("floating_nodes", []):
                 walk(c)
         walk(tree)
-        if found and found[0] != 2:
-            sway_cmd('[app_id="drastic"] fullscreen enable global')
-            log("DraStic: als Fenster gestartet → Vollbild über beide Bildschirme gesetzt")
-            return
-        if found:
-            return                       # schon im Vollbild – fertig
+        if not found or not total_w:
+            continue
+        n = found[0]
+        if n.get("fullscreen_mode") == 2 or n["rect"]["width"] >= total_w * 0.95:
+            seen_ok += 1
+            if seen_ok >= 3:             # 3 s in Folge richtig → fertig (DraStic passt die Größe beim Start noch an)
+                return
+            continue
+        sway_cmd('[app_id="drastic"] fullscreen enable global')
+        log("DraStic: Fenster %dx%d statt über beide Bildschirme (%d) → Vollbild gesetzt"
+            % (n["rect"]["width"], n["rect"]["height"], total_w))
+        return
 
 
 def fast_fullscreen():
