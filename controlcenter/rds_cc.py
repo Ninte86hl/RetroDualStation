@@ -1788,14 +1788,15 @@ def mic_watch():
                 k = 0
                 while os.path.exists("/proc/%d" % pid):
                     k += 1
-                    if k % 20 == 0:               # ~1 s: anderes Spiel aktiv (Schnellwechsel, DraStic geparkt)? → aus
+                    if k % 60 == 0:               # ~3 s: anderes Spiel aktiv (Schnellwechsel, DraStic geparkt)? → aus
+                        # (running_game durchsucht /proc – jede Sekunde kostete spürbar CPU, Messung 27.10.)
                         cur = running_game()
                         if not cur or cur["pid"] != pid:
                             break
                     data = rec.stdout.read(chunk * 2)
                     if not data or len(data) < chunk * 2:
                         break
-                    a = array.array("h", data)
+                    a = array.array("h", data)[::4]   # jeder 4. Wert reicht für den Pegel (¼ der Rechenzeit)
                     rms = math.sqrt(sum(x * x for x in a) / len(a)) / 32768.0
                     if n < 60:                    # ~3 s Grundrauschen messen
                         base = (base * n + rms) / (n + 1)
