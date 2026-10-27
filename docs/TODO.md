@@ -331,3 +331,5 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
       DSperate 48 % / 50 % (DSperate hängt an einem Kern: 80–89 %), Temperatur ≤ 56 °C, ≥ 380 MB RAM frei, kein Swap.
       Prozesse bei DraStic: drastic ~135 %, pipewire ~13 %, sway ~8 %, gptokeyb ~5 %, CC 9,4 % → 5,4 % (mic_watch:
       Spielprüfung alle 3 s statt 1 s, Pegel aus jedem 4. Wert; Pusten weiter ✓). arecord-Zombie behoben (wait).
+      NSMB 2 min libmali: DraStic 48 % gesamt / Emulator 105 % (Kerne gleichmäßig ~49 %, ≤ 58 °C) · DSperate 44 % /
+      133 % (Kerne 60/27/51/38 %, ≤ 55 °C). Beide mit viel Reserve.
