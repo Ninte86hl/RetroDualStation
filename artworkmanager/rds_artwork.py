@@ -559,6 +559,9 @@ class App:
         self.chosen = {}                              # kind -> Kandidat
         self.kind = 0
         self.current = {}                             # kind -> PNG-Pfad des vorhandenen Artworks
+        self.lp = {}                                  # Spieleliste oben: {"rom", "name", "art": kind -> PNG}
+        self.lp_want = (None, 0.0)                    # (rom, ab wann laden) – erst laden, wenn man kurz stehen bleibt
+        self.lp_busy = False
         self.previews = {}                            # url -> PNG-Pfad | None (Fehler) | "…" (lädt)
         self.gscroll = {}                             # kind -> erste sichtbare Kachel
         self.sizes = {}                               # PNG-Pfad -> (Breite, Höhe)
@@ -725,6 +728,7 @@ class App:
     def leave_game(self, where=None):
         """Spielansicht verlassen: zurück dorthin, wo die Suche gestartet wurde.
         Einzelsuche → Spieleliste, Batch → Systemliste, Spielsuche (Y) → deren Trefferliste."""
+        self.lp = {}                                  # Listenvorschau neu laden (Artwork evtl. gerade gespeichert)
         where = where or self.origin
         self.rom = None
         if where == "systems":
@@ -1009,6 +1013,47 @@ class App:
         self.top_dirty = True
 
     BQ_MAX = 10                                       # höchstens 10 Spiele in der Warteliste
+
+    def lp_selected(self):
+        vis = self.vgames() if self.view == "games" else []
+        return vis[self.sel][0] if 0 <= self.sel < len(vis) else None
+
+    def list_preview_tick(self):
+        """Spieleliste: vorhandene Artworks des gewählten Spiels oben als Mix zeigen (0,3 s nach dem Stehenbleiben)."""
+        rom = self.lp_selected() if not self.kbd else None
+        if not rom:
+            return
+        if rom != self.lp_want[0]:
+            self.lp_want = (rom, time.monotonic() + 0.3)
+            return
+        if self.lp_busy or rom == self.lp.get("rom") or time.monotonic() < self.lp_want[1]:
+            return
+        name = next((g[1] for g in self.games if g[0] == rom), rom)
+        self.lp_busy = True
+
+        def load():
+            art = {}
+            try:
+                d = PREVIEW_DIR / "list"
+                d.mkdir(parents=True, exist_ok=True)
+                for kind, info in self.existing(rom).items():
+                    if info.get("data"):
+                        # feste Namen je Art: die Bildablage (Pen) ersetzt das alte Bild statt beim Durchblättern
+                        # vieler Spiele immer mehr Bilder im Speicher zu halten
+                        path = d / f"list-{kind}.png"
+                        try:
+                            to_png(info["data"], path, 400)
+                            self.sizes.pop(str(path), None)
+                            art[kind] = str(path)
+                        except Exception:
+                            pass
+            except Exception as exc:
+                log("Listenvorschau:", exc)
+            finally:
+                self.lp = {"rom": rom, "name": name, "art": art}
+                self.lp_busy = False
+                self.top_dirty = True
+        threading.Thread(target=load, daemon=True).start()
 
     def existing(self, rom):
         with self.app_lock:   # nicht zeitgleich mit dem Speichern im Hintergrund
@@ -2401,6 +2446,10 @@ class App:
                 self.fit(P, self.editor["path"], 230, 80, 800, 800)
             P.text("Editor-Vorschau", 22, 630, 925, "bdbdbd", align="c", raw=True)
             return
+        if self.view == "games" and self.lp.get("rom") and self.lp_selected() == self.lp["rom"]:
+            self.draw_mix(P, have=self.lp["art"], title=self.lp["name"],
+                          sysname=self.system["name"] if self.system else "")
+            return
         if self.view not in ("game", "search") or not self.rom:
             open_items = self.retry_load() if not self.bq_pending() else []
             if not open_items:
@@ -2480,14 +2529,18 @@ class App:
         """Bild füllend (beschnitten) zeichnen."""
         return P.image(path, x, y, w, h, r=0, stretch=False)
 
-    def draw_mix(self, P):
+    def draw_mix(self, P, have=None, title=None, sysname=None):
         """Mix-Ansicht: Hero als Hintergrund, Boxart links, Cartridge unter dem Namen.
-        Übernommene Bilder tragen ✓, das gerade unten gewählte Bild steht als „Vorschau“ an seinem Platz."""
+        Übernommene Bilder tragen ✓, das gerade unten gewählte Bild steht als „Vorschau“ an seinem Platz.
+        Mit have (kind -> PNG): Vorschau der schon vorhandenen Artworks in der Spieleliste (nur ansehen)."""
         A = self.accent
         cur_kind, cur = self.kind_key(), self.cand()
+        title = self.title if title is None else title
 
         def slot(kind):
             """(Pfad, Zustand): Zustand "ok" (übernommen), "pv" (Vorschau) oder None (fehlt)."""
+            if have is not None:
+                return (have.get(kind), "have") if have.get(kind) else (None, None)
             if kind == cur_kind and cur is not None and self.chosen.get(kind) is not cur:
                 return self.preview_of(cur), "pv"
             if kind in self.chosen:
@@ -2512,11 +2565,12 @@ class App:
             fade(P, 0, HY + HH * 0.4, 1260, HH * 0.6 + 2)   # Verlauf nach unten ins Schwarz
             if hs == "pv":
                 P.rrect(4, 4, 1252, HH - 8, 0, A, stroke=6)
-            tag("✓ Image" if hs == "ok" else "Vorschau", 1080, 20, hs == "ok")
+            if hs != "have":
+                tag("✓ Image" if hs == "ok" else "Vorschau", 1080, 20, hs == "ok")
         else:
             P.rrect(0, HY, 1260, HH, 0, "151515")
-            P.text("Image – lädt …" if hp == "…" else "Image – noch nicht gewählt", 22, 630, 200, "8a8a8a",
-                   align="c", raw=True)
+            P.text("Image – lädt …" if hp == "…" else "Image – fehlt" if have is not None else "Image – noch nicht gewählt",
+                   22, 630, 200, "8a8a8a", align="c", raw=True)
 
         # Boxart links
         bp, bs = slot("boxart")
@@ -2526,18 +2580,20 @@ class App:
             self.fit(P, bp, BX, BY, BW, BH)
             if bs == "pv":
                 P.rrect(BX - 6, BY - 6, BW + 12, BH + 12, 20, A, stroke=6)
-            tag("✓ Boxart" if bs == "ok" else "Vorschau", BX + 12, BY + 12, bs == "ok")
+            if bs != "have":
+                tag("✓ Boxart" if bs == "ok" else "Vorschau", BX + 12, BY + 12, bs == "ok")
         else:
             empty(BX, BY, BW, BH, "Boxart")
 
         # Name und System
         size = 40
-        while size > 24 and P.width(self.title, size, bold=True, raw=True) > 820:
+        while size > 24 and P.width(title, size, bold=True, raw=True) > 820:
             size -= 2                        # lange Namen verkleinern statt abschneiden
         P.clip(415, 430, 820, 70)
-        P.text(self.title, size, 415, 480, "ffffff", bold=True, raw=True)
+        P.text(title, size, 415, 480, "ffffff", bold=True, raw=True)
         P.unclip()
-        P.text(self.system["name"] if self.system else "", 24, 415, 522, "bdbdbd", raw=True)
+        P.text(sysname if sysname is not None else (self.system["name"] if self.system else ""), 24, 415, 522,
+               "bdbdbd", raw=True)
 
         # Cartridge unter dem Namen
         cp, cs = slot("cartridge")
@@ -2546,12 +2602,21 @@ class App:
             self.fit(P, cp, CX, CY, CS, CS)
             if cs == "pv":
                 P.rrect(CX - 6, CY - 6, CS + 12, CS + 12, 20, A, stroke=6)
-            tag("✓ Cartridge" if cs == "ok" else "Vorschau", CX + 10, CY + 10, cs == "ok")
+            if cs != "have":
+                tag("✓ Cartridge" if cs == "ok" else "Vorschau", CX + 10, CY + 10, cs == "ok")
         else:
             empty(CX, CY, CS, CS, "Cartridge")
 
         # Übersicht rechts
         y = 600
+        if have is not None:                 # Spieleliste: was ist schon da?
+            for kind, label in KINDS:
+                ok = bool(have.get(kind))
+                w = P.text(label, 24, 700, y, "ffffff", bold=True, raw=True)
+                P.text("  " + ("✓ vorhanden" if ok else "– fehlt"), 24, 700 + w, y, "2bb673" if ok else "bdbdbd", raw=True)
+                y += 46
+            P.hint([("A", "Öffnen")], 24, 700, y + 30, "bdbdbd", "ffffff")
+            return
         for kind, label in KINDS:
             items = self.cands.get(kind) or []
             if kind in self.chosen:
@@ -2700,6 +2765,8 @@ def main():
             if a.pending and not a.busy:
                 nxt, a.pending = a.pending, None
                 nxt()
+            if a.view == "games":
+                a.list_preview_tick()
             if a.message and time.monotonic() - a.message[1] > 4:
                 a.message = None
                 a.dirty = True
