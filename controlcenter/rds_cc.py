@@ -1814,6 +1814,10 @@ def mic_watch():
             finally:
                 mic_set("mic", False)
                 rec.kill()
+                try:
+                    rec.wait(timeout=2)          # sonst bleibt arecord als Zombie (<defunct>) bis zum nächsten Start
+                except Exception:
+                    pass
                 log("Mikrofon: Abhören aus")
         except Exception as exc:
             log("Mikrofon-Abhören:", exc)
