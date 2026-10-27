@@ -321,3 +321,9 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
       InputPlumber), ggf. im CC neu kalibrieren.
 - [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
       CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
+- [x] **27.10.: Plus zurück auf ROCKNIX-DraStic** (advanced_drastic zu fehlerhaft): tools/advanced-drastic/rds-adv-zurueck.sh
+      (entfernt nur advanced-Dateien, Starter aus drastic.tar.gz, drastic.cfg/Spielstände/BIOS/Pust-Geräusch bleiben) +
+      rds-adv-cfg.sh (drastic.cfg aus der Fassung vor advanced + heutige Tasten/RDS-Werte). Danach startete DraStic auf
+      dem Plus mehrmals als kleines Fenster (früher selten) → CC-Wächter (drastic_fullscreen_guard): prüft 20 s die
+      Fensterbreite (normal deckt DraStic beide Bildschirme ab, auch mit fullscreen_mode 0), zweimal zu klein →
+      „fullscreen enable global“. Test 09:02: zwei Starts ohne Eingriff, Bild korrekt. Kommt ins nächste Release.
