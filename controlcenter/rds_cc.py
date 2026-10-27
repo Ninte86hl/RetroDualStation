@@ -2235,7 +2235,7 @@ def drastic_fullscreen_guard(pid):
     → die ersten 20 s nach dem Start prüfen: deckt das Fenster nicht alle Bildschirme ab, Vollbild global setzen."""
     env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
     end = time.monotonic() + 20
-    seen_ok = 0
+    seen_ok = bad = 0
     while time.monotonic() < end:
         time.sleep(1)
         if FROZEN.get("pids") or not os.path.exists("/proc/%d" % pid):
@@ -2263,6 +2263,10 @@ def drastic_fullscreen_guard(pid):
             seen_ok += 1
             if seen_ok >= 3:             # 3 s in Folge richtig → fertig (DraStic passt die Größe beim Start noch an)
                 return
+            continue
+        seen_ok = 0
+        bad += 1
+        if bad < 2:                      # zweimal in Folge zu klein → wirklich als Fenster (nicht nur beim Aufbau)
             continue
         sway_cmd('[app_id="drastic"] fullscreen enable global')
         log("DraStic: Fenster %dx%d statt über beide Bildschirme (%d) → Vollbild gesetzt"
