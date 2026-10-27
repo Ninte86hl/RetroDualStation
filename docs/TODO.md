@@ -333,3 +333,18 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
       Spielprüfung alle 3 s statt 1 s, Pegel aus jedem 4. Wert; Pusten weiter ✓). arecord-Zombie behoben (wait).
       NSMB 2 min libmali: DraStic 48 % gesamt / Emulator 105 % (Kerne gleichmäßig ~49 %, ≤ 58 °C) · DSperate 44 % /
       133 % (Kerne 60/27/51/38 %, ≤ 55 °C). Beide mit viel Reserve.
+
+## Idee (27.10., nur theoretisch): Pokémon tauschen (GB/GBC/GBA) mit beiden Bildschirmen
+- **GB/GBC, ein Gerät:** zwei RetroArch-Instanzen mit **Gambatte**, je ein Spiel/Spielstand, oben + unten im Vollbild;
+  Link über Core-Option „Game Link Mode“ Network Server/Client (`gambatte_gb_link_mode`, Port 56400,
+  `…server_ip_*` = 127.000.000.001). Normale Gambatte-Spielstände (kein Kopieren). Gleiches Verfahren zwischen RG DS
+  und Plus (Server-IP = anderes Gerät), ohne RA-Netplay.
+- **Steuerung:** beide Instanzen lesen dasselbe Gamepad → `input_joypad_driver = sdl2` nur für diese Instanzen
+  (SDL liefert Gamepad nur ans Fenster mit Fokus – testen), Fokus per **L3** (frei bei GB/GBA; CC fängt L3 schon ab)
+  bzw. Touch (RG DS) und/oder Kachel „Tauschen“ wie DraStic (Fenster zwischen den Bildschirmen tauschen, Fokus oben).
+  Rückfall: CC beansprucht das Gamepad und leitet an ein virtuelles Gamepad der zweiten Instanz weiter.
+- **GBA:** gpSP „Link Cable Connectivity = GBA Wireless Adapter“ über RA-Netplay (RA ≥ 1.18), nur Feuerrot/
+  Blattgrün/Smaragd; zwei Geräte. Unterer Bildschirm: Verbindungsstatus im CC.
+- Vorbild: Onion OS „Easy Netplay – Pokémon“ (TGB Dual-Subsystem + Netplay + Spielstand per FTP; GBA über gpSP).
+  Onion = GPL → nur das Verfahren nachbauen, Credit in CREDITS.md. Alternative TGB Dual (beide GBs in einem Bild).
+- Erster Schritt: Core-Check (gambatte/tgbdual/gpsp, RA-Version, input_joypad_driver), dann Test zwei Instanzen.
