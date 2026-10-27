@@ -348,3 +348,6 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
 - Vorbild: Onion OS „Easy Netplay – Pokémon“ (TGB Dual-Subsystem + Netplay + Spielstand per FTP; GBA über gpSP).
   Onion = GPL → nur das Verfahren nachbauen, Credit in CREDITS.md. Alternative TGB Dual (beide GBs in einem Bild).
 - Erster Schritt: Core-Check (gambatte/tgbdual/gpsp, RA-Version, input_joypad_driver), dann Test zwei Instanzen.
+- [x] **27.10. Artwork Manager: Listenvorschau** – Spieleliste zeigt oben die vorhandenen Artworks des gewählten Spiels als
+      Mix (Image/Boxart/Cartridge, ✓ vorhanden / – fehlt), ohne Wartezeit (Hintergrund-Lader, data/cache/liste mit
+      Prüfsumme, Bildablage wird freigegeben). Getestet auf dem Gerät ✓ – kommt ins nächste Release.
