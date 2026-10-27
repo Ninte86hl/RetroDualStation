@@ -51,7 +51,7 @@ def meminfo():
 gpu = next(iter(glob.glob("/sys/class/devfreq/*gpu*")), None)
 mods = rd("/proc/modules") or ""
 driver = "panfrost" if "panfrost" in mods else "mali (libmali)" if ("mali" in mods or os.path.exists("/dev/mali0")) else "?"
-print("=== Leistung: %s · %s · %s" % (name, time.strftime("%d.%m. %H:%M"), rd("/proc/device-tree/model").strip("\0")))
+print("=== Leistung: %s · %s · %s" % (name, time.strftime("%d.%m. %H:%M"), (rd("/proc/device-tree/model") or "?").strip("\0")))
 print("GPU-Treiber:", driver, "· GPU-devfreq:", gpu or "-", "· Governor:", rd(gpu + "/governor") if gpu else "-")
 print("CPU-Governor:", rd("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"),
       "· max", int(rd("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq") or 0) // 1000, "MHz")
@@ -91,7 +91,7 @@ def st(v, unit=""):
 print("\nMessung über %d s:" % secs)
 print("  CPU gesamt:      ", st(S["cpu"], " %"))
 print("  je Kern Ø:       ", "  ".join("%s %.0f%%" % (k[3:], sum(v) / len(v)) for k, v in sorted(cores.items())))
-print("  Emulator-Prozess:", st(S["emu"], " %"), "(100 % = ein Kern voll, max %d %%)" % (100 * ncpu))
+print("  Emulator-Prozess:", st(S["emu"], " %"), "(100 %% = ein Kern voll, max %d %%)" % (100 * ncpu))
 print("  CPU-Takt:        ", st(S["freq"], " MHz"))
 print("  GPU-Takt:        ", st(S["gpuf"], " MHz"))
 print("  GPU-Last:        ", st(S["gpul"], " %") if S["gpul"] else "- (Treiber meldet keine Last)")
