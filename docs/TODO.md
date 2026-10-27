@@ -327,3 +327,7 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
       dem Plus mehrmals als kleines Fenster (früher selten) → CC-Wächter (drastic_fullscreen_guard): prüft 20 s die
       Fensterbreite (normal deckt DraStic beide Bildschirme ab, auch mit fullscreen_mode 0), zweimal zu klein →
       „fullscreen enable global“. Test 09:02: zwei Starts ohne Eingriff, Bild korrekt. Kommt ins nächste Release.
+- [x] **27.10. Leistung Plus (Zelda PH, tools/rds-leistung.sh):** DraStic libmali 61 % CPU gesamt / Panfrost 54 %,
+      DSperate 48 % / 50 % (DSperate hängt an einem Kern: 80–89 %), Temperatur ≤ 56 °C, ≥ 380 MB RAM frei, kein Swap.
+      Prozesse bei DraStic: drastic ~135 %, pipewire ~13 %, sway ~8 %, gptokeyb ~5 %, CC 9,4 % → 5,4 % (mic_watch:
+      Spielprüfung alle 3 s statt 1 s, Pegel aus jedem 4. Wert; Pusten weiter ✓). arecord-Zombie behoben (wait).
