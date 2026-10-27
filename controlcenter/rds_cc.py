@@ -2229,6 +2229,36 @@ def fast_start(item, args):
     log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), item["emu"])
 
 
+def drastic_fullscreen_guard(pid):
+    """DraStic öffnet selten (Plus nach advanced_drastic-Rückbau 27.10.: jedes Mal) als Fenster statt im Vollbild über
+    beide Bildschirme → die ersten 20 s nach dem Start prüfen und ggf. „fullscreen enable global“ setzen."""
+    env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+    end = time.monotonic() + 20
+    while time.monotonic() < end:
+        time.sleep(1)
+        if FROZEN.get("pids") or not os.path.exists("/proc/%d" % pid):
+            return
+        try:
+            tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True,
+                                             timeout=2, env=env).stdout)
+        except Exception:
+            continue
+        found = []
+
+        def walk(n):
+            if n.get("app_id") == "drastic" and n.get("type") in ("con", "floating_con"):
+                found.append(n.get("fullscreen_mode", 0))
+            for c in n.get("nodes", []) + n.get("floating_nodes", []):
+                walk(c)
+        walk(tree)
+        if found and found[0] != 2:
+            sway_cmd('[app_id="drastic"] fullscreen enable global')
+            log("DraStic: als Fenster gestartet → Vollbild über beide Bildschirme gesetzt")
+            return
+        if found:
+            return                       # schon im Vollbild – fertig
+
+
 def fast_fullscreen():
     """Zusatzspiel: Fenster ins Vollbild (ohne ES landete DraStic sonst als Fenster)."""
     g = running_game()
@@ -7723,6 +7753,8 @@ def main():
                     g = running_game()
                     pid = g["pid"] if g else None
                     if pid != last_game["pid"]:
+                        if g and g["emu"] == "DraStic" and not adv_drastic_pid(g["pid"]):
+                            threading.Thread(target=drastic_fullscreen_guard, args=(g["pid"],), daemon=True).start()
                         if g:
                             try:
                                 cc.switcher.remember(g)
