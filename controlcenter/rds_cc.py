@@ -38,6 +38,7 @@ import subprocess
 import sys
 import time
 import traceback
+from zlib import crc32 as zlib_crc
 from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, Union, byref, c_char,
                     c_char_p, c_double, c_int, c_int32, c_uint32, c_void_p, cast,
                     pointer)
@@ -1184,6 +1185,87 @@ SYSTEMS = {"nds": "Nintendo DS", "gba": "Game Boy Advance", "gb": "Game Boy",
 
 
 AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automatisch dunkel
+
+# Unterer Screen in Ein-Bildschirm-Spielen (RetroArch, Ports) – Untermenü an der Kachel „Unterer Screen aus“:
+# aus (wie bisher) · Artwork (Fanart + Logo) 5 s zeigen, dann langsam abdunkeln · Artwork dauerhaft an.
+BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
+                ("dim", "Artwork, dann abdunkeln", "Fanart mit Logo 5 Sekunden zeigen, dann langsam dunkel"),
+                ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an (braucht etwas mehr Akku)")]
+ART_SHOW_S, ART_FADE_S = 5.0, 4.0
+ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
+PIL_LIB = "/storage/.config/retrodualstation/lib"  # Pillow vom Artwork Manager – nur im Hilfsprozess, nicht im CC
+_ART_CONVERT = ("import os,sys\nfrom PIL import Image\ni=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA')\n"
+                "n=int(sys.argv[3]);i.thumbnail((n,n));i.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
+EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwork dauerhaft": "Artwork always on",
+           "Wie bisher: unterer Screen beim Spielstart dunkel": "As before: bottom screen dark when a game starts",
+           "Fanart mit Logo 5 Sekunden zeigen, dann langsam dunkel": "Show fanart with logo for 5 seconds, then fade out",
+           "Fanart mit Logo bleibt an (braucht etwas mehr Akku)": "Fanart with logo stays on (uses a bit more battery)",
+           "Unterer Screen in Spielen": "Bottom screen in games",
+           "Für Spiele mit einem Bildschirm (RetroArch, Ports)": "For games with one screen (RetroArch, ports)",
+           "Fanart und Logo vom Scraper (ScreenScraper) – ohne Fanart Hero oder Boxart":
+               "Fanart and logo from the scraper (ScreenScraper) – without fanart the hero or boxart",
+           "Spiele: aus": "Games: off", "Spiele: Artwork, dimmt": "Games: artwork, dims",
+           "Spiele: Artwork an": "Games: artwork on", "In Spielen": "In games"})
+
+
+def game_art(rom):
+    """Hintergrund (Fanart, sonst Image/Hero, Boxart) und Logo (Marquee) eines Spiels: gamelist.xml,
+    sonst Dateien im images-Ordner (Artwork Manager: -hero/-logo, ES-Scraper: -fanart/-marquee)."""
+    if not rom:
+        return None, None
+    folder = os.path.dirname(rom)
+    found = {}
+    try:
+        import xml.etree.ElementTree as ET
+        rel = "./" + os.path.relpath(rom, folder)
+        for g in ET.parse(os.path.join(folder, "gamelist.xml")).getroot().iter("game"):
+            if g.findtext("path") == rel:
+                for tag in ("fanart", "image", "boxart", "thumbnail", "marquee", "wheel"):
+                    v = (g.findtext(tag) or "").strip()
+                    p = os.path.normpath(os.path.join(folder, v)) if v else None
+                    if p and os.path.isfile(p) and not p.lower().endswith((".mp4", ".mkv", ".avi")):
+                        found[tag] = p
+                break
+    except Exception:
+        pass
+    base = os.path.splitext(os.path.basename(rom))[0]
+    for tag, sufs in (("fanart", ("-fanart",)), ("image", ("-hero", "-image")), ("marquee", ("-logo", "-marquee", "-wheel"))):
+        for sub in ("images", "media/images"):
+            for suf in sufs:
+                for ext in (".png", ".jpg", ".jpeg", ".webp"):
+                    c = os.path.join(folder, sub, base + suf + ext)
+                    if tag not in found and os.path.isfile(c):
+                        found[tag] = c
+    bg = next((found[t] for t in ("fanart", "image", "boxart", "thumbnail") if t in found), None)
+    logo = found.get("marquee") or found.get("wheel")
+    return bg, logo
+
+
+def art_png(path, limit):
+    """Bild als PNG für Cairo: PNG bis limit direkt, sonst (JPG/WebP/große PNG) einmal umwandeln (Hilfsprozess)."""
+    if not path:
+        return None
+    if path.lower().endswith(".png"):
+        sz = png_size(path)
+        if sz and max(sz) <= limit:
+            return path
+    try:
+        key = "%08x" % (zlib_crc(("%s|%s" % (path, os.path.getmtime(path))).encode()))
+    except OSError:
+        return None
+    out = os.path.join(ART_DIR, key + ".png")
+    if os.path.exists(out):
+        return out
+    os.makedirs(ART_DIR, exist_ok=True)
+    try:
+        subprocess.run(["python3", "-c", _ART_CONVERT, path, out, str(limit)], timeout=30,
+                       env=dict(os.environ, PYTHONPATH=PIL_LIB), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError) as exc:
+        log("Artwork umwandeln fehlgeschlagen:", exc)
+    if os.path.exists(out):
+        return out
+    log("Artwork nicht lesbar:", path)
+    return None
 PORT_RE = re.compile(r"/roms/ports/([^/]+)\.sh$")
 
 
@@ -4300,6 +4382,77 @@ class ColorMenu:
         P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
 
 
+class BottomMenu:
+    """Untermenü der Kachel „Unterer Screen aus“: was der untere Screen in Ein-Bildschirm-Spielen zeigt."""
+    title = "Unterer Screen in Spielen"
+
+    def __init__(self, cc):
+        self.cc = cc
+        keys = [k for k, _l, _d in BOTTOM_MODES]
+        self.sel = keys.index(cc.bottom_mode())
+        self.drag_from = None
+
+    def tick(self):
+        pass
+
+    def close(self):
+        pass
+
+    def drag_start(self):
+        pass
+
+    def drag(self, dy):
+        pass
+
+    def nav(self, dx, dy):
+        self.sel = max(0, min(len(BOTTOM_MODES) - 1, self.sel + (dy or dx)))
+
+    def confirm(self):
+        cc = self.cc
+        key = BOTTOM_MODES[self.sel][0]
+        cc.cfg["bottom_single"] = key
+        save_config(cc.cfg)
+        haptic("tap")
+        log("Unterer Screen in Spielen:", key)
+        if cc.game and cc.game.get("emu") in AUTO_DIM_EMUS:
+            cc.redim = True                    # beim Schließen des CC gleich anwenden
+        cc.sub = None
+
+    def tap(self, hit):
+        if hit and hit[0] == "bmode":
+            self.sel = hit[1]
+            self.confirm()
+        elif hit and hit[0] == "sub" and hit[1] == "back":
+            self.cc.sub = None
+
+    def draw(self, P):
+        cc, T, A = self.cc, self.cc.T, self.cc.accent
+        P.rrect(45, 62, 170, 62, 31, T["pill"])
+        P.chevron(45 + 30, 93, -9, T["text"])
+        P.text("Zurück", 22, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
+        cc.hits.append((45, 62, 170, 62, ("sub", "back")))
+        P.text(self.title, 30, 630, 104, T["text"], bold=True, align="c")
+        P.text("Für Spiele mit einem Bildschirm (RetroArch, Ports)", 20, 630, 172, T["muted"], align="c")
+        cur = cc.bottom_mode()
+        y, h, gap = 205, 150, 22
+        for i, (key, label, desc) in enumerate(BOTTOM_MODES):
+            on = key == cur
+            P.rrect(45, y, 1170, h, 24, A if on else T["card"])
+            tc = on_acc(A) if on else T["text"]
+            P.text(label, 28, 90, y + 64, tc, bold=True)
+            P.text(desc, 20, 90, y + 106, mix(tc, A if on else T["card"], 0.25))
+            if on:
+                P.circle(1215 - 60, y + h / 2, 20, "ffffff")
+                P.text("✓", 22, 1215 - 60, y + h / 2 + 8, A, bold=True, align="c", raw=True)
+            if i == self.sel:
+                cc._focus_ring(P, 45, y, 1170, h, 24)
+            cc.hits.append((45, y, 1170, h, ("bmode", i)))
+            y += h + gap
+        P.text("Fanart und Logo vom Scraper (ScreenScraper) – ohne Fanart Hero oder Boxart", 18, 630, 770,
+               T["muted"], align="c")
+        P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
+
+
 class ControlCenter:
     """Zustand, Zeichnen und Bedienung des Kontrollcenters."""
 
@@ -4333,6 +4486,11 @@ class ControlCenter:
         self.screen_bottom_off = False
         self.screen_bottom_saved = None   # gespeicherte Helligkeit vor dem Ausschalten
         self.screen_auto = False          # automatisch gedimmt (RetroArch-Start)
+        self.art = None                   # Artwork unten in Ein-Bildschirm-Spielen {"rom", "name", "bg", "logo"}
+        self.art_token = 0                # zählt hoch = laufendes Abdunkeln abbrechen
+        self.art_lock = threading.Lock()
+        self.art_dirty = False
+        self.ui = None                    # Overlay (in main gesetzt)
         self.bat = (None, False)
         self.game = None
         self.marquee = False
@@ -4482,6 +4640,8 @@ class ControlCenter:
         log("Untermenü:", self.sub.title)
 
     def open_sub(self, i):
+        if i == 2:
+            return self.open_bottom()
         self.sub = (WifiMenu if i == 0 else BtMenu)(self)
         log("Untermenü:", self.sub.title)
 
@@ -4531,7 +4691,7 @@ class ControlCenter:
                 return
             self.delete_slot(n)
             return
-        if self.page == 0 and not self.sub and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
+        if self.page == 0 and not self.sub and self.rows()[self.focus][0] == "tiles" and self.tile < 3:
             self.open_sub(self.tile)
 
     def press_tile(self, i):
@@ -4559,6 +4719,7 @@ class ControlCenter:
 
     def screen_off(self):
         """Unteren Bildschirm dunkel schalten (Helligkeit merken)."""
+        self.art_cancel()
         if self.screen_bottom_off:
             return
         bl = self._bl_bottom()
@@ -4570,6 +4731,7 @@ class ControlCenter:
 
     def screen_on(self):
         """Ursprüngliche Helligkeit wiederherstellen."""
+        self.art_cancel()
         if not self.screen_bottom_off:
             return
         bl = self._bl_bottom()
@@ -4579,6 +4741,117 @@ class ControlCenter:
         self.screen_bottom_off = False
         self.screen_auto = False
         log("Unterer Screen: an")
+
+    # -- Unterer Screen in Ein-Bildschirm-Spielen --
+    def bottom_mode(self):
+        m = self.cfg.get("bottom_single", "off")
+        return m if m in ("off", "dim", "on") else "off"
+
+    def bottom_auto(self, g):
+        """Ein-Bildschirm-Spiel läuft (Start, CC geschlossen, Ladebildschirm fertig): unten nach Einstellung."""
+        mode = self.bottom_mode()
+        if mode == "off" or not g or not self.ui:
+            self.art_hide()
+            self.screen_off()
+            self.screen_auto = True
+            return
+        self.art_show(g)
+        if self.screen_bottom_off:
+            self.screen_on()
+        if mode == "dim":
+            with self.art_lock:
+                self.art_token += 1
+                tok = self.art_token
+            threading.Thread(target=self._art_fade, args=(tok,), daemon=True).start()
+
+    def art_cancel(self):
+        with self.art_lock:
+            self.art_token += 1
+
+    def art_show(self, g):
+        rom = g.get("rom") or rom_of(g["pid"])
+        if not self.art or self.art["rom"] != rom:
+            self.art = {"rom": rom, "name": g.get("name") or "", "bg": None, "logo": None, "loaded": False}
+            threading.Thread(target=self._art_load, args=(self.art,), daemon=True).start()
+        if self.ui.art is None:
+            self.ui.show_top(self.paint_art, slot="art", output=self.ui.current_output())
+            log("Unterer Screen: Artwork", os.path.basename(rom or "?"))
+        else:
+            self.ui.redraw_top("art")
+
+    def _art_load(self, a):
+        try:
+            bg, logo = game_art(a["rom"])
+            a["bg"] = art_png(bg, 1280)
+            a["logo"] = art_png(logo, 900)
+        except Exception as exc:
+            log("Artwork laden:", exc)
+        a["loaded"] = True
+        self.art_dirty = True
+
+    def art_hide(self):
+        self.art_cancel()
+        if self.ui and self.ui.art is not None:
+            self.ui.hide_top("art")
+            log("Unterer Screen: Artwork weg")
+        a, self.art = self.art, None
+        for path in (a or {}).get("bg"), (a or {}).get("logo"):   # Bildspeicher freigeben
+            for k in [k for k in Pen._png if k[0] == path]:
+                if Pen._png[k]:
+                    cairo.cairo_surface_destroy(Pen._png[k])
+                del Pen._png[k]
+
+    def _art_fade(self, tok):
+        """5 s Artwork, dann die Helligkeit langsam auf 0 (gilt dann als automatisch aus: Anbernic weckt)."""
+        end = time.monotonic() + ART_SHOW_S
+        while time.monotonic() < end:
+            time.sleep(0.1)
+            if tok != self.art_token:
+                return
+        bl = self._bl_bottom()
+        if not bl:
+            return
+        with self.art_lock:
+            if tok != self.art_token or self.screen_bottom_off:
+                return
+            pct = bl.get()
+            raw0 = int(rd(bl.dir + "/brightness") or 0)
+            self.screen_bottom_saved = pct
+            self.screen_bottom_off = True
+            self.screen_auto = True
+        steps = int(ART_FADE_S / 0.05)
+        for i in range(1, steps + 1):
+            time.sleep(0.05)
+            with self.art_lock:
+                if tok != self.art_token:
+                    return
+                wr(bl.dir + "/brightness", round(raw0 * (1 - i / steps) ** 2))
+        log("Unterer Screen: Artwork abgedunkelt")
+
+    def paint_art(self, cr, w, h):
+        """Artwork unten: Fanart bildschirmfüllend, leicht abgedunkelt, Logo mittig (sonst der Name)."""
+        P = Pen(cr, w, h)
+        P.fill_all("000000")
+        a = self.art or {}
+        x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
+        if a.get("bg") and P.image(a["bg"], x0, y0, fw, fh):
+            P.rrect(x0, y0, fw, fh, 0, "000000", 0.3)
+        logo, drawn = a.get("logo"), False
+        sz = png_size(logo) if logo else None
+        if sz and sz[0] and sz[1]:
+            k = min(900 / sz[0], 400 / sz[1])
+            lw, lh = sz[0] * k, sz[1] * k
+            drawn = P.image(logo, 630 - lw / 2, 475 - lh / 2, lw, lh, stretch=True)
+        if not drawn and a.get("loaded") and a.get("name"):
+            name = a["name"]
+            while P.width(name, 56, bold=True, raw=True) > 1150 and len(name) > 4:
+                name = name[:-2]
+            P.text(name if name == a["name"] else name.rstrip() + "…", 56, 630, 495, "ffffff",
+                   bold=True, align="c", raw=True)
+
+    def open_bottom(self):
+        self.sub = BottomMenu(self)
+        log("Untermenü:", self.sub.title)
 
     # -- Bedienung mit Tasten --
     def nav(self, dx, dy):
@@ -4843,6 +5116,8 @@ class ControlCenter:
         left = [("L1 / R1", "Seite wechseln")]
         if self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile < 2:
             left = [("A", "Ein/Aus"), ("X / Y", "Details")]
+        elif self.page == 0 and self.rows()[self.focus][0] == "tiles" and self.tile == 2:
+            left = [("A", "Ein/Aus"), ("X / Y", "In Spielen")]
         elif self.page == 1 and self.ghelp:
             left = [("B", "zurück")]
         elif self.page == 2 and self.ra and self.ra_detail:
@@ -5089,7 +5364,7 @@ class ControlCenter:
             P.text(name, 21, tx + 25, ry + (68 if sub else 79), tc, bold=True)
             if sub:
                 P.text(sub, 19, tx + 25, ry + 96, mix(tc, fill, 0.25))
-            if i < 2:   # WLAN/BT Untermenü-Pfeil
+            if i < 3:   # WLAN/BT/Unterer Screen: Untermenü-Pfeil
                 P.circle(tx + tw - 38, ry + 38, 22, mix(fill, on_acc(A) if states[i] else T["text"], 0.18))
                 P.chevron(tx + tw - 34, ry + 38, 9, on_acc(A) if states[i] else T["text"])
                 self.hits.append((tx + tw - 82, ry, 82, 80, ("more", i)))
@@ -5111,6 +5386,8 @@ class ControlCenter:
             if not names:
                 return "Kein Gerät"
             return short(names[0], 16 if len(names) > 1 else 20) + (f" +{len(names) - 1}" if len(names) > 1 else "")
+        if i == 2:
+            return {"off": "Spiele: aus", "dim": "Spiele: Artwork, dimmt", "on": "Spiele: Artwork an"}[self.bottom_mode()]
         return ""
 
     def _draw_game(self, P):
@@ -6110,6 +6387,7 @@ class Overlay:
         self._mm = None
         self.top = None   # Fläche auf dem oberen Bildschirm (Ladebildschirm)
         self.toast = None # schmale Meldung oben (Lautstärke, Erfolge)
+        self.art = None   # Artwork unten in Ein-Bildschirm-Spielen (unter dem CC, ohne Eingabe)
 
         self.registry = marshal(self.display, 1, IF_REGISTRY, ("n", None))
         G = CFUNCTYPE(None, c_void_p, c_void_p, c_uint32, c_char_p, c_uint32)
@@ -6302,11 +6580,11 @@ class Overlay:
     def top_output(self):
         return next((o for o, n in reversed(list(self.outputs.items())) if n == TOP_OUTPUT), None)
 
-    def show_top(self, painter, slot="top", height=None):
-        """Fläche auf dem oberen Bildschirm. slot="toast" mit height: schmaler Streifen oben
-        (durchsichtig außerhalb der Meldung, das Spiel bleibt sichtbar)."""
+    def show_top(self, painter, slot="top", height=None, output=None):
+        """Fläche auf dem oberen Bildschirm (output: anderer Bildschirm). slot="toast" mit height: schmaler
+        Streifen oben (durchsichtig außerhalb der Meldung, das Spiel bleibt sichtbar)."""
         self.hide_top(slot)
-        out = self.top_output()
+        out = output or self.top_output()
         if not out:
             return
         t = {"painter": painter, "size": None, "buffer": None, "mm": None}
@@ -6793,6 +7071,7 @@ def main():
         state["dirty"] = True
 
     ui = Overlay(cc.draw, on_touch)
+    cc.ui = ui
     UI_OPEN["fn"] = lambda: bool(ui.view)          # Mikrofon-Abhören: bei offenem CC nichts auslösen
 
     # Wischgeste (Test): vom oberen Rand des unteren Bildschirms nach unten → Kontrollcenter, wie bei Android.
@@ -6924,8 +7203,7 @@ def main():
             ui.view, ui.pending_view = ui.pending_view, None   # zählt noch als offen
         if ui.view == view:
             if getattr(cc, "redim", False) and cc.game and cc.game["emu"] in AUTO_DIM_EMUS:
-                cc.screen_off()   # RetroArch: beim Schließen wieder abdunkeln
-                cc.screen_auto = True
+                cc.bottom_auto(cc.game)   # RetroArch: beim Schließen wieder abdunkeln bzw. Artwork zeigen
             cc.redim = False
             cc.reset()
             cc.power_menu.state = cc.power_menu.STATE_MAIN   # Zustand zurücksetzen
@@ -6942,6 +7220,9 @@ def main():
             if not ui.view:
                 if cc.screen_bottom_off and cc.screen_auto:   # automatisch abgedunkelt → für die Anzeige an
                     cc.screen_on()
+                    cc.redim = True
+                elif cc.art is not None and cc.bottom_mode() == "dim":   # Artwork noch hell: nicht weiter abdunkeln
+                    cc.art_cancel()
                     cc.redim = True
                 cc.refresh(full=True)
                 if view == "switcher":
@@ -7017,6 +7298,7 @@ def main():
         """Ladebildschirm auf beiden Screens, bis das Spiel läuft und der Stand geladen ist."""
         cc.loading = (item, fresh)
         cc.loading_t0 = time.monotonic()
+        cc.art_cancel()
         if cc.screen_bottom_off:
             cc.screen_on()
         ui.show("loading")
@@ -7032,6 +7314,7 @@ def main():
         cc.switcher.done = False
         cc.loading = (item, True)
         cc.loading_t0 = time.monotonic()
+        cc.art_cancel()
         if cc.screen_bottom_off:
             cc.screen_on()
         ui.show("loading")
@@ -7781,10 +8064,11 @@ def main():
                             except Exception as exc:
                                 log("Gameswitcher: Merken fehlgeschlagen:", exc)
                         if g and g["emu"] in AUTO_DIM_EMUS:
-                            cc.screen_off()
-                            cc.screen_auto = True
-                        elif cc.screen_auto and (not g or g["emu"] not in AUTO_DIM_EMUS):
-                            cc.screen_on()            # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
+                            cc.bottom_auto(g)        # aus oder Artwork (Untermenü „Unterer Screen in Spielen“)
+                        else:
+                            cc.art_hide()
+                            if cc.screen_auto:
+                                cc.screen_on()        # z. B. RetroArch → DS-Spiel: unteren Screen wieder an
                         cc.slot, cc.gsel, cc.gmsg, cc.dsp_slot = 0, 0, None, 0   # Seite „Spiel“ neu beginnen
                         # Spielwechsel/zurück in ES: verwaistes bzw. doppeltes gptokeyb beenden (doppelte Tasten) –
                         # kurz warten, bis das Startskript es selbst beendet bzw. das neue gestartet hätte
@@ -7999,6 +8283,10 @@ def main():
                     state["dirty"] = True
             if scrolling:
                 state["dirty"] = True
+            if cc.art_dirty:                       # Artwork unten fertig umgewandelt
+                cc.art_dirty = False
+                if ui.art is not None:
+                    ui.redraw_top("art")
             # Meldungen oben (Lautstärke, Erfolge): eine nach der anderen, nie über Ladebildschirm/Tour
             now = time.monotonic()
             if cc.toast_now and now >= cc.toast_until:
@@ -8033,10 +8321,11 @@ def main():
                     ui.hide_top()
                     if ui.view == "loading":
                         ui.hide()
-                    g = running_game()   # RetroArch/PortMaster: unteren Screen wieder abdunkeln
+                    g = running_game()   # RetroArch/PortMaster: unteren Screen wieder abdunkeln bzw. Artwork
                     if g and g["emu"] in AUTO_DIM_EMUS:
-                        cc.screen_off()
-                        cc.screen_auto = True
+                        cc.bottom_auto(g)
+                    else:
+                        cc.art_hide()
             sw = cc.switcher
             if sw.ready:
                 sw.ready = False

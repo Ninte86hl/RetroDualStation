@@ -24,6 +24,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **Artwork unten in Ein-Bildschirm-Spielen** (Nutzerwunsch 28.10., wie ES-DE Companion) – auf `kontrollcenter`,
+  im Test: CC-Kachel „Unterer Screen aus“ → Pfeil/X → Aus (wie bisher) · Artwork, dann abdunkeln (5 s, dann 4 s
+  ausblenden) · Artwork dauerhaft. Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
+  Hilfsprozess (Pillow aus lib/) nach /tmp/rds-art umgewandelt. Prüfen: RG DS + Plus, Wecken mit Anbernic/Wischen,
+  Gameswitcher-Wechsel RA→RA/RA→DS, Ports, Akku. Danach Release-Notes/Wiki/Tour.
 - [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`
   (96e1d55, nicht in v15.3.5): Infoleiste in allen Ansichten außer Detailliert statt eigener Ansicht „Grid Info“,
   Tastenhilfe in Leistenschriftgröße (bei „Default“ 0.027 evtl. zu breit → „…“), Showcase 7 Zeilen. Noch ungetestet –
