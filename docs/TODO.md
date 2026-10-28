@@ -24,6 +24,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
+- [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`
+  (96e1d55, nicht in v15.3.5): Infoleiste in allen Ansichten außer Detailliert statt eigener Ansicht „Grid Info“,
+  Tastenhilfe in Leistenschriftgröße (bei „Default“ 0.027 evtl. zu breit → „…“), Showcase 7 Zeilen. Noch ungetestet –
+  erst Screenshots aller Ansichten. Idee: Infoleiste als Theme-Option (subset) an/aus statt fest.
 - [x] **„Bildschirme tauschen“ (Kachel „Tauschen“ + L3) – v15.3.2 veröffentlicht 25.10.** – DraStic: SWAP_SCREENS auf F8 (321,
       Installer-Merker drastic-kuerzel-v4), Touch nimmt DraStic selbst mit (ROCKNIX-Zuordnung DSI-2 lassen – DSI-1 macht es kaputt, mirror_touch unnötig, Plus 25.10. ok);
       „Follow 3D Renderer“ (ES-Option follow_3d_renderer → fix_main_2d_screen über start_drastic.sh) auch vor dem Start
