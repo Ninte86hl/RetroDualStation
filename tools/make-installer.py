@@ -65,7 +65,6 @@ with zipfile.ZipFile(out, "w") as z:
         add(z, os.path.join(repo, "device", "ports", f), p + "ports/" + f, EXEC)
     add(z, os.path.join(repo, "installer", "payload", "ports", "Uninstall RDS.sh"),
         p + "ports/Uninstall RDS.sh", EXEC)
-    add(z, os.path.join(repo, "installer", "extras", "RDS Grid Info.sh"), p + "ports/RDS Grid Info.sh", EXEC)
     theme = os.path.join(repo, "theme", "dii-ess-aye-rds")
     for root, dirs, files in os.walk(theme):
         dirs.sort()

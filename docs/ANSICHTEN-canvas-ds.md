@@ -8,6 +8,7 @@ Stand: 18.10.2026 (Zweig `theme-varianten`)
 | **Detailliert** | links großes Cover (fest, wechselt an Ort und Stelle), rechts Name, Beschreibung, Spieler, Jahr, Entwickler | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Automatisch / Gamecarousel** | 3 Icons nebeneinander, das mittlere größer, darunter der Name des ausgewählten Spiels | Icon | `romname-icon.png` | `cartridge` + `thumbnail` |
 | **Raster** | Raster von canvas-ds ohne Infoleisten, Cover füllen den unteren Screen | Grid (2:3) | `romname-box.png` | `boxart` |
+| **Grid Info** | Raster wie oben, darunter eine Infoleiste: Spieler, Name (Zeile 1), Jahr, Bewertung, Genre (Zeile 2), Tastenhilfe | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Spotlight** | eine große Karte: links Grid (2:3), rechts Logo; beim Blättern gleitet sie seitlich hinaus und die nächste herein wie in der Systemansicht | Grid + Logo | `romname-box.png` + `romname-logo.png` | `boxart` + `marquee` |
 | **Showcase** | links das Grid, rechts die Spielnamen (beide gleich hoch, mittig) als senkrechtes Karussell mit fester Auswahlleiste | Grid (2:3) | `romname-box.png` | `boxart` |
 | **Oberer Screen, nach 5 s** | Video blendet über das Hero-Bild | Video | vom Scraper | `video` |

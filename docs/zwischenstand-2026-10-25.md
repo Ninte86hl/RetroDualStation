@@ -108,9 +108,10 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
   `drastic_v2522` erkannt (Auto-Laden), Programm im Prozessbaum · tools/advanced-drastic (Layout Plus), tools/rds-nightly-check.sh.
 
 ## v15.3.5 (vorbereitet 28.10.2026)
-- Port „RDS Grid Info“ (installer/extras): Infoleiste in der Rasteransicht (Spieler, Name, Jahr, Bewertung, Genre,
-  Tastenhilfe) ein/aus; Installer legt den Port an und schaltet die Leiste nach einem Update wieder ein (--an).
-  Positionen nach Screenshots auf dem RG DS abgestimmt.
+- Neue Ansicht „Grid Info“ (customView, erbt von grid; theme/canvas-rds-overlay/_inc/variants/variants.xml): Raster
+  mit Infoleiste (Spieler, Name, Jahr, Bewertung, Genre, Tastenhilfe), Positionen nach Screenshots auf dem RG DS.
+  Zuerst als Port getestet (verworfen – als Ansicht einfacher); der Installer entfernt den Test-Port. Paket braucht
+  ein neues canvas-ZIP (tools/make-canvas-installer.py v15.2).
 - Artwork Manager: Listenvorschau (vorhandene Artworks oben, Hintergrund-Lader, Zwischenspeicher data/cache/liste).
 - CC: DraStic-Vollbild-Wächter (Fensterbreite), Mikrofon-Abhören sparsamer (9 % → 5 % CPU), arecord-Zombie behoben.
 - Nicht im Release (Tests/Erkenntnisse): ROCKNIX-Nightly/InputPlumber (Branch nightly), advanced_drastic-Rückbau,
