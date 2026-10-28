@@ -28,7 +28,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
   RG DS getestet 28.10. ✓ (alle drei Einstellungen, Antippen, Spielwechsel); offen: Plus, Feintuning am Wochenende,
   Beschreibung DE/EN aus dem Chat in Notes/Wiki: CC-Kachel „Unterer Screen aus“ → Pfeil/X → Aus (wie bisher) · Artwork, dann abdunkeln (5 s, dann 3 s
   Überblendung auf weiße Logo einheitlich weiß (helle Flächen, Schwelle nach Otsu; Varianten Kanten/Grau verworfen) bei 15 % Helligkeit, wie ein Always-on-Display; Antippen = hell ↔ dunkel) · Artwork dauerhaft (Antippen =
-  abdunkeln ↔ hell). Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
+  abdunkeln ↔ hell) · Fanart abgedunkelt (Regler 0–90 %, Vorschau im Untermenü, Logo bleibt hell; Wunsch des Nutzers). Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
   Hilfsprozess (Pillow aus lib/) nach /tmp/rds-art umgewandelt. Prüfen: RG DS + Plus, Wecken mit Anbernic/Wischen,
   Gameswitcher-Wechsel RA→RA/RA→DS, Ports, Akku. Danach Release-Notes/Wiki/Tour.
 - [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`

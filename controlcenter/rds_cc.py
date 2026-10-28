@@ -1194,7 +1194,9 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 # aus (wie bisher) · Artwork (Fanart + Logo) 5 s zeigen, dann langsam abdunkeln · Artwork dauerhaft an.
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
                 ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo in Weiß · Antippen: hell/dunkel"),
-                ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell")]
+                ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell"),
+                ("dark", "Fanart abgedunkelt", "Fanart dauerhaft abgedunkelt, Logo bleibt hell · Stärke mit dem Regler")]
+BOTTOM_DARK_DEFAULT = 60                          # Abdunkelung der Fanart bei „Fanart abgedunkelt“ (%)
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
@@ -1212,7 +1214,14 @@ EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwor
            "Fanart und Logo vom Scraper (ScreenScraper) – ohne Fanart Hero oder Boxart":
                "Fanart and logo from the scraper (ScreenScraper) – without fanart the hero or boxart",
            "Spiele: aus": "Games: off", "Spiele: Artwork, dimmt": "Games: artwork, dims",
-           "Spiele: Artwork an": "Games: artwork on", "In Spielen": "In games"})
+           "Spiele: Artwork an": "Games: artwork on", "In Spielen": "In games",
+           "Fanart abgedunkelt": "Darkened fanart", "Spiele: Fanart dunkel": "Games: dark fanart",
+           "Fanart dauerhaft abgedunkelt, Logo bleibt hell · Stärke mit dem Regler":
+               "Fanart always darkened, logo stays bright · strength with the slider",
+           "Abdunkelung der Fanart": "Fanart darkening",
+           "Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper":
+               "For games with one screen (RetroArch, ports) · fanart and logo from the scraper",
+           "einstellen": "adjust"})
 
 
 def game_art(rom):
@@ -4431,8 +4440,10 @@ class ColorMenu:
 
 
 class BottomMenu:
-    """Untermenü der Kachel „Unterer Screen aus“: was der untere Screen in Ein-Bildschirm-Spielen zeigt."""
+    """Untermenü der Kachel „Unterer Screen aus“: was der untere Screen in Ein-Bildschirm-Spielen zeigt.
+    Zeilen 0–3: Einstellungen · Zeile 4: Regler „Abdunkelung der Fanart“ (für „Fanart abgedunkelt“)."""
     title = "Unterer Screen in Spielen"
+    SLIDER = len(BOTTOM_MODES)
 
     def __init__(self, cc):
         self.cc = cc
@@ -4452,24 +4463,50 @@ class BottomMenu:
     def drag(self, dy):
         pass
 
-    def nav(self, dx, dy):
-        self.sel = max(0, min(len(BOTTOM_MODES) - 1, self.sel + (dy or dx)))
-
-    def confirm(self):
+    def _set_dark(self, v):
         cc = self.cc
-        key = BOTTOM_MODES[self.sel][0]
+        v = max(0, min(90, int(round(v / 5.0)) * 5))
+        if v != cc.bottom_dark():
+            cc.cfg["bottom_dark"] = v
+            save_config(cc.cfg)
+            haptic("tap")
+            if cc.ui and cc.ui.art is not None:
+                cc.ui.redraw_top("art")
+
+    def nav(self, dx, dy):
+        if dy:
+            self.sel = max(0, min(self.SLIDER, self.sel + dy))
+        elif dx and self.sel == self.SLIDER:
+            self._set_dark(self.cc.bottom_dark() + 10 * dx)
+        elif dx:
+            self.sel = max(0, min(self.SLIDER, self.sel + dx))
+
+    def _choose(self, i):
+        cc = self.cc
+        key = BOTTOM_MODES[i][0]
         cc.cfg["bottom_single"] = key
         save_config(cc.cfg)
         haptic("tap")
         log("Unterer Screen in Spielen:", key)
         if cc.game and cc.game.get("emu") in AUTO_DIM_EMUS:
             cc.redim = True                    # beim Schließen des CC gleich anwenden
-        cc.sub = None
+        return key
+
+    def confirm(self):
+        if self.sel == self.SLIDER:
+            return
+        if self._choose(self.sel) != "dark":
+            self.cc.sub = None
+        else:
+            self.sel = self.SLIDER                 # gleich zum Regler
 
     def tap(self, hit):
         if hit and hit[0] == "bmode":
             self.sel = hit[1]
             self.confirm()
+        elif hit and hit[0] == "bdark":
+            self.sel = self.SLIDER
+            self._set_dark(hit[1])
         elif hit and hit[0] == "sub" and hit[1] == "back":
             self.cc.sub = None
 
@@ -4480,25 +4517,51 @@ class BottomMenu:
         P.text("Zurück", 22, 45 + 85 + 12, 100, T["text"], bold=True, align="c")
         cc.hits.append((45, 62, 170, 62, ("sub", "back")))
         P.text(self.title, 30, 630, 104, T["text"], bold=True, align="c")
-        P.text("Für Spiele mit einem Bildschirm (RetroArch, Ports)", 20, 630, 172, T["muted"], align="c")
+        P.text("Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper", 18, 630, 162,
+               T["muted"], align="c")
         cur = cc.bottom_mode()
-        y, h, gap = 205, 150, 22
+        y, h, gap = 185, 106, 12
         for i, (key, label, desc) in enumerate(BOTTOM_MODES):
             on = key == cur
-            P.rrect(45, y, 1170, h, 24, A if on else T["card"])
+            P.rrect(45, y, 1170, h, 22, A if on else T["card"])
             tc = on_acc(A) if on else T["text"]
-            P.text(label, 28, 90, y + 64, tc, bold=True)
-            P.text(desc, 20, 90, y + 106, mix(tc, A if on else T["card"], 0.25))
+            P.text(label, 26, 85, y + 46, tc, bold=True)
+            P.text(desc, 18, 85, y + 82, mix(tc, A if on else T["card"], 0.25))
             if on:
-                P.circle(1215 - 60, y + h / 2, 20, "ffffff")
-                P.text("✓", 22, 1215 - 60, y + h / 2 + 8, A, bold=True, align="c", raw=True)
+                P.circle(1215 - 55, y + h / 2, 19, "ffffff")
+                P.text("✓", 21, 1215 - 55, y + h / 2 + 8, A, bold=True, align="c", raw=True)
             if i == self.sel:
-                cc._focus_ring(P, 45, y, 1170, h, 24)
+                cc._focus_ring(P, 45, y, 1170, h, 22)
             cc.hits.append((45, y, 1170, h, ("bmode", i)))
             y += h + gap
-        P.text("Fanart und Logo vom Scraper (ScreenScraper) – ohne Fanart Hero oder Boxart", 18, 630, 770,
-               T["muted"], align="c")
-        P.hint([("A", "übernehmen"), ("B", "zurück")], 18, 45, 835, T["muted"], T["text"])
+        # Regler: Abdunkelung der Fanart (wirkt bei „Fanart abgedunkelt“), mit Vorschau des laufenden Spiels
+        y += 4
+        sh = 800 - y
+        active = cur == "dark"
+        P.rrect(45, y, 1170, sh, 22, T["card"])
+        tc = T["text"] if active else T["muted"]
+        v = cc.bottom_dark()
+        P.text("Abdunkelung der Fanart", 22, 85, y + 42, tc, bold=True)
+        P.text("%d %%" % v, 22, 820, y + 42, tc, bold=True, align="r", raw=True)
+        tx, tw, ty = 85, 735, y + sh - 42
+        P.rrect(tx, ty - 6, tw, 12, 6, mix(T["muted"], T["card"], 0.5))
+        P.rrect(tx, ty - 6, max(12, tw * v / 90), 12, 6, A if active else T["muted"])
+        P.circle(tx + tw * v / 90, ty, 17, "ffffff")
+        for k in range(0, 19):             # Touch: 0 … 90 % in 5er-Schritten
+            cc.hits.append((tx + tw * (k - 0.5) / 18, ty - 34, tw / 18, 68, ("bdark", k * 5)))
+        px, pw, ph = 870, 300, sh - 24     # Vorschau
+        a = cc.art or {}
+        if not (a.get("bg") and P.image(a["bg"], px, y + 12, pw, ph, r=14)):
+            P.rrect(px, y + 12, pw, ph, 14, mix(T["card"], "ffffff", 0.15))
+        P.rrect(px, y + 12, pw, ph, 14, "000000", v / 100)
+        logo, sz = a.get("logo"), None
+        sz = png_size(logo) if logo else None
+        if sz and sz[0] and sz[1]:
+            k2 = min(pw * 0.7 / sz[0], ph * 0.6 / sz[1])
+            P.image(logo, px + pw / 2 - sz[0] * k2 / 2, y + 12 + ph / 2 - sz[1] * k2 / 2, sz[0] * k2, sz[1] * k2, stretch=True)
+        if self.sel == self.SLIDER:
+            cc._focus_ring(P, 45, y, 1170, sh, 22)
+        P.hint([("A", "übernehmen"), ("◀ ▶", "einstellen"), ("B", "zurück")], 18, 45, 840, T["muted"], T["text"])
 
 
 class ControlCenter:
@@ -4796,7 +4859,11 @@ class ControlCenter:
     # -- Unterer Screen in Ein-Bildschirm-Spielen --
     def bottom_mode(self):
         m = self.cfg.get("bottom_single", "off")
-        return m if m in ("off", "dim", "on") else "off"
+        return m if m in ("off", "dim", "on", "dark") else "off"
+
+    def bottom_dark(self):
+        v = self.cfg.get("bottom_dark", BOTTOM_DARK_DEFAULT)
+        return max(0, min(90, v)) if isinstance(v, int) else BOTTOM_DARK_DEFAULT
 
     def bottom_auto(self, g):
         """Ein-Bildschirm-Spiel läuft (Start, CC geschlossen, Ladebildschirm fertig): unten nach Einstellung."""
@@ -4827,6 +4894,8 @@ class ControlCenter:
         """Antippen: abgedunkelt → wieder hell (Automatisch: 5 s, dann erneut abdunkeln; Dauerhaft: bleibt hell),
         hell → sofort abdunkeln (beide Einstellungen)."""
         now = time.monotonic()
+        if self.bottom_mode() == "dark":
+            return          # Fanart abgedunkelt: fest, Stärke im Untermenü
         if self.screen_bottom_off or now - getattr(self, "art_tap_t", 0.0) < 0.6:
             return          # Screen von Hand aus · prellender Touch (zweites „Loslassen“ direkt danach)
         self.art_tap_t = now
@@ -4911,7 +4980,8 @@ class ControlCenter:
         q = 1.0 - self.art_p
         x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
         if q > 0.01 and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, alpha=q):
-            P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 * q)
+            dark = self.bottom_dark() / 100 if self.bottom_mode() == "dark" else 0.3
+            P.rrect(x0, y0, fw, fh, 0, "000000", dark * q)
         logo, drawn = a.get("logo"), False
         sz = png_size(logo) if logo else None
         if sz and sz[0] and sz[1]:
@@ -5470,7 +5540,8 @@ class ControlCenter:
                 return "Kein Gerät"
             return short(names[0], 16 if len(names) > 1 else 20) + (f" +{len(names) - 1}" if len(names) > 1 else "")
         if i == 2:
-            return {"off": "Spiele: aus", "dim": "Spiele: Artwork, dimmt", "on": "Spiele: Artwork an"}[self.bottom_mode()]
+            return {"off": "Spiele: aus", "dim": "Spiele: Artwork, dimmt", "on": "Spiele: Artwork an",
+                    "dark": "Spiele: Fanart dunkel"}[self.bottom_mode()]
         return ""
 
     def _draw_game(self, P):
