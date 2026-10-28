@@ -70,7 +70,7 @@ cat > "$XML" <<'XMLEOF'
 		     row 2: [calendar icon | year]  [rating]  [genre icon | genre] -->
 		<text name="md_players">
 			<origin>0 0.5</origin>
-			<pos>0.547 0.83</pos>
+			<pos>0.547 0.822</pos>
 			<size>0.055 ${metaDatafontSize}</size>
 			<fontSize>${metaDatafontSize}</fontSize>
 			<fontPath>${fontBold}</fontPath>
@@ -80,7 +80,7 @@ cat > "$XML" <<'XMLEOF'
 		</text>
 		<text name="md_name">
 			<origin>0 0.5</origin>
-			<pos>0.625 0.83</pos>
+			<pos>0.625 0.822</pos>
 			<size>0.35 ${metaDatafontSize}</size>
 			<fontSize>${metaDatafontSize}</fontSize>
 			<fontPath>${fontBold}</fontPath>
