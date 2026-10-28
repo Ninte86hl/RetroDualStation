@@ -4563,6 +4563,7 @@ class ControlCenter:
         self.art_page = 0                 # -1 Erfolge · 0 Start · 1 Beschreibung (Wischen)
         self.art_sw = None                # Wischgeste unten: [x0, y0, x, y] in Pixeln
         self.art_key = None               # zuletzt gezeichnete Uhrzeit/Akku/Erfolge (Neuzeichnen bei Änderung)
+        self.art_adj = None               # Wischregler: {"kind": "bright"|"vol", "base", "val", "until"}
         self.art_t0 = 0.0
         self.art_p = 0.0                  # 0 = Artwork, 1 = nur Kontur
         self.art_saved = None             # Helligkeit vor dem Abdunkeln (%)
@@ -4884,17 +4885,58 @@ class ControlCenter:
         if not size:
             return
         x, y = touch.to_surface(t[1], t[2], *size)
+        w, h = size
         if t[0] == "down":
             self.art_sw = [x, y, x, y]
+            if self.art_adj and not self.art_adj.get("until"):
+                self.art_adj = None
         elif t[0] == "move" and self.art_sw:
             self.art_sw[2:] = [x, y]
+            x0, y0 = self.art_sw[:2]
+            dx, dy = x - x0, y - y0
+            bright = not (self.screen_bottom_off or self.art_phase in ("fade", "osd"))
+            if (not self.art_adj or self.art_adj.get("until")) and bright and y0 > h * 0.12 \
+                    and abs(dy) > h * 0.06 and abs(dy) > 1.5 * abs(dx):
+                # hoch/runter wischen: links Helligkeit (oberer Screen = Spiel), rechts Lautstärke
+                kind = "bright" if x0 < w / 2 else "vol"
+                base = self._bl_top().get() if kind == "bright" and self._bl_top() else (volume_get() or 0)
+                self.art_adj = {"kind": kind, "base": base, "val": base, "y0": y, "until": 0}
+            if self.art_adj and not self.art_adj.get("until"):
+                a = self.art_adj
+                val = max(5 if a["kind"] == "bright" else 0, min(100, round(a["base"] - (y - a["y0"]) / h * 120)))
+                if val != a["val"]:
+                    a["val"] = val
+                    self._art_apply(a, final=False)
+                now = time.monotonic()
+                if now - getattr(self, "art_adj_t", 0.0) > 0.04:     # flüssig, aber nicht bei jedem Ereignis
+                    self.art_adj_t = now
+                    self.ui.redraw_top("art")
+                self.art_phase, self.art_t0 = "show", now          # beim Einstellen nicht abdunkeln
         elif t[0] == "up":
             sw, self.art_sw = self.art_sw, None
+            if self.art_adj and not self.art_adj.get("until"):
+                self._art_apply(self.art_adj, final=True)
+                self.art_adj["until"] = time.monotonic() + 1.2      # Anzeige kurz stehen lassen
+                log("Unterer Screen: %s %d %%" % ("Helligkeit oben" if self.art_adj["kind"] == "bright" else "Lautstärke",
+                                                  self.art_adj["val"]))
+                self.ui.redraw_top("art")
+                return
             dx, dy = (sw[2] - sw[0], sw[3] - sw[1]) if sw else (0, 0)
             if abs(dx) > size[0] * 0.18 and abs(dx) > 1.5 * abs(dy):
                 self.art_swipe(1 if dx < 0 else -1)
             else:
                 self.art_touch()
+
+    def _bl_top(self):
+        return next((b for label, b in self.backlights if "oben" in label.lower()), None)
+
+    def _art_apply(self, a, final):
+        if a["kind"] == "vol":
+            self.set_slider("vol", a["val"], final=final)
+        else:
+            i = next((i for i, (label, _b) in enumerate(self.backlights) if "oben" in label.lower()), None)
+            if i is not None:
+                self.set_slider(i, a["val"], final=final)
 
     def art_swipe(self, d):
         if self.screen_bottom_off or self.art_phase in ("fade", "osd"):
@@ -4917,7 +4959,9 @@ class ControlCenter:
             return
         self.art_watch_t = now
         st = self.ra or {}
-        key = (time.strftime("%H:%M"), battery(), self.art_page,
+        if self.art_adj and self.art_adj.get("until") and now >= self.art_adj["until"]:
+            self.art_adj = None
+        key = (time.strftime("%H:%M"), battery(), self.art_page, bool(self.art_adj),
                len(st.get("unlocks") or {}) if self.art_page == -1 else 0, bool(st) if self.art_page == -1 else 0)
         if key != self.art_key:
             self.art_key = key
@@ -5012,6 +5056,21 @@ class ControlCenter:
         else:
             self._paint_art(P, x0, y0, fw, fh, 0.0, a)
             self._paint_bar(P, x0, y0, fw, a)
+        if self.art_adj:                                   # Wischregler: senkrechter Balken links/rechts
+            ad = self.art_adj
+            bx = 70 if ad["kind"] == "bright" else 1260 - 70 - 96
+            by, bh = 230, 520
+            P.rrect(bx, by, 96, bh, 48, "000000", 0.65)
+            fill = bh * ad["val"] / 100
+            P.rrect(bx + 14, by + 14 + (bh - 28) * (1 - ad["val"] / 100), 68, max(24, (bh - 28) * ad["val"] / 100), 34,
+                    self.accent)
+            cx = bx + 48
+            if ad["kind"] == "bright":
+                P.sun(cx, by - 40, "ffffff")
+            else:
+                P.rrect(cx - 18, by - 52, 12, 22, 3, "ffffff")
+                P.poly([(cx - 8, by - 52), (cx + 8, by - 64), (cx + 8, by - 18), (cx - 8, by - 30)], "ffffff")
+            P.text("%d %%" % ad["val"], 26, cx, by + bh + 46, "ffffff", bold=True, align="c", raw=True)
         for i in (-1, 0, 1):                               # Seitenpunkte
             on = i == self.art_page
             P.rrect(630 + i * 34 - (14 if on else 6), y0 + fh - 34, 28 if on else 12, 12, 6, "ffffff", 0.9 if on else 0.4)

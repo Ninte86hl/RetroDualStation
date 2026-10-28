@@ -30,7 +30,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
   die 5 s neu. Helligkeit unten im Spiel getrennt von ES. Varianten Logo-Kontur/Logo weiß/Gedimmt/Regler ausprobiert
   und verworfen (28.10.). Seiten per Wischen: Start (Spielname, System, Uhrzeit, Akku) · links → Beschreibung
   (gamelist, Jahr/Entwickler/Genre) · rechts → Erfolge kompakt (Fortschritt, alle Abzeichen, erreichte zuerst);
-  Seiten 20 s hell, danach wieder Start. Noch testen, dann Notes/Wiki/Tour.
+  Seiten 20 s hell, danach wieder Start. Hoch/runter wischen: links Helligkeit (oberer Screen), rechts Lautstärke,
+  mit Balkenanzeige. Noch testen, dann Notes/Wiki/Tour.
 - [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`
   (96e1d55, nicht in v15.3.5): Infoleiste in allen Ansichten außer Detailliert statt eigener Ansicht „Grid Info“,
   Tastenhilfe in Leistenschriftgröße (bei „Default“ 0.027 evtl. zu breit → „…“), Showcase 7 Zeilen. Noch ungetestet –
