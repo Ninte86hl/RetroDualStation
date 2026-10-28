@@ -1194,6 +1194,8 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 # Wählbar ist nur, was gezeigt wird. Abdunkeln wie ROCKNIX lowerdeck: nach 5 s ohne Berührung in 0,5 s zu Schwarz,
 # dann Hintergrundlicht aus; Antippen weckt jederzeit (bzw. startet die 5 s neu).
 BOTTOM_SHOW = [("off", "Aus"), ("fanart", "Fanart"), ("logo", "Logo"), ("both", "Fanart + Logo")]
+ART_PAGE_S = 20.0         # Seiten Beschreibung/Erfolge: länger hell bleiben (zum Lesen)
+# Seiten per Wischen: rechts wischen → Erfolge (-1) · Start (0) · links wischen → Beschreibung (+1)
 ART_DARK_FADE_S = 0.5     # wie bei ROCKNIX lowerdeck: schnell abblenden
 ART_SHOW_S = 5.0
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
@@ -1206,6 +1208,13 @@ EN.update({"Anzeige": "Show", "Abdunkeln": "Dim", "Abgedunkelt": "When dimmed", 
            "hell": "bright", "abgedunkelt": "dimmed", "Vorschau im Spiel": "Preview in a game", "fertig": "done",
            "ändern": "change", "Spiele: ": "Games: ", "aus": "off",
            "Unterer Screen dunkel": "Bottom screen dark",
+           "Keine Beschreibung in der gamelist – mit dem Scraper in ES laden.":
+               "No description in the gamelist – get one with the scraper in ES.",
+           "Keine Erfolge für dieses Spiel": "No achievements for this game",
+           "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
+           "RetroAchievements nur bei RetroArch-Spielen": "RetroAchievements only in RetroArch games",
+           "lädt": "charging", "Spieler": "players",
+           "Wischen: ◀ Beschreibung · Erfolge ▶": "Swipe: ◀ description · achievements ▶",
            "Nach 5 s ohne Berührung wird es schwarz (wie lowerdeck) · Antippen weckt":
                "After 5 s without touch it goes black (like lowerdeck) · tap to wake",
            "Antippen weckt bzw. dunkelt ab · Wischen von oben öffnet das Kontrollcenter":
@@ -1264,6 +1273,29 @@ def game_art(rom):
     logo = found.get("marquee") or found.get("wheel")
     return bg, logo
 
+
+
+def game_info(rom):
+    """Beschreibung, Jahr, Entwickler, Genre, Spieler aus der gamelist.xml (für die Seite „Beschreibung“)."""
+    info = {}
+    if not rom:
+        return info
+    folder = os.path.dirname(rom)
+    try:
+        import xml.etree.ElementTree as ET
+        rel = "./" + os.path.relpath(rom, folder)
+        for g in ET.parse(os.path.join(folder, "gamelist.xml")).getroot().iter("game"):
+            if g.findtext("path") == rel:
+                for tag in ("desc", "developer", "genre", "players", "releasedate"):
+                    v = (g.findtext(tag) or "").strip()
+                    if v:
+                        info[tag] = v
+                break
+    except Exception:
+        pass
+    if info.get("releasedate", "")[:4].isdigit():
+        info["year"] = info["releasedate"][:4]
+    return info
 
 
 def art_png(path, limit):
@@ -4527,7 +4559,10 @@ class ControlCenter:
         self.screen_bottom_saved = None   # gespeicherte Helligkeit vor dem Ausschalten
         self.screen_auto = False          # automatisch gedimmt (RetroArch-Start)
         self.art = None                   # Artwork unten in Ein-Bildschirm-Spielen {"rom", "name", "bg", "logo"}
-        self.art_phase = None             # None · "show" (hell) · "fade" (blendet über) · "osd" (nur Logo-Kontur)
+        self.art_phase = None             # None · "show" (hell) · "fade" (blendet ab) · "osd" (schwarz)
+        self.art_page = 0                 # -1 Erfolge · 0 Start · 1 Beschreibung (Wischen)
+        self.art_sw = None                # Wischgeste unten: [x0, y0, x, y] in Pixeln
+        self.art_key = None               # zuletzt gezeichnete Uhrzeit/Akku/Erfolge (Neuzeichnen bei Änderung)
         self.art_t0 = 0.0
         self.art_p = 0.0                  # 0 = Artwork, 1 = nur Kontur
         self.art_saved = None             # Helligkeit vor dem Abdunkeln (%)
@@ -4843,10 +4878,55 @@ class ControlCenter:
         elif when == "auto":
             self.art_phase, self.art_t0 = "show", time.monotonic()   # wie lowerdeck: Berührung startet die 5 s neu
 
+    def art_input(self, t, touch):
+        """Touch unten ohne geöffnetes CC: Antippen weckt, Wischen links/rechts wechselt die Seite."""
+        size = (self.ui.art or {}).get("size") if self.ui else None
+        if not size:
+            return
+        x, y = touch.to_surface(t[1], t[2], *size)
+        if t[0] == "down":
+            self.art_sw = [x, y, x, y]
+        elif t[0] == "move" and self.art_sw:
+            self.art_sw[2:] = [x, y]
+        elif t[0] == "up":
+            sw, self.art_sw = self.art_sw, None
+            dx, dy = (sw[2] - sw[0], sw[3] - sw[1]) if sw else (0, 0)
+            if abs(dx) > size[0] * 0.18 and abs(dx) > 1.5 * abs(dy):
+                self.art_swipe(1 if dx < 0 else -1)
+            else:
+                self.art_touch()
+
+    def art_swipe(self, d):
+        if self.screen_bottom_off or self.art_phase in ("fade", "osd"):
+            self.art_touch()                               # dunkel: erst wecken
+            return
+        new = max(-1, min(1, self.art_page + d))
+        if new != self.art_page:
+            self.art_page = new
+            haptic("tap")
+            log("Unterer Screen: Seite", {-1: "Erfolge", 0: "Start", 1: "Beschreibung"}[new])
+            self.ui.redraw_top("art")
+        self.art_phase, self.art_t0 = "show", time.monotonic()
+
+    def art_watch(self):
+        """Hauptschleife: hell und sichtbar → bei neuer Minute, Akkustand oder neuen Erfolgen neu zeichnen."""
+        if not (self.ui and self.ui.art is not None) or self.art_p or self.screen_bottom_off:
+            return
+        now = time.monotonic()
+        if now - getattr(self, "art_watch_t", 0.0) < 1.0:   # höchstens einmal je Sekunde prüfen
+            return
+        self.art_watch_t = now
+        st = self.ra or {}
+        key = (time.strftime("%H:%M"), battery(), self.art_page,
+               len(st.get("unlocks") or {}) if self.art_page == -1 else 0, bool(st) if self.art_page == -1 else 0)
+        if key != self.art_key:
+            self.art_key = key
+            self.ui.redraw_top("art")
+
     def art_tick(self):
         """Hauptschleife: wie lowerdeck nach 5 s ohne Berührung in 0,5 s zu Schwarz, dann Hintergrundlicht aus."""
         now = time.monotonic()
-        if self.art_phase == "show" and now - self.art_t0 >= ART_SHOW_S:
+        if self.art_phase == "show" and now - self.art_t0 >= (ART_SHOW_S if self.art_page == 0 else ART_PAGE_S):
             if not self.ui or self.ui.art is None:
                 self.art_phase = None
                 return False
@@ -4862,15 +4942,20 @@ class ControlCenter:
             if bl:                                            # schwarz: Hintergrundlicht aus (spart Akku)
                 self.art_saved = bl.get()
                 bl.set(0, allow_off=True)
+            self.art_page = 0                                # geweckt wird wieder mit der Startseite
             log("Unterer Screen: Artwork abgedunkelt")
             return False
         return True
 
     def art_show(self, g):
         rom = g.get("rom") or rom_of(g["pid"])
+        if not self.game or self.game.get("pid") != g.get("pid"):
+            self.game = g                                  # Erfolge werden auch ohne geöffnetes CC abgefragt
         if not self.art or self.art["rom"] != rom:
             self.art_cancel()
-            self.art = {"rom": rom, "name": g.get("name") or "", "bg": None, "logo": None,
+            self.art_page = 0
+            self.art = {"rom": rom, "name": g.get("name") or "", "system": g.get("system") or "", "info": {},
+                        "bg": None, "logo": None,
                         "loaded": False}
             threading.Thread(target=self._art_load, args=(self.art,), daemon=True).start()
         if self.ui.art is None:
@@ -4889,6 +4974,7 @@ class ControlCenter:
             bg, logo = game_art(a["rom"])
             a["bg"] = art_png(bg, 1280)
             a["logo"] = art_png(logo, 900)
+            a["info"] = game_info(a["rom"])
         except Exception as exc:
             log("Artwork laden:", exc)
         a["loaded"] = True
@@ -4917,7 +5003,133 @@ class ControlCenter:
     def paint_art(self, cr, w, h):
         P = Pen(cr, w, h)
         P.fill_all("000000")
-        self._paint_art(P, -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s, self.art_p, self.art or {})
+        x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
+        a = self.art or {}
+        if self.art_page == 1:
+            self._paint_desc(P, x0, y0, fw, fh, a)
+        elif self.art_page == -1:
+            self._paint_cheevos(P, x0, y0, fw, fh, a)
+        else:
+            self._paint_art(P, x0, y0, fw, fh, 0.0, a)
+            self._paint_bar(P, x0, y0, fw, a)
+        for i in (-1, 0, 1):                               # Seitenpunkte
+            on = i == self.art_page
+            P.rrect(630 + i * 34 - (14 if on else 6), y0 + fh - 34, 28 if on else 12, 12, 6, "ffffff", 0.9 if on else 0.4)
+        if self.art_p > 0:
+            P.rrect(x0, y0, fw, fh, 0, "000000", self.art_p)
+
+    def _paint_bar(self, P, x0, y0, fw, a):
+        """Startseite oben: Spielname und System links, Uhrzeit und Akku rechts."""
+        P.rrect(x0, y0, fw, 150, 0, "000000", 0.55)
+        name = a.get("name") or ""
+        while P.width(name, 34, bold=True, raw=True) > 820 and len(name) > 4:
+            name = name[:-2]
+        P.text(name if name == a.get("name") else name.rstrip() + "…", 34, 45, 70, "ffffff", bold=True, raw=True)
+        P.text(a.get("system") or "", 22, 45, 112, "c8c8c8", raw=True)
+        P.text(time.strftime("%H:%M"), 38, 1215, 72, "ffffff", bold=True, align="r", raw=True)
+        cap, charging = battery()
+        if cap is not None:
+            P.text("%d %%%s" % (cap, "  " + tr("lädt") if charging else ""), 22, 1215, 112,
+                   "ff8a80" if cap <= 15 and not charging else "c8c8c8", align="r", raw=True)
+
+    def _wrap_all(self, P, text, size, width):
+        lines = []
+        for para in text.replace("\r", "").split("\n"):
+            cur = ""
+            for word in para.split():
+                test = (cur + " " + word).strip()
+                if P.width(test, size, raw=True) <= width or not cur:
+                    cur = test
+                else:
+                    lines.append(cur)
+                    cur = word
+            lines.append(cur)
+        while lines and not lines[-1]:
+            lines.pop()
+        return lines
+
+    def _paint_desc(self, P, x0, y0, fw, fh, a):
+        """Seite „Beschreibung“ (links wischen): Name, Jahr · Entwickler · Genre, Text aus der gamelist."""
+        if a.get("bg") and P.image(a["bg"], x0, y0, fw, fh):
+            P.rrect(x0, y0, fw, fh, 0, "000000", 0.82)
+        info = a.get("info") or {}
+        name = a.get("name") or ""
+        while P.width(name, 36, bold=True, raw=True) > 1170 and len(name) > 4:
+            name = name[:-2]
+        P.text(name, 36, 45, 80, "ffffff", bold=True, raw=True)
+        meta = " · ".join(v for v in (info.get("year"), info.get("developer"), info.get("genre"),
+                                      ("%s %s" % (info["players"], tr("Spieler"))) if info.get("players") else None) if v)
+        P.text(meta or (a.get("system") or ""), 21, 45, 122, "c8c8c8", raw=True)
+        desc = info.get("desc")
+        if not desc:
+            P.text("Keine Beschreibung in der gamelist – mit dem Scraper in ES laden.", 22, 630, 480, "c8c8c8", align="c")
+            return
+        top, bottom = 170, 880
+        for size in (32, 30, 28, 26, 24, 22, 20, 18):      # größte Schrift, bei der alles passt
+            lines = self._wrap_all(P, desc, size, 1170)
+            lh = size * 1.45
+            if len(lines) * lh <= bottom - top:
+                break
+        maxn = int((bottom - top) // lh)
+        if len(lines) > maxn:
+            lines = lines[:maxn]
+            lines[-1] = lines[-1].rstrip(" .,;") + " …"
+        for i, line in enumerate(lines):
+            P.text(line, size, 45, top + size + i * lh, "eeeeee", raw=True)
+
+    def _paint_cheevos(self, P, x0, y0, fw, fh, a):
+        """Seite „Erfolge“ (rechts wischen): Fortschritt und alle Abzeichen, erreichte zuerst und farbig."""
+        if a.get("bg") and P.image(a["bg"], x0, y0, fw, fh):
+            P.rrect(x0, y0, fw, fh, 0, "000000", 0.85)
+        A = self.accent
+        P.text("RetroAchievements", 34, 45, 80, "ffffff", bold=True, raw=True)
+        g = self.game or {}
+        st = self.ra if g.get("emu") in ("RetroArch", "DSperate") else None
+        if g.get("emu") not in ("RetroArch", "DSperate"):
+            P.text("RetroAchievements nur bei RetroArch-Spielen", 22, 630, 480, "c8c8c8", align="c")
+            return
+        if not st or st.get("login_status") != "ok":
+            P.text("Verbinde mit RetroAchievements …", 22, 630, 480, "c8c8c8", align="c")
+            return
+        rows, unl = self._ra_rows()
+        if not rows or ((st.get("game") or {}).get("id") or 0) >= 100000000:
+            P.text("Keine Erfolge für dieses Spiel", 22, 630, 480, "c8c8c8", align="c")
+            return
+        done = [r for r in rows if str(r.get("id")) in unl]
+        locked = [r for r in rows if str(r.get("id")) not in unl]
+        p_done = sum(r.get("points") or 0 for r in done)
+        p_all = sum(r.get("points") or 0 for r in rows)
+        P.text("%d %s %d  ·  %d / %d %s" % (len(done), tr("von"), len(rows), p_done, p_all, tr("Punkte")),
+               22, 45, 122, "c8c8c8", raw=True)
+        frac = len(done) / len(rows)
+        P.rrect(45, 145, 1170, 16, 8, "ffffff", 0.2)
+        if frac:
+            P.rrect(45, 145, max(16, 1170 * frac), 16, 8, A)
+        P.text("%d %%" % round(frac * 100), 22, 1215, 80, "ffffff", bold=True, align="r", raw=True)
+        size, gap = 82, 14
+        cols = int((1170 + gap) // (size + gap))
+        left = 45 + (1170 - (cols * (size + gap) - gap)) / 2
+        y, room = 190, int((870 - 190) // (size + gap))
+        items = done + locked
+        cap = cols * room
+        more = len(items) - cap
+        if more > 0:
+            items = items[:cap - 1]
+        for i, r in enumerate(items):
+            bx = left + (i % cols) * (size + gap)
+            by = y + (i // cols) * (size + gap)
+            ok = str(r.get("id")) in unl
+            b = ra_badge(r.get("badge"), locked=not ok)
+            if not (b and P.image(b, bx, by, size, size, 14, alpha=1.0 if ok else 0.55)):
+                P.rrect(bx, by, size, size, 14, A if ok else "ffffff", 1.0 if ok else 0.12)
+                P.game_icon("trophy", bx + size / 2, by + size / 2, "ffffff" if ok else "8a8a8a", 0.8)
+        if more > 0:
+            i = len(items)
+            bx = left + (i % cols) * (size + gap)
+            by = y + (i // cols) * (size + gap)
+            P.rrect(bx, by, size, size, 14, "ffffff", 0.12)
+            P.text("+%d" % (more + 1), 22, bx + size / 2, by + size / 2 + 8, "ffffff", bold=True, align="c", raw=True)
+
 
     def _paint_art(self, P, x0, y0, fw, fh, p, a, r=0):
         """Artwork in eine Fläche (Bildschirm oder Vorschau im Untermenü). p: 0 = hell, 1 = schwarz (lowerdeck)."""
@@ -8208,9 +8420,8 @@ def main():
                                     edge["swallow"] = False
                                 continue
                             if t and not ui.view and not cc.loading:
-                                if t[0] == "up" and cc.art is not None:
-                                    cc.art_touch()   # unteren Screen angetippt: abgedunkelt ↔ hell (Wischen zählt nicht)
-                                edge_swipe(t)
+                                if cc.art is not None:
+                                    cc.art_input(t, touch)   # Antippen weckt, Wischen links/rechts: Seiten                                edge_swipe(t)
                                 continue
                             if t and ui.view == "cc" and edge_close(t):
                                 continue
@@ -8385,6 +8596,7 @@ def main():
                     ui.redraw_top("art")
             if cc.art_phase in ("show", "fade"):
                 cc.art_tick()
+            cc.art_watch()
             # Meldungen oben (Lautstärke, Erfolge): eine nach der anderen, nie über Ladebildschirm/Tour
             now = time.monotonic()
             if cc.toast_now and now >= cc.toast_until:
