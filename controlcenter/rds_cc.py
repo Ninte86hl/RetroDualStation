@@ -1195,8 +1195,9 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
                 ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo in Weiß · Antippen: hell/dunkel"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell"),
-                ("dark", "Fanart abgedunkelt", "Nach 5 s wird der Screen dunkler, Logo bleibt sichtbar · Antippen: hell/dunkel · Stärke mit dem Regler")]
-BOTTOM_DIM_LEVEL = 30     # „Fanart abgedunkelt“: Helligkeit im abgedunkelten Zustand (% der Spiel-Helligkeit, 5–90)
+                ("dark", "Fanart abgedunkelt", "Nach 5 s blendet das Bild ab (wie lowerdeck) · Antippen: hell/dunkel · Stärke mit dem Regler")]
+BOTTOM_DIM_LEVEL = 20     # „Fanart abgedunkelt“: wie hell das Bild abgedunkelt bleibt (%, 0 = schwarz, Screen aus)
+ART_DARK_FADE_S = 0.5     # wie bei ROCKNIX lowerdeck: schnell abblenden
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
@@ -1216,9 +1217,9 @@ EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwor
            "Spiele: aus": "Games: off", "Spiele: Artwork, dimmt": "Games: artwork, dims",
            "Spiele: Artwork an": "Games: artwork on", "In Spielen": "In games",
            "Fanart abgedunkelt": "Darkened fanart", "Spiele: Fanart dunkel": "Games: dark fanart",
-           "Nach 5 s wird der Screen dunkler, Logo bleibt sichtbar · Antippen: hell/dunkel · Stärke mit dem Regler":
-               "After 5 s the screen gets darker, logo stays visible · tap: bright/dark · strength with the slider",
-           "Helligkeit abgedunkelt": "Brightness when dimmed",
+           "Nach 5 s blendet das Bild ab (wie lowerdeck) · Antippen: hell/dunkel · Stärke mit dem Regler":
+               "After 5 s the picture dims (like lowerdeck) · tap: bright/dark · strength with the slider",
+           "Helligkeit abgedunkelt": "Brightness when dimmed", "schwarz": "black",
            "Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper":
                "For games with one screen (RetroArch, ports) · fanart and logo from the scraper",
            "einstellen": "adjust"})
@@ -4465,7 +4466,7 @@ class BottomMenu:
 
     def _set_dark(self, v):
         cc = self.cc
-        v = max(5, min(90, int(round(v / 5.0)) * 5))
+        v = max(0, min(90, int(round(v / 5.0)) * 5))
         if v != cc.bottom_level():
             cc.cfg["bottom_dim_level"] = v
             save_config(cc.cfg)
@@ -4543,25 +4544,25 @@ class BottomMenu:
         lv = cc.bottom_level()
         v = 100 - lv
         P.text("Helligkeit abgedunkelt", 22, 85, y + 42, tc, bold=True)
-        P.text("%d %%" % lv, 22, 820, y + 42, tc, bold=True, align="r", raw=True)
+        P.text(("%d %%" % lv) if lv else tr("schwarz"), 22, 820, y + 42, tc, bold=True, align="r", raw=True)
         tx, tw, ty = 85, 735, y + sh - 42
-        f = (lv - 5) / 85
+        f = lv / 90
         P.rrect(tx, ty - 6, tw, 12, 6, mix(T["muted"], T["card"], 0.5))
         P.rrect(tx, ty - 6, max(12, tw * f), 12, 6, A if active else T["muted"])
         P.circle(tx + tw * f, ty, 17, "ffffff")
-        for k in range(18):                # Touch: 5 … 90 % in 5er-Schritten
-            cc.hits.append((tx + tw * (k - 0.5) / 17, ty - 34, tw / 17, 68, ("bdark", 5 + k * 5)))
+        for k in range(19):                # Touch: 0 … 90 % in 5er-Schritten
+            cc.hits.append((tx + tw * (k - 0.5) / 18, ty - 34, tw / 18, 68, ("bdark", k * 5)))
         px, pw, ph = 870, 300, sh - 24     # Vorschau
         a = cc.art or {}
         if not (a.get("bg") and P.image(a["bg"], px, y + 12, pw, ph, r=14)):
             P.rrect(px, y + 12, pw, ph, 14, mix(T["card"], "ffffff", 0.15))
-        P.rrect(px, y + 12, pw, ph, 14, "000000", 0.55)          # Fanart etwas dunkler als das Logo
+        P.rrect(px, y + 12, pw, ph, 14, "000000", 0.3)
         logo, sz = a.get("logo"), None
         sz = png_size(logo) if logo else None
         if sz and sz[0] and sz[1]:
             k2 = min(pw * 0.7 / sz[0], ph * 0.6 / sz[1])
             P.image(logo, px + pw / 2 - sz[0] * k2 / 2, y + 12 + ph / 2 - sz[1] * k2 / 2, sz[0] * k2, sz[1] * k2, stretch=True)
-        P.rrect(px, y + 12, pw, ph, 14, "000000", v / 100)        # Screen dunkler (Helligkeit)
+        P.rrect(px, y + 12, pw, ph, 14, "000000", v / 100)        # abgedunkelt
         if self.sel == self.SLIDER:
             cc._focus_ring(P, 45, y, 1170, sh, 22)
         P.hint([("A", "übernehmen"), ("◀ ▶", "einstellen"), ("B", "zurück")], 18, 45, 840, T["muted"], T["text"])
@@ -4871,7 +4872,7 @@ class ControlCenter:
     def bottom_level(self):
         """Helligkeit im abgedunkelten Zustand (%): kleiner = dunkler (wie ein Helligkeitsregler)."""
         v = self.cfg.get("bottom_dim_level", BOTTOM_DIM_LEVEL)
-        return max(5, min(90, v)) if isinstance(v, int) else BOTTOM_DIM_LEVEL
+        return max(0, min(90, v)) if isinstance(v, int) else BOTTOM_DIM_LEVEL
 
     def bottom_dark(self):
         return 100 - self.bottom_level()
@@ -4927,15 +4928,16 @@ class ControlCenter:
                 self.art_phase = None
                 return False
             self.art_phase, self.art_t0 = "fade", now
-            self.art_saved = bl.get()
-            raw0 = int(rd(bl.dir + "/brightness") or 0)
-            if self.bottom_mode() == "dark":             # Screen um den Reglerwert dunkler (von der Spiel-Helligkeit aus)
-                self._art_raw = (raw0, max(round(bl.max * 0.05), round(raw0 * (1 - self.bottom_dark() / 100))))
+            if self.bottom_mode() == "dark":   # wie lowerdeck: Bild per Schwarz-Überblendung dunkler, Helligkeit bleibt
+                self.art_saved, self._art_raw = None, None
             else:
+                self.art_saved = bl.get()
+                raw0 = int(rd(bl.dir + "/brightness") or 0)
                 self._art_raw = (raw0, round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
         if self.art_phase != "fade":
             return False
-        p = min(1.0, (now - self.art_t0) / ART_FADE_S)
+        darkmode = self.bottom_mode() == "dark"
+        p = min(1.0, (now - self.art_t0) / (ART_DARK_FADE_S if darkmode else ART_FADE_S))
         self.art_p = p
         bl = self._bl_bottom()
         if bl and self._art_raw:
@@ -4944,8 +4946,11 @@ class ControlCenter:
         self.ui.redraw_top("art")
         if p >= 1.0:
             self.art_phase = "osd"
-            log("Unterer Screen: Artwork abgedunkelt (%s, Helligkeit %d → %d)" % (
-                "Fanart" if self.bottom_mode() == "dark" else "Logo-Kontur", self._art_raw[0], self._art_raw[1]))
+            if darkmode and self.bottom_level() == 0 and bl:   # ganz schwarz: Hintergrundlicht aus (spart Akku)
+                self.art_saved = bl.get()
+                bl.set(0, allow_off=True)
+            log("Unterer Screen: Artwork abgedunkelt (%s)" % (
+                "auf %d %%" % self.bottom_level() if darkmode else "Logo-Kontur"))
             return False
         return True
 
@@ -5008,11 +5013,7 @@ class ControlCenter:
         q = 1.0 if darkmode else 1.0 - self.art_p      # „Fanart abgedunkelt“: Bild und Logo bleiben, nur dunkler
         x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
         if q > 0.01 and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, alpha=q):
-            if darkmode:
-                # Fanart etwas stärker abgedunkelt als das Logo (die Helligkeit des Screens sinkt zusätzlich)
-                P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 + 0.25 * self.art_p)
-            else:
-                P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 * q)
+            P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 * q)
         logo, drawn = a.get("logo"), False
         sz = png_size(logo) if logo else None
         if sz and sz[0] and sz[1]:
@@ -5032,6 +5033,8 @@ class ControlCenter:
                 name = name[:-2]
             P.text(name if name == a["name"] else name.rstrip() + "…", 56, 630, 495, "ffffff",
                    bold=True, align="c", raw=True)
+        if darkmode and self.art_p > 0:      # wie lowerdeck: alles gleichmäßig in Schwarz ausblenden
+            P.rrect(x0, y0, fw, fh, 0, "000000", (1 - self.bottom_level() / 100) * self.art_p)
 
     def open_bottom(self):
         self.sub = BottomMenu(self)
