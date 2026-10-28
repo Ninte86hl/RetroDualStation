@@ -83,7 +83,9 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
       reagieren darauf nicht (L3 kommt an, Diagnose-ROM zeigt Pegel). advanced_drastic liefert 11 025 Hz, übersteuertes
       Rauschen (rms 27k) – Test läuft (Plus). Datei ohne Lizenz → bei Erfolg eigenes gleichwertiges Geräusch erzeugen.
       Echtes Mikrofon: high (0,03) löst durch Grundrauschen dauerhaft aus (Gain 27 dB) → medium/low testen.
-- [ ] **v15.3.3: Mikrofon DraStic** (26.10.) – Lösung: eigenes Pust-Geräusch (installer/payload/drastic/rds-microphone.wav,
+- [x] **v15.3.3/v15.3.4: Mikrofon DraStic** (26.10.) – ERLEDIGT in v15.3.4 (veröffentlicht 26.10. abends): CC hört
+      selbst ab (mic_watch, Schwelle 0,30), ROCKNIX-Erkennung aus. Plus: Pusten + L3 ✓, Reden löst nicht aus. RG DS: nur L3
+      (Mikrofon liefert Rauschen, Gerätebaum – Fehlerbericht an ROCKNIX offen). Alter Stand: – Lösung: eigenes Pust-Geräusch (installer/payload/drastic/rds-microphone.wav,
       11 025 Hz übersteuert) + ROCKNIX-Erkennung nds.microphone_sensitivity (RDS-Standard 0.15, nur wenn aus/leer; Merker
       mikrofon.done) + L3 über das CC als Rollen-Taste (virtuelle Tastatur; Joypad-Belegung controls_b allein erkannte
       Zelda NICHT). Zelda-Kerzen (Plus): Pusten ✓ (high), L3 ✓. Offen: medium/low gegen Fehlauslösen, RG DS, Release.
@@ -292,3 +294,74 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] Desktop-Starter: Update kam einmal nicht automatisch an – prüfen
 - [ ] Umbenennung in **DualStation Sync** (Favorit; Alternative: DualStation Dock), Hinweis „funktioniert auch mit ROCKNIXDS“; Texte/Fenstertitel/Starter anpassen
 - [ ] Aufräumen: Branch `geraeteprofile` (v4.11.0) wird nicht genutzt
+
+## ROCKNIX-Nightly 20261026 (next) – Prüfung RG DS Plus (26.10. abends, neue SD-Karte)
+**Entscheidung 26.10. 21:30: auf den nächsten stabilen ROCKNIX-Release warten.** Zusammenfassung:
+docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kein Release).
+- [ ] **InputPlumber** ersetzt `retrogame_joypad`: virtueller **DualSense** (uhid, Sysfs `/sys/devices/virtual/misc/uhid/…`,
+      Name „Sony Interactive Entertainment DualSense Wireless Controller“), Quellgeräte versteckt (HIDE_DEVICES_FROM_ROOT=1).
+      Tasten gleich (304,305,307,308,310–318; Anbernic = 316, L3 = 317), aber **Steuerkreuz = ABS_HAT0X/Y (16/17)**,
+      **L2/R2 = ABS 2/5 (0–255)**, Sticks 0–255 (Mitte ~127). → CC: eingebautes Gamepad am uhid-Pfad erkennen (nicht als
+      externen Controller), Hat-Steuerkreuz + Achsen 0–255, Tasten einspeisen prüfen, RetroArch-/DSperate-Tabellen.
+- [ ] **Home-Taste tot (ROCKNIX-Fehler):** anbernic_rgds.yaml `BTN_BACK → gamepad: button: KeyF1` → „Invalid or
+      unimplemented button: KeyF1“. Richtig `keyboard: KeyF1` (wie anbernic_gen1/arc). Versuch: tools/rds-inputplumber-fix.sh
+      (Override in /etc/inputplumber/capability_maps.d). Danach CC: Home = KEY_F1 (59) auf „InputPlumber Keyboard“.
+      Fehlerbericht an ROCKNIX. **Getestet 26.10.: Home → KEY 59 auf „InputPlumber Keyboard“ ✓** (Bind-Mount, /etc ist ro).
+- [ ] **Phantom-Stick RG DS Plus unter InputPlumber:** RX = -Y, RY = X → als rechter Stick weitergegeben (ES-Stick falsch).
+      Bisherige Abhilfe (rightanalog aus es_input für retrogame_joypad) greift nicht mehr. „Right Stick“ aus der Zuordnung
+      entfernen reicht NICHT (RX/RY dann Standard-Übersetzung, RY = -X). Versuch 2: InputPlumber-Filter
+      `events: exclude: [Gamepad:Axis:RightStick]` am adc-joystick in 02-rg-ds-plus.yaml (tools/rds-inputplumber-fix.sh).
+      **Getestet 26.10. 20:10: RX/RY bleiben in Ruhe, linker Stick sauber ✓.** Offen: dauerhaft beim Start (vor InputPlumber).
+- [ ] **Stick RG DS Plus „träge“ unter InputPlumber (26.10.):** adc-joystick meldet 15..940 (Mitte 477), Ruhe X ~445 / Y ~511,
+      erreicht X 136..926 / Y 105..911 → nach InputPlumber Mitte ~118 statt 128, Ausschlag 74–80 %, ES-Schwelle ~70 %.
+      (Früher kalibrierte der ROCKNIX-Joypad-Treiber die Mitte.) Versuch: tools/rds-stickcal.sh (EVIOCSABS Min/Max um die
+      Ruhelage, InputPlumber neu starten). InputPlumber kennt nur deadzone/quadratic_scaling, keine Mitte.
+      **Getestet 26.10. 20:25: voller Ausschlag 0..255, ES fühlt sich besser an ✓.** Ruhelage schwankt (flacher Stick wie
+      PS Vita, X 409..460) → Mitte = Mittel aus 4 Richtungen. Offen: beim Start anwenden (Werte aus rds-stickcal.txt, vor
+      InputPlumber), ggf. im CC neu kalibrieren.
+- [ ] Sonst neu: start_drastic.sh `kill -9 $(pidof gptokeyb)`, DSHOOK_WINDOW_SIZE, DSperate 3.0.5, ES 26.10.,
+      CPU bis 1992 MHz, DraStic-Grundbelegung MENU a=1035 (L3!) b=1034 – mit unserem L3-Mikrofon abgleichen.
+- [x] **27.10.: Plus zurück auf ROCKNIX-DraStic** (advanced_drastic zu fehlerhaft): tools/advanced-drastic/rds-adv-zurueck.sh
+      (entfernt nur advanced-Dateien, Starter aus drastic.tar.gz, drastic.cfg/Spielstände/BIOS/Pust-Geräusch bleiben) +
+      rds-adv-cfg.sh (drastic.cfg aus der Fassung vor advanced + heutige Tasten/RDS-Werte). Danach startete DraStic auf
+      dem Plus mehrmals als kleines Fenster (früher selten) → CC-Wächter (drastic_fullscreen_guard): prüft 20 s die
+      Fensterbreite (normal deckt DraStic beide Bildschirme ab, auch mit fullscreen_mode 0), zweimal zu klein →
+      „fullscreen enable global“. Test 09:02: zwei Starts ohne Eingriff, Bild korrekt. Kommt ins nächste Release.
+- [x] **27.10. Leistung Plus (Zelda PH, tools/rds-leistung.sh):** DraStic libmali 61 % CPU gesamt / Panfrost 54 %,
+      DSperate 48 % / 50 % (DSperate hängt an einem Kern: 80–89 %), Temperatur ≤ 56 °C, ≥ 380 MB RAM frei, kein Swap.
+      Prozesse bei DraStic: drastic ~135 %, pipewire ~13 %, sway ~8 %, gptokeyb ~5 %, CC 9,4 % → 5,4 % (mic_watch:
+      Spielprüfung alle 3 s statt 1 s, Pegel aus jedem 4. Wert; Pusten weiter ✓). arecord-Zombie behoben (wait).
+      NSMB 2 min libmali: DraStic 48 % gesamt / Emulator 105 % (Kerne gleichmäßig ~49 %, ≤ 58 °C) · DSperate 44 % /
+      133 % (Kerne 60/27/51/38 %, ≤ 55 °C). Beide mit viel Reserve.
+
+## Idee (27.10., nur theoretisch): Pokémon tauschen (GB/GBC/GBA) mit beiden Bildschirmen
+- **GB/GBC, ein Gerät:** zwei RetroArch-Instanzen mit **Gambatte**, je ein Spiel/Spielstand, oben + unten im Vollbild;
+  Link über Core-Option „Game Link Mode“ Network Server/Client (`gambatte_gb_link_mode`, Port 56400,
+  `…server_ip_*` = 127.000.000.001). Normale Gambatte-Spielstände (kein Kopieren). Gleiches Verfahren zwischen RG DS
+  und Plus (Server-IP = anderes Gerät), ohne RA-Netplay.
+- **Steuerung:** beide Instanzen lesen dasselbe Gamepad → `input_joypad_driver = sdl2` nur für diese Instanzen
+  (SDL liefert Gamepad nur ans Fenster mit Fokus – testen), Fokus per **L3** (frei bei GB/GBA; CC fängt L3 schon ab)
+  bzw. Touch (RG DS) und/oder Kachel „Tauschen“ wie DraStic (Fenster zwischen den Bildschirmen tauschen, Fokus oben).
+  Rückfall: CC beansprucht das Gamepad und leitet an ein virtuelles Gamepad der zweiten Instanz weiter.
+- **GBA:** gpSP „Link Cable Connectivity = GBA Wireless Adapter“ über RA-Netplay (RA ≥ 1.18), nur Feuerrot/
+  Blattgrün/Smaragd; zwei Geräte. Unterer Bildschirm: Verbindungsstatus im CC.
+- Vorbild: Onion OS „Easy Netplay – Pokémon“ (TGB Dual-Subsystem + Netplay + Spielstand per FTP; GBA über gpSP).
+  Onion = GPL → nur das Verfahren nachbauen, Credit in CREDITS.md. Alternative TGB Dual (beide GBs in einem Bild).
+- Erster Schritt: Core-Check (gambatte/tgbdual/gpsp, RA-Version, input_joypad_driver), dann Test zwei Instanzen.
+- [x] **27.10. Artwork Manager: Listenvorschau** – Spieleliste zeigt oben die vorhandenen Artworks des gewählten Spiels als
+      Mix (Image/Boxart/Cartridge, ✓ vorhanden / – fehlt), ohne Wartezeit (Hintergrund-Lader, data/cache/liste mit
+      Prüfsumme, Bildablage wird freigegeben). Getestet auf dem Gerät ✓ – kommt ins nächste Release.
+- [x] **28.10. NNDDSS (Anbernic, RG DS Plus Original-Firmware) auf ROCKNIX – Ergebnis: nicht möglich.** Aufbau: Linux-
+      Rahmen (SDL2/Wayland/EGL) + DraStic für Android r2.6.0.4a (libnnddss.so, JNI com.dsemu.drastic) mit Bionic-Shims.
+      Technisch lief der Start an (Wayland, GPU/CPU, Touch), bricht aber mit `check_encryption_result: (377) err` ab:
+      Kopierschutz über den Anbernic-Displaytreiber (/sys/class/deeplayer/…, send/recv_encryption_data) – bindet das
+      Programm an die Original-Firmware. Umgehen machen wir nicht. tools/nnddss/rds-nnddss.sh bleibt nur zum Entfernen.
+- [x] **28.10. DraStic-Tuning nach NNDDSS-Vorbild (tools/rds-drastic-tuning.sh):** Zelda PH 2x auf dem Plus 80–87 %
+      Geschwindigkeit, Ton stottert. Engpass = Emulator-Hauptfaden (Kern 0: 95 % bei 2x, 60 % bei 1x). GPU 800 MHz,
+      CPU performance, Kernzuordnung, Frameskip auto → kein spürbarer Gewinn. NNDDSS ist besser, weil DraStic r2.6
+      (Android) statt r2.5 (Linux). Offen/Ideen: Exophase um r2.6 für ARM64-Linux bitten; 2x pro Spiel merken.
+- [x] **28.10. melonDS SA (ROCKNIX) auf dem Plus:** startete gar nicht – ROCKNIX-Fehler in start_melonds.sh Zeile 179:
+      Platzhalter `@LIBMALI@@LIBMALI@` statt `&&` (package.mk: sed-Ersetzung mit `&`) → Syntaxfehler. Test per Bind-Mount
+      repariert: läuft (zwei Fenster, Window0 nur oben / Window1 nur unten, keine Sway-Regeln für melonDS; Menü nur über
+      HKJoy_FullscreenToggle, bei ROCKNIX unbelegt). Ergebnis: ruckelt in Zelda PH zu stark → nicht weiter verfolgt.
+      Offen: Fehlerbericht an ROCKNIX (Platzhalter).

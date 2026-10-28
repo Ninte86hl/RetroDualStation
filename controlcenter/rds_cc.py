@@ -1788,14 +1788,15 @@ def mic_watch():
                 k = 0
                 while os.path.exists("/proc/%d" % pid):
                     k += 1
-                    if k % 20 == 0:               # ~1 s: anderes Spiel aktiv (Schnellwechsel, DraStic geparkt)? → aus
+                    if k % 60 == 0:               # ~3 s: anderes Spiel aktiv (Schnellwechsel, DraStic geparkt)? → aus
+                        # (running_game durchsucht /proc – jede Sekunde kostete spürbar CPU, Messung 27.10.)
                         cur = running_game()
                         if not cur or cur["pid"] != pid:
                             break
                     data = rec.stdout.read(chunk * 2)
                     if not data or len(data) < chunk * 2:
                         break
-                    a = array.array("h", data)
+                    a = array.array("h", data)[::4]   # jeder 4. Wert reicht für den Pegel (¼ der Rechenzeit)
                     rms = math.sqrt(sum(x * x for x in a) / len(a)) / 32768.0
                     if n < 60:                    # ~3 s Grundrauschen messen
                         base = (base * n + rms) / (n + 1)
@@ -1814,6 +1815,10 @@ def mic_watch():
             finally:
                 mic_set("mic", False)
                 rec.kill()
+                try:
+                    rec.wait(timeout=2)          # sonst bleibt arecord als Zombie (<defunct>) bis zum nächsten Start
+                except Exception:
+                    pass
                 log("Mikrofon: Abhören aus")
         except Exception as exc:
             log("Mikrofon-Abhören:", exc)
@@ -2227,6 +2232,51 @@ def fast_start(item, args):
     subprocess.Popen(args, env=env, cwd=cwd, start_new_session=True,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     log("Schnellwechsel: Zusatzspiel gestartet", item.get("name"), item["emu"])
+
+
+def drastic_fullscreen_guard(pid):
+    """DraStic öffnet selten (Plus nach advanced_drastic-Rückbau 27.10.: jedes Mal) als kleines Fenster statt über
+    beide Bildschirme. Normal ist auch ohne Sway-Vollbild (RG DS: fullscreen_mode 0) ein Fenster über die volle Breite.
+    → die ersten 20 s nach dem Start prüfen: deckt das Fenster nicht alle Bildschirme ab, Vollbild global setzen."""
+    env = dict(os.environ, SWAYSOCK="/run/0-runtime-dir/sway-ipc.0.sock")
+    end = time.monotonic() + 20
+    seen_ok = bad = 0
+    while time.monotonic() < end:
+        time.sleep(1)
+        if FROZEN.get("pids") or not os.path.exists("/proc/%d" % pid):
+            return
+        try:
+            tree = json.loads(subprocess.run(["swaymsg", "-t", "get_tree"], capture_output=True, text=True,
+                                             timeout=2, env=env).stdout)
+            outs = json.loads(subprocess.run(["swaymsg", "-t", "get_outputs"], capture_output=True, text=True,
+                                             timeout=2, env=env).stdout)
+        except Exception:
+            continue
+        total_w = max((o["rect"]["x"] + o["rect"]["width"] for o in outs if o.get("active")), default=0)
+        found = []
+
+        def walk(n):
+            if n.get("app_id") == "drastic" and n.get("type") in ("con", "floating_con"):
+                found.append(n)
+            for c in n.get("nodes", []) + n.get("floating_nodes", []):
+                walk(c)
+        walk(tree)
+        if not found or not total_w:
+            continue
+        n = found[0]
+        if n.get("fullscreen_mode") == 2 or n["rect"]["width"] >= total_w * 0.95:
+            seen_ok += 1
+            if seen_ok >= 3:             # 3 s in Folge richtig → fertig (DraStic passt die Größe beim Start noch an)
+                return
+            continue
+        seen_ok = 0
+        bad += 1
+        if bad < 2:                      # zweimal in Folge zu klein → wirklich als Fenster (nicht nur beim Aufbau)
+            continue
+        sway_cmd('[app_id="drastic"] fullscreen enable global')
+        log("DraStic: Fenster %dx%d statt über beide Bildschirme (%d) → Vollbild gesetzt"
+            % (n["rect"]["width"], n["rect"]["height"], total_w))
+        return
 
 
 def fast_fullscreen():
@@ -7723,6 +7773,8 @@ def main():
                     g = running_game()
                     pid = g["pid"] if g else None
                     if pid != last_game["pid"]:
+                        if g and g["emu"] == "DraStic" and not adv_drastic_pid(g["pid"]):
+                            threading.Thread(target=drastic_fullscreen_guard, args=(g["pid"],), daemon=True).start()
                         if g:
                             try:
                                 cc.switcher.remember(g)

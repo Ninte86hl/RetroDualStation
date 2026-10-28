@@ -6,6 +6,7 @@ Start it from **Ports → Artwork Manager**. It fills in **boxart**, **cartridge
 - **Single search** (Start) or **batch** (Select) through all games with missing artwork
 - **Icon editor** – turns any icon into a 1:1 image with the iiSU border (move, zoom, choose border)
 - **Filter**: all · missing · no artwork; **game search** across all systems
+- **Preview in the game list**: the top screen shows the existing artwork of the selected game – wrong pictures stand out while scrolling
 - **Multi-disc games** merged into one `.m3u` entry, arcade names from the FBNeo list
 - Backup of each `gamelist.xml` before the first save, restore in the settings
 

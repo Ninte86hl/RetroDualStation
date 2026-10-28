@@ -6,6 +6,7 @@ Start über **Ports → Artwork Manager**. Er ergänzt **Boxart**, **Cartridge-I
 - **Einzelsuche** (Start) oder **Mehrfachsuche** (Select) durch alle Spiele mit fehlenden Artworks
 - **Icon-Editor** – macht aus jedem Icon ein 1:1-Bild mit iiSU-Rahmen (verschieben, zoomen, Rahmen wählen)
 - **Filter**: alle · fehlende · keine Artworks; **Spielesuche** über alle Systeme
+- **Vorschau in der Spieleliste**: oben die vorhandenen Artworks des gewählten Spiels – falsche Bilder fallen beim Blättern auf
 - **Mehrteilige Spiele** zu einem `.m3u`-Eintrag zusammenfassen, Arcade-Namen aus der FBNeo-Liste
 - Sicherung jeder `gamelist.xml` vor dem ersten Speichern, Wiederherstellen in den Einstellungen
 

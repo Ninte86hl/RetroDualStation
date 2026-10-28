@@ -253,7 +253,8 @@ fi
 
 # Ports-Einträge vor v14 hießen anders (ROCKNIX DualStation / RGDS) – alte Dateien entfernen
 for old in "RGDS Dual-Screen ES.sh" "RGDS Single-Screen ES.sh" "Uninstall ROCKNIX DualStation.sh" \
-           "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh" "Artwork Manager.sh"; do   # Artwork Manager: bis v15.3
+           "RDS Dual-Screen ES.sh" "RDS Single-Screen ES.sh" "Artwork Manager.sh" \
+           "RDS Grid Info.sh"; do   # Artwork Manager: bis v15.3 · Grid Info: Test-Port 28.10.2026 (jetzt Theme-Ansicht)
     [ -f "$PORTS/$old" ] && rm -f "$PORTS/$old" && log "alter Ports-Eintrag entfernt: $old"
 done
 
