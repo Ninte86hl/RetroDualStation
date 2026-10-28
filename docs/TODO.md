@@ -24,14 +24,11 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - Umgesetzt im Artwork Manager, Kontrollcenter (Fußzeilen, WLAN/Bluetooth, Bildschirmtastatur, Power-Menü) und Gameswitcher (`Pen.hint`).
 
 ## Als Nächstes
-- [ ] **Artwork unten in Ein-Bildschirm-Spielen** (Nutzerwunsch 28.10., wie ES-DE Companion) – auf `kontrollcenter`,
-  RG DS getestet 28.10. ✓ (alle drei Einstellungen, Antippen, Spielwechsel); offen: Plus, Feintuning am Wochenende,
-  Beschreibung DE/EN aus dem Chat in Notes/Wiki: CC-Kachel „Unterer Screen aus“ → Pfeil/X → Aus (wie bisher) · Artwork, dann abdunkeln (5 s, dann 3 s
-  Überblendung auf weiße Logo einheitlich weiß (helle Flächen, Schwelle nach Otsu; Varianten Kanten/Grau verworfen) bei 15 % Helligkeit, wie ein Always-on-Display; Antippen = hell ↔ dunkel) · Artwork dauerhaft (Antippen =
-  abdunkeln ↔ hell) · Artwork, dann schwarz (wie ROCKNIX lowerdeck: nach 5 s bzw. Antippen in 0,5 s Schwarz-Überblendung, dann Hintergrundlicht aus; kein Regler; Vorschau im Untermenü, Logo bleibt hell; Wunsch des Nutzers). Helligkeit unten im Spiel getrennt von ES:
-  CC-Regler wirkt im Spiel nur fürs Spiel, beim Verlassen kommt die ES-Helligkeit zurück. Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
-  Hilfsprozess (Pillow aus lib/) nach /tmp/rds-art umgewandelt. Prüfen: RG DS + Plus, Wecken mit Anbernic/Wischen,
-  Gameswitcher-Wechsel RA→RA/RA→DS, Ports, Akku. Danach Release-Notes/Wiki/Tour.
+- [ ] **Artwork unten in Ein-Bildschirm-Spielen** (Nutzerwunsch 28.10., wie ES-DE Companion/ROCKNIX lowerdeck) – auf
+  `kontrollcenter`. CC-Kachel „Unterer Screen aus“ → Pfeil/X → drei Umschalter: Anzeige (Aus · Fanart · Logo · Fanart +
+  Logo) · Abdunkeln (Nie · Nach 5 s · Antippen) · Abgedunkelt (Schwarz = lowerdeck, Licht aus · Kontur · Logo weiß ·
+  Gedimmt), Vorschau hell/abgedunkelt. Alte Einzel-Einstellung wird übernommen. Helligkeit unten im Spiel getrennt
+  von ES. RG DS/Plus mit den alten Varianten getestet ✓; neue Umschalter noch testen, Notes/Wiki/Tour danach.
 - [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`
   (96e1d55, nicht in v15.3.5): Infoleiste in allen Ansichten außer Detailliert statt eigener Ansicht „Grid Info“,
   Tastenhilfe in Leistenschriftgröße (bei „Default“ 0.027 evtl. zu breit → „…“), Showcase 7 Zeilen. Noch ungetestet –
