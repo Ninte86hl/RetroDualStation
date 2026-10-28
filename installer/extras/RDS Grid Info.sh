@@ -1,6 +1,6 @@
 #!/bin/bash
 # RetroDualStation – Infoleiste in der Rasteransicht (canvas-rds) ein- bzw. ausschalten
-# Unter dem Raster auf dem unteren Bildschirm: Systemlogo, Spielname, Jahr, Bewertung, Genre und die Tastenhilfe.
+# Unter dem Raster auf dem unteren Bildschirm: Spieler, Spielname, Jahr, Bewertung, Genre und die Tastenhilfe.
 # Aufruf über Ports in EmulationStation (schaltet um: aus → an → aus). Nach einer Neuinstallation von RDS bzw. des
 # Themes einfach noch einmal ausführen.
 THEME=/storage/.config/emulationstation/themes/canvas-rds
@@ -33,7 +33,7 @@ cat > "$XML" <<'XMLEOF'
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
     RetroDualStation – Grid view with info bar (optional, "RDS Grid Info" in Ports).
-    Bottom screen (X 0.5 - 1.0): grid on top, info bar below (system logo, name, year, rating, genre),
+    Bottom screen (X 0.5 - 1.0): grid on top, info bar below (players, name, year, rating, genre),
     help buttons at the bottom. Loaded after variants.xml, overrides its grid view.
 -->
 <theme>
@@ -65,19 +65,19 @@ cat > "$XML" <<'XMLEOF'
 			<visible>true</visible>
 		</image>
 
-		<!-- system logo on the left of the bar -->
-		<image name="rds-grid-bar-logo" extra="true">
-			<path>./_inc/systems/logos/${system.theme}.svg</path>
-			<origin>0.5 0.5</origin>
-			<pos>0.575 0.855</pos>
-			<maxSize>0.07 0.06</maxSize>
+		<!-- Positions follow the pills of the canvas-ds bar graphic (screenshot RG DS 28.10.):
+		     row 1: [controller icon | players]  [name ..................]
+		     row 2: [calendar icon | year]  [rating]  [genre icon | genre] -->
+		<text name="md_players">
+			<origin>0 0.5</origin>
+			<pos>0.547 0.83</pos>
+			<size>0.055 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+			<fontPath>${fontBold}</fontPath>
 			<color>${systemInfoColor}</color>
-			<linearSmooth>true</linearSmooth>
 			<zIndex>4</zIndex>
 			<visible>true</visible>
-		</image>
-
-		<!-- name (first line), year · rating · genre (second line) -->
+		</text>
 		<text name="md_name">
 			<origin>0 0.5</origin>
 			<pos>0.625 0.83</pos>
@@ -91,8 +91,8 @@ cat > "$XML" <<'XMLEOF'
 		</text>
 		<datetime name="md_releasedate">
 			<origin>0 0.5</origin>
-			<pos>0.625 0.885</pos>
-			<size>0.05 ${metaDatafontSize}</size>
+			<pos>0.547 0.885</pos>
+			<size>0.055 ${metaDatafontSize}</size>
 			<fontSize>${metaDatafontSize}</fontSize>
 			<fontPath>${fontBold}</fontPath>
 			<color>${systemInfoColor}</color>
@@ -102,7 +102,7 @@ cat > "$XML" <<'XMLEOF'
 		</datetime>
 		<rating name="md_rating">
 			<origin>0 0.5</origin>
-			<pos>0.68 0.885</pos>
+			<pos>0.627 0.885</pos>
 			<size>0 0.027</size>
 			<zIndex>4</zIndex>
 			<visible>true</visible>
@@ -120,10 +120,10 @@ cat > "$XML" <<'XMLEOF'
 
 		<!-- help buttons at the bottom of the bottom screen -->
 		<helpsystem name="help">
-			<origin>0.5 0.5</origin>
-			<pos>0.75 0.965</pos>
-			<size>0.5 ${metaDatafontSize}</size>
-			<fontSize>${helpFontSize}</fontSize>
+			<origin>0 0.5</origin>
+			<pos>0.51 0.965</pos>
+			<size>0.48 ${metaDatafontSize}</size>
+			<fontSize>0.018</fontSize>
 			<fontPath>${fontBold}</fontPath>
 			<textColor>${helpTextColor}</textColor>
 			<iconColor>${helpTextColor}</iconColor>
