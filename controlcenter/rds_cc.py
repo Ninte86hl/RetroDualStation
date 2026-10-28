@@ -4675,6 +4675,10 @@ class ControlCenter:
             if final or now - self.vol_sent > 0.08:
                 volume_set(pct)
                 self.vol_sent = now
+        elif self.art is not None and "unten" in self.backlights[key][0].lower():
+            # Spiel mit Artwork unten: Helligkeit gilt nur fürs Spiel (nicht gespeichert, zurück in ES wie vorher)
+            self.backlights[key][1].set(pct)
+            return
         else:
             self.backlights[key][1].set(pct)
             self.cfg["bright_" + self.backlights[key][1].name] = pct
@@ -4943,6 +4947,11 @@ class ControlCenter:
                         "loaded": False}
             threading.Thread(target=self._art_load, args=(self.art,), daemon=True).start()
         if self.ui.art is None:
+            if getattr(self, "art_es", None) is None:    # Helligkeit von ES merken (im Spiel getrennt einstellbar)
+                bl = self._bl_bottom()
+                if bl:
+                    self.art_es = self.screen_bottom_saved if self.screen_bottom_off and self.screen_bottom_saved \
+                        else bl.get()
             self.ui.show_top(self.paint_art, slot="art", output=self.ui.current_output())
             log("Unterer Screen: Artwork", os.path.basename(rom or "?"))
         else:
@@ -4964,6 +4973,14 @@ class ControlCenter:
         if self.ui and self.ui.art is not None:
             self.ui.hide_top("art")
             log("Unterer Screen: Artwork weg")
+        es, self.art_es = getattr(self, "art_es", None), None
+        bl = self._bl_bottom()
+        if es and bl:                                    # zurück in ES: dort eingestellte Helligkeit wieder
+            if self.screen_bottom_off:
+                self.screen_bottom_saved = es
+            else:
+                bl.set(es)
+            log("Unterer Screen: Helligkeit von ES zurück (%d %%)" % es)
         a, self.art = self.art, None
         for path in (a or {}).get("bg"), (a or {}).get("logo"), (a or {}).get("outline"):   # Bildspeicher freigeben
             for k in [k for k in Pen._png if k[0] == path]:
