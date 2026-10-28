@@ -25,8 +25,8 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Als Nächstes
 - [ ] **Artwork unten in Ein-Bildschirm-Spielen** (Nutzerwunsch 28.10., wie ES-DE Companion) – auf `kontrollcenter`,
-  im Test: CC-Kachel „Unterer Screen aus“ → Pfeil/X → Aus (wie bisher) · Artwork, dann abdunkeln (5 s, dann 4 s
-  Überblendung auf weiße Logo-Kontur bei 10 % Helligkeit, wie ein Always-on-Display) · Artwork dauerhaft. Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
+  im Test: CC-Kachel „Unterer Screen aus“ → Pfeil/X → Aus (wie bisher) · Artwork, dann abdunkeln (5 s, dann 3 s
+  Überblendung auf weiße Logo-Kontur bei 10 % Helligkeit, wie ein Always-on-Display; Antippen = wieder hell) · Artwork dauerhaft. Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
   Hilfsprozess (Pillow aus lib/) nach /tmp/rds-art umgewandelt. Prüfen: RG DS + Plus, Wecken mit Anbernic/Wischen,
   Gameswitcher-Wechsel RA→RA/RA→DS, Ports, Akku. Danach Release-Notes/Wiki/Tour.
 - [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`

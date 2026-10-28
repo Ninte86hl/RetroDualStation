@@ -1195,7 +1195,7 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
                 ("dim", "Artwork, dann abdunkeln", "5 Sekunden Fanart mit Logo, dann nur noch das Logo als Kontur"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an (braucht etwas mehr Akku)")]
-ART_SHOW_S, ART_FADE_S = 5.0, 4.0
+ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 10                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
 PIL_LIB = "/storage/.config/retrodualstation/lib"  # Pillow vom Artwork Manager – nur im Hilfsprozess, nicht im CC
@@ -4810,6 +4810,13 @@ class ControlCenter:
         if was and self.ui and self.ui.art is not None:
             self.ui.redraw_top("art")
 
+    def art_wake(self):
+        """Antippen im abgedunkelten (oder noch hellen) Zustand: wieder voll anzeigen, Zeit neu starten."""
+        if self.art_phase in ("fade", "osd"):
+            log("Unterer Screen: Artwork angetippt – wieder hell")
+        self.art_cancel()
+        self.art_phase, self.art_t0 = "show", time.monotonic()
+
     def art_tick(self):
         """Hauptschleife: nach 5 s überblenden (Fanart weg, Logo wird Kontur, Helligkeit runter)."""
         now = time.monotonic()
@@ -8167,6 +8174,8 @@ def main():
                                     edge["swallow"] = False
                                 continue
                             if t and not ui.view and not cc.loading:
+                                if t[0] == "down" and cc.art is not None and cc.art_phase is not None:
+                                    cc.art_wake()    # unteren Screen angetippt: Artwork wieder hell, 5 s, dann abdunkeln
                                 edge_swipe(t)
                                 continue
                             if t and ui.view == "cc" and edge_close(t):
