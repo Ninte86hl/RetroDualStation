@@ -1213,7 +1213,7 @@ EN.update({"Anzeige": "Show", "Abdunkeln": "Dim", "Abgedunkelt": "When dimmed", 
            "Keine Erfolge für dieses Spiel": "No achievements for this game",
            "Verbinde mit RetroAchievements …": "Connecting to RetroAchievements …",
            "RetroAchievements nur bei RetroArch-Spielen": "RetroAchievements only in RetroArch games",
-           "lädt": "charging", "Spieler": "players",
+           "lädt": "charging", "Spieler": "players", "Helligkeit": "Brightness",
            "Wischen: ◀ Beschreibung · Erfolge ▶": "Swipe: ◀ description · achievements ▶",
            "Nach 5 s ohne Berührung wird es schwarz (wie lowerdeck) · Antippen weckt":
                "After 5 s without touch it goes black (like lowerdeck) · tap to wake",
@@ -4563,7 +4563,7 @@ class ControlCenter:
         self.art_page = 0                 # -1 Erfolge · 0 Start · 1 Beschreibung (Wischen)
         self.art_sw = None                # Wischgeste unten: [x0, y0, x, y] in Pixeln
         self.art_key = None               # zuletzt gezeichnete Uhrzeit/Akku/Erfolge (Neuzeichnen bei Änderung)
-        self.art_adj = None               # Wischregler: {"kind": "bright"|"vol", "base", "val", "until"}
+        self.art_panel = None             # Regler-Leiste (hoch wischen): {"vals": [Helligkeit oben, Lautstärke], "drag": Zeile}
         self.art_t0 = 0.0
         self.art_p = 0.0                  # 0 = Artwork, 1 = nur Kontur
         self.art_saved = None             # Helligkeit vor dem Abdunkeln (%)
@@ -4879,64 +4879,97 @@ class ControlCenter:
         elif when == "auto":
             self.art_phase, self.art_t0 = "show", time.monotonic()   # wie lowerdeck: Berührung startet die 5 s neu
 
+    ART_PANEL_ROWS = [("Helligkeit", "oben"), ("Lautstärke", "vol")]   # Helligkeit = oberer Screen (Spiel)
+    ART_PANEL_Y, ART_PANEL_ROW = 640, 112                   # Entwurfs-Koordinaten (1260 × 951)
+    ART_TRACK = (300, 800)                                  # Regler: x von … Breite
+
+    def _art_design(self, x, y, size):
+        w, h = size
+        k = min(w / 1260, h / 951)
+        return (x - (w - 1260 * k) / 2) / k, (y - (h - 951 * k) / 2) / k
+
+    def _art_panel_open(self):
+        vals = []
+        for _label, key in self.ART_PANEL_ROWS:
+            if key == "vol":
+                vals.append(volume_get() or 0)
+            else:
+                b = next((b for lb, b in self.backlights if key in lb.lower()), None)
+                vals.append(b.get() if b else 50)
+        self.art_panel = {"vals": vals, "drag": None}
+        haptic("tap")
+        log("Unterer Screen: Regler eingeblendet")
+
+    def _art_panel_set(self, row, xd, final):
+        p = self.art_panel
+        x0, tw = self.ART_TRACK
+        key = self.ART_PANEL_ROWS[row][1]
+        val = max(0 if key == "vol" else 5, min(100, round((xd - x0) / tw * 100)))
+        if val == p["vals"][row] and not final:
+            return
+        p["vals"][row] = val
+        if key == "vol":
+            self.set_slider("vol", val, final=final)
+        else:
+            i = next((i for i, (lb, _b) in enumerate(self.backlights) if key in lb.lower()), None)
+            if i is not None:
+                self.set_slider(i, val, final=final)
+
     def art_input(self, t, touch):
-        """Touch unten ohne geöffnetes CC: Antippen weckt, Wischen links/rechts wechselt die Seite."""
+        """Touch unten ohne geöffnetes CC: Antippen weckt · links/rechts wischen: Seiten ·
+        hoch wischen: Regler (Helligkeit oberer Screen, Lautstärke) einblenden, runter wischen: ausblenden."""
         size = (self.ui.art or {}).get("size") if self.ui else None
         if not size:
             return
         x, y = touch.to_surface(t[1], t[2], *size)
         w, h = size
+        xd, yd = self._art_design(x, y, size)
+        now = time.monotonic()
+        bright = not (self.screen_bottom_off or self.art_phase in ("fade", "osd"))
+        pnl = self.art_panel
         if t[0] == "down":
             self.art_sw = [x, y, x, y]
-            if self.art_adj and not self.art_adj.get("until"):
-                self.art_adj = None
-        elif t[0] == "move" and self.art_sw:
+            if pnl and bright:
+                row = int((yd - self.ART_PANEL_Y) // self.ART_PANEL_ROW) if yd >= self.ART_PANEL_Y else -1
+                if 0 <= row < len(self.ART_PANEL_ROWS) and self.ART_TRACK[0] - 60 <= xd <= sum(self.ART_TRACK) + 60:
+                    pnl["drag"] = row                     # Finger auf einem Regler: verschieben
+                    self._art_panel_set(row, xd, final=False)
+                    self.ui.redraw_top("art")
+            return
+        if t[0] == "move" and self.art_sw:
             self.art_sw[2:] = [x, y]
-            x0, y0 = self.art_sw[:2]
-            dx, dy = x - x0, y - y0
-            bright = not (self.screen_bottom_off or self.art_phase in ("fade", "osd"))
-            if (not self.art_adj or self.art_adj.get("until")) and bright and y0 > h * 0.12 \
-                    and abs(dy) > h * 0.06 and abs(dy) > 1.5 * abs(dx):
-                # hoch/runter wischen: links Helligkeit (oberer Screen = Spiel), rechts Lautstärke
-                kind = "bright" if x0 < w / 2 else "vol"
-                base = self._bl_top().get() if kind == "bright" and self._bl_top() else (volume_get() or 0)
-                self.art_adj = {"kind": kind, "base": base, "val": base, "y0": y, "until": 0}
-            if self.art_adj and not self.art_adj.get("until"):
-                a = self.art_adj
-                val = max(5 if a["kind"] == "bright" else 0, min(100, round(a["base"] - (y - a["y0"]) / h * 120)))
-                if val != a["val"]:
-                    a["val"] = val
-                    self._art_apply(a, final=False)
-                now = time.monotonic()
+            if pnl and pnl.get("drag") is not None:
+                self._art_panel_set(pnl["drag"], xd, final=False)
                 if now - getattr(self, "art_adj_t", 0.0) > 0.04:     # flüssig, aber nicht bei jedem Ereignis
                     self.art_adj_t = now
                     self.ui.redraw_top("art")
-                self.art_phase, self.art_t0 = "show", now          # beim Einstellen nicht abdunkeln
-        elif t[0] == "up":
-            sw, self.art_sw = self.art_sw, None
-            if self.art_adj and not self.art_adj.get("until"):
-                self._art_apply(self.art_adj, final=True)
-                self.art_adj["until"] = time.monotonic() + 1.2      # Anzeige kurz stehen lassen
-                log("Unterer Screen: %s %d %%" % ("Helligkeit oben" if self.art_adj["kind"] == "bright" else "Lautstärke",
-                                                  self.art_adj["val"]))
-                self.ui.redraw_top("art")
-                return
-            dx, dy = (sw[2] - sw[0], sw[3] - sw[1]) if sw else (0, 0)
-            if abs(dx) > size[0] * 0.18 and abs(dx) > 1.5 * abs(dy):
-                self.art_swipe(1 if dx < 0 else -1)
-            else:
-                self.art_touch()
-
-    def _bl_top(self):
-        return next((b for label, b in self.backlights if "oben" in label.lower()), None)
-
-    def _art_apply(self, a, final):
-        if a["kind"] == "vol":
-            self.set_slider("vol", a["val"], final=final)
+                self.art_phase, self.art_t0 = "show", now            # beim Einstellen nicht abdunkeln
+            return
+        if t[0] != "up":
+            return
+        sw, self.art_sw = self.art_sw, None
+        if pnl and pnl.get("drag") is not None:
+            row, pnl["drag"] = pnl["drag"], None
+            self._art_panel_set(row, xd, final=True)
+            log("Unterer Screen: %s %d %%" % (self.ART_PANEL_ROWS[row][0], pnl["vals"][row]))
+            self.ui.redraw_top("art")
+            self.art_phase, self.art_t0 = "show", now
+            return
+        dx, dy = (sw[2] - sw[0], sw[3] - sw[1]) if sw else (0, 0)
+        if not bright:
+            self.art_touch()                               # dunkel: jede Geste weckt nur
+        elif sw and abs(dy) > h * 0.15 and abs(dy) > 1.5 * abs(dx) and sw[1] > h * 0.12:
+            if dy < 0 and not pnl:
+                self._art_panel_open()
+            elif dy > 0 and pnl:
+                self.art_panel = None
+                log("Unterer Screen: Regler ausgeblendet")
+            self.ui.redraw_top("art")
+            self.art_phase, self.art_t0 = "show", now
+        elif abs(dx) > w * 0.18 and abs(dx) > 1.5 * abs(dy):
+            self.art_swipe(1 if dx < 0 else -1)
         else:
-            i = next((i for i, (label, _b) in enumerate(self.backlights) if "oben" in label.lower()), None)
-            if i is not None:
-                self.set_slider(i, a["val"], final=final)
+            self.art_touch()
 
     def art_swipe(self, d):
         if self.screen_bottom_off or self.art_phase in ("fade", "osd"):
@@ -4959,9 +4992,7 @@ class ControlCenter:
             return
         self.art_watch_t = now
         st = self.ra or {}
-        if self.art_adj and self.art_adj.get("until") and now >= self.art_adj["until"]:
-            self.art_adj = None
-        key = (time.strftime("%H:%M"), battery(), self.art_page, bool(self.art_adj),
+        key = (time.strftime("%H:%M"), battery(), self.art_page, bool(self.art_panel),
                len(st.get("unlocks") or {}) if self.art_page == -1 else 0, bool(st) if self.art_page == -1 else 0)
         if key != self.art_key:
             self.art_key = key
@@ -4970,7 +5001,8 @@ class ControlCenter:
     def art_tick(self):
         """Hauptschleife: wie lowerdeck nach 5 s ohne Berührung in 0,5 s zu Schwarz, dann Hintergrundlicht aus."""
         now = time.monotonic()
-        if self.art_phase == "show" and now - self.art_t0 >= (ART_SHOW_S if self.art_page == 0 else ART_PAGE_S):
+        if self.art_phase == "show" and now - self.art_t0 >= (ART_SHOW_S if self.art_page == 0 and not self.art_panel
+                                                                else ART_PAGE_S):
             if not self.ui or self.ui.art is None:
                 self.art_phase = None
                 return False
@@ -4986,7 +5018,7 @@ class ControlCenter:
             if bl:                                            # schwarz: Hintergrundlicht aus (spart Akku)
                 self.art_saved = bl.get()
                 bl.set(0, allow_off=True)
-            self.art_page = 0                                # geweckt wird wieder mit der Startseite
+            self.art_page, self.art_panel = 0, None          # geweckt wird wieder mit der Startseite
             log("Unterer Screen: Artwork abgedunkelt")
             return False
         return True
@@ -5056,21 +5088,24 @@ class ControlCenter:
         else:
             self._paint_art(P, x0, y0, fw, fh, 0.0, a)
             self._paint_bar(P, x0, y0, fw, a)
-        if self.art_adj:                                   # Wischregler: senkrechter Balken links/rechts
-            ad = self.art_adj
-            bx = 70 if ad["kind"] == "bright" else 1260 - 70 - 96
-            by, bh = 230, 520
-            P.rrect(bx, by, 96, bh, 48, "000000", 0.65)
-            fill = bh * ad["val"] / 100
-            P.rrect(bx + 14, by + 14 + (bh - 28) * (1 - ad["val"] / 100), 68, max(24, (bh - 28) * ad["val"] / 100), 34,
-                    self.accent)
-            cx = bx + 48
-            if ad["kind"] == "bright":
-                P.sun(cx, by - 40, "ffffff")
-            else:
-                P.rrect(cx - 18, by - 52, 12, 22, 3, "ffffff")
-                P.poly([(cx - 8, by - 52), (cx + 8, by - 64), (cx + 8, by - 18), (cx - 8, by - 30)], "ffffff")
-            P.text("%d %%" % ad["val"], 26, cx, by + bh + 46, "ffffff", bold=True, align="c", raw=True)
+        if self.art_panel:                                 # Regler-Leiste (hoch wischen)
+            A = self.accent
+            top = self.ART_PANEL_Y - 28
+            P.rrect(30, top, 1200, len(self.ART_PANEL_ROWS) * self.ART_PANEL_ROW + 46, 30, "141414", 0.92)
+            x0, tw = self.ART_TRACK
+            for r, (label, key) in enumerate(self.ART_PANEL_ROWS):
+                cy = self.ART_PANEL_Y + r * self.ART_PANEL_ROW + self.ART_PANEL_ROW / 2
+                v = self.art_panel["vals"][r]
+                if key == "vol":
+                    P.rrect(70, cy - 10, 12, 20, 3, "ffffff")
+                    P.poly([(80, cy - 10), (96, cy - 22), (96, cy + 22), (80, cy + 10)], "ffffff")
+                else:
+                    P.sun(84, cy, "ffffff")
+                P.text(label, 22, 125, cy + 8, "ffffff", bold=True)
+                P.rrect(x0, cy - 9, tw, 18, 9, "ffffff", 0.18)
+                P.rrect(x0, cy - 9, max(18, tw * v / 100), 18, 9, A)
+                P.circle(x0 + tw * v / 100, cy, 20 if self.art_panel.get("drag") == r else 16, "ffffff")
+                P.text("%d %%" % v, 22, 1190, cy + 8, "ffffff", bold=True, align="r", raw=True)
         for i in (-1, 0, 1):                               # Seitenpunkte
             on = i == self.art_page
             P.rrect(630 + i * 34 - (14 if on else 6), y0 + fh - 34, 28 if on else 12, 12, 6, "ffffff", 0.9 if on else 0.4)
