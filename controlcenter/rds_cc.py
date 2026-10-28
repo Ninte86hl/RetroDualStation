@@ -1196,7 +1196,7 @@ BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunke
                 ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo in Weiß · Antippen: hell/dunkel"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell"),
                 ("dark", "Fanart abgedunkelt", "Nach 5 s wird der Screen dunkler, Logo bleibt sichtbar · Antippen: hell/dunkel · Stärke mit dem Regler")]
-BOTTOM_DARK_DEFAULT = 60                          # Abdunkelung der Fanart bei „Fanart abgedunkelt“ (%)
+BOTTOM_DIM_LEVEL = 30     # „Fanart abgedunkelt“: Helligkeit im abgedunkelten Zustand (% der Spiel-Helligkeit, 5–90)
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
@@ -1218,7 +1218,7 @@ EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwor
            "Fanart abgedunkelt": "Darkened fanart", "Spiele: Fanart dunkel": "Games: dark fanart",
            "Nach 5 s wird der Screen dunkler, Logo bleibt sichtbar · Antippen: hell/dunkel · Stärke mit dem Regler":
                "After 5 s the screen gets darker, logo stays visible · tap: bright/dark · strength with the slider",
-           "Abdunkelung": "Darkening",
+           "Helligkeit abgedunkelt": "Brightness when dimmed",
            "Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper":
                "For games with one screen (RetroArch, ports) · fanart and logo from the scraper",
            "einstellen": "adjust"})
@@ -4465,9 +4465,9 @@ class BottomMenu:
 
     def _set_dark(self, v):
         cc = self.cc
-        v = max(0, min(90, int(round(v / 5.0)) * 5))
-        if v != cc.bottom_dark():
-            cc.cfg["bottom_dark"] = v
+        v = max(5, min(90, int(round(v / 5.0)) * 5))
+        if v != cc.bottom_level():
+            cc.cfg["bottom_dim_level"] = v
             save_config(cc.cfg)
             haptic("tap")
             if cc.ui and cc.ui.art is not None:
@@ -4477,7 +4477,7 @@ class BottomMenu:
         if dy:
             self.sel = max(0, min(self.SLIDER, self.sel + dy))
         elif dx and self.sel == self.SLIDER:
-            self._set_dark(self.cc.bottom_dark() + 10 * dx)
+            self._set_dark(self.cc.bottom_level() + 5 * dx)
         elif dx:
             self.sel = max(0, min(self.SLIDER, self.sel + dx))
 
@@ -4540,15 +4540,17 @@ class BottomMenu:
         active = cur == "dark"
         P.rrect(45, y, 1170, sh, 22, T["card"])
         tc = T["text"] if active else T["muted"]
-        v = cc.bottom_dark()
-        P.text("Abdunkelung", 22, 85, y + 42, tc, bold=True)
-        P.text("%d %%" % v, 22, 820, y + 42, tc, bold=True, align="r", raw=True)
+        lv = cc.bottom_level()
+        v = 100 - lv
+        P.text("Helligkeit abgedunkelt", 22, 85, y + 42, tc, bold=True)
+        P.text("%d %%" % lv, 22, 820, y + 42, tc, bold=True, align="r", raw=True)
         tx, tw, ty = 85, 735, y + sh - 42
+        f = (lv - 5) / 85
         P.rrect(tx, ty - 6, tw, 12, 6, mix(T["muted"], T["card"], 0.5))
-        P.rrect(tx, ty - 6, max(12, tw * v / 90), 12, 6, A if active else T["muted"])
-        P.circle(tx + tw * v / 90, ty, 17, "ffffff")
-        for k in range(0, 19):             # Touch: 0 … 90 % in 5er-Schritten
-            cc.hits.append((tx + tw * (k - 0.5) / 18, ty - 34, tw / 18, 68, ("bdark", k * 5)))
+        P.rrect(tx, ty - 6, max(12, tw * f), 12, 6, A if active else T["muted"])
+        P.circle(tx + tw * f, ty, 17, "ffffff")
+        for k in range(18):                # Touch: 5 … 90 % in 5er-Schritten
+            cc.hits.append((tx + tw * (k - 0.5) / 17, ty - 34, tw / 17, 68, ("bdark", 5 + k * 5)))
         px, pw, ph = 870, 300, sh - 24     # Vorschau
         a = cc.art or {}
         if not (a.get("bg") and P.image(a["bg"], px, y + 12, pw, ph, r=14)):
@@ -4866,9 +4868,13 @@ class ControlCenter:
         m = self.cfg.get("bottom_single", "off")
         return m if m in ("off", "dim", "on", "dark") else "off"
 
+    def bottom_level(self):
+        """Helligkeit im abgedunkelten Zustand (%): kleiner = dunkler (wie ein Helligkeitsregler)."""
+        v = self.cfg.get("bottom_dim_level", BOTTOM_DIM_LEVEL)
+        return max(5, min(90, v)) if isinstance(v, int) else BOTTOM_DIM_LEVEL
+
     def bottom_dark(self):
-        v = self.cfg.get("bottom_dark", BOTTOM_DARK_DEFAULT)
-        return max(0, min(90, v)) if isinstance(v, int) else BOTTOM_DARK_DEFAULT
+        return 100 - self.bottom_level()
 
     def bottom_auto(self, g):
         """Ein-Bildschirm-Spiel läuft (Start, CC geschlossen, Ladebildschirm fertig): unten nach Einstellung."""
