@@ -1193,8 +1193,8 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 # Unterer Screen in Ein-Bildschirm-Spielen (RetroArch, Ports) – Untermenü an der Kachel „Unterer Screen aus“:
 # aus (wie bisher) · Artwork (Fanart + Logo) 5 s zeigen, dann langsam abdunkeln · Artwork dauerhaft an.
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
-                ("dim", "Artwork, dann abdunkeln", "5 Sekunden Fanart mit Logo, dann nur noch das Logo als Kontur"),
-                ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an (braucht etwas mehr Akku)")]
+                ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo als Kontur · Antippen: hell/dunkel"),
+                ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell")]
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 10                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
@@ -1203,8 +1203,9 @@ _ART_CONVERT = ("import os,sys\nfrom PIL import Image\ni=Image.open(sys.argv[1])
                 "n=int(sys.argv[3]);i.thumbnail((n,n));i.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
 EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwork dauerhaft": "Artwork always on",
            "Wie bisher: unterer Screen beim Spielstart dunkel": "As before: bottom screen dark when a game starts",
-           "5 Sekunden Fanart mit Logo, dann nur noch das Logo als Kontur":
-               "Fanart with logo for 5 seconds, then only the logo as an outline",
+           "5 s Fanart mit Logo, dann nur das Logo als Kontur · Antippen: hell/dunkel":
+               "5 s fanart with logo, then only the logo outline · tap: bright/dim",
+           "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell": "Fanart with logo stays on · tap: dim/bright",
            "Fanart mit Logo bleibt an (braucht etwas mehr Akku)": "Fanart with logo stays on (uses a bit more battery)",
            "Unterer Screen in Spielen": "Bottom screen in games",
            "Für Spiele mit einem Bildschirm (RetroArch, Ports)": "For games with one screen (RetroArch, ports)",
@@ -4810,12 +4811,18 @@ class ControlCenter:
         if was and self.ui and self.ui.art is not None:
             self.ui.redraw_top("art")
 
-    def art_wake(self):
-        """Antippen im abgedunkelten (oder noch hellen) Zustand: wieder voll anzeigen, Zeit neu starten."""
+    def art_touch(self):
+        """Antippen: abgedunkelt → wieder hell (Automatisch: 5 s, dann erneut abdunkeln; Dauerhaft: bleibt hell),
+        hell → sofort abdunkeln (beide Einstellungen)."""
         if self.art_phase in ("fade", "osd"):
+            self.art_cancel()
+            if self.bottom_mode() == "dim":
+                self.art_phase, self.art_t0 = "show", time.monotonic()
             log("Unterer Screen: Artwork angetippt – wieder hell")
-        self.art_cancel()
-        self.art_phase, self.art_t0 = "show", time.monotonic()
+        else:
+            self.art_phase, self.art_t0 = "show", time.monotonic() - ART_SHOW_S
+            log("Unterer Screen: Artwork angetippt – abdunkeln")
+            self.art_tick()
 
     def art_tick(self):
         """Hauptschleife: nach 5 s überblenden (Fanart weg, Logo wird Kontur, Helligkeit runter)."""
@@ -7281,7 +7288,7 @@ def main():
                 if cc.screen_bottom_off and cc.screen_auto:   # automatisch abgedunkelt → für die Anzeige an
                     cc.screen_on()
                     cc.redim = True
-                elif cc.art is not None and cc.bottom_mode() == "dim":   # Artwork noch hell: nicht weiter abdunkeln
+                elif cc.art is not None and (cc.bottom_mode() == "dim" or cc.art_phase is not None):   # hell fürs CC
                     cc.art_cancel()
                     cc.redim = True
                 cc.refresh(full=True)
@@ -8174,8 +8181,8 @@ def main():
                                     edge["swallow"] = False
                                 continue
                             if t and not ui.view and not cc.loading:
-                                if t[0] == "down" and cc.art is not None and cc.art_phase is not None:
-                                    cc.art_wake()    # unteren Screen angetippt: Artwork wieder hell, 5 s, dann abdunkeln
+                                if t[0] == "up" and cc.art is not None:
+                                    cc.art_touch()   # unteren Screen angetippt: abgedunkelt ↔ hell (Wischen zählt nicht)
                                 edge_swipe(t)
                                 continue
                             if t and ui.view == "cc" and edge_close(t):
