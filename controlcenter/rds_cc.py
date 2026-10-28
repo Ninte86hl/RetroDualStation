@@ -1195,7 +1195,7 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
                 ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo in Weiß · Antippen: hell/dunkel"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell"),
-                ("dark", "Fanart abgedunkelt", "Fanart dauerhaft abgedunkelt, Logo bleibt hell · Stärke mit dem Regler")]
+                ("dark", "Fanart abgedunkelt", "Nach 5 s Fanart dunkler, Logo bleibt hell · Antippen: hell/dunkel · Stärke mit dem Regler")]
 BOTTOM_DARK_DEFAULT = 60                          # Abdunkelung der Fanart bei „Fanart abgedunkelt“ (%)
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
@@ -1216,8 +1216,8 @@ EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwor
            "Spiele: aus": "Games: off", "Spiele: Artwork, dimmt": "Games: artwork, dims",
            "Spiele: Artwork an": "Games: artwork on", "In Spielen": "In games",
            "Fanart abgedunkelt": "Darkened fanart", "Spiele: Fanart dunkel": "Games: dark fanart",
-           "Fanart dauerhaft abgedunkelt, Logo bleibt hell · Stärke mit dem Regler":
-               "Fanart always darkened, logo stays bright · strength with the slider",
+           "Nach 5 s Fanart dunkler, Logo bleibt hell · Antippen: hell/dunkel · Stärke mit dem Regler":
+               "After 5 s darker fanart, logo stays bright · tap: bright/dark · strength with the slider",
            "Abdunkelung der Fanart": "Fanart darkening",
            "Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper":
                "For games with one screen (RetroArch, ports) · fanart and logo from the scraper",
@@ -4880,7 +4880,7 @@ class ControlCenter:
         self.art_show(g)
         if self.screen_bottom_off:
             self.screen_on()
-        if mode == "dim":
+        if mode in ("dim", "dark"):
             self.art_phase, self.art_t0 = "show", time.monotonic()
 
     def art_cancel(self):
@@ -4898,14 +4898,12 @@ class ControlCenter:
         """Antippen: abgedunkelt → wieder hell (Automatisch: 5 s, dann erneut abdunkeln; Dauerhaft: bleibt hell),
         hell → sofort abdunkeln (beide Einstellungen)."""
         now = time.monotonic()
-        if self.bottom_mode() == "dark":
-            return          # Fanart abgedunkelt: fest, Stärke im Untermenü
         if self.screen_bottom_off or now - getattr(self, "art_tap_t", 0.0) < 0.6:
             return          # Screen von Hand aus · prellender Touch (zweites „Loslassen“ direkt danach)
         self.art_tap_t = now
         if self.art_phase in ("fade", "osd"):
             self.art_cancel()
-            if self.bottom_mode() == "dim":
+            if self.bottom_mode() in ("dim", "dark"):
                 self.art_phase, self.art_t0 = "show", time.monotonic()
             log("Unterer Screen: Artwork angetippt – wieder hell")
         else:
@@ -4921,21 +4919,24 @@ class ControlCenter:
             if not bl or not self.ui or self.ui.art is None:
                 self.art_phase = None
                 return False
-            self.art_saved = bl.get()
             self.art_phase, self.art_t0 = "fade", now
-            self._art_raw = (int(rd(bl.dir + "/brightness") or 0), round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
+            if self.bottom_mode() == "dark":             # nur die Fanart wird dunkler, Helligkeit bleibt
+                self.art_saved, self._art_raw = None, None
+            else:
+                self.art_saved = bl.get()
+                self._art_raw = (int(rd(bl.dir + "/brightness") or 0), round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
         if self.art_phase != "fade":
             return False
         p = min(1.0, (now - self.art_t0) / ART_FADE_S)
         self.art_p = p
         bl = self._bl_bottom()
-        if bl:
+        if bl and self._art_raw:
             r0, r1 = self._art_raw
             wr(bl.dir + "/brightness", max(1, round(r0 + (r1 - r0) * p)))
         self.ui.redraw_top("art")
         if p >= 1.0:
             self.art_phase = "osd"
-            log("Unterer Screen: Artwork abgedunkelt (Logo-Kontur)")
+            log("Unterer Screen: Artwork abgedunkelt (%s)" % ("Fanart" if self._art_raw is None else "Logo-Kontur"))
             return False
         return True
 
@@ -4994,11 +4995,16 @@ class ControlCenter:
         P = Pen(cr, w, h)
         P.fill_all("000000")
         a = self.art or {}
-        q = 1.0 - self.art_p
+        darkmode = self.bottom_mode() == "dark"
+        q = 1.0 if darkmode else 1.0 - self.art_p      # „Fanart abgedunkelt“: Bild und Logo bleiben, nur dunkler
         x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
         if q > 0.01 and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, alpha=q):
-            dark = self.bottom_dark() / 100 if self.bottom_mode() == "dark" else 0.3
-            P.rrect(x0, y0, fw, fh, 0, "000000", dark * q)
+            if darkmode:
+                d = self.bottom_dark() / 100
+                s0 = min(0.3, d)                             # hell wie die anderen Einstellungen, dann auf den Reglerwert
+                P.rrect(x0, y0, fw, fh, 0, "000000", s0 + (d - s0) * self.art_p)
+            else:
+                P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 * q)
         logo, drawn = a.get("logo"), False
         sz = png_size(logo) if logo else None
         if sz and sz[0] and sz[1]:
@@ -5007,7 +5013,7 @@ class ControlCenter:
             lx, ly = 630 - lw / 2, 475 - lh / 2
             drawn = P.image(logo, lx, ly, lw, lh, stretch=True, alpha=q) if q > 0.01 else True
             outline = a.get("outline")
-            if self.art_p > 0.01 and outline:
+            if self.art_p > 0.01 and outline and not darkmode:
                 osz = png_size(outline) or sz
                 k2 = min(900 / osz[0], 400 / osz[1])
                 P.image(outline, 630 - osz[0] * k2 / 2, 475 - osz[1] * k2 / 2, osz[0] * k2, osz[1] * k2,
