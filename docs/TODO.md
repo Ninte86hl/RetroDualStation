@@ -351,3 +351,8 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
 - [x] **27.10. Artwork Manager: Listenvorschau** – Spieleliste zeigt oben die vorhandenen Artworks des gewählten Spiels als
       Mix (Image/Boxart/Cartridge, ✓ vorhanden / – fehlt), ohne Wartezeit (Hintergrund-Lader, data/cache/liste mit
       Prüfsumme, Bildablage wird freigegeben). Getestet auf dem Gerät ✓ – kommt ins nächste Release.
+- [x] **28.10. NNDDSS (Anbernic, RG DS Plus Original-Firmware) auf ROCKNIX – Ergebnis: nicht möglich.** Aufbau: Linux-
+      Rahmen (SDL2/Wayland/EGL) + DraStic für Android r2.6.0.4a (libnnddss.so, JNI com.dsemu.drastic) mit Bionic-Shims.
+      Technisch lief der Start an (Wayland, GPU/CPU, Touch), bricht aber mit `check_encryption_result: (377) err` ab:
+      Kopierschutz über den Anbernic-Displaytreiber (/sys/class/deeplayer/…, send/recv_encryption_data) – bindet das
+      Programm an die Original-Firmware. Umgehen machen wir nicht. tools/nnddss/rds-nnddss.sh bleibt nur zum Entfernen.
