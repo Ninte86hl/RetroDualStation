@@ -1193,7 +1193,7 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 # Unterer Screen in Ein-Bildschirm-Spielen (RetroArch, Ports) – Untermenü an der Kachel „Unterer Screen aus“:
 # aus (wie bisher) · Artwork (Fanart + Logo) 5 s zeigen, dann langsam abdunkeln · Artwork dauerhaft an.
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
-                ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo als Kontur · Antippen: hell/dunkel"),
+                ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo in Grau mit Kontur · Antippen: hell/dunkel"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell")]
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
@@ -1203,8 +1203,8 @@ _ART_CONVERT = ("import os,sys\nfrom PIL import Image\ni=Image.open(sys.argv[1])
                 "n=int(sys.argv[3]);i.thumbnail((n,n));i.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
 EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwork dauerhaft": "Artwork always on",
            "Wie bisher: unterer Screen beim Spielstart dunkel": "As before: bottom screen dark when a game starts",
-           "5 s Fanart mit Logo, dann nur das Logo als Kontur · Antippen: hell/dunkel":
-               "5 s fanart with logo, then only the logo outline · tap: bright/dim",
+           "5 s Fanart mit Logo, dann nur das Logo in Grau mit Kontur · Antippen: hell/dunkel":
+               "5 s fanart with logo, then only the logo in grey with an outline · tap: bright/dim",
            "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell": "Fanart with logo stays on · tap: dim/bright",
            "Fanart mit Logo bleibt an (braucht etwas mehr Akku)": "Fanart with logo stays on (uses a bit more battery)",
            "Unterer Screen in Spielen": "Bottom screen in games",
@@ -1248,16 +1248,18 @@ def game_art(rom):
     return bg, logo
 
 
-_ART_OUTLINE = ("import os,sys\nfrom PIL import Image,ImageFilter,ImageChops\n"
+_ART_OUTLINE = ("import os,sys\nfrom PIL import Image,ImageFilter,ImageChops,ImageOps\n"
                 "i=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA');n=int(sys.argv[3]);i.thumbnail((n,n))\n"
                 "a=i.getchannel('A');bg=Image.new('RGBA',i.size,(0,0,0,255));bg.alpha_composite(i)\n"
-                # Innenkanten (Buchstaben, Ringe): weichgezeichnet, 4 Helligkeitsstufen → keine Verlaufs-Fussel
-                "L=bg.convert('L').filter(ImageFilter.GaussianBlur(2)).point(lambda v:(v*4//256)*85)\n"
-                "e=L.filter(ImageFilter.FIND_EDGES).point(lambda v:255 if v>40 else 0)\n"
-                "if a.getextrema()[0]<250:\n"    # mit Transparenz: dazu der Rand der Logo-Form
+                "L=ImageOps.autocontrast(bg.convert('L'),cutoff=1)\n"
+                "if a.getextrema()[0]<250:\n"
+                # Logo als graue Fläche (helle Stellen heller, Buchstaben bleiben lesbar) + weißer Rand der Form
                 " a=a.point(lambda v:255 if v>100 else 0)\n"
-                " e=ImageChops.lighter(ImageChops.subtract(a,a.filter(ImageFilter.MinFilter(5))),ImageChops.multiply(e,a))\n"
-                "m=e.filter(ImageFilter.MaxFilter(3))\n"
+                " body=ImageChops.multiply(L.point(lambda v:int(40+v*0.55)),a)\n"
+                " edge=ImageChops.subtract(a,a.filter(ImageFilter.MinFilter(5))).filter(ImageFilter.MaxFilter(3))\n"
+                " m=ImageChops.lighter(body,edge)\n"
+                "else:\n"                         # Logo ohne Transparenz: nur Graustufen
+                " m=L.point(lambda v:int(v*0.8))\n"
                 "o=Image.new('RGBA',i.size,(255,255,255,0));o.putalpha(m)\n"
                 "o.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
 
@@ -1267,7 +1269,7 @@ def art_outline(path, limit=900):
     if not path:
         return None
     try:
-        key = "%08x" % (zlib_crc(("outline2|%s|%s" % (path, os.path.getmtime(path))).encode()))
+        key = "%08x" % (zlib_crc(("outline3|%s|%s" % (path, os.path.getmtime(path))).encode()))
     except OSError:
         return None
     out = os.path.join(ART_DIR, key + ".png")
