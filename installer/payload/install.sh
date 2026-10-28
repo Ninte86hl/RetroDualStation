@@ -242,6 +242,9 @@ for f in "$SRC"/ports/*.sh; do
 done
 
 # canvas-ds (Standard-Theme im Dual-Modus, falls im Paket)
+# Infoleiste in der Rasteransicht (Port „RDS Grid Info“): war sie an, nach dem Theme-Update wieder einschalten
+GRIDINFO=""
+grep -q "rds-grid-info.xml" "$THEMEDIR/canvas-rds/theme.xml" 2>/dev/null && GRIDINFO=1
 if [ -d "$SRC/theme/canvas-rds" ]; then
     rm -rf "$THEMEDIR/canvas-rds.new"
     mv "$SRC/theme/canvas-rds" "$THEMEDIR/canvas-rds.new" || fail "Could not copy canvas-ds (not enough space?)."
@@ -249,6 +252,9 @@ if [ -d "$SRC/theme/canvas-rds" ]; then
     mv "$THEMEDIR/canvas-rds.new" "$THEMEDIR/canvas-rds"
     [ -f "$DEST/theme.dual" ] || echo canvas-rds > "$DEST/theme.dual"
     log "Theme kopiert: canvas-rds (Standard im Dual-Modus: $(cat "$DEST/theme.dual"))"
+    if [ -n "$GRIDINFO" ] && [ -x "$PORTS/RDS Grid Info.sh" ]; then
+        bash "$PORTS/RDS Grid Info.sh" --an && log "Grid Info: Infoleiste wieder eingeschaltet"
+    fi
 fi
 
 # Ports-Einträge vor v14 hießen anders (ROCKNIX DualStation / RGDS) – alte Dateien entfernen
@@ -282,6 +288,8 @@ entries = {
         "Zurück zum Original-ES von ROCKNIX auf einem Bildschirm, z. B. zum Scrapen. / Back to stock ROCKNIX ES on one screen, e.g. for scraping."),
     "RDS Artwork Manager.sh": ("Artwork Manager", "rds-artwork.png",
         "Boxart, Icon und Hero-Bild für deine Spiele direkt am Gerät suchen und anpassen. / Find and fit boxart, icons and hero images on the device."),
+    "RDS Grid Info.sh": ("Grid Info", "rds-artwork.png",
+        "Schaltet in der Rasteransicht (canvas-rds) die Infoleiste ein oder aus: Spieler, Name, Jahr, Bewertung, Genre und Tastenhilfe. / Turns the info bar in the grid view (canvas-rds) on or off: players, name, year, rating, genre and button help."),
     "Uninstall RDS.sh": ("Uninstall RDS", "rds-uninstall.png",
         "Entfernt RDS und stellt das Original-ES samt Theme wieder her. Spiele und Spielstände bleiben. / Removes RDS and restores stock ES; games and saves stay."),
     "Install RDS.sh": ("Update RDS", "rds-install.png",

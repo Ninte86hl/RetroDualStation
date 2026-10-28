@@ -11,6 +11,9 @@
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/canvas-view-showcase.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/canvas-view-spotlight.png"> |  |
 | **Showcase** – Cover und Spieleliste | **Spotlight** – eine große Karte, die hereingleitet |  |
 
+**Raster mit Infoleiste:** Über **Ports → Grid Info** zeigt die Rasteransicht unter den Covern eine Leiste mit
+Spielerzahl, Name, Jahr, Bewertung, Genre und der Tastenhilfe. Erneut starten schaltet sie wieder aus.
+
 ## dii-ess-aye rds
 Das zweite mitgelieferte Theme: **dii-ess-aye rds** basiert auf [dii-ess-aye](https://github.com/beebono/dii-ess-aye) von **[beebono](https://github.com/beebono)** – dem Dual-Screen-Theme für das RG DS, mit dem RDS begann (MIT-Lizenz). Umschalten in ES unter *Benutzeroberfläche → Theme*.
 

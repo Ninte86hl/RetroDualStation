@@ -1,8 +1,8 @@
 #!/bin/bash
 # RetroDualStation – Infoleiste in der Rasteransicht (canvas-rds) ein- bzw. ausschalten
 # Unter dem Raster auf dem unteren Bildschirm: Spieler, Spielname, Jahr, Bewertung, Genre und die Tastenhilfe.
-# Aufruf über Ports in EmulationStation (schaltet um: aus → an → aus). Nach einer Neuinstallation von RDS bzw. des
-# Themes einfach noch einmal ausführen.
+# Aufruf über Ports in EmulationStation (schaltet um: aus → an → aus). War die Leiste an, schaltet der RDS-Installer
+# sie nach einem Update wieder ein (--an); nach einer Neuinstallation des Themes von Hand noch einmal ausführen.
 THEME=/storage/.config/emulationstation/themes/canvas-rds
 XML="$THEME/_inc/variants/rds-grid-info.xml"
 INC='	<include>./_inc/variants/rds-grid-info.xml</include>'
@@ -16,7 +16,14 @@ if [ ! -f "$THEME/theme.xml" ] || [ ! -f "$THEME/_inc/variants/variants.xml" ]; 
     exit 1
 fi
 
-if grep -q "rds-grid-info.xml" "$THEME/theme.xml"; then
+# --an: nur einschalten, ohne Neustart und Meldung (vom RDS-Installer, wenn die Leiste vor dem Update an war)
+QUIET=""
+[ "$1" = "--an" ] && QUIET=1
+if [ -n "$QUIET" ] && grep -q "rds-grid-info.xml" "$THEME/theme.xml"; then
+    exit 0
+fi
+
+if [ -z "$QUIET" ] && grep -q "rds-grid-info.xml" "$THEME/theme.xml"; then
     # ---- ausschalten
     sed -i '/rds-grid-info\.xml/d' "$THEME/theme.xml"
     rm -f "$XML"
@@ -145,6 +152,7 @@ if ! grep -q "rds-grid-info.xml" "$THEME/theme.xml"; then
     exit 1
 fi
 log "an"
+[ -n "$QUIET" ] && exit 0
 notify "Grid info on – EmulationStation restarts..."
 sleep 2
 systemctl restart essway

@@ -106,3 +106,12 @@ Update RDS, Single-Modus, Funktionen). Danach behoben und getestet: Gameswitcher
   Rauschen (Gerätebaum ohne `mic-in-differential`) → nur L3.
 - gptokeyb-Wächter (ohne Spiel alle 5 s, > 20 s verwaist) · advanced_drastic: Beenden über Quit-Taste F7, Fenster
   `drastic_v2522` erkannt (Auto-Laden), Programm im Prozessbaum · tools/advanced-drastic (Layout Plus), tools/rds-nightly-check.sh.
+
+## v15.3.5 (vorbereitet 28.10.2026)
+- Port „RDS Grid Info“ (installer/extras): Infoleiste in der Rasteransicht (Spieler, Name, Jahr, Bewertung, Genre,
+  Tastenhilfe) ein/aus; Installer legt den Port an und schaltet die Leiste nach einem Update wieder ein (--an).
+  Positionen nach Screenshots auf dem RG DS abgestimmt.
+- Artwork Manager: Listenvorschau (vorhandene Artworks oben, Hintergrund-Lader, Zwischenspeicher data/cache/liste).
+- CC: DraStic-Vollbild-Wächter (Fensterbreite), Mikrofon-Abhören sparsamer (9 % → 5 % CPU), arecord-Zombie behoben.
+- Nicht im Release (Tests/Erkenntnisse): ROCKNIX-Nightly/InputPlumber (Branch nightly), advanced_drastic-Rückbau,
+  NNDDSS (Kopierschutz), DraStic-Tuning (kein Gewinn), melonDS SA (ROCKNIX-Platzhalterfehler, zu langsam).
