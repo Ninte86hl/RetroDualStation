@@ -4747,6 +4747,7 @@ class ControlCenter:
         elif i == 2:
             if not self.screen_bottom_off:
                 self.screen_off()
+                self.redim = False   # von Hand aus: beim Schließen kein Artwork/Abdunkeln darüber
                 return "close"   # CC schließen, System bleibt bedienbar
             self.screen_on()
         elif i == 3:
@@ -4814,6 +4815,10 @@ class ControlCenter:
     def art_touch(self):
         """Antippen: abgedunkelt → wieder hell (Automatisch: 5 s, dann erneut abdunkeln; Dauerhaft: bleibt hell),
         hell → sofort abdunkeln (beide Einstellungen)."""
+        now = time.monotonic()
+        if self.screen_bottom_off or now - getattr(self, "art_tap_t", 0.0) < 0.6:
+            return          # Screen von Hand aus · prellender Touch (zweites „Loslassen“ direkt danach)
+        self.art_tap_t = now
         if self.art_phase in ("fade", "osd"):
             self.art_cancel()
             if self.bottom_mode() == "dim":
