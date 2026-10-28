@@ -404,6 +404,7 @@ for _fn, _args in {
     "cairo_new_sub_path": [c_void_p], "cairo_close_path": [c_void_p],
     "cairo_new_path": [c_void_p],
     "cairo_fill": [c_void_p], "cairo_paint": [c_void_p], "cairo_stroke": [c_void_p],
+    "cairo_paint_with_alpha": [c_void_p, c_double],
     "cairo_set_line_width": [c_void_p, c_double],
     "cairo_line_to": [c_void_p, c_double, c_double],
     "cairo_curve_to": [c_void_p, c_double, c_double, c_double, c_double, c_double, c_double],
@@ -487,7 +488,7 @@ class Pen:
 
     _png = {}
 
-    def image(self, path, x, y, w, h, r=0, stretch=False):
+    def image(self, path, x, y, w, h, r=0, stretch=False, alpha=1.0):
         """PNG eingepasst (cover) mit abgerundeten Ecken zeichnen. False, wenn nicht ladbar."""
         try:
             key = (path, os.path.getmtime(path))   # neues Bild bei geänderter Datei (Screenshots)
@@ -529,7 +530,10 @@ class Pen:
             cairo.cairo_translate(cr, X + (W - iw * k) / 2, Y + (H - ih * k) / 2)
             cairo.cairo_scale(cr, k, k)
         cairo.cairo_set_source_surface(cr, surf, 0, 0)
-        cairo.cairo_paint(cr)
+        if alpha < 1.0:
+            cairo.cairo_paint_with_alpha(cr, max(0.0, alpha))
+        else:
+            cairo.cairo_paint(cr)
         cairo.cairo_restore(cr)
         return True
 
@@ -1189,16 +1193,18 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 # Unterer Screen in Ein-Bildschirm-Spielen (RetroArch, Ports) – Untermenü an der Kachel „Unterer Screen aus“:
 # aus (wie bisher) · Artwork (Fanart + Logo) 5 s zeigen, dann langsam abdunkeln · Artwork dauerhaft an.
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
-                ("dim", "Artwork, dann abdunkeln", "Fanart mit Logo 5 Sekunden zeigen, dann langsam dunkel"),
+                ("dim", "Artwork, dann abdunkeln", "5 Sekunden Fanart mit Logo, dann nur noch das Logo als Kontur"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an (braucht etwas mehr Akku)")]
 ART_SHOW_S, ART_FADE_S = 5.0, 4.0
+ART_OSD_PCT = 10                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
 PIL_LIB = "/storage/.config/retrodualstation/lib"  # Pillow vom Artwork Manager – nur im Hilfsprozess, nicht im CC
 _ART_CONVERT = ("import os,sys\nfrom PIL import Image\ni=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA')\n"
                 "n=int(sys.argv[3]);i.thumbnail((n,n));i.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
 EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwork dauerhaft": "Artwork always on",
            "Wie bisher: unterer Screen beim Spielstart dunkel": "As before: bottom screen dark when a game starts",
-           "Fanart mit Logo 5 Sekunden zeigen, dann langsam dunkel": "Show fanart with logo for 5 seconds, then fade out",
+           "5 Sekunden Fanart mit Logo, dann nur noch das Logo als Kontur":
+               "Fanart with logo for 5 seconds, then only the logo as an outline",
            "Fanart mit Logo bleibt an (braucht etwas mehr Akku)": "Fanart with logo stays on (uses a bit more battery)",
            "Unterer Screen in Spielen": "Bottom screen in games",
            "Für Spiele mit einem Bildschirm (RetroArch, Ports)": "For games with one screen (RetroArch, ports)",
@@ -1239,6 +1245,36 @@ def game_art(rom):
     bg = next((found[t] for t in ("fanart", "image", "boxart", "thumbnail") if t in found), None)
     logo = found.get("marquee") or found.get("wheel")
     return bg, logo
+
+
+_ART_OUTLINE = ("import os,sys\nfrom PIL import Image,ImageFilter,ImageChops\n"
+                "i=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA');n=int(sys.argv[3]);i.thumbnail((n,n))\n"
+                "a=i.getchannel('A')\n"
+                "if a.getextrema()[0]>=250:\n"   # Logo ohne Transparenz: Kanten des Bildes
+                " m=i.convert('L').filter(ImageFilter.FIND_EDGES).point(lambda v:255 if v>40 else 0).filter(ImageFilter.MaxFilter(3))\n"
+                "else:\n"                         # sonst: Rand der Logo-Form (auch Innenkanten der Buchstaben)
+                " a=a.point(lambda v:255 if v>100 else 0);m=ImageChops.subtract(a,a.filter(ImageFilter.MinFilter(9)))\n"
+                "o=Image.new('RGBA',i.size,(255,255,255,0));o.putalpha(m)\n"
+                "o.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
+
+
+def art_outline(path, limit=900):
+    """Weiße Kontur des Logos (für den abgedunkelten Zustand), einmal im Hilfsprozess erzeugt."""
+    if not path:
+        return None
+    try:
+        key = "%08x" % (zlib_crc(("outline|%s|%s" % (path, os.path.getmtime(path))).encode()))
+    except OSError:
+        return None
+    out = os.path.join(ART_DIR, key + ".png")
+    if not os.path.exists(out):
+        os.makedirs(ART_DIR, exist_ok=True)
+        try:
+            subprocess.run(["python3", "-c", _ART_OUTLINE, path, out, str(limit)], timeout=30,
+                           env=dict(os.environ, PYTHONPATH=PIL_LIB), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError) as exc:
+            log("Logo-Kontur fehlgeschlagen:", exc)
+    return out if os.path.exists(out) else None
 
 
 def art_png(path, limit):
@@ -4487,8 +4523,10 @@ class ControlCenter:
         self.screen_bottom_saved = None   # gespeicherte Helligkeit vor dem Ausschalten
         self.screen_auto = False          # automatisch gedimmt (RetroArch-Start)
         self.art = None                   # Artwork unten in Ein-Bildschirm-Spielen {"rom", "name", "bg", "logo"}
-        self.art_token = 0                # zählt hoch = laufendes Abdunkeln abbrechen
-        self.art_lock = threading.Lock()
+        self.art_phase = None             # None · "show" (hell) · "fade" (blendet über) · "osd" (nur Logo-Kontur)
+        self.art_t0 = 0.0
+        self.art_p = 0.0                  # 0 = Artwork, 1 = nur Kontur
+        self.art_saved = None             # Helligkeit vor dem Abdunkeln (%)
         self.art_dirty = False
         self.ui = None                    # Overlay (in main gesetzt)
         self.bat = (None, False)
@@ -4759,19 +4797,51 @@ class ControlCenter:
         if self.screen_bottom_off:
             self.screen_on()
         if mode == "dim":
-            with self.art_lock:
-                self.art_token += 1
-                tok = self.art_token
-            threading.Thread(target=self._art_fade, args=(tok,), daemon=True).start()
+            self.art_phase, self.art_t0 = "show", time.monotonic()
 
     def art_cancel(self):
-        with self.art_lock:
-            self.art_token += 1
+        """Abdunkeln abbrechen: Helligkeit zurück, Artwork wieder voll (nur im Hauptfaden aufrufen)."""
+        if self.art_phase in ("fade", "osd") and self.art_saved is not None:
+            bl = self._bl_bottom()
+            if bl:
+                bl.set(self.art_saved)
+        was = self.art_p
+        self.art_phase, self.art_saved, self.art_p = None, None, 0.0
+        if was and self.ui and self.ui.art is not None:
+            self.ui.redraw_top("art")
+
+    def art_tick(self):
+        """Hauptschleife: nach 5 s überblenden (Fanart weg, Logo wird Kontur, Helligkeit runter)."""
+        now = time.monotonic()
+        if self.art_phase == "show" and now - self.art_t0 >= ART_SHOW_S:
+            bl = self._bl_bottom()
+            if not bl or not self.ui or self.ui.art is None:
+                self.art_phase = None
+                return False
+            self.art_saved = bl.get()
+            self.art_phase, self.art_t0 = "fade", now
+            self._art_raw = (int(rd(bl.dir + "/brightness") or 0), round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
+        if self.art_phase != "fade":
+            return False
+        p = min(1.0, (now - self.art_t0) / ART_FADE_S)
+        self.art_p = p
+        bl = self._bl_bottom()
+        if bl:
+            r0, r1 = self._art_raw
+            wr(bl.dir + "/brightness", max(1, round(r0 + (r1 - r0) * p)))
+        self.ui.redraw_top("art")
+        if p >= 1.0:
+            self.art_phase = "osd"
+            log("Unterer Screen: Artwork abgedunkelt (Logo-Kontur)")
+            return False
+        return True
 
     def art_show(self, g):
         rom = g.get("rom") or rom_of(g["pid"])
         if not self.art or self.art["rom"] != rom:
-            self.art = {"rom": rom, "name": g.get("name") or "", "bg": None, "logo": None, "loaded": False}
+            self.art_cancel()
+            self.art = {"rom": rom, "name": g.get("name") or "", "bg": None, "logo": None, "outline": None,
+                        "loaded": False}
             threading.Thread(target=self._art_load, args=(self.art,), daemon=True).start()
         if self.ui.art is None:
             self.ui.show_top(self.paint_art, slot="art", output=self.ui.current_output())
@@ -4784,6 +4854,7 @@ class ControlCenter:
             bg, logo = game_art(a["rom"])
             a["bg"] = art_png(bg, 1280)
             a["logo"] = art_png(logo, 900)
+            a["outline"] = art_outline(a["logo"])   # immer: Umschalten auf „abdunkeln“ mitten im Spiel
         except Exception as exc:
             log("Artwork laden:", exc)
         a["loaded"] = True
@@ -4795,53 +4866,35 @@ class ControlCenter:
             self.ui.hide_top("art")
             log("Unterer Screen: Artwork weg")
         a, self.art = self.art, None
-        for path in (a or {}).get("bg"), (a or {}).get("logo"):   # Bildspeicher freigeben
+        for path in (a or {}).get("bg"), (a or {}).get("logo"), (a or {}).get("outline"):   # Bildspeicher freigeben
             for k in [k for k in Pen._png if k[0] == path]:
                 if Pen._png[k]:
                     cairo.cairo_surface_destroy(Pen._png[k])
                 del Pen._png[k]
 
-    def _art_fade(self, tok):
-        """5 s Artwork, dann die Helligkeit langsam auf 0 (gilt dann als automatisch aus: Anbernic weckt)."""
-        end = time.monotonic() + ART_SHOW_S
-        while time.monotonic() < end:
-            time.sleep(0.1)
-            if tok != self.art_token:
-                return
-        bl = self._bl_bottom()
-        if not bl:
-            return
-        with self.art_lock:
-            if tok != self.art_token or self.screen_bottom_off:
-                return
-            pct = bl.get()
-            raw0 = int(rd(bl.dir + "/brightness") or 0)
-            self.screen_bottom_saved = pct
-            self.screen_bottom_off = True
-            self.screen_auto = True
-        steps = int(ART_FADE_S / 0.05)
-        for i in range(1, steps + 1):
-            time.sleep(0.05)
-            with self.art_lock:
-                if tok != self.art_token:
-                    return
-                wr(bl.dir + "/brightness", round(raw0 * (1 - i / steps) ** 2))
-        log("Unterer Screen: Artwork abgedunkelt")
-
     def paint_art(self, cr, w, h):
-        """Artwork unten: Fanart bildschirmfüllend, leicht abgedunkelt, Logo mittig (sonst der Name)."""
+        """Artwork unten: Fanart bildschirmfüllend, leicht abgedunkelt, Logo mittig (sonst der Name).
+        Abgedunkelt (art_p → 1): Fanart und Logo blenden aus, die weiße Logo-Kontur ein (wie ein Always-on-Display)."""
         P = Pen(cr, w, h)
         P.fill_all("000000")
         a = self.art or {}
+        q = 1.0 - self.art_p
         x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
-        if a.get("bg") and P.image(a["bg"], x0, y0, fw, fh):
-            P.rrect(x0, y0, fw, fh, 0, "000000", 0.3)
+        if q > 0.01 and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, alpha=q):
+            P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 * q)
         logo, drawn = a.get("logo"), False
         sz = png_size(logo) if logo else None
         if sz and sz[0] and sz[1]:
             k = min(900 / sz[0], 400 / sz[1])
             lw, lh = sz[0] * k, sz[1] * k
-            drawn = P.image(logo, 630 - lw / 2, 475 - lh / 2, lw, lh, stretch=True)
+            lx, ly = 630 - lw / 2, 475 - lh / 2
+            drawn = P.image(logo, lx, ly, lw, lh, stretch=True, alpha=q) if q > 0.01 else True
+            outline = a.get("outline")
+            if self.art_p > 0.01 and outline:
+                osz = png_size(outline) or sz
+                k2 = min(900 / osz[0], 400 / osz[1])
+                P.image(outline, 630 - osz[0] * k2 / 2, 475 - osz[1] * k2 / 2, osz[0] * k2, osz[1] * k2,
+                        stretch=True, alpha=self.art_p)
         if not drawn and a.get("loaded") and a.get("name"):
             name = a["name"]
             while P.width(name, 56, bold=True, raw=True) > 1150 and len(name) > 4:
@@ -8097,7 +8150,7 @@ def main():
                 or (home_down["t"] is not None and not home_down["fired"]) \
                 or home_down["pending"] is not None \
                 or cc.gbusy or (cc.gmsg is not None and time.monotonic() - cc.gmsg[1] < 4.5) \
-                or cc.toast_now is not None or bool(cc.toasts)
+                or cc.toast_now is not None or bool(cc.toasts) or cc.art_phase == "fade"
             for fd in ui.pump(0.05 if busy else 0.3 if cc.loading else 0.5 if cc.sub else 1.0, fds):
                 try:
                     if fd == WAKE_R:
@@ -8287,6 +8340,8 @@ def main():
                 cc.art_dirty = False
                 if ui.art is not None:
                     ui.redraw_top("art")
+            if cc.art_phase in ("show", "fade"):
+                cc.art_tick()
             # Meldungen oben (Lautstärke, Erfolge): eine nach der anderen, nie über Ladebildschirm/Tour
             now = time.monotonic()
             if cc.toast_now and now >= cc.toast_until:
