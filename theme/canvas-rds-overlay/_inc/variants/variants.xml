@@ -6,14 +6,14 @@
 
       Gamelist view style      View
       Detailed                 Detailed: large cover (boxart), title, description, info (no carousel)
-      Grid                     Grid    : canvas-ds game grid without metadata (boxart)
-      Grid Info                Grid with info bar (players, name, year, rating, genre, help)
+      Grid                     Grid    : canvas-ds game grid (boxart)
       Automatic / Carousel     Icons   : 3 square icons like the system view (thumbnail)
       Spotlight                Spotlight: one large card, 2:3 cover (boxart) + logo (marquee), slides sideways
       Showcase                 Showcase: large icon + play time on the left, name carousel on the right
 
     "Automatic" = "Carousel" (theme root: defaultView="gamecarousel").
     Top screen in all views: hero artwork (image), video fades in after 5 s.
+    Bottom screen in all views except Detailed: info bar (players, name, year, rating, genre, help).
     Media tags as written by RocknixDS Artwork Manager:
       Hero -> image   (romname-hero.png)
       Icon -> cartridge (romname-icon.png)
@@ -47,7 +47,7 @@
 
 		<!-- Top screen: hero artwork, video after 5 seconds -->
 		<video name="md_video">
-			<pos>0.25 0.44</pos><!-- centred at the height of the icon row -->
+			<pos>0.25 0.40</pos><!-- centred at the height of the icon row -->
 			<origin>0.5 0.5</origin>
 			<maxSize>0.44 0.6</maxSize>
 			<delay>5</delay>
@@ -192,12 +192,11 @@
 	</view>
 
 	<!-- ===================================================== Grid -->
-	<!-- canvas-ds "Game Grid" layout without the metadata bars: the grid uses
-	     the space of the bars. Covers from boxart (falls back to the icon/box). -->
+	<!-- canvas-ds "Game Grid" layout, the info bar below (see Info bar). Covers from boxart (falls back to the icon/box). -->
 	<view name="grid">
 		<imagegrid name="gamegrid">
-			<pos>0.5 0.06</pos>
-			<size>0.5 0.88</size>
+			<pos>0.5 0.03</pos>
+			<size>0.5 0.74</size>
 			<imageSource>boxart</imageSource>
 		</imagegrid>
 	</view>
@@ -211,7 +210,7 @@
 		<gamecarousel name="gamecarousel">
 			<type>horizontal</type>
 			<origin>0 0.5</origin>
-			<pos>0.5 0.44</pos>
+			<pos>0.5 0.40</pos>
 			<size>0.5 1</size>
 			<logoSize>0.255 0.345</logoSize><!-- relative to the carousel: 261 x 265 px -->
 			<logoScale>1.3</logoScale><!-- selected: 339 x 344 px -->
@@ -232,32 +231,14 @@
 		<text name="gamecarouselLogoText">
 			<color>${systemInfoColor}</color>
 		</text>
-		<!-- Name of the selected game below the icons -->
-		<text name="md_name">
-			<origin>0.5 0.5</origin>
-			<pos>0.75 0.72</pos>
-			<size>0.46 0.06</size>
-			<alignment>center</alignment>
-			<fontPath>${fontBold}</fontPath>
-			<fontSize>${systemYearFontSize}</fontSize>
-			<color>${systemInfoColor}</color>
-			<autoScroll>horizontal</autoScroll>
-			<visible>true</visible>
-			<zIndex>20</zIndex>
-		</text>
 	</view>
 
-	<!-- ===================================================== Grid Info (grid + info bar) -->
-	<!-- Like Grid, with an info bar below the covers on the bottom screen: players, name (row 1),
-	     year, rating, genre (row 2) in the pills of the canvas-ds bar graphic, plus the button help.
-	     Positions tuned with screenshots on the RG DS (28.10.2026). -->
-	<customView name="gridinfo" displayName="Grid Info" inherits="grid">
-		<!-- grid a bit smaller: room for the bar -->
-		<imagegrid name="gamegrid">
-			<pos>0.5 0.03</pos>
-			<size>0.5 0.74</size>
-		</imagegrid>
-
+	<!-- ===================================================== Info bar (all views except Detailed) -->
+	<!-- Bar below the games on the bottom screen: players, name (row 1), year, rating, genre (row 2)
+	     in the pills of the canvas-ds bar graphic, plus the button help (same size as the bar text).
+	     Positions tuned with screenshots on the RG DS (28.10.2026). Spotlight and Showcase inherit
+	     it from gamecarousel. -->
+	<view name="gamecarousel, grid">
 		<!-- bar background (canvas-ds metadata background) -->
 		<image name="rds-grid-bar-shadow" extra="true">
 			<path>./_inc/images/simple/gamelist-metadata-background-shadow-base.webp</path>
@@ -299,6 +280,7 @@
 			<fontPath>${fontBold}</fontPath>
 			<color>${systemInfoColor}</color>
 			<alignment>left</alignment>
+			<autoScroll>horizontal</autoScroll>
 			<zIndex>4</zIndex>
 			<visible>true</visible>
 		</text>
@@ -334,9 +316,9 @@
 		<!-- help buttons at the bottom of the bottom screen -->
 		<helpsystem name="help">
 			<origin>0 0.5</origin>
-			<pos>0.51 0.965</pos>
-			<size>0.48 ${metaDatafontSize}</size>
-			<fontSize>0.018</fontSize>
+			<pos>0.505 0.965</pos>
+			<size>0.49 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
 			<fontPath>${fontBold}</fontPath>
 			<textColor>${helpTextColor}</textColor>
 			<iconColor>${helpTextColor}</iconColor>
@@ -346,7 +328,7 @@
 			<iconY>./_inc/images/help-button-west.svg</iconY>
 			<visible>true</visible>
 		</helpsystem>
-	</customView>
+	</view>
 
 	<!-- ===================================================== Spotlight (grid + logo) -->
 	<!-- Horizontal carousel like the system view, but only ONE large card is
@@ -356,7 +338,7 @@
 		<gamecarousel name="gamecarousel">
 			<type>horizontal</type>
 			<origin>0 0.5</origin>
-			<pos>0.5 0.44</pos>
+			<pos>0.5 0.40</pos>
 			<size>0.5 1</size>
 			<!-- In custom views ES takes logoSize relative to the whole screen
 			     (2048 x 768): 0.44 x 0.56 = 901 x 430 px card -->
@@ -409,9 +391,6 @@
 		<image name="gamecarouselLogo">
 			<roundCorners>0</roundCorners>
 		</image>
-		<text name="md_name">
-			<visible>false</visible>
-		</text>
 	</customView>
 
 	<!-- ===================================================== Showcase -->
@@ -421,8 +400,8 @@
 		<image name="sc_icon" extra="true">
 			<path>firstfile({game:boxart}, {game:cartridge}, {game:thumbnail}, {game:image})</path>
 			<origin>0.5 0</origin>
-			<pos>0.62 0.125</pos><!-- top and bottom aligned with the list panel (0.125 - 0.875), vertically centred -->
-			<maxSize>0.19 0.75</maxSize><!-- grid 2:3, about 384 x 576 px -->
+			<pos>0.62 0.04</pos><!-- above the info bar (0.04 - 0.74), centred with the list -->
+			<maxSize>0.19 0.70</maxSize><!-- grid 2:3, about 358 x 538 px -->
 			<roundCorners>${CornersLarge}</roundCorners>
 			<linearSmooth>true</linearSmooth>
 			<zIndex>20</zIndex>
@@ -431,7 +410,7 @@
 		<image name="sc_selector" extra="true">
 			<path>${themePath}/_inc/variants/bar.svg</path>
 			<origin>0.5 0.5</origin>
-			<pos>0.855 0.5</pos><!-- centre of the list panel -->
+			<pos>0.855 0.39</pos><!-- centre of the list -->
 			<size>0.228 0.065</size>
 			<color>${gamelistSelectorColor}</color>
 			<zIndex>40</zIndex>
@@ -439,14 +418,14 @@
 		<gamecarousel name="gamecarousel">
 			<type>vertical</type>
 			<origin>0 0.5</origin>
-			<pos>0.741 0.5</pos>
-			<!-- 9 rows of 59 px = 531 px (0.69): 4 above and 4 below the
-			     selection, rows outside the carousel are clipped completely -->
-			<size>0.228 0.67</size>
+			<pos>0.741 0.39</pos>
+			<!-- 7 rows of about 57 px (0.52): 3 above and 3 below the selection,
+			     rows outside the carousel are clipped completely -->
+			<size>0.228 0.52</size>
 			<!-- screen-relative (custom view): 467 x 50 px per name -->
 			<logoSize>0.228 0.065</logoSize>
 			<logoScale>1</logoScale>
-			<maxLogoCount>9</maxLogoCount>
+			<maxLogoCount>7</maxLogoCount>
 			<scaledLogoSpacing>0</scaledLogoSpacing>
 			<logoRotation>0</logoRotation>
 			<logoAlignment>left</logoAlignment>
@@ -482,7 +461,7 @@
 		     like a news ticker -->
 		<text name="md_name">
 			<origin>0 0.5</origin>
-			<pos>0.772 0.5</pos>
+			<pos>0.772 0.39</pos>
 			<size>0.198 0.065</size>
 			<alignment>left</alignment>
 			<fontPath>${fontBold}</fontPath>
@@ -493,6 +472,18 @@
 			<autoScrollSpeed>40</autoScrollSpeed>
 			<visible>true</visible>
 			<zIndex>60</zIndex>
+		</text>
+		<!-- md_name is on the selection bar here, so the info bar shows the name as an extra -->
+		<text name="rds-bar-name" extra="true">
+			<text>{game:name}</text>
+			<origin>0 0.5</origin>
+			<pos>0.625 0.822</pos>
+			<size>0.35 ${metaDatafontSize}</size>
+			<fontSize>${metaDatafontSize}</fontSize>
+			<fontPath>${fontBold}</fontPath>
+			<color>${systemInfoColor}</color>
+			<alignment>left</alignment>
+			<zIndex>4</zIndex>
 		</text>
 	</customView>
 </theme>

@@ -11,8 +11,8 @@
 | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/canvas-view-showcase.png"> | <img src="https://raw.githubusercontent.com/Ninte86hl/RetroDualStation/main/docs/screenshots/canvas-view-spotlight.png"> |  |
 | **Showcase** – cover and game list | **Spotlight** – one large card that slides in |  |
 
-**Grid Info** – the grid with an info bar below the covers: players, name, year, rating, genre and the button help.
-Choose it per system under *Gamelist view style*.
+**Info bar** – all views except Detailed show a bar at the bottom of the bottom screen: players, name, year, rating,
+genre and the button help.
 
 ## dii-ess-aye rds
 The second bundled theme: **dii-ess-aye rds** is based on [dii-ess-aye](https://github.com/beebono/dii-ess-aye) by **[beebono](https://github.com/beebono)** – the dual-screen theme for the RG DS that RDS started from (MIT license). Switch in ES under *UI settings → Theme*.
