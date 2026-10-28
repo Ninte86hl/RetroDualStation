@@ -360,3 +360,8 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
       Geschwindigkeit, Ton stottert. Engpass = Emulator-Hauptfaden (Kern 0: 95 % bei 2x, 60 % bei 1x). GPU 800 MHz,
       CPU performance, Kernzuordnung, Frameskip auto → kein spürbarer Gewinn. NNDDSS ist besser, weil DraStic r2.6
       (Android) statt r2.5 (Linux). Offen/Ideen: Exophase um r2.6 für ARM64-Linux bitten; 2x pro Spiel merken.
+- [x] **28.10. melonDS SA (ROCKNIX) auf dem Plus:** startete gar nicht – ROCKNIX-Fehler in start_melonds.sh Zeile 179:
+      Platzhalter `@LIBMALI@@LIBMALI@` statt `&&` (package.mk: sed-Ersetzung mit `&`) → Syntaxfehler. Test per Bind-Mount
+      repariert: läuft (zwei Fenster, Window0 nur oben / Window1 nur unten, keine Sway-Regeln für melonDS; Menü nur über
+      HKJoy_FullscreenToggle, bei ROCKNIX unbelegt). Ergebnis: ruckelt in Zelda PH zu stark → nicht weiter verfolgt.
+      Offen: Fehlerbericht an ROCKNIX (Platzhalter).
