@@ -109,7 +109,11 @@ Licnese: Creative Commons CC-BY-NC-SA
 	<!-- SystemView Include -->
 	<!-- ~~~~~~~~~~~~~ -->
 
-	<include>./_inc/system-view/carousel.xml</include>
+	<!-- RDS: System view style (ES: theme configuration → System view). Carousel stays the default. -->
+	<subset name="systemview" displayName="System View">
+		<include name="carousel" displayName="Carousel">./_inc/system-view/carousel.xml</include>
+		<include name="grid" displayName="Grid">./_inc/system-view/grid.xml</include>
+	</subset>
 
 	<!-- Screen View -->
 	<!-- ~~~~~~~~~~~ -->

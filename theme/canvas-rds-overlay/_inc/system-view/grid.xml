@@ -7,8 +7,9 @@
 	<view name="system">
 	<imagegrid name="imagegrid">
 		<zIndex>20</zIndex>
-		<pos>0.5 0.08</pos>
-			<size>0.5 0.9</size>
+		<!-- RDS: bottom screen, room for the button help below (0.97) -->
+		<pos>0.505 0.03</pos>
+			<size>0.49 0.89</size>
 			<autoLayout>3 2</autoLayout>
 			<cellProportion>1</cellProportion>
 		<margin>0</margin>
@@ -213,6 +214,13 @@
 
 		<text name="systemInfo">
             <visible>false</visible>
+		</text>
+		<!-- RDS: game count top left on the top screen, like systemInfo in the carousel -->
+		<text name="systemInfoGrid" extra="true">
+			<pos>0.0375 0.05</pos>
+			<size>0 ${systemInfoFontSize}</size>
+			<fontSize>${systemInfoFontSize}</fontSize>
+			<visible>true</visible>
 		</text>
 	</view>
 
