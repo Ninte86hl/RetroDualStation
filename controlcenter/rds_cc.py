@@ -4880,8 +4880,8 @@ class ControlCenter:
             self.art_phase, self.art_t0 = "show", time.monotonic()   # wie lowerdeck: Berührung startet die 5 s neu
 
     ART_PANEL_ROWS = [("Helligkeit", "oben"), ("Lautstärke", "vol")]   # Helligkeit = oberer Screen (Spiel)
-    ART_PANEL_Y, ART_PANEL_ROW = 640, 112                   # Entwurfs-Koordinaten (1260 × 951)
-    ART_TRACK = (300, 800)                                  # Regler: x von … Breite
+    ART_PANEL_Y, ART_PANEL_ROW, ART_PILL_H = 590, 140, 110  # Entwurfs-Koordinaten (1260 × 951)
+    ART_TRACK = (60, 1140)                                  # Pille: x von … Breite (wie am Smartphone)
 
     def _art_design(self, x, y, size):
         w, h = size
@@ -4904,7 +4904,7 @@ class ControlCenter:
         p = self.art_panel
         x0, tw = self.ART_TRACK
         key = self.ART_PANEL_ROWS[row][1]
-        val = max(0 if key == "vol" else 5, min(100, round((xd - x0) / tw * 100)))
+        val = max(0 if key == "vol" else 5, min(100, int(round((xd - x0) / tw * 20)) * 5))   # 5er-Schritte
         if val == p["vals"][row] and not final:
             return
         p["vals"][row] = val
@@ -4931,7 +4931,9 @@ class ControlCenter:
             self.art_sw = [x, y, x, y]
             if pnl and bright:
                 row = int((yd - self.ART_PANEL_Y) // self.ART_PANEL_ROW) if yd >= self.ART_PANEL_Y else -1
-                if 0 <= row < len(self.ART_PANEL_ROWS) and self.ART_TRACK[0] - 60 <= xd <= sum(self.ART_TRACK) + 60:
+                inside = 0 <= row < len(self.ART_PANEL_ROWS) and \
+                    yd - self.ART_PANEL_Y - row * self.ART_PANEL_ROW <= self.ART_PILL_H + 10
+                if inside and self.ART_TRACK[0] - 20 <= xd <= sum(self.ART_TRACK) + 20:
                     pnl["drag"] = row                     # Finger auf einem Regler: verschieben
                     self._art_panel_set(row, xd, final=False)
                     self.ui.redraw_top("art")
@@ -4977,7 +4979,7 @@ class ControlCenter:
             return
         new = max(-1, min(1, self.art_page + d))
         if new != self.art_page:
-            self.art_page = new
+            self.art_page, self.art_panel = new, None      # andere Seite: Regler ausblenden
             haptic("tap")
             log("Unterer Screen: Seite", {-1: "Erfolge", 0: "Start", 1: "Beschreibung"}[new])
             self.ui.redraw_top("art")
@@ -5088,24 +5090,28 @@ class ControlCenter:
         else:
             self._paint_art(P, x0, y0, fw, fh, 0.0, a)
             self._paint_bar(P, x0, y0, fw, a)
-        if self.art_panel:                                 # Regler-Leiste (hoch wischen)
-            A = self.accent
-            top = self.ART_PANEL_Y - 28
-            P.rrect(30, top, 1200, len(self.ART_PANEL_ROWS) * self.ART_PANEL_ROW + 46, 30, "141414", 0.92)
+        if self.art_panel:                                 # Regler als breite Pillen (wie am Smartphone)
             x0, tw = self.ART_TRACK
+            ph = self.ART_PILL_H
             for r, (label, key) in enumerate(self.ART_PANEL_ROWS):
-                cy = self.ART_PANEL_Y + r * self.ART_PANEL_ROW + self.ART_PANEL_ROW / 2
+                y = self.ART_PANEL_Y + r * self.ART_PANEL_ROW
                 v = self.art_panel["vals"][r]
+                P.rrect(x0, y, tw, ph, ph / 2, "1e1e1e", 0.88)
+                fw2 = tw * v / 100
+                if fw2 > 1:                                # Füllung von links, Enden rund
+                    P.clip(x0, y, fw2, ph)
+                    P.rrect(x0, y, tw, ph, ph / 2, "e8e8e8")
+                    P.unclip()
+                cy = y + ph / 2
+                ix = x0 + 62
+                ic = "1e1e1e" if fw2 > 90 else "ffffff"   # Symbol links in der Pille
                 if key == "vol":
-                    P.rrect(70, cy - 10, 12, 20, 3, "ffffff")
-                    P.poly([(80, cy - 10), (96, cy - 22), (96, cy + 22), (80, cy + 10)], "ffffff")
+                    P.rrect(ix - 18, cy - 11, 13, 22, 3, ic)
+                    P.poly([(ix - 7, cy - 11), (ix + 10, cy - 25), (ix + 10, cy + 25), (ix - 7, cy + 11)], ic)
                 else:
-                    P.sun(84, cy, "ffffff")
-                P.text(label, 22, 125, cy + 8, "ffffff", bold=True)
-                P.rrect(x0, cy - 9, tw, 18, 9, "ffffff", 0.18)
-                P.rrect(x0, cy - 9, max(18, tw * v / 100), 18, 9, A)
-                P.circle(x0 + tw * v / 100, cy, 20 if self.art_panel.get("drag") == r else 16, "ffffff")
-                P.text("%d %%" % v, 22, 1190, cy + 8, "ffffff", bold=True, align="r", raw=True)
+                    P.sun(ix, cy, ic)
+                tc = "1e1e1e" if fw2 > tw / 2 + 40 else "ffffff"
+                P.text("%d %%" % v, 30, x0 + tw / 2, cy + 11, tc, bold=True, align="c", raw=True)
         for i in (-1, 0, 1):                               # Seitenpunkte
             on = i == self.art_page
             P.rrect(630 + i * 34 - (14 if on else 6), y0 + fh - 34, 28 if on else 12, 12, 6, "ffffff", 0.9 if on else 0.4)
