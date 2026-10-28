@@ -356,3 +356,7 @@ docs/rocknix-nightly-inputplumber.md · Umbau als Test auf Branch `nightly` (kei
       Technisch lief der Start an (Wayland, GPU/CPU, Touch), bricht aber mit `check_encryption_result: (377) err` ab:
       Kopierschutz über den Anbernic-Displaytreiber (/sys/class/deeplayer/…, send/recv_encryption_data) – bindet das
       Programm an die Original-Firmware. Umgehen machen wir nicht. tools/nnddss/rds-nnddss.sh bleibt nur zum Entfernen.
+- [x] **28.10. DraStic-Tuning nach NNDDSS-Vorbild (tools/rds-drastic-tuning.sh):** Zelda PH 2x auf dem Plus 80–87 %
+      Geschwindigkeit, Ton stottert. Engpass = Emulator-Hauptfaden (Kern 0: 95 % bei 2x, 60 % bei 1x). GPU 800 MHz,
+      CPU performance, Kernzuordnung, Frameskip auto → kein spürbarer Gewinn. NNDDSS ist besser, weil DraStic r2.6
+      (Android) statt r2.5 (Linux). Offen/Ideen: Exophase um r2.6 für ARM64-Linux bitten; 2x pro Spiel merken.
