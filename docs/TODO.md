@@ -27,7 +27,7 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 - [ ] **Artwork unten in Ein-Bildschirm-Spielen** (Nutzerwunsch 28.10., wie ES-DE Companion) – auf `kontrollcenter`,
   RG DS getestet 28.10. ✓ (alle drei Einstellungen, Antippen, Spielwechsel); offen: Plus, Feintuning am Wochenende,
   Beschreibung DE/EN aus dem Chat in Notes/Wiki: CC-Kachel „Unterer Screen aus“ → Pfeil/X → Aus (wie bisher) · Artwork, dann abdunkeln (5 s, dann 3 s
-  Überblendung auf weiße Logo-Kontur bei 10 % Helligkeit, wie ein Always-on-Display; Antippen = hell ↔ dunkel) · Artwork dauerhaft (Antippen =
+  Überblendung auf weiße Logo-Kontur (Rand + Innenkanten) bei 15 % Helligkeit, wie ein Always-on-Display; Antippen = hell ↔ dunkel) · Artwork dauerhaft (Antippen =
   abdunkeln ↔ hell). Fanart + Logo (marquee) aus der gamelist, sonst Hero/Boxart; JPG/WebP werden per
   Hilfsprozess (Pillow aus lib/) nach /tmp/rds-art umgewandelt. Prüfen: RG DS + Plus, Wecken mit Anbernic/Wischen,
   Gameswitcher-Wechsel RA→RA/RA→DS, Ports, Akku. Danach Release-Notes/Wiki/Tour.

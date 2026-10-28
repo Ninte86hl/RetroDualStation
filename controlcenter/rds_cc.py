@@ -1196,7 +1196,7 @@ BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunke
                 ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo als Kontur · Antippen: hell/dunkel"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell")]
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
-ART_OSD_PCT = 10                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
+ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
 PIL_LIB = "/storage/.config/retrodualstation/lib"  # Pillow vom Artwork Manager – nur im Hilfsprozess, nicht im CC
 _ART_CONVERT = ("import os,sys\nfrom PIL import Image\ni=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA')\n"
@@ -1250,11 +1250,14 @@ def game_art(rom):
 
 _ART_OUTLINE = ("import os,sys\nfrom PIL import Image,ImageFilter,ImageChops\n"
                 "i=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA');n=int(sys.argv[3]);i.thumbnail((n,n))\n"
-                "a=i.getchannel('A')\n"
-                "if a.getextrema()[0]>=250:\n"   # Logo ohne Transparenz: Kanten des Bildes
-                " m=i.convert('L').filter(ImageFilter.FIND_EDGES).point(lambda v:255 if v>40 else 0).filter(ImageFilter.MaxFilter(3))\n"
-                "else:\n"                         # sonst: Rand der Logo-Form (auch Innenkanten der Buchstaben)
-                " a=a.point(lambda v:255 if v>100 else 0);m=ImageChops.subtract(a,a.filter(ImageFilter.MinFilter(9)))\n"
+                "a=i.getchannel('A');bg=Image.new('RGBA',i.size,(0,0,0,255));bg.alpha_composite(i)\n"
+                # Innenkanten (Buchstaben, Ringe): weichgezeichnet, 4 Helligkeitsstufen → keine Verlaufs-Fussel
+                "L=bg.convert('L').filter(ImageFilter.GaussianBlur(2)).point(lambda v:(v*4//256)*85)\n"
+                "e=L.filter(ImageFilter.FIND_EDGES).point(lambda v:255 if v>40 else 0)\n"
+                "if a.getextrema()[0]<250:\n"    # mit Transparenz: dazu der Rand der Logo-Form
+                " a=a.point(lambda v:255 if v>100 else 0)\n"
+                " e=ImageChops.lighter(ImageChops.subtract(a,a.filter(ImageFilter.MinFilter(5))),ImageChops.multiply(e,a))\n"
+                "m=e.filter(ImageFilter.MaxFilter(3))\n"
                 "o=Image.new('RGBA',i.size,(255,255,255,0));o.putalpha(m)\n"
                 "o.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
 
@@ -1264,7 +1267,7 @@ def art_outline(path, limit=900):
     if not path:
         return None
     try:
-        key = "%08x" % (zlib_crc(("outline|%s|%s" % (path, os.path.getmtime(path))).encode()))
+        key = "%08x" % (zlib_crc(("outline2|%s|%s" % (path, os.path.getmtime(path))).encode()))
     except OSError:
         return None
     out = os.path.join(ART_DIR, key + ".png")
