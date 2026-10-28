@@ -1191,16 +1191,11 @@ SYSTEMS = {"nds": "Nintendo DS", "gba": "Game Boy Advance", "gb": "Game Boy",
 AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automatisch dunkel
 
 # Unterer Screen in Ein-Bildschirm-Spielen (RetroArch, Ports) – Untermenü an der Kachel „Unterer Screen aus“.
-# Drei Einstellungen, frei kombinierbar: was gezeigt wird · wann abgedunkelt wird · wie es abgedunkelt aussieht.
+# Wählbar ist nur, was gezeigt wird. Abdunkeln wie ROCKNIX lowerdeck: nach 5 s ohne Berührung in 0,5 s zu Schwarz,
+# dann Hintergrundlicht aus; Antippen weckt jederzeit (bzw. startet die 5 s neu).
 BOTTOM_SHOW = [("off", "Aus"), ("fanart", "Fanart"), ("logo", "Logo"), ("both", "Fanart + Logo")]
-BOTTOM_WHEN = [("never", "Nie"), ("auto", "Nach 5 s"), ("tap", "Antippen")]
-BOTTOM_HOW = [("black", "Schwarz"), ("outline", "Kontur"), ("white", "Logo weiß"), ("dim", "Gedimmt")]
-BOTTOM_ROWS = [("bottom_show", "Anzeige", BOTTOM_SHOW, "off"), ("bottom_when", "Abdunkeln", BOTTOM_WHEN, "auto"),
-               ("bottom_how", "Abgedunkelt", BOTTOM_HOW, "black")]
-ART_DIM_ALPHA = 0.7       # „Gedimmt“: so viel Schwarz liegt über dem Bild
 ART_DARK_FADE_S = 0.5     # wie bei ROCKNIX lowerdeck: schnell abblenden
-ART_SHOW_S, ART_FADE_S = 5.0, 3.0
-ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
+ART_SHOW_S = 5.0
 ART_DIR = "/tmp/rds-art"                          # umgewandelte Bilder (JPG/WebP → PNG), nur bis zum Neustart
 PIL_LIB = "/storage/.config/retrodualstation/lib"  # Pillow vom Artwork Manager – nur im Hilfsprozess, nicht im CC
 _ART_CONVERT = ("import os,sys\nfrom PIL import Image\ni=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA')\n"
@@ -1210,6 +1205,9 @@ EN.update({"Anzeige": "Show", "Abdunkeln": "Dim", "Abgedunkelt": "When dimmed", 
            "Schwarz": "Black", "Kontur": "Outline", "Logo weiß": "White logo", "Gedimmt": "Dimmed",
            "hell": "bright", "abgedunkelt": "dimmed", "Vorschau im Spiel": "Preview in a game", "fertig": "done",
            "ändern": "change", "Spiele: ": "Games: ", "aus": "off",
+           "Unterer Screen dunkel": "Bottom screen dark",
+           "Nach 5 s ohne Berührung wird es schwarz (wie lowerdeck) · Antippen weckt":
+               "After 5 s without touch it goes black (like lowerdeck) · tap to wake",
            "Antippen weckt bzw. dunkelt ab · Wischen von oben öffnet das Kontrollcenter":
                "Tap wakes or dims · swipe down from the top opens the Control Center",
            "Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwork dauerhaft": "Artwork always on",
@@ -1266,49 +1264,6 @@ def game_art(rom):
     logo = found.get("marquee") or found.get("wheel")
     return bg, logo
 
-
-_ART_OUTLINE = ("import os,sys\nfrom PIL import Image,ImageFilter,ImageChops,ImageOps\n"
-                "i=Image.open(sys.argv[1]);i.load();i=i.convert('RGBA');n=int(sys.argv[3]);i.thumbnail((n,n))\n"
-                "a=i.getchannel('A');bg=Image.new('RGBA',i.size,(0,0,0,255));bg.alpha_composite(i)\n"
-                # gleich hell: helle Teile des Logos einheitlich weiß, dunkle Linien/Schatten schwarz (trennt die Buchstaben)
-                "L=ImageOps.autocontrast(bg.convert('L').filter(ImageFilter.GaussianBlur(0.8)),cutoff=1)\n"
-                "h=L.histogram(mask=a.point(lambda v:255 if v>100 else 0));t=sum(h) or 1;mu=sum(k*h[k] for k in range(256))/t\n"
-                "best,th,w0,s0=-1,80,0,0\n"       # Schwelle nach Otsu: trennt helle Flächen von dunklen Linien
-                "for k in range(255):\n"
-                " w0+=h[k];s0+=k*h[k]\n"
-                " if 0<w0<t:\n"
-                "  m0=s0/w0;m1=(mu*t-s0)/(t-w0);v=w0*(t-w0)*(m0-m1)**2\n"
-                "  if v>best:best,th=v,k\n"
-                "m=L.point(lambda v:255 if v>th else 0)\n"
-                "if a.getextrema()[0]<250:\n"
-                " a=a.point(lambda v:255 if v>100 else 0)\n"
-                " edge=ImageChops.subtract(a,a.filter(ImageFilter.MinFilter(5))).filter(ImageFilter.MaxFilter(3))\n"
-                " m=ImageChops.lighter(ImageChops.multiply(m,a),edge)\n"
-                "m=m.filter(ImageFilter.MedianFilter(3))\n"     # einzelne Fussel weg
-                # Kontur: nur der Rand der weißen Flächen (Buchstaben, Emblem) – ohne Verlaufs-Fussel
-                "if sys.argv[4]=='outline':m=ImageChops.subtract(m,m.filter(ImageFilter.MinFilter(7))).filter(ImageFilter.MaxFilter(3))\n"
-                "o=Image.new('RGBA',i.size,(255,255,255,0));o.putalpha(m)\n"
-                "o.save(sys.argv[2]+'.tmp','PNG');os.replace(sys.argv[2]+'.tmp',sys.argv[2])")
-
-
-def art_outline(path, style="white", limit=900):
-    """Logo für den abgedunkelten Zustand: style "white" (gleich hell gefüllt) oder "outline" (Kontur),
-    einmal im Hilfsprozess erzeugt."""
-    if not path:
-        return None
-    try:
-        key = "%08x" % (zlib_crc(("%s6|%s|%s" % (style, path, os.path.getmtime(path))).encode()))
-    except OSError:
-        return None
-    out = os.path.join(ART_DIR, key + ".png")
-    if not os.path.exists(out):
-        os.makedirs(ART_DIR, exist_ok=True)
-        try:
-            subprocess.run(["python3", "-c", _ART_OUTLINE, path, out, str(limit), style], timeout=30,
-                           env=dict(os.environ, PYTHONPATH=PIL_LIB), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except (OSError, subprocess.SubprocessError) as exc:
-            log("Logo-Kontur fehlgeschlagen:", exc)
-    return out if os.path.exists(out) else None
 
 
 def art_png(path, limit):
@@ -4453,13 +4408,12 @@ class ColorMenu:
 
 
 class BottomMenu:
-    """Untermenü der Kachel „Unterer Screen aus“: drei Zeilen (Anzeige · Abdunkeln · Abgedunkelt) mit
-    Umschaltern wie bei der Leistung, darunter die Vorschau hell/abgedunkelt mit dem laufenden Spiel."""
+    """Untermenü der Kachel „Unterer Screen aus“: was der untere Screen in Ein-Bildschirm-Spielen zeigt
+    (Umschalter wie bei der Leistung), darunter die Vorschau mit dem laufenden Spiel."""
     title = "Unterer Screen in Spielen"
 
     def __init__(self, cc):
         self.cc = cc
-        self.row = 0
         self.drag_from = None
 
     def tick(self):
@@ -4474,42 +4428,29 @@ class BottomMenu:
     def drag(self, dy):
         pass
 
-    def _enabled(self, r):
-        show, when, _how = self.cc.bottom_cfg()
-        return r == 0 or (show != "off" and (r == 1 or when != "never"))
-
-    def _set(self, r, idx):
+    def _set(self, idx):
         cc = self.cc
-        key, _label, opts, _d = BOTTOM_ROWS[r]
-        idx = max(0, min(len(opts) - 1, idx))
-        if cc.cfg.get(key) == opts[idx][0]:
+        idx = max(0, min(len(BOTTOM_SHOW) - 1, idx))
+        if cc.bottom_mode() == BOTTOM_SHOW[idx][0]:
             return
-        cc.cfg[key] = opts[idx][0]
+        cc.cfg["bottom_show"] = BOTTOM_SHOW[idx][0]
         save_config(cc.cfg)
         haptic("tap")
-        log("Unterer Screen in Spielen:", " · ".join(cc.bottom_cfg()))
+        log("Unterer Screen in Spielen:", cc.cfg["bottom_show"])
         if cc.game and cc.game.get("emu") in AUTO_DIM_EMUS:
             cc.redim = True                    # beim Schließen des CC gleich anwenden
 
     def nav(self, dx, dy):
-        if dy:
-            r = self.row + dy
-            while 0 <= r < len(BOTTOM_ROWS) and not self._enabled(r):
-                r += dy
-            if 0 <= r < len(BOTTOM_ROWS):
-                self.row = r
-        elif dx and self._enabled(self.row):
-            cur = self.cc.bottom_cfg()[self.row]
-            keys = [k for k, _l in BOTTOM_ROWS[self.row][2]]
-            self._set(self.row, keys.index(cur) + dx)
+        if dx:
+            keys = [k for k, _l in BOTTOM_SHOW]
+            self._set(keys.index(self.cc.bottom_mode()) + dx)
 
     def confirm(self):
         self.cc.sub = None
 
     def tap(self, hit):
-        if hit and hit[0] == "bseg" and self._enabled(hit[1]):
-            self.row = hit[1]
-            self._set(hit[1], hit[2])
+        if hit and hit[0] == "bseg":
+            self._set(hit[1])
         elif hit and hit[0] == "sub" and hit[1] == "back":
             self.cc.sub = None
 
@@ -4522,39 +4463,33 @@ class BottomMenu:
         P.text(self.title, 30, 630, 104, T["text"], bold=True, align="c")
         P.text("Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper", 18, 630, 158,
                T["muted"], align="c")
-        cur = cc.bottom_cfg()
-        y, h, gap = 180, 128, 12
-        for r, (_key, label, opts, _d) in enumerate(BOTTOM_ROWS):
-            on = self._enabled(r)
-            P.rrect(45, y, 1170, h, 22, T["card"])
-            P.text(label, 22, 75, y + 40, T["text"] if on else T["muted"], bold=True)
-            n, sg = len(opts), 12
-            sw = (1110 - sg * (n - 1)) / n
-            for i, (k, name) in enumerate(opts):
-                sx = 75 + i * (sw + sg)
-                sel = k == cur[r]
-                fill = (A if on else mix(T["tile"], T["muted"], 0.4)) if sel else mix(T["tile"], A, 0.12 if on else 0.0)
-                P.rrect(sx, y + 58, sw, 52, 26, fill)
-                P.text(name, 19, sx + sw / 2, y + 91, (on_acc(A) if on else T["bg"]) if sel else
-                       (T["text"] if on else T["muted"]), bold=True, align="c")
-                cc.hits.append((sx, y + 50, sw, 68, ("bseg", r, i)))
-            if r == self.row:
-                cc._focus_ring(P, 45, y, 1170, h, 22)
-            y += h + gap
-        # Vorschau: hell und abgedunkelt (mit dem laufenden Spiel)
+        cur = cc.bottom_mode()
+        y, h = 185, 128
+        P.rrect(45, y, 1170, h, 22, T["card"])
+        P.text("Anzeige", 22, 75, y + 40, T["text"], bold=True)
+        n, sg = len(BOTTOM_SHOW), 12
+        sw = (1110 - sg * (n - 1)) / n
+        for i, (k, name) in enumerate(BOTTOM_SHOW):
+            sx = 75 + i * (sw + sg)
+            sel = k == cur
+            P.rrect(sx, y + 58, sw, 52, 26, A if sel else mix(T["tile"], A, 0.12))
+            P.text(name, 19, sx + sw / 2, y + 91, on_acc(A) if sel else T["text"], bold=True, align="c")
+            cc.hits.append((sx, y + 50, sw, 68, ("bseg", i)))
+        cc._focus_ring(P, 45, y, 1170, h, 22)
+        # Vorschau mit dem laufenden Spiel
         a = cc.art or {}
-        pw, ph = 252, 189
-        for i, (lab, pp) in enumerate((("hell", 0.0), ("abgedunkelt", 1.0))):
-            px = 630 - pw - 20 + i * (pw + 40)
-            py = y + 4
-            if cur[0] == "off":
-                P.rrect(px, py, pw, ph, 14, "000000")
-            elif a:
-                cc._paint_art(P, px, py, pw, ph, pp if cur[1] != "never" else 0.0, a, r=14)
-            else:
-                P.rrect(px, py, pw, ph, 14, mix(T["card"], "ffffff", 0.08))
-                P.text("Vorschau im Spiel", 16, px + pw / 2, py + ph / 2 + 6, T["muted"], align="c")
-            P.text(lab, 16, px + pw / 2, py + ph + 24, T["muted"], align="c")
+        pw, ph = 440, 330
+        px, py = 630 - pw / 2, y + h + 30
+        if cur == "off":
+            P.rrect(px, py, pw, ph, 18, "000000")
+            P.text("Unterer Screen dunkel", 18, 630, py + ph / 2 + 6, T["muted"], align="c")
+        elif a:
+            cc._paint_art(P, px, py, pw, ph, 0.0, a, r=18)
+        else:
+            P.rrect(px, py, pw, ph, 18, mix(T["card"], "ffffff", 0.08))
+            P.text("Vorschau im Spiel", 18, 630, py + ph / 2 + 6, T["muted"], align="c")
+        P.text("Nach 5 s ohne Berührung wird es schwarz (wie lowerdeck) · Antippen weckt", 18, 630, py + ph + 40,
+               T["muted"], align="c")
         P.hint([("◀ ▶", "ändern"), ("A", "fertig"), ("B", "zurück")], 18, 45, 905, T["muted"], T["text"])
 
 
@@ -4856,18 +4791,13 @@ class ControlCenter:
 
     # -- Unterer Screen in Ein-Bildschirm-Spielen --
     def bottom_cfg(self):
-        """(Anzeige, Abdunkeln, Abgedunkelt) – frühere Einzel-Einstellung (Test 28.10.) wird übernommen."""
+        """(Anzeige, Abdunkeln, Abgedunkelt) – fest: automatisch nach 5 s, schwarz (lowerdeck).
+        Frühere Einstellungen (Test 28.10.) werden übernommen."""
         c = self.cfg
-        if "bottom_show" not in c and c.get("bottom_single"):
-            c.update({"dim": {"bottom_show": "both", "bottom_when": "auto", "bottom_how": "white"},
-                      "on": {"bottom_show": "both", "bottom_when": "tap", "bottom_how": "white"},
-                      "dark": {"bottom_show": "both", "bottom_when": "auto", "bottom_how": "black"}}
-                     .get(c.get("bottom_single"), {"bottom_show": "off"}))
-        out = []
-        for key, _label, opts, default in BOTTOM_ROWS:
-            v = c.get(key, default)
-            out.append(v if v in [k for k, _l in opts] else default)
-        return tuple(out)
+        if "bottom_show" not in c and c.get("bottom_single") in ("dim", "on", "dark"):
+            c["bottom_show"] = "both"
+        v = c.get("bottom_show", "off")
+        return (v if v in [k for k, _l in BOTTOM_SHOW] else "off"), "auto", "black"
 
     def bottom_mode(self):
         return self.bottom_cfg()[0]
@@ -4910,42 +4840,29 @@ class ControlCenter:
             if when == "auto":
                 self.art_phase, self.art_t0 = "show", time.monotonic()
             log("Unterer Screen: Artwork angetippt – wieder hell")
-        else:
-            self.art_phase, self.art_t0 = "show", time.monotonic() - ART_SHOW_S
-            log("Unterer Screen: Artwork angetippt – abdunkeln")
-            self.art_tick()
+        elif when == "auto":
+            self.art_phase, self.art_t0 = "show", time.monotonic()   # wie lowerdeck: Berührung startet die 5 s neu
 
     def art_tick(self):
-        """Hauptschleife: nach 5 s überblenden (Fanart weg, Logo wird Kontur, Helligkeit runter)."""
+        """Hauptschleife: wie lowerdeck nach 5 s ohne Berührung in 0,5 s zu Schwarz, dann Hintergrundlicht aus."""
         now = time.monotonic()
         if self.art_phase == "show" and now - self.art_t0 >= ART_SHOW_S:
-            bl = self._bl_bottom()
-            if not bl or not self.ui or self.ui.art is None:
+            if not self.ui or self.ui.art is None:
                 self.art_phase = None
                 return False
-            self.art_phase, self.art_t0 = "fade", now
-            if self.bottom_cfg()[2] in ("black", "dim"):   # wie lowerdeck: Schwarz-Überblendung, Helligkeit bleibt
-                self.art_saved, self._art_raw = None, None
-            else:                                          # Logo-Form: Helligkeit runter wie ein Always-on-Display
-                self.art_saved = bl.get()
-                raw0 = int(rd(bl.dir + "/brightness") or 0)
-                self._art_raw = (raw0, round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
+            self.art_phase, self.art_t0, self.art_saved = "fade", now, None
         if self.art_phase != "fade":
             return False
-        how = self.bottom_cfg()[2]
-        p = min(1.0, (now - self.art_t0) / {"black": ART_DARK_FADE_S, "dim": 1.0}.get(how, ART_FADE_S))
+        p = min(1.0, (now - self.art_t0) / ART_DARK_FADE_S)
         self.art_p = p
-        bl = self._bl_bottom()
-        if bl and self._art_raw:
-            r0, r1 = self._art_raw
-            wr(bl.dir + "/brightness", max(1, round(r0 + (r1 - r0) * p)))
         self.ui.redraw_top("art")
         if p >= 1.0:
             self.art_phase = "osd"
-            if how == "black" and bl:                        # ganz schwarz: Hintergrundlicht aus (spart Akku)
+            bl = self._bl_bottom()
+            if bl:                                            # schwarz: Hintergrundlicht aus (spart Akku)
                 self.art_saved = bl.get()
                 bl.set(0, allow_off=True)
-            log("Unterer Screen: Artwork abgedunkelt (%s)" % how)
+            log("Unterer Screen: Artwork abgedunkelt")
             return False
         return True
 
@@ -4953,7 +4870,7 @@ class ControlCenter:
         rom = g.get("rom") or rom_of(g["pid"])
         if not self.art or self.art["rom"] != rom:
             self.art_cancel()
-            self.art = {"rom": rom, "name": g.get("name") or "", "bg": None, "logo": None, "outline": None, "white": None,
+            self.art = {"rom": rom, "name": g.get("name") or "", "bg": None, "logo": None,
                         "loaded": False}
             threading.Thread(target=self._art_load, args=(self.art,), daemon=True).start()
         if self.ui.art is None:
@@ -4972,8 +4889,6 @@ class ControlCenter:
             bg, logo = game_art(a["rom"])
             a["bg"] = art_png(bg, 1280)
             a["logo"] = art_png(logo, 900)
-            a["white"] = art_outline(a["logo"], "white")     # immer beide: Umschalten mitten im Spiel
-            a["outline"] = art_outline(a["logo"], "outline")
         except Exception as exc:
             log("Artwork laden:", exc)
         a["loaded"] = True
@@ -4993,7 +4908,7 @@ class ControlCenter:
                 bl.set(es)
             log("Unterer Screen: Helligkeit von ES zurück (%d %%)" % es)
         a, self.art = self.art, None
-        for path in [(a or {}).get(k) for k in ("bg", "logo", "outline", "white")]:   # Bildspeicher freigeben
+        for path in [(a or {}).get(k) for k in ("bg", "logo")]:   # Bildspeicher freigeben
             for k in [k for k in Pen._png if k[0] == path]:
                 if Pen._png[k]:
                     cairo.cairo_surface_destroy(Pen._png[k])
@@ -5005,47 +4920,27 @@ class ControlCenter:
         self._paint_art(P, -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s, self.art_p, self.art or {})
 
     def _paint_art(self, P, x0, y0, fw, fh, p, a, r=0):
-        """Artwork in eine Fläche (Bildschirm oder Vorschau im Untermenü). p: 0 = hell, 1 = abgedunkelt.
-        Schwarz/Gedimmt: Schwarz-Überblendung über alles · Kontur/Logo weiß: Bild blendet aus, Logo-Form ein."""
-        show, _when, how = self.bottom_cfg()
-        shape = how in ("outline", "white")
-        q = 1.0 - p if shape else 1.0
+        """Artwork in eine Fläche (Bildschirm oder Vorschau im Untermenü). p: 0 = hell, 1 = schwarz (lowerdeck)."""
+        show = self.bottom_mode()
         P.rrect(x0, y0, fw, fh, r, "000000")
-        if show in ("fanart", "both") and q > 0.01 and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, r=r, alpha=q):
+        if show in ("fanart", "both") and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, r=r):
             if show == "both":
-                P.rrect(x0, y0, fw, fh, r, "000000", 0.3 * q)
-        cx, cy, mw, mh = x0 + fw / 2, y0 + fh / 2, fw * 0.71, fh * 0.42
-
-        def fit(path):
-            sz = png_size(path) if path else None
-            if not (sz and sz[0] and sz[1]):
-                return None
-            k = min(mw / sz[0], mh / sz[1])
-            return cx - sz[0] * k / 2, cy - sz[1] * k / 2, sz[0] * k, sz[1] * k
-
-        def name():
-            t, size = a.get("name") or "", 56 * fw / 1260
-            if not (a.get("loaded") and t):
-                return
-            while P.width(t, size, bold=True, raw=True) > fw * 0.9 and len(t) > 4:
-                t = t[:-2]
-            P.text(t if t == a["name"] else t.rstrip() + "…", size, cx, cy + size * 0.35, "ffffff",
-                   bold=True, align="c", raw=True)
-
-        if show in ("logo", "both") and q > 0.01:
-            box = fit(a.get("logo"))
-            if box:
-                P.image(a["logo"], *box, stretch=True, alpha=q)
-            elif q > 0.5:
-                name()
-        if shape and p > 0.01:
-            box = fit(a.get(how))
-            if box:
-                P.image(a[how], *box, stretch=True, alpha=p)
-            elif p > 0.5:
-                name()
-        if how in ("black", "dim") and p > 0:
-            P.rrect(x0, y0, fw, fh, r, "000000", (1.0 if how == "black" else ART_DIM_ALPHA) * p)
+                P.rrect(x0, y0, fw, fh, r, "000000", 0.3)          # Logo hebt sich ab
+        if show in ("logo", "both"):
+            cx, cy, mw, mh = x0 + fw / 2, y0 + fh / 2, fw * 0.71, fh * 0.42
+            logo = a.get("logo")
+            sz = png_size(logo) if logo else None
+            if sz and sz[0] and sz[1]:
+                k = min(mw / sz[0], mh / sz[1])
+                P.image(logo, cx - sz[0] * k / 2, cy - sz[1] * k / 2, sz[0] * k, sz[1] * k, stretch=True)
+            elif a.get("loaded") and a.get("name"):            # kein Logo: Spielname
+                t, size = a["name"], 56 * fw / 1260
+                while P.width(t, size, bold=True, raw=True) > fw * 0.9 and len(t) > 4:
+                    t = t[:-2]
+                P.text(t if t == a["name"] else t.rstrip() + "…", size, cx, cy + size * 0.35, "ffffff",
+                       bold=True, align="c", raw=True)
+        if p > 0:
+            P.rrect(x0, y0, fw, fh, r, "000000", p)
 
     def open_bottom(self):
         self.sub = BottomMenu(self)

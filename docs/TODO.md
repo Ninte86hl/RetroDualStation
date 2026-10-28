@@ -25,10 +25,10 @@ Neue Ideen kommen erst hier rein, dann wird entschieden, wann sie dran sind.
 
 ## Als Nächstes
 - [ ] **Artwork unten in Ein-Bildschirm-Spielen** (Nutzerwunsch 28.10., wie ES-DE Companion/ROCKNIX lowerdeck) – auf
-  `kontrollcenter`. CC-Kachel „Unterer Screen aus“ → Pfeil/X → drei Umschalter: Anzeige (Aus · Fanart · Logo · Fanart +
-  Logo) · Abdunkeln (Nie · Nach 5 s · Antippen) · Abgedunkelt (Schwarz = lowerdeck, Licht aus · Kontur · Logo weiß ·
-  Gedimmt), Vorschau hell/abgedunkelt. Alte Einzel-Einstellung wird übernommen. Helligkeit unten im Spiel getrennt
-  von ES. RG DS/Plus mit den alten Varianten getestet ✓; neue Umschalter noch testen, Notes/Wiki/Tour danach.
+  `kontrollcenter`. CC-Kachel „Unterer Screen aus“ → Pfeil/X → Anzeige: Aus · Fanart · Logo · Fanart + Logo (Vorschau).
+  Abdunkeln fest wie lowerdeck: nach 5 s ohne Berührung in 0,5 s schwarz, dann Licht aus; Antippen weckt bzw. startet
+  die 5 s neu. Helligkeit unten im Spiel getrennt von ES. Varianten Logo-Kontur/Logo weiß/Gedimmt/Regler ausprobiert
+  und verworfen (28.10.). Noch testen, dann Notes/Wiki/Tour.
 - [ ] **canvas rds – Wochenende (ab 31.10.):** sinnvolle Optionen einbauen. Startpunkt liegt auf `kontrollcenter`
   (96e1d55, nicht in v15.3.5): Infoleiste in allen Ansichten außer Detailliert statt eigener Ansicht „Grid Info“,
   Tastenhilfe in Leistenschriftgröße (bei „Default“ 0.027 evtl. zu breit → „…“), Showcase 7 Zeilen. Noch ungetestet –
