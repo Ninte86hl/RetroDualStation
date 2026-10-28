@@ -44,6 +44,10 @@ an)
         echo "gov=$(cat $G/governor) min=$(cat $G/min_freq)" > "$ST"
     fi
     [ -n "$G" ] && echo performance > "$G/governor" 2>/dev/null
+    # CPU fest auf vollem Takt (Messung 28.10.: ondemand schwankte 1416–1992 MHz, der Emulator-Faden ist der Engpass)
+    C0=/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+    [ -f /tmp/rds-tuning.cpu ] || cat $C0 > /tmp/rds-tuning.cpu
+    for c in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo performance > "$c" 2>/dev/null; done
     python3 - "$PID" <<'PY'
 import os, sys, time
 pid = int(sys.argv[1]); hz = os.sysconf("SC_CLK_TCK")
@@ -74,7 +78,7 @@ for t, (v, n) in b.items():
     except OSError as e:
         print("tid %d: %s" % (t, e))
 PY
-    [ -n "$G" ] && echo "GPU: $(cat $G/governor) · $(( $(cat $G/cur_freq) / 1000000 )) MHz"
+    [ -n "$G" ] && echo "GPU: $(cat $G/governor) · $(( $(cat $G/cur_freq) / 1000000 )) MHz · CPU: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)"
     ;;
 aus)
     if [ -f "$ST" ] && [ -n "$G" ]; then
@@ -83,7 +87,11 @@ aus)
         rm -f "$ST"
     fi
     [ -n "$PID" ] && python3 -c "import os,sys; p=int(sys.argv[1]); [os.sched_setaffinity(int(t), set(range(os.cpu_count()))) for t in os.listdir('/proc/%d/task'%p)]" "$PID" 2>/dev/null
-    echo "zurück · GPU: $([ -n "$G" ] && cat $G/governor)"
+    if [ -f /tmp/rds-tuning.cpu ]; then
+        for c in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do cat /tmp/rds-tuning.cpu > "$c" 2>/dev/null; done
+        rm -f /tmp/rds-tuning.cpu
+    fi
+    echo "zurück · GPU: $([ -n "$G" ] && cat $G/governor) · CPU: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)"
     ;;
 status|*)
     echo "DraStic: ${PID:-läuft nicht} · GPU: $([ -n "$G" ] && echo "$(cat $G/governor) $(( $(cat $G/cur_freq) / 1000000 )) MHz") · Merker: $([ -f $ST ] && cat $ST || echo -)"
