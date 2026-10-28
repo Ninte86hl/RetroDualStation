@@ -1195,7 +1195,7 @@ AUTO_DIM_EMUS = ("RetroArch", "PortMaster")   # unterer Screen beim Start automa
 BOTTOM_MODES = [("off", "Aus", "Wie bisher: unterer Screen beim Spielstart dunkel"),
                 ("dim", "Artwork, dann abdunkeln", "5 s Fanart mit Logo, dann nur das Logo in Weiß · Antippen: hell/dunkel"),
                 ("on", "Artwork dauerhaft", "Fanart mit Logo bleibt an · Antippen: abdunkeln/hell"),
-                ("dark", "Fanart abgedunkelt", "Nach 5 s Fanart dunkler, Logo bleibt hell · Antippen: hell/dunkel · Stärke mit dem Regler")]
+                ("dark", "Fanart abgedunkelt", "Nach 5 s wird der Screen dunkler, Logo bleibt sichtbar · Antippen: hell/dunkel · Stärke mit dem Regler")]
 BOTTOM_DARK_DEFAULT = 60                          # Abdunkelung der Fanart bei „Fanart abgedunkelt“ (%)
 ART_SHOW_S, ART_FADE_S = 5.0, 3.0
 ART_OSD_PCT = 15                                  # Helligkeit im abgedunkelten Zustand (nur Logo-Kontur)
@@ -1216,9 +1216,9 @@ EN.update({"Aus": "Off", "Artwork, dann abdunkeln": "Artwork, then dim", "Artwor
            "Spiele: aus": "Games: off", "Spiele: Artwork, dimmt": "Games: artwork, dims",
            "Spiele: Artwork an": "Games: artwork on", "In Spielen": "In games",
            "Fanart abgedunkelt": "Darkened fanart", "Spiele: Fanart dunkel": "Games: dark fanart",
-           "Nach 5 s Fanart dunkler, Logo bleibt hell · Antippen: hell/dunkel · Stärke mit dem Regler":
-               "After 5 s darker fanart, logo stays bright · tap: bright/dark · strength with the slider",
-           "Abdunkelung der Fanart": "Fanart darkening",
+           "Nach 5 s wird der Screen dunkler, Logo bleibt sichtbar · Antippen: hell/dunkel · Stärke mit dem Regler":
+               "After 5 s the screen gets darker, logo stays visible · tap: bright/dark · strength with the slider",
+           "Abdunkelung": "Darkening",
            "Für Spiele mit einem Bildschirm (RetroArch, Ports) · Fanart und Logo vom Scraper":
                "For games with one screen (RetroArch, ports) · fanart and logo from the scraper",
            "einstellen": "adjust"})
@@ -4541,7 +4541,7 @@ class BottomMenu:
         P.rrect(45, y, 1170, sh, 22, T["card"])
         tc = T["text"] if active else T["muted"]
         v = cc.bottom_dark()
-        P.text("Abdunkelung der Fanart", 22, 85, y + 42, tc, bold=True)
+        P.text("Abdunkelung", 22, 85, y + 42, tc, bold=True)
         P.text("%d %%" % v, 22, 820, y + 42, tc, bold=True, align="r", raw=True)
         tx, tw, ty = 85, 735, y + sh - 42
         P.rrect(tx, ty - 6, tw, 12, 6, mix(T["muted"], T["card"], 0.5))
@@ -4553,12 +4553,13 @@ class BottomMenu:
         a = cc.art or {}
         if not (a.get("bg") and P.image(a["bg"], px, y + 12, pw, ph, r=14)):
             P.rrect(px, y + 12, pw, ph, 14, mix(T["card"], "ffffff", 0.15))
-        P.rrect(px, y + 12, pw, ph, 14, "000000", v / 100)
+        P.rrect(px, y + 12, pw, ph, 14, "000000", 0.55)          # Fanart etwas dunkler als das Logo
         logo, sz = a.get("logo"), None
         sz = png_size(logo) if logo else None
         if sz and sz[0] and sz[1]:
             k2 = min(pw * 0.7 / sz[0], ph * 0.6 / sz[1])
             P.image(logo, px + pw / 2 - sz[0] * k2 / 2, y + 12 + ph / 2 - sz[1] * k2 / 2, sz[0] * k2, sz[1] * k2, stretch=True)
+        P.rrect(px, y + 12, pw, ph, 14, "000000", v / 100)        # Screen dunkler (Helligkeit)
         if self.sel == self.SLIDER:
             cc._focus_ring(P, 45, y, 1170, sh, 22)
         P.hint([("A", "übernehmen"), ("◀ ▶", "einstellen"), ("B", "zurück")], 18, 45, 840, T["muted"], T["text"])
@@ -4920,11 +4921,12 @@ class ControlCenter:
                 self.art_phase = None
                 return False
             self.art_phase, self.art_t0 = "fade", now
-            if self.bottom_mode() == "dark":             # nur die Fanart wird dunkler, Helligkeit bleibt
-                self.art_saved, self._art_raw = None, None
+            self.art_saved = bl.get()
+            raw0 = int(rd(bl.dir + "/brightness") or 0)
+            if self.bottom_mode() == "dark":             # Screen um den Reglerwert dunkler (von der Spiel-Helligkeit aus)
+                self._art_raw = (raw0, max(round(bl.max * 0.05), round(raw0 * (1 - self.bottom_dark() / 100))))
             else:
-                self.art_saved = bl.get()
-                self._art_raw = (int(rd(bl.dir + "/brightness") or 0), round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
+                self._art_raw = (raw0, round(min(self.art_saved, ART_OSD_PCT) * bl.max / 100))
         if self.art_phase != "fade":
             return False
         p = min(1.0, (now - self.art_t0) / ART_FADE_S)
@@ -4936,7 +4938,8 @@ class ControlCenter:
         self.ui.redraw_top("art")
         if p >= 1.0:
             self.art_phase = "osd"
-            log("Unterer Screen: Artwork abgedunkelt (%s)" % ("Fanart" if self._art_raw is None else "Logo-Kontur"))
+            log("Unterer Screen: Artwork abgedunkelt (%s, Helligkeit %d → %d)" % (
+                "Fanart" if self.bottom_mode() == "dark" else "Logo-Kontur", self._art_raw[0], self._art_raw[1]))
             return False
         return True
 
@@ -5000,9 +5003,8 @@ class ControlCenter:
         x0, y0, fw, fh = -P.ox / P.s, -P.oy / P.s, w / P.s, h / P.s
         if q > 0.01 and a.get("bg") and P.image(a["bg"], x0, y0, fw, fh, alpha=q):
             if darkmode:
-                d = self.bottom_dark() / 100
-                s0 = min(0.3, d)                             # hell wie die anderen Einstellungen, dann auf den Reglerwert
-                P.rrect(x0, y0, fw, fh, 0, "000000", s0 + (d - s0) * self.art_p)
+                # Fanart etwas stärker abgedunkelt als das Logo (die Helligkeit des Screens sinkt zusätzlich)
+                P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 + 0.25 * self.art_p)
             else:
                 P.rrect(x0, y0, fw, fh, 0, "000000", 0.3 * q)
         logo, drawn = a.get("logo"), False
